@@ -25,17 +25,6 @@ import programs.settings                    as settings
 
 
 
-AStatus = {
-    'private':    0,
-    'public':     1,
-    #  'canceled':   2,
-    #  'finished':   3,
-}
-
-Status = [ (y, ugettext_lazy(x)) for x,y in AStatus.items() ]
-RStatus = { y: x  for x,y in AStatus.items() }
-
-
 AFrequency = {
     'ponctual':          0x000000,
     'every week':        0b001111,
@@ -105,24 +94,34 @@ class Metadata (Model):
     """
     meta is used to extend a model for future needs
     """
-    author          = models.ForeignKey (
-                        User,
-                        verbose_name = _('author'),
-                        blank = True,
-                        null = True )
-    date            = models.DateTimeField(
-                        _('date'),
-                        default = datetime.datetime.now )
-    title           = models.CharField(
-                        _('title'),
-                        max_length = 128 )
-    meta            = models.TextField(
-                        _('meta'),
-                        blank = True,
-                        null = True )
-    tags            = TaggableManager(
-                        _('tags'),
-                        blank = True )
+    author      = models.ForeignKey (
+                      User
+                    , verbose_name = _('author')
+                    , blank = True
+                    , null = True
+                  )
+    title       = models.CharField(
+                      _('title')
+                    , max_length = 128
+                  )
+    date        = models.DateTimeField(
+                      _('date')
+                    , default = datetime.datetime.now
+                  )
+    public      = models.BooleanField(
+                      _('public')
+                    , default = False
+                    , help_text = _('publication is accessible to the public')
+                  )
+    meta        = models.TextField(
+                      _('meta')
+                    , blank = True
+                    , null = True
+                  )
+    tags        = TaggableManager(
+                      _('tags')
+                    , blank = True
+                  )
 
     class Meta:
         abstract = True
@@ -136,38 +135,36 @@ class Publication (Metadata):
     def __str__ (self):
         return self.title + ' (' + str(self.id) + ')'
 
-    subtitle        = models.CharField(
-                        _('subtitle'),
-                        max_length = 128,
-                        blank = True )
-    img             = models.ImageField(
-                        _('image'),
-                        upload_to = "images",
-                        blank = True )
-    content         = models.TextField(
-                        _('content'),
-                        blank = True )
-    status          = models.SmallIntegerField(
-                        _('status'),
-                        choices = Status,
-                        default = AStatus['public'] )
-    enable_comments = models.BooleanField(
-                        _('enable comments'),
-                        default = True,
-                        help_text = 'select to enable comments')
-
+    subtitle    = models.CharField(
+                      _('subtitle')
+                    , max_length = 128
+                    , blank = True
+                  )
+    img         = models.ImageField(
+                      _('image')
+                    , upload_to = "images"
+                    , blank = True
+                  )
+    content     = models.TextField(
+                      _('content')
+                    , blank = True
+                  )
+    can_comment = models.BooleanField(
+                      _('enable comments')
+                    , default = True
+                    , help_text = _('comments are enabled on this publication')
+                  )
 
     #
     # Class methods
     #
-
     @staticmethod
     def _exclude_args (allow_unpublished = False, prefix = ''):
         if allow_unpublished:
             return {}
 
         res = {}
-        res[prefix + 'status'] = AStatus['private']
+        res[prefix + 'public'] = False
         res[prefix + 'date__gt'] = timezone.now()
         return res
 
@@ -180,7 +177,7 @@ class Publication (Metadata):
 
         Otherwise, return None
         """
-        kwargs['status'] = AStatus['public']
+        kwargs['public'] = True
         kwargs['date__lte'] = timezone.now()
 
         e = cl.objects.filter(**kwargs)
@@ -193,10 +190,6 @@ class Publication (Metadata):
     #
     # Instance's methods
     #
-    def is_private (self):
-        return self.status == AStatus['private']
-
-
     def get_parent (self, raise_404 = False ):
         if not parent and raise_404:
             raise Http404
@@ -230,23 +223,25 @@ class Publication (Metadata):
 
 
 #
-# Final models
+# Usable models
 #
-
 class Track (Model):
-    artist          = models.CharField(
-                        _('artist'),
-                        max_length = 128,
-                        blank = True)
-    title           = models.CharField(
-                        _('title'),
-                        max_length = 128 )
-    version         = models.CharField(
-                        _('version'),
-                        max_length = 128,
-                        blank = True,
-                        help_text = _('additional informations on that track'))
-    tags            = TaggableManager( blank = True )
+    artist      = models.CharField(
+                      _('artist')
+                    , max_length = 128
+                    , blank = True
+                  )
+    title       = models.CharField(
+                      _('title')
+                    , max_length = 128
+                  )
+    version     = models.CharField(
+                      _('version')
+                    , max_length = 128
+                    , blank = True
+                    , help_text = _('additional informations on that track')
+                  )
+    tags        = TaggableManager( blank = True )
 
 
     def __str__(self):
@@ -261,33 +256,33 @@ class Track (Model):
 
 
 class SoundFile (Metadata):
-    parent          = models.ForeignKey(
-                        'Episode',
-                        verbose_name = _('episode'),
-                        blank = True,
-                        null = True )
-    file            = models.FileField(
-                        _('file'),
-                        upload_to = "data/tracks",
-                        blank = True )
-    duration        = models.TimeField(
-                        _('duration'),
-                        blank = True,
-                        null = True )
-    podcastable     = models.BooleanField(
-                        _('podcastable'),
-                        default = False,
-                        help_text = _('if checked, the file can be podcasted from this server'))
-    fragment        = models.BooleanField(
-                        _('incomplete sound'),
-                        default = False,
-                        help_text = _("the file has been cut"))
-    embed           = models.TextField (
-                        _('embed HTML code from external website'),
-                        blank = True,
-                        null = True,
-                        help_text = _('if set, consider the sound podcastable from there')
-                        )
+    parent      = models.ForeignKey(
+                      'Episode'
+                    , verbose_name = _('episode')
+                    , blank = True
+                    , null = True
+                  )
+    file        = models.FileField(
+                      _('file')
+                    , upload_to = "data/tracks"
+                    , blank = True
+                  )
+    duration    = models.TimeField(
+                      _('duration')
+                    , blank = True
+                    , null = True
+                  )
+    fragment    = models.BooleanField(
+                      _('incomplete sound')
+                    , default = False
+                    , help_text = _("the file has been cut")
+                  )
+    embed       = models.TextField (
+                      _('embed HTML code from external website')
+                    , blank = True
+                    , null = True
+                    , help_text = _('if set, consider the sound podcastable from there')
+                  )
 
 
     def __str__ (self):
@@ -300,13 +295,12 @@ class SoundFile (Metadata):
 
 
 
-
 class Schedule (Model):
-    parent          = models.ForeignKey( 'Program', blank = True, null = True )
-    date            = models.DateTimeField(_('schedule'))
-    frequency       = models.SmallIntegerField(_('frequency'), choices = Frequency)
-    duration        = models.TimeField(_('duration'))
-    rerun           = models.BooleanField(_('rerun'), default = False)
+    parent      = models.ForeignKey( 'Program', blank = True, null = True )
+    date        = models.DateTimeField(_('start'))
+    duration    = models.TimeField(_('duration'))
+    frequency   = models.SmallIntegerField(_('frequency'), choices = Frequency)
+    rerun       = models.BooleanField(_('rerun'), default = False)
 
 
     def match_week (self, at = datetime.date.today()):
@@ -337,7 +331,6 @@ class Schedule (Model):
         if self.frequency == AFrequency['ponctual']:
             return None
 
-        print('#####')
         # first day of the week
         date = at - datetime.timedelta( days = at.weekday() )
 
@@ -393,18 +386,21 @@ class Schedule (Model):
 
 
 class Article (Publication):
-    parent          = models.ForeignKey(
-                        'self',
-                        verbose_name = _('parent'),
-                        blank = True,
-                        null = True )
-    static_page     = models.BooleanField(
-                        _('static page'),
-                        default = False )
-    focus           = models.BooleanField(
-                        _('article is focus'),
-                        blank = True,
-                        default = False )
+    parent      = models.ForeignKey(
+                      'self'
+                    , verbose_name = _('parent')
+                    , blank = True
+                    , null = True
+                  )
+    static_page = models.BooleanField(
+                      _('static page')
+                    , default = False
+                  )
+    focus       = models.BooleanField(
+                      _('article is focus')
+                    , blank = True
+                    , default = False
+                  )
 
 
     class Meta:
@@ -414,28 +410,28 @@ class Article (Publication):
 
 
 class Program (Publication):
-    parent          = models.ForeignKey(
-                          Article
-                        , verbose_name = _('parent')
-                        , blank = True
-                        , null = True
-                      )
-    email           = models.EmailField(
-                          _('email')
-                        , max_length = 128
-                        , null = True
-                        , blank = True
-                      )
-    url             = models.URLField(
-                        _('website')
-                        , blank = True
-                        , null = True
-                      )
-    tag             = models.CharField(
-                          _('tag')
-                        , max_length = 64
-                        , help_text = _('used in articles to refer to it')
-                      )
+    parent      = models.ForeignKey(
+                      Article
+                    , verbose_name = _('parent')
+                    , blank = True
+                    , null = True
+                  )
+    email       = models.EmailField(
+                      _('email')
+                    , max_length = 128
+                    , null = True
+                    , blank = True
+                  )
+    url         = models.URLField(
+                    _('website')
+                    , blank = True
+                    , null = True
+                  )
+    tag         = models.CharField(
+                      _('tag')
+                    , max_length = 64
+                    , help_text = _('used in articles to refer to it')
+                  )
 
     @property
     def path(self):
@@ -456,15 +452,17 @@ class Episode (Publication):
     #   minimum of values.
     #   Duration can be retrieved from the sound file if there is one.
     #
-    parent          = models.ForeignKey(
-                        Program,
-                        verbose_name = _('parent'),
-                        blank = True,
-                        null = True )
-    tracks          = models.ManyToManyField(
-                        Track,
-                        verbose_name = _('playlist'),
-                        blank = True )
+    parent      = models.ForeignKey(
+                      Program
+                    , verbose_name = _('parent')
+                    , blank = True
+                    , null = True
+                  )
+    tracks      = models.ManyToManyField(
+                      Track
+                    , verbose_name = _('playlist')
+                    , blank = True
+                  )
 
 
     class Meta:
@@ -476,27 +474,29 @@ class Episode (Publication):
 class Event (Model):
     """
     """
-    parent          = models.ForeignKey (
-                        Episode,
-                        verbose_name = _('episode'),
-                        blank = True,
-                        null = True )
-
-    meta            = models.TextField (
-                        _('meta'),
-                        blank = True,
-                        null = True )
-    date            = models.DateTimeField( _('date') )
-    duration        = models.TimeField(
-                        _('duration'),
-                        blank = True,
-                        null = True,
-                        help_text = _('this is just indicative'))
-    status          = models.SmallIntegerField(
-                        _('status'),
-                        choices = Status,
-                        default = AStatus['public'] )
-    canceled        = models.BooleanField( _('canceled'), default = False )
+    parent      = models.ForeignKey (
+                      Episode
+                    , verbose_name = _('episode')
+                    , blank = True
+                    , null = True
+                  )
+    date        = models.DateTimeField( _('date of start') )
+    date_end    = models.DateTimeField(
+                      _('date of end')
+                    , blank = True
+                    , null = True
+                  )
+    public      = models.BooleanField(
+                      _('public')
+                    , default = False
+                    , help_text = _('publication is accessible to the public')
+                  )
+    meta        = models.TextField (
+                      _('meta')
+                    , blank = True
+                    , null = True
+                  )
+    canceled    = models.BooleanField( _('canceled'), default = False )
 
 
     def testify (self):

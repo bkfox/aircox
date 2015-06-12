@@ -54,15 +54,15 @@ class MetadataAdmin (admin.ModelAdmin):
 class PublicationAdmin (MetadataAdmin):
     fieldsets = copy.deepcopy(MetadataAdmin.fieldsets)
 
-    list_display = ('id', 'title', 'date', 'status')
-    list_filter = ['date', 'status']
+    list_display = ('id', 'title', 'date', 'public')
+    list_filter = ['date', 'public']
     search_fields = ['title', 'content']
 
 
     def __init__ (self, *args, **kwargs):
         self.fieldsets[0][1]['fields'].insert(1, 'subtitle')
         self.fieldsets[0][1]['fields'] += [ 'img', 'content' ]
-        self.fieldsets[1][1]['fields'] += [ 'parent', 'status', 'enable_comments', 'meta' ],
+        self.fieldsets[1][1]['fields'] += [ 'parent', 'public', 'can_comment', 'meta' ],
         return super(PublicationAdmin, self).__init__(*args, **kwargs)
 
 
