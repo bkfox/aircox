@@ -81,6 +81,7 @@ class SoundFileAdmin (MetadataAdmin):
     ]
 
     #inlines = [ EpisodeInline ]
+    inlines = [ EventInline ]
 
 
 
@@ -93,16 +94,15 @@ class ArticleAdmin (PublicationAdmin):
 
 class ProgramAdmin (PublicationAdmin):
     fieldsets           = copy.deepcopy(PublicationAdmin.fieldsets)
-    prepopulated_fields = { 'tag': ('title',) }
     inlines             = [ EpisodeInline, ScheduleInline ]
 
-    fieldsets[1][1]['fields'] += ['email', 'url', 'tag']
+    fieldsets[1][1]['fields'] += ['email', 'url', 'non_stop']
 
 
 
 class EpisodeAdmin (PublicationAdmin):
     fieldsets           = copy.deepcopy(PublicationAdmin.fieldsets)
-    inlines             = [ EventInline, SoundFileInline ]
+    inlines             = [ SoundFileInline ]
     list_filter         = ['parent'] + PublicationAdmin.list_filter
 
     fieldsets[0][1]['fields'] += ['tracks']

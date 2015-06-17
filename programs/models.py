@@ -1,43 +1,36 @@
-import datetime
+import os
 
 # django
 from django.db                              import models
 from django.contrib.auth.models             import User
 from django.template.defaultfilters         import slugify
-
-from django.http                            import HttpResponse, Http404
-
 from django.contrib.contenttypes.fields     import GenericForeignKey
 from django.contrib.contenttypes.models     import ContentType
-
-from django.shortcuts                       import get_object_or_404
 from django.utils.translation               import ugettext as _, ugettext_lazy
 from django.utils                           import timezone
 from django.utils.html                      import strip_tags
 
-from django.conf                            import settings
-
 # extensions
 from taggit.managers                        import TaggableManager
-
 
 import programs.settings                    as settings
 
 
 
-AFrequency = {
-    'ponctual':          0x000000,
-    'every week':        0b001111,
-    'first week':        0x000001,
-    'second week':       0x000010,
-    'third week':        0x000100,
-    'fourth week':       0x001000,
-    'first and third':   0x000101,
-    'second and fourth': 0x001010,
-    'one week on two':   0x010010,
-    #'uneven week':         0x100000,
-    # TODO 'every day':     0x110000
+Frequency = {
+    'ponctual':          0b000000
+  , 'every week':        0b001111
+  , 'first week':        0b000001
+  , 'second week':       0b000010
+  , 'third week':        0b000100
+  , 'fourth week':       0b001000
+  , 'first and third':   0b000101
+  , 'second and fourth': 0b001010
+  , 'one week on two':   0b010010
+    #'uneven week':         0b100000
+    # TODO 'every day':     0b110000
 }
+
 
 
 # Translators: html safe values
@@ -52,10 +45,15 @@ ugettext_lazy('second and fourth')
 ugettext_lazy('one week on two')
 
 
-Frequency = [ (y, x) for x,y in AFrequency.items() ]
-RFrequency = { y: x for x,y in AFrequency.items() }
+EventType = {
+    'play':     0x02    # the sound is playing / planified to play
+  , 'cancel':   0x03    # the sound has been canceled from grid; useful to give
+                        # the info to the users
+  , 'stop':     0x04    # the sound has been arbitrary stopped (non-stop or not)
+  , 'non-stop': 0x05    # the sound has been played as non-stop
+#, 'streaming'
+}
 
-Frequency.sort(key = lambda e: e[0])
 
 
 class Model (models.Model):
@@ -106,7 +104,7 @@ class Metadata (Model):
                   )
     date        = models.DateTimeField(
                       _('date')
-                    , default = datetime.datetime.now
+                    , default = timezone.datetime.now
                   )
     public      = models.BooleanField(
                       _('public')
@@ -190,12 +188,6 @@ class Publication (Metadata):
     #
     # Instance's methods
     #
-    def get_parent (self, raise_404 = False ):
-        if not parent and raise_404:
-            raise Http404
-        return parent
-
-
     def get_parents ( self, order_by = "desc", include_fields = None ):
         """
         Return an array of the parents of the item.
@@ -262,10 +254,9 @@ class SoundFile (Metadata):
                     , blank = True
                     , null = True
                   )
-    file        = models.FileField(
+    file        = models.FileField( #FIXME: filefield
                       _('file')
-                    , upload_to = "data/tracks"
-                    , blank = True
+                    , upload_to = lambda i, f: SoundFile.__upload_path(i,f)
                   )
     duration    = models.TimeField(
                       _('duration')
@@ -277,12 +268,24 @@ class SoundFile (Metadata):
                     , default = False
                     , help_text = _("the file has been cut")
                   )
-    embed       = models.TextField (
+    embed       = models.TextField(
                       _('embed HTML code from external website')
                     , blank = True
                     , null = True
                     , help_text = _('if set, consider the sound podcastable from there')
                   )
+    removed     = models.BooleanField(
+                      default = False
+                    , help_text = _('this sound has been removed from filesystem')
+                  )
+
+
+    def __upload_path (self, filename):
+        if self.parent and self.parent.parent:
+            path = self.parent.parent.path
+        else:
+            path = settings.AIRCOX_SOUNDFILE_DEFAULT_DIR
+        return os.path.join(path, filename)
 
 
     def __str__ (self):
@@ -294,29 +297,44 @@ class SoundFile (Metadata):
         verbose_name_plural = _('Sounds')
 
 
-
 class Schedule (Model):
     parent      = models.ForeignKey( 'Program', blank = True, null = True )
     date        = models.DateTimeField(_('start'))
-    duration    = models.TimeField(_('duration'))
-    frequency   = models.SmallIntegerField(_('frequency'), choices = Frequency)
+    duration    = models.TimeField(
+                      _('duration')
+                    , blank = True
+                    , null = True
+                  )
+    frequency   = models.SmallIntegerField(
+                      _('frequency')
+                    , choices = [ (y, x) for x,y in Frequency.items() ]
+                  )
     rerun       = models.BooleanField(_('rerun'), default = False)
 
 
-    def match_week (self, at = datetime.date.today()):
+    def match_date (self, at = timezone.datetime.today()):
+        """
+        Return True if the given datetime matches the schedule
+        """
+        if self.date.weekday() == at.weekday() and self.match_week(date):
+            return self.date.time() == at.date.time()
+        return False
+
+
+    def match_week (self, at = timezone.datetime.today()):
         """
         Return True if the given week number matches the schedule, False
         otherwise.
         If the schedule is ponctual, return None.
         """
-        if self.frequency == AFrequency['ponctual']:
+        if self.frequency == Frequency['ponctual']:
             return None
 
-        if self.frequency == AFrequency['one week on two']:
+        if self.frequency == Frequency['one week on two']:
             week = at.isocalendar()[1]
             return (week % 2) == (self.date.isocalendar()[1] % 2)
 
-        first_of_month = datetime.date(at.year, at.month, 1)
+        first_of_month = timezone.datetime.date(at.year, at.month, 1)
         week = at.isocalendar()[1] - first_of_month.isocalendar()[1]
 
         # weeks of month
@@ -326,30 +344,29 @@ class Schedule (Model):
         return (self.frequency & (0b0001 << week) > 0)
 
 
-
-    def next_date (self, at = datetime.date.today()):
-        if self.frequency == AFrequency['ponctual']:
+    def next_date (self, at = timezone.datetime.today()):
+        if self.frequency == Frequency['ponctual']:
             return None
 
         # first day of the week
-        date = at - datetime.timedelta( days = at.weekday() )
+        date = at - timezone.timedelta( days = at.weekday() )
 
         # for the next five week, we look for a matching week.
         # when found, add the number of day since de start of the
         # we need to test if the result is >= at
         for i in range(0,5):
             if self.match_week(date):
-                date_ = date + datetime.timedelta( days = self.date.weekday() )
+                date_ = date + timezone.timedelta( days = self.date.weekday() )
                 if date_ >= at:
                     # we don't want past events
-                    return datetime.datetime(date_.year, date_.month, date_.day,
+                    return timezone.datetime(date_.year, date_.month, date_.day,
                                                 self.date.hour, self.date.minute)
-            date += datetime.timedelta( days = 7 )
+            date += timezone.timedelta( days = 7 )
         else:
             return None
 
 
-    def next_dates (self, at = datetime.date.today(), n = 52):
+    def next_dates (self, at = timezone.datetime.today(), n = 52):
         # we could have optimized this function, but since it should not
         # be use too often, we keep a more readable and easier to debug
         # solution
@@ -362,20 +379,20 @@ class Schedule (Model):
             if not e:
                 break
             res.append(e)
-            at = res[-1] + datetime.timedelta(days = 1)
+            at = res[-1] + timezone.timedelta(days = 1)
 
         return res
 
 
-    def to_string(self):
-        s = ugettext_lazy( RFrequency[self.frequency] )
-        if self.rerun:
-            return s + ' (' + _('rerun') + ')'
-        return s
-
+    #def to_string(self):
+    #    s = ugettext_lazy( RFrequency[self.frequency] )
+    #    if self.rerun:
+    #        return s + ' (' + _('rerun') + ')'
+    #    return s
 
     def __str__ (self):
-        return self.parent.title + ': ' + RFrequency[self.frequency]
+        frequency = [ x for x,y in Frequency.items() if y == self.frequency ]
+        return self.parent.title + ': ' + frequency[0]
 
 
     class Meta:
@@ -427,15 +444,17 @@ class Program (Publication):
                     , blank = True
                     , null = True
                   )
-    tag         = models.CharField(
-                      _('tag')
-                    , max_length = 64
-                    , help_text = _('used in articles to refer to it')
+    non_stop    = models.SmallIntegerField(
+                      _('non-stop priority')
+                    , help_text = _('this program can be used as non-stop')
+                    , default = -1
                   )
 
     @property
     def path(self):
-        return settings.AIRCOX_PROGRAMS_DATA + slugify(self.title + '_' + self.id)
+        return os.path.join( settings.AIRCOX_PROGRAMS_DIR
+                           , slugify(self.title + '_' + str(self.id))
+                           )
 
 
     class Meta:
@@ -455,8 +474,6 @@ class Episode (Publication):
     parent      = models.ForeignKey(
                       Program
                     , verbose_name = _('parent')
-                    , blank = True
-                    , null = True
                   )
     tracks      = models.ManyToManyField(
                       Track
@@ -473,37 +490,22 @@ class Episode (Publication):
 
 class Event (Model):
     """
+    Event logs and planification of a sound file
     """
-    parent      = models.ForeignKey (
-                      Episode
-                    , verbose_name = _('episode')
-                    , blank = True
-                    , null = True
+    sound       = models.ForeignKey (
+                      SoundFile
+                    , verbose_name = _('sound file')
                   )
-    date        = models.DateTimeField( _('date of start') )
-    date_end    = models.DateTimeField(
-                      _('date of end')
-                    , blank = True
-                    , null = True
+    type        = models.SmallIntegerField(
+                      _('type')
+                    , choices = [ (y, x) for x,y in EventType.items() ]
                   )
-    public      = models.BooleanField(
-                      _('public')
-                    , default = False
-                    , help_text = _('publication is accessible to the public')
-                  )
+    date        = models.DateTimeField( _('date of event start') )
     meta        = models.TextField (
                       _('meta')
                     , blank = True
                     , null = True
                   )
-    canceled    = models.BooleanField( _('canceled'), default = False )
-
-
-    def testify (self):
-        parent = self.parent
-        self.parent.testify()
-        self.parent.date = self.date
-        return self.parent
 
 
     class Meta:
