@@ -1,3 +1,5 @@
+import argparse
+
 from django.core.management.base    import BaseCommand, CommandError
 from django.utils                   import timezone
 import programs.models              as models
@@ -16,6 +18,14 @@ class Model:
         self.optional = optional
         self.post = post
 
+
+    def to_string (self):
+        return '\n'.join(
+                    [ '    - required: {}'.format(', '.join(self.required))
+                    , '    - optional: {}'.format(', '.join(self.optional))
+                    , (self.post is AddTags and '    - tags available\n') or
+                        '\n'
+                    ])
 
     def check_or_raise (self, options):
         for req in self.required:
@@ -145,10 +155,23 @@ models = {
                       }
                     , AddTags
                     )
+  , 'episode': Model( models.Episode
+                    , { 'title': str }
+                    , { 'subtitle': str, 'can_comment': bool, 'date': DateTime
+                      , 'parent_id': int, 'public': bool
+                      }
+                    , AddTags
+                    )
   , 'schedule': Model( models.Schedule
                     , { 'parent_id': int, 'date': DateTime, 'duration': Time
                       , 'frequency': int }
                     , { 'rerun': bool }
+                    )
+  , 'soundfile': Model( models.SoundFile
+                    , { 'parent_id': int, 'date': DateTime, 'file': str
+                      , 'duration': Time}
+                    , { 'fragment': bool, 'embed': str, 'removed': bool }
+                    , AddTags
                     )
 }
 
@@ -157,6 +180,7 @@ models = {
 class Command (BaseCommand):
     help='Create, update, delete or dump an element of the given model.' \
          ' If no action is given, dump it'
+
 
     def add_arguments (self, parser):
         parser.add_argument( 'model', type=str
@@ -209,6 +233,13 @@ class Command (BaseCommand):
         group.add_argument('--duration',   type=str)
         group.add_argument('--frequency',  type=int)
         group.add_argument('--rerun',      action='store_true')
+
+        # fields
+        parser.formatter_class=argparse.RawDescriptionHelpFormatter
+        parser.epilog = 'available fields per model:'
+        for name, model in models.items():
+            parser.epilog += '\n  ' + model.model.type() + ': \n' \
+                           + model.to_string()
 
 
     def handle (self, *args, **options):

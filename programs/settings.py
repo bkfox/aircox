@@ -10,6 +10,7 @@ ensure('AIRCOX_PROGRAMS_DIR',
        os.path.join(settings.MEDIA_ROOT, 'programs'))
 ensure('AIRCOX_SOUNDFILE_DEFAULT_DIR',
        os.path.join(AIRCOX_PROGRAMS_DIR + 'default'))
-
+ensure('AIRCOX_SOUNDFILE_EXT',
+        ('ogg','flac','wav','mp3','opus'))
 
 

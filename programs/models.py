@@ -280,6 +280,21 @@ class SoundFile (Metadata):
                   )
 
 
+    def get_mtime (self):
+        """
+        Get the last modification date from file
+        """
+        mtime = os.stat(self.file.path).st_mtime
+        mtime = timezone.datetime.fromtimestamp(mtime)
+        return timezone.make_aware(mtime, timezone.get_current_timezone())
+
+
+    def save (self, *args, **kwargs):
+        if not self.pk:
+            self.date = self.get_mtime()
+        super(SoundFile, self).save(*args, **kwargs)
+
+
     def __upload_path (self, filename):
         if self.parent and self.parent.parent:
             path = self.parent.parent.path
@@ -297,6 +312,7 @@ class SoundFile (Metadata):
         verbose_name_plural = _('Sounds')
 
 
+
 class Schedule (Model):
     parent      = models.ForeignKey( 'Program', blank = True, null = True )
     date        = models.DateTimeField(_('start'))
@@ -312,12 +328,12 @@ class Schedule (Model):
     rerun       = models.BooleanField(_('rerun'), default = False)
 
 
-    def match_date (self, at = timezone.datetime.today()):
+    def match_date (self, at = timezone.datetime.today(), check_time = False):
         """
         Return True if the given datetime matches the schedule
         """
-        if self.date.weekday() == at.weekday() and self.match_week(date):
-            return self.date.time() == at.date.time()
+        if self.date.weekday() == at.weekday() and self.match_week(at):
+            return (check_time and self.date.time() == at.date.time()) or True
         return False
 
 
@@ -401,7 +417,6 @@ class Schedule (Model):
 
 
 
-
 class Article (Publication):
     parent      = models.ForeignKey(
                       'self'
@@ -451,10 +466,22 @@ class Program (Publication):
                   )
 
     @property
-    def path(self):
+    def path (self):
         return os.path.join( settings.AIRCOX_PROGRAMS_DIR
                            , slugify(self.title + '_' + str(self.id))
                            )
+
+
+    def find_schedules (self, date):
+        """
+        Return schedules that match a given date
+        """
+        schedules = Schedule.objects.filter(parent = self)
+        r = []
+        for schedule in schedules:
+            if schedule.match_date(date):
+                r.append(schedule)
+        return r
 
 
     class Meta:
