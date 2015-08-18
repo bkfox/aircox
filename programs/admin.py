@@ -81,7 +81,7 @@ class SoundFileAdmin (MetadataAdmin):
     ]
 
     #inlines = [ EpisodeInline ]
-    inlines = [ EventInline ]
+    #inlines = [ EventInline ]
 
 
 

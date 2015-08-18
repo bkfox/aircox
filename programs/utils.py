@@ -1,43 +1,52 @@
 from django.utils                   import timezone
 
 from programs.models                import Schedule, Event, Episode,\
-                                           SoundFile, Frequency
+                                           EventType
 
 
 
-def update_scheduled_events (date):
+def scheduled_month_events (date = None, unsaved_only = False):
     """
-    Update planified events from schedules
-    TODO: notification in case of conflicts?
+    Return a list of scheduled events for the month of the given date. For the
+    non existing events, a program attribute to the corresponding program is
+    set.
     """
-    all_schedules = Schedule.objects().all()
-    schedules = [ schedule
-                    for schedule in models.Schedule.objects().all()
-                    if schedule.match-date(date) ]
+    if not date:
+        date = timezone.datetime.today()
 
-    schedules.sort(key = lambda e: e.date)
+    schedules = Schedule.objects.all()
+    events = []
 
     for schedule in schedules:
-        if schedule.frequency == Frequency['ponctual']:
-            continue
+        dates = schedule.dates_of_month()
+        for date in dates:
+            event = Event.objects \
+                         .filter(date = date, parent__parent = schedule.parent)
 
-        ev_date = timezone.datetime(date.year, date.month, date.day,
-                                    schedule.date.hour, schedule.date.minute)
+            if event.count():
+                if not unsaved_only:
+                    events.append(event)
+                continue
 
-        # if event exists, pass
-        n = Event.objects() \
-                 .filter(date = ev_date, parent__parent = schedule.parent) \
-                 .count()
-        if n:
-            continue
+            # get episode
+            ep_date = date
+            if schedule.rerun:
+                ep_date = schedule.rerun.date
 
-        ep_date = ev_date
+            episode = Episode.objects().filter( date = ep_date
+                                              , parent = schedule.parent )
+            episode  = episode[0] if episode.count() else None
 
-        # rerun?
-        if schedule.rerun:
-            schedule = schedule.rerun
-            date_ = schedule.date
-
-        episode = Episode.objects().filter(date = date)
+            # make event
+            event = Event( parent = episode
+                         , program = schedule.parent
+                         , type = EventType['diffuse']
+                         , date = date
+                         , stream = settings.AIRCOX_SCHEDULED_STREAM
+                         , scheduled = True
+                         )
+            event.program = schedule.program
+            events.append(event)
+    return events
 
 

@@ -17,41 +17,42 @@ import programs.settings                    as settings
 
 
 
+# Frequency for schedules. Basically, it is a mask of bits where each bit is a
+# week. Bits > rank 5 are used for special schedules.
+# Important: the first week is always the first week where the weekday of the
+# schedule is present.
 Frequency = {
-    'ponctual':          0b000000
-  , 'every week':        0b001111
-  , 'first week':        0b000001
-  , 'second week':       0b000010
-  , 'third week':        0b000100
-  , 'fourth week':       0b001000
-  , 'first and third':   0b000101
+    'ponctual':         0b000000
+  , 'first':            0b000001
+  , 'second':           0b000010
+  , 'third':            0b000100
+  , 'fourth':           0b001000
+  , 'last':             0b010000
+  , 'first and third':  0b000101
   , 'second and fourth': 0b001010
-  , 'one week on two':   0b010010
-    #'uneven week':         0b100000
-    # TODO 'every day':     0b110000
+  , 'every':            0b011111
+  , 'one on two':       0b100000
 }
 
 
 
 # Translators: html safe values
 ugettext_lazy('ponctual')
-ugettext_lazy('every week')
-ugettext_lazy('first week')
-ugettext_lazy('second week')
-ugettext_lazy('third week')
-ugettext_lazy('fourth week')
+ugettext_lazy('every')
+ugettext_lazy('first')
+ugettext_lazy('second')
+ugettext_lazy('third')
+ugettext_lazy('fourth')
 ugettext_lazy('first and third')
 ugettext_lazy('second and fourth')
-ugettext_lazy('one week on two')
+ugettext_lazy('one on two')
 
 
 EventType = {
-    'play':     0x02    # the sound is playing / planified to play
-  , 'cancel':   0x03    # the sound has been canceled from grid; useful to give
+    'diffuse':  0x01   # the diffusion is planified or done
+  , 'cancel':   0x03   # the diffusion has been canceled from grid; useful to give
                         # the info to the users
-  , 'stop':     0x04    # the sound has been arbitrary stopped (non-stop or not)
-  , 'non-stop': 0x05    # the sound has been played as non-stop
-#, 'streaming'
+  , 'stop':     0x04   # the diffusion been arbitrary stopped (non-stop or not)
 }
 
 
@@ -109,8 +110,9 @@ class Metadata (Model):
     public      = models.BooleanField(
                       _('public')
                     , default = False
-                    , help_text = _('publication is accessible to the public')
+                    , help_text = _('publication is public')
                   )
+    # FIXME: add a field to specify if the element should be listed or not
     meta        = models.TextField(
                       _('meta')
                     , blank = True
@@ -317,41 +319,52 @@ class Schedule (Model):
     parent      = models.ForeignKey( 'Program', blank = True, null = True )
     date        = models.DateTimeField(_('start'))
     duration    = models.TimeField(
-                      _('duration')
-                    , blank = True
-                    , null = True
+                    _('duration')
+                  , blank = True
+                  , null = True
                   )
     frequency   = models.SmallIntegerField(
-                      _('frequency')
-                    , choices = [ (y, x) for x,y in Frequency.items() ]
+                    _('frequency')
+                  , choices = [ (y, x) for x,y in Frequency.items() ]
                   )
-    rerun       = models.BooleanField(_('rerun'), default = False)
+    rerun       = models.ForeignKey(
+                    'self'
+                  , blank = True
+                  , null = True
+                  , help_text = "Schedule of a rerun"
+                  )
 
 
-    def match_date (self, at = timezone.datetime.today(), check_time = False):
+    def match (self, date = None, check_time = False):
         """
         Return True if the given datetime matches the schedule
         """
-        if self.date.weekday() == at.weekday() and self.match_week(at):
-            return (check_time and self.date.time() == at.date.time()) or True
+        if not date:
+            date = timezone.datetime.today()
+
+        if self.date.weekday() == date.weekday() and self.match_week(date):
+            return (check_time and self.date.time() == date.date.time()) or True
         return False
 
 
-    def match_week (self, at = timezone.datetime.today()):
+    def match_week (self, date = None):
         """
         Return True if the given week number matches the schedule, False
         otherwise.
         If the schedule is ponctual, return None.
         """
+        if not date:
+            date = timezone.datetime.today()
+
         if self.frequency == Frequency['ponctual']:
             return None
 
-        if self.frequency == Frequency['one week on two']:
-            week = at.isocalendar()[1]
+        if self.frequency == Frequency['one on two']:
+            week = date.isocalendar()[1]
             return (week % 2) == (self.date.isocalendar()[1] % 2)
 
-        first_of_month = timezone.datetime.date(at.year, at.month, 1)
-        week = at.isocalendar()[1] - first_of_month.isocalendar()[1]
+        first_of_month = timezone.datetime.date(date.year, date.month, 1)
+        week = date.isocalendar()[1] - first_of_month.isocalendar()[1]
 
         # weeks of month
         if week == 4:
@@ -360,51 +373,61 @@ class Schedule (Model):
         return (self.frequency & (0b0001 << week) > 0)
 
 
-    def next_date (self, at = timezone.datetime.today()):
+    def normalize (self, date):
+        """
+        Set the time of a datetime to the schedule's one
+        """
+        return date.replace( hour = self.date.hour
+                           , minute = self.date.minute )
+
+
+    def dates_of_month (self, date = None):
+        """
+        Return a list with all matching dates of the month of the given
+        date (= today).
+        """
         if self.frequency == Frequency['ponctual']:
             return None
 
-        # first day of the week
-        date = at - timezone.timedelta( days = at.weekday() )
+        if not date:
+            date = timezone.datetime.today()
 
-        # for the next five week, we look for a matching week.
-        # when found, add the number of day since de start of the
-        # we need to test if the result is >= at
-        for i in range(0,5):
-            if self.match_week(date):
-                date_ = date + timezone.timedelta( days = self.date.weekday() )
-                if date_ >= at:
-                    # we don't want past events
-                    return timezone.datetime(date_.year, date_.month, date_.day,
-                                                self.date.hour, self.date.minute)
-            date += timezone.timedelta( days = 7 )
-        else:
-            return None
+        date = timezone.datetime( year = date.year
+                                 , month = date.month
+                                 , day = 1 )
+        wday = self.date.weekday()
+        fwday = date.weekday()
 
+        # move date to the date weekday of the schedule
+        # check on SO#3284452 for the formula
+        date += timezone.timedelta(
+                    days = (7 if fwday > wday else 0) - fwday + wday
+                 )
+        fwday = date.weekday()
 
-    def next_dates (self, at = timezone.datetime.today(), n = 52):
-        # we could have optimized this function, but since it should not
-        # be use too often, we keep a more readable and easier to debug
-        # solution
-        if self.frequency == 0b000000:
-            return None
+        # special frequency case
+        weeks = self.frequency
+        if self.frequency == Frequency['last']:
+            date += timezone.timedelta(month = 1, days = -7)
+            return self.normalize([date])
+        if weeks == Frequency['one on two']:
+            # if both week are the same, then the date week of the month
+            # matches. Note: wday % 2 + fwday % 2 => (wday + fwday) % 2
+            fweek = date.isocalendar()[1]
+            week = self.date.isocalendar()[1]
+            weeks = 0b010101 if not (fweek + week) % 2 else 0b001010
 
-        res = []
-        for i in range(n):
-            e = self.next_date(at)
-            if not e:
-                break
-            res.append(e)
-            at = res[-1] + timezone.timedelta(days = 1)
+        dates = []
+        for week in range(0,5):
+            # NB: there can be five weeks in a month
+            if not weeks & (0b1 << week):
+                continue
 
-        return res
+            wdate = date + timezone.timedelta(days = week * 7)
+            if wdate.month == date.month:
+                dates.append(self.normalize(wdate))
+        return dates
 
-
-    #def to_string(self):
-    #    s = ugettext_lazy( RFrequency[self.frequency] )
-    #    if self.rerun:
-    #        return s + ' (' + _('rerun') + ')'
-    #    return s
 
     def __str__ (self):
         frequency = [ x for x,y in Frequency.items() if y == self.frequency ]
@@ -419,19 +442,19 @@ class Schedule (Model):
 
 class Article (Publication):
     parent      = models.ForeignKey(
-                      'self'
-                    , verbose_name = _('parent')
-                    , blank = True
-                    , null = True
+                    'self'
+                  , verbose_name = _('parent')
+                  , blank = True
+                  , null = True
                   )
     static_page = models.BooleanField(
-                      _('static page')
-                    , default = False
+                    _('static page')
+                  , default = False
                   )
     focus       = models.BooleanField(
-                      _('article is focus')
-                    , blank = True
-                    , default = False
+                    _('article is focus')
+                  , blank = True
+                  , default = False
                   )
 
 
@@ -443,26 +466,26 @@ class Article (Publication):
 
 class Program (Publication):
     parent      = models.ForeignKey(
-                      Article
-                    , verbose_name = _('parent')
-                    , blank = True
-                    , null = True
+                    Article
+                  , verbose_name = _('parent')
+                  , blank = True
+                  , null = True
                   )
     email       = models.EmailField(
-                      _('email')
-                    , max_length = 128
-                    , null = True
-                    , blank = True
+                    _('email')
+                  , max_length = 128
+                  , null = True
+                  , blank = True
                   )
     url         = models.URLField(
                     _('website')
-                    , blank = True
-                    , null = True
+                  , blank = True
+                  , null = True
                   )
     non_stop    = models.SmallIntegerField(
-                      _('non-stop priority')
-                    , help_text = _('this program can be used as non-stop')
-                    , default = -1
+                    _('non-stop priority')
+                  , help_text = _('this program can be used as non-stop')
+                  , default = -1
                   )
 
     @property
@@ -498,6 +521,7 @@ class Episode (Publication):
     #   minimum of values.
     #   Duration can be retrieved from the sound file if there is one.
     #
+    # FIXME: ponctual replays?
     parent      = models.ForeignKey(
                       Program
                     , verbose_name = _('parent')
@@ -517,23 +541,35 @@ class Episode (Publication):
 
 class Event (Model):
     """
-    Event logs and planification of a sound file
+    Event logs and planifications.
+
+    An event is:
+    - scheduled: when it has been generated following programs' Schedule
+    - planified: when it has been generated manually/ponctually or scheduled
     """
-    sound       = models.ForeignKey (
-                      SoundFile
-                    , verbose_name = _('sound file')
+    parent      = models.ForeignKey (
+                      Episode
+                    , blank = True
+                    , null = True
+                  )
+    program     = models.ForeignKey (
+                      Program
                   )
     type        = models.SmallIntegerField(
                       _('type')
                     , choices = [ (y, x) for x,y in EventType.items() ]
                   )
     date        = models.DateTimeField( _('date of event start') )
-    meta        = models.TextField (
-                      _('meta')
-                    , blank = True
-                    , null = True
+    stream      = models.SmallIntegerField(
+                      _('stream')
+                    , default = 0
+                    , help_text = 'stream id on which the event happens'
                   )
-
+    scheduled   = models.BooleanField(
+                      _('automated')
+                    , default = False
+                    , help_text = 'event generated automatically'
+                  )
 
     class Meta:
         verbose_name = _('Event')

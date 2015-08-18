@@ -1,4 +1,5 @@
 import argparse
+import json
 
 from django.core.management.base    import BaseCommand, CommandError
 from django.utils                   import timezone
@@ -110,7 +111,7 @@ class Model:
                 v = getattr(item, f)
                 if hasattr(v, 'id'):
                     v = v.id
-                r.append(str(v).ljust(len(f)))
+                r.append(v)
             items.append(r)
 
         if options.get('head'):
@@ -118,7 +119,14 @@ class Model:
         elif options.get('tail'):
             items = items[-options.get('tail'):]
 
-        print(' || '.join(fields))
+        if options.get('json'):
+            if options.get('fields'):
+                print(json.dumps(fields))
+            print(json.dumps(items, default = lambda x: str(x)))
+            return
+
+        if options.get('fields'):
+            print(' || '.join(fields))
         for item in items:
             print(' || '.join(item))
 
@@ -165,7 +173,7 @@ models = {
   , 'schedule': Model( models.Schedule
                     , { 'parent_id': int, 'date': DateTime, 'duration': Time
                       , 'frequency': int }
-                    , { 'rerun': bool }
+                    , { 'rerun': int } # FIXME: redo
                     )
   , 'soundfile': Model( models.SoundFile
                     , { 'parent_id': int, 'date': DateTime, 'file': str
@@ -194,6 +202,8 @@ class Command (BaseCommand):
         group.add_argument('--add', action='store_true'
                           , help='create or update (if id is given) object')
         group.add_argument('--delete', action='store_true')
+        group.add_argument('--json', action='store_true'
+                          , help='dump using json')
 
 
         group = parser.add_argument_group('selector')
@@ -207,6 +217,10 @@ class Command (BaseCommand):
         group.add_argument('--tail', type=int
                           , help='dump the TAIL last objects only'
                           )
+        group.add_argument('--fields', action='store_true'
+                          , help='print fields before dumping'
+                          )
+
 
         # publication/generic
         group = parser.add_argument_group('fields'
@@ -232,7 +246,7 @@ class Command (BaseCommand):
         # schedule
         group.add_argument('--duration',   type=str)
         group.add_argument('--frequency',  type=int)
-        group.add_argument('--rerun',      action='store_true')
+        group.add_argument('--rerun',      type=int)
 
         # fields
         parser.formatter_class=argparse.RawDescriptionHelpFormatter
@@ -258,7 +272,7 @@ class Command (BaseCommand):
                 models[model].make(options)
         elif options.get('delete'):
             models[model].delete(options)
-        else:
+        else: # --dump --json
             models[model].dump(options)
 
 
