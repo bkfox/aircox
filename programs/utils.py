@@ -1,31 +1,31 @@
 from django.utils                   import timezone
 
-from programs.models                import Schedule, Event, Episode,\
-                                           EventType
+from programs.models                import Schedule, Diffusion, Episode,\
+                                           DiffusionType
 
 
 
-def scheduled_month_events (date = None, unsaved_only = False):
+def scheduled_month_diffusions (date = None, unsaved_only = False):
     """
-    Return a list of scheduled events for the month of the given date. For the
-    non existing events, a program attribute to the corresponding program is
+    Return a list of scheduled diffusions for the month of the given date. For the
+    non existing diffusions, a program attribute to the corresponding program is
     set.
     """
     if not date:
         date = timezone.datetime.today()
 
     schedules = Schedule.objects.all()
-    events = []
+    diffusions = []
 
     for schedule in schedules:
         dates = schedule.dates_of_month()
         for date in dates:
-            event = Event.objects \
+            diffusion = Diffusion.objects \
                          .filter(date = date, parent__parent = schedule.parent)
 
-            if event.count():
+            if diffusion.count():
                 if not unsaved_only:
-                    events.append(event)
+                    diffusions.append(diffusion)
                 continue
 
             # get episode
@@ -37,16 +37,16 @@ def scheduled_month_events (date = None, unsaved_only = False):
                                               , parent = schedule.parent )
             episode  = episode[0] if episode.count() else None
 
-            # make event
-            event = Event( parent = episode
+            # make diffusion
+            diffusion = Diffusion( parent = episode
                          , program = schedule.parent
-                         , type = EventType['diffuse']
+                         , type = DiffusionType['diffuse']
                          , date = date
                          , stream = settings.AIRCOX_SCHEDULED_STREAM
                          , scheduled = True
                          )
-            event.program = schedule.program
-            events.append(event)
-    return events
+            diffusion.program = schedule.program
+            diffusions.append(diffusion)
+    return diffusions
 
 

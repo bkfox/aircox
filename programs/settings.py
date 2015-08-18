@@ -18,7 +18,7 @@ ensure('AIRCOX_SOUNDFILE_DEFAULT_DIR',
 ensure('AIRCOX_SOUNDFILE_EXT',
         ('ogg','flac','wav','mp3','opus'))
 
-# Stream for the scheduled events
+# Stream for the scheduled diffusions
 ensure('AIRCOX_SCHEDULED_STREAM', 0)
 
 

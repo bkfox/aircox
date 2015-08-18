@@ -1,7 +1,9 @@
 import copy
 
 from django.contrib     import admin
-import programs.models  as models
+from django.forms       import Textarea
+from django.db          import models
+from programs.models    import *
 
 
 #
@@ -9,25 +11,23 @@ import programs.models  as models
 #
 # TODO: inherits from the corresponding admin view
 class SoundFileInline (admin.TabularInline):
-    model = models.SoundFile
+    model = SoundFile
+    raw_id_fields=('parent',)
+    fields = ('title', 'private', 'tags', 'file', 'duration', 'fragment')
     extra = 1
 
 
-class EpisodeInline (admin.StackedInline):
-    model = models.Episode
-    extra = 0
-
-
 class ScheduleInline (admin.TabularInline):
-    model = models.Schedule
-    extra = 0
+    model = Schedule
+    extra = 1
 
 
+class DiffusionInline (admin.TabularInline):
+    model = Diffusion
+    raw_id_fields=('parent',)
+    fields = ('parent', 'type', 'date')
+    extra = 1
 
-
-class EventInline (admin.StackedInline):
-    model = models.Event
-    extra = 0
 
 #
 # Parents
@@ -37,14 +37,13 @@ class MetadataAdmin (admin.ModelAdmin):
         ( None, {
             'fields': [ 'title', 'tags' ]
         }),
-        ( 'metadata', {
+        ( None, {
             'fields': [ 'date' ],
-            'classes': ['collapse']
         }),
     ]
 
 
-    def save_model(self, request, obj, form, change):
+    def save_model (self, request, obj, form, change):
         if not obj.author:
             obj.author = request.user
         obj.save()
@@ -52,37 +51,30 @@ class MetadataAdmin (admin.ModelAdmin):
 
 
 class PublicationAdmin (MetadataAdmin):
+    formfield_overrides = {
+        models.TextField: {'widget': Textarea(attrs={'style':'width:calc(100% - 12px);'})},
+    }
+
     fieldsets = copy.deepcopy(MetadataAdmin.fieldsets)
 
-    list_display = ('id', 'title', 'date', 'public')
-    list_filter = ['date', 'public']
+    list_display = ('id', 'title', 'date', 'private')
+    list_filter = ['date', 'private']
     search_fields = ['title', 'content']
 
 
-    def __init__ (self, *args, **kwargs):
-        self.fieldsets[0][1]['fields'].insert(1, 'subtitle')
-        self.fieldsets[0][1]['fields'] += [ 'img', 'content' ]
-        self.fieldsets[1][1]['fields'] += [ 'parent', 'public', 'can_comment', 'meta' ],
-        return super(PublicationAdmin, self).__init__(*args, **kwargs)
+    fieldsets[0][1]['fields'].insert(1, 'subtitle')
+    fieldsets[0][1]['fields'] += [ 'img', 'content' ]
+    fieldsets[1][1]['fields'] += [ 'parent', 'private', 'can_comment' ] #, 'meta' ],
 
 
 #
 # ModelAdmin list
 #
-#class TrackAdmin (MetadataAdmin):
-#    fieldsets = [
-#        (None, { 'fields': [ 'title', 'artist', 'version', 'tags'] } )
-#    ]
-
 class SoundFileAdmin (MetadataAdmin):
     fieldsets = [
         (None, { 'fields': ['title', 'tags', 'file', 'embed' ] } ),
         ('metadata', { 'fields': ['duration', 'date', 'podcastable', 'fragment' ] } )
     ]
-
-    #inlines = [ EpisodeInline ]
-    #inlines = [ EventInline ]
-
 
 
 class ArticleAdmin (PublicationAdmin):
@@ -91,13 +83,11 @@ class ArticleAdmin (PublicationAdmin):
     fieldsets[1][1]['fields'] += ['static_page']
 
 
-
 class ProgramAdmin (PublicationAdmin):
     fieldsets           = copy.deepcopy(PublicationAdmin.fieldsets)
-    inlines             = [ EpisodeInline, ScheduleInline ]
+    inlines             = [ ScheduleInline ]
 
-    fieldsets[1][1]['fields'] += ['email', 'url', 'non_stop']
-
+    fieldsets[1][1]['fields'] += ['email', 'url']
 
 
 class EpisodeAdmin (PublicationAdmin):
@@ -105,15 +95,16 @@ class EpisodeAdmin (PublicationAdmin):
     inlines             = [ SoundFileInline ]
     list_filter         = ['parent'] + PublicationAdmin.list_filter
 
+    # FIXME later: when we have thousands of tracks
     fieldsets[0][1]['fields'] += ['tracks']
 
 
 
-admin.site.register(models.Track)
-admin.site.register(models.SoundFile, SoundFileAdmin)
-admin.site.register(models.Schedule)
-admin.site.register(models.Article, ArticleAdmin)
-admin.site.register(models.Program, ProgramAdmin)
-admin.site.register(models.Episode, EpisodeAdmin)
-admin.site.register(models.Event)
+admin.site.register(Track)
+admin.site.register(SoundFile, SoundFileAdmin)
+admin.site.register(Schedule)
+admin.site.register(Article, ArticleAdmin)
+admin.site.register(Program, ProgramAdmin)
+admin.site.register(Episode, EpisodeAdmin)
+admin.site.register(Diffusion)
 

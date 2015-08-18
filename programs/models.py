@@ -12,6 +12,7 @@ from django.utils.html                      import strip_tags
 
 # extensions
 from taggit.managers                        import TaggableManager
+from sortedm2m.fields                       import SortedManyToManyField
 
 import programs.settings                    as settings
 
@@ -48,7 +49,7 @@ ugettext_lazy('second and fourth')
 ugettext_lazy('one on two')
 
 
-EventType = {
+DiffusionType = {
     'diffuse':  0x01   # the diffusion is planified or done
   , 'cancel':   0x03   # the diffusion has been canceled from grid; useful to give
                         # the info to the users
@@ -107,10 +108,10 @@ class Metadata (Model):
                       _('date')
                     , default = timezone.datetime.now
                   )
-    public      = models.BooleanField(
-                      _('public')
+    private     = models.BooleanField(
+                      _('private')
                     , default = False
-                    , help_text = _('publication is public')
+                    , help_text = _('publication is private')
                   )
     # FIXME: add a field to specify if the element should be listed or not
     meta        = models.TextField(
@@ -250,6 +251,14 @@ class Track (Model):
 
 
 class SoundFile (Metadata):
+    def get_upload_path (self, filename):
+        if self.parent and self.parent.parent:
+            path = self.parent.parent.path
+        else:
+            path = settings.AIRCOX_SOUNDFILE_DEFAULT_DIR
+        return os.path.join(path, filename)
+
+
     parent      = models.ForeignKey(
                       'Episode'
                     , verbose_name = _('episode')
@@ -258,7 +267,7 @@ class SoundFile (Metadata):
                   )
     file        = models.FileField( #FIXME: filefield
                       _('file')
-                    , upload_to = lambda i, f: SoundFile.__upload_path(i,f)
+                    , upload_to = get_upload_path
                   )
     duration    = models.TimeField(
                       _('duration')
@@ -295,14 +304,6 @@ class SoundFile (Metadata):
         if not self.pk:
             self.date = self.get_mtime()
         super(SoundFile, self).save(*args, **kwargs)
-
-
-    def __upload_path (self, filename):
-        if self.parent and self.parent.parent:
-            path = self.parent.parent.path
-        else:
-            path = settings.AIRCOX_SOUNDFILE_DEFAULT_DIR
-        return os.path.join(path, filename)
 
 
     def __str__ (self):
@@ -482,11 +483,6 @@ class Program (Publication):
                   , blank = True
                   , null = True
                   )
-    non_stop    = models.SmallIntegerField(
-                    _('non-stop priority')
-                  , help_text = _('this program can be used as non-stop')
-                  , default = -1
-                  )
 
     @property
     def path (self):
@@ -526,10 +522,9 @@ class Episode (Publication):
                       Program
                     , verbose_name = _('parent')
                   )
-    tracks      = models.ManyToManyField(
+    tracks      = SortedManyToManyField(
                       Track
-                    , verbose_name = _('playlist')
-                    , blank = True
+                    , verbose_name = _('tracks')
                   )
 
 
@@ -539,11 +534,11 @@ class Episode (Publication):
 
 
 
-class Event (Model):
+class Diffusion (Model):
     """
-    Event logs and planifications.
+    Diffusion logs and planifications.
 
-    An event is:
+    A diffusion is:
     - scheduled: when it has been generated following programs' Schedule
     - planified: when it has been generated manually/ponctually or scheduled
     """
@@ -556,23 +551,29 @@ class Event (Model):
                       Program
                   )
     type        = models.SmallIntegerField(
-                      _('type')
-                    , choices = [ (y, x) for x,y in EventType.items() ]
+                      verbose_name = _('type')
+                    , choices = [ (y, x) for x,y in DiffusionType.items() ]
                   )
-    date        = models.DateTimeField( _('date of event start') )
+    date        = models.DateTimeField( _('date of diffusion start') )
     stream      = models.SmallIntegerField(
-                      _('stream')
+                      verbose_name = _('stream')
                     , default = 0
-                    , help_text = 'stream id on which the event happens'
+                    , help_text = 'stream id on which the diffusion happens'
                   )
     scheduled   = models.BooleanField(
-                      _('automated')
+                      verbose_name = _('automated')
                     , default = False
-                    , help_text = 'event generated automatically'
+                    , help_text = 'diffusion generated automatically'
                   )
 
+    def save (self, *args, **kwargs):
+        if self.parent:
+            self.program = self.parent.parent
+        super(Diffusion, self).save(*args, **kwargs)
+
+
     class Meta:
-        verbose_name = _('Event')
-        verbose_name_plural = _('Events')
+        verbose_name = _('Diffusion')
+        verbose_name_plural = _('Diffusions')
 
 
