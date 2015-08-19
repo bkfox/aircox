@@ -3,6 +3,9 @@ import copy
 from django.contrib     import admin
 from django.forms       import Textarea
 from django.db          import models
+
+import autocomplete_light as al
+
 from programs.models    import *
 
 
@@ -51,6 +54,13 @@ class MetadataAdmin (admin.ModelAdmin):
 
 
 class PublicationAdmin (MetadataAdmin):
+    form = al.modelform_factory(
+               Episode
+             , fields = '__all__'
+             # , autocomplete_fields = ['tracks']
+             )
+
+
     formfield_overrides = {
         models.TextField: {'widget': Textarea(attrs={'style':'width:calc(100% - 12px);'})},
     }
@@ -72,8 +82,8 @@ class PublicationAdmin (MetadataAdmin):
 #
 class SoundFileAdmin (MetadataAdmin):
     fieldsets = [
-        (None, { 'fields': ['title', 'tags', 'file', 'embed' ] } ),
-        ('metadata', { 'fields': ['duration', 'date', 'podcastable', 'fragment' ] } )
+        (None, { 'fields': ['title', 'tags', 'file' ] } ),
+        (None, { 'fields': ['duration', 'date', 'fragment' ] } )
     ]
 
 
@@ -90,13 +100,16 @@ class ProgramAdmin (PublicationAdmin):
     fieldsets[1][1]['fields'] += ['email', 'url']
 
 
+
+
 class EpisodeAdmin (PublicationAdmin):
-    fieldsets           = copy.deepcopy(PublicationAdmin.fieldsets)
-    inlines             = [ SoundFileInline ]
+    fieldsets = copy.deepcopy(PublicationAdmin.fieldsets)
+    #inlines             = [ SoundFileInline ]
     list_filter         = ['parent'] + PublicationAdmin.list_filter
 
     # FIXME later: when we have thousands of tracks
     fieldsets[0][1]['fields'] += ['tracks']
+    fieldsets[0][1]['fields'] += ['sounds']
 
 
 

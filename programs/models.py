@@ -259,15 +259,11 @@ class SoundFile (Metadata):
         return os.path.join(path, filename)
 
 
-    parent      = models.ForeignKey(
-                      'Episode'
-                    , verbose_name = _('episode')
-                    , blank = True
-                    , null = True
-                  )
     file        = models.FileField( #FIXME: filefield
                       _('file')
                     , upload_to = get_upload_path
+                    , blank = True
+                    , null = True
                   )
     duration    = models.TimeField(
                       _('duration')
@@ -430,6 +426,56 @@ class Schedule (Model):
         return dates
 
 
+    def diffusions_of_month (self, date = None, exclude_saved = False):
+        """
+        Return a list of generated (unsaved) diffusions for this program for the
+        month of the given date. If exclude_saved, exclude all diffusions that
+        are yet in the database.
+
+        When a diffusion is created, it tries to attach the corresponding
+        episode.
+        """
+        if not date:
+            date = timezone.datetime.today()
+
+        diffusions = []
+
+        dates = self.dates_of_month()
+        saved = Diffusion.objects.filter( date__in = dates
+                                        , program = self.parent )
+
+        # existing diffusions
+        for saved_item in saved:
+            dates.remove(saved_item.date)
+            if not exclude_saved:
+                diffusions.append(saved_item)
+
+        # others
+        for date in dates:
+            # get episode
+            ep_date = date
+            if self.rerun:
+                ep_date = self.rerun.date
+
+            episode = Episode.objects().filter( date = ep_date
+                                              , parent = self.parent )
+            episode  = episode[0] if episode.count() else None
+
+            # make diffusion
+            diffusion = Diffusion( parent = episode
+                         , program = self.parent
+                         , type = DiffusionType['diffuse']
+                         , date = date
+                         , stream = settings.AIRCOX_SCHEDULED_STREAM
+                         , selfd = True
+                         )
+            diffusion.program = self.program
+            diffusions.append(diffusion)
+        return diffusions
+
+
+
+
     def __str__ (self):
         frequency = [ x for x,y in Frequency.items() if y == self.frequency ]
         return self.parent.title + ': ' + frequency[0]
@@ -447,6 +493,7 @@ class Article (Publication):
                   , verbose_name = _('parent')
                   , blank = True
                   , null = True
+                  , help_text = _('parent article')
                   )
     static_page = models.BooleanField(
                     _('static page')
@@ -471,6 +518,7 @@ class Program (Publication):
                   , verbose_name = _('parent')
                   , blank = True
                   , null = True
+                  , help_text = _('parent article')
                   )
     email       = models.EmailField(
                     _('email')
@@ -491,16 +539,14 @@ class Program (Publication):
                            )
 
 
-    def find_schedules (self, date):
+    def find_schedule (self, date):
         """
-        Return schedules that match a given date
+        Return the first schedule that matches a given date
         """
         schedules = Schedule.objects.filter(parent = self)
-        r = []
         for schedule in schedules:
-            if schedule.match_date(date):
-                r.append(schedule)
-        return r
+            if schedule.match(date):
+                return schedule
 
 
     class Meta:
@@ -521,12 +567,17 @@ class Episode (Publication):
     parent      = models.ForeignKey(
                       Program
                     , verbose_name = _('parent')
+                    , help_text = _('parent program')
                   )
     tracks      = SortedManyToManyField(
+    #tracks      = models.ManyToManyField(
                       Track
                     , verbose_name = _('tracks')
                   )
-
+    sounds      = SortedManyToManyField(
+                      SoundFile
+                    , verbose_name = _('sounds')
+                  )
 
     class Meta:
         verbose_name = _('Episode')
@@ -546,9 +597,11 @@ class Diffusion (Model):
                       Episode
                     , blank = True
                     , null = True
+                    , verbose_name = _('episode')
                   )
     program     = models.ForeignKey (
                       Program
+                    , verbose_name = _('program')
                   )
     type        = models.SmallIntegerField(
                       verbose_name = _('type')
@@ -561,7 +614,7 @@ class Diffusion (Model):
                     , help_text = 'stream id on which the diffusion happens'
                   )
     scheduled   = models.BooleanField(
-                      verbose_name = _('automated')
+                      verbose_name = _('scheduled')
                     , default = False
                     , help_text = 'diffusion generated automatically'
                   )
