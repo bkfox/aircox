@@ -13,8 +13,8 @@ from programs.models    import *
 # Inlines
 #
 # TODO: inherits from the corresponding admin view
-class SoundFileInline (admin.TabularInline):
-    model = SoundFile
+class SoundInline (admin.TabularInline):
+    model = Sound
     raw_id_fields=('parent',)
     fields = ('title', 'private', 'tags', 'file', 'duration', 'fragment')
     extra = 1
@@ -80,9 +80,9 @@ class PublicationAdmin (MetadataAdmin):
 #
 # ModelAdmin list
 #
-class SoundFileAdmin (MetadataAdmin):
+class SoundAdmin (MetadataAdmin):
     fieldsets = [
-        (None, { 'fields': ['title', 'tags', 'file' ] } ),
+        (None, { 'fields': ['title', 'tags', 'path' ] } ),
         (None, { 'fields': ['duration', 'date', 'fragment' ] } )
     ]
 
@@ -104,7 +104,7 @@ class ProgramAdmin (PublicationAdmin):
 
 class EpisodeAdmin (PublicationAdmin):
     fieldsets = copy.deepcopy(PublicationAdmin.fieldsets)
-    #inlines             = [ SoundFileInline ]
+    #inlines             = [ SoundInline ]
     list_filter         = ['parent'] + PublicationAdmin.list_filter
 
     # FIXME later: when we have thousands of tracks
@@ -114,7 +114,7 @@ class EpisodeAdmin (PublicationAdmin):
 
 
 admin.site.register(Track)
-admin.site.register(SoundFile, SoundFileAdmin)
+admin.site.register(Sound, SoundAdmin)
 admin.site.register(Schedule)
 admin.site.register(Article, ArticleAdmin)
 admin.site.register(Program, ProgramAdmin)

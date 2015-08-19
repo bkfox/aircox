@@ -156,9 +156,7 @@ class Publication (Metadata):
                     , help_text = _('comments are enabled on this publication')
                   )
 
-    #
-    # Class methods
-    #
+
     @staticmethod
     def _exclude_args (allow_unpublished = False, prefix = ''):
         if allow_unpublished:
@@ -188,10 +186,7 @@ class Publication (Metadata):
         return e or None
 
 
-    #
-    # Instance's methods
-    #
-    def get_parents ( self, order_by = "desc", include_fields = None ):
+    def get_parents (self, order_by = "desc", include_fields = None):
         """
         Return an array of the parents of the item.
         If include_fields is an array of files to include.
@@ -250,7 +245,20 @@ class Track (Model):
 
 
 
-class SoundFile (Metadata):
+class Sound (Metadata):
+    """
+    A Sound is the representation of a sound, that can be:
+    - An episode podcast/complete record
+    - An episode partial podcast
+    - An episode is a part of the episode but not usable for direct podcast
+
+    We can manage this using the "public" and "fragment" fields. If a Sound is
+    public, then we can podcast it. If a Sound is a fragment, then it is not
+    usable for diffusion.
+
+    Each sound file can be associated to a filesystem's file or an embedded
+    code (for external podcasts).
+    """
     def get_upload_path (self, filename):
         if self.parent and self.parent.parent:
             path = self.parent.parent.path
@@ -259,9 +267,12 @@ class SoundFile (Metadata):
         return os.path.join(path, filename)
 
 
-    file        = models.FileField( #FIXME: filefield
+    path        = models.FilePathField( #FIXME: filefield
                       _('file')
-                    , upload_to = get_upload_path
+                    , path = settings.AIRCOX_PROGRAMS_DIR
+                    , match = '*(' \
+                            + '|'.join(settings.AIRCOX_SOUNDFILE_EXT) + ')$'
+                    , recursive = True
                     , blank = True
                     , null = True
                   )
@@ -291,7 +302,7 @@ class SoundFile (Metadata):
         """
         Get the last modification date from file
         """
-        mtime = os.stat(self.file.path).st_mtime
+        mtime = os.stat(self.path).st_mtime
         mtime = timezone.datetime.fromtimestamp(mtime)
         return timezone.make_aware(mtime, timezone.get_current_timezone())
 
@@ -299,11 +310,11 @@ class SoundFile (Metadata):
     def save (self, *args, **kwargs):
         if not self.pk:
             self.date = self.get_mtime()
-        super(SoundFile, self).save(*args, **kwargs)
+        super(Sound, self).save(*args, **kwargs)
 
 
     def __str__ (self):
-        return str(self.id) + ': ' + self.file.name
+        return str(self.id) + ': ' + self.path
 
 
     class Meta:
@@ -474,8 +485,6 @@ class Schedule (Model):
         return diffusions
 
 
-
-
     def __str__ (self):
         frequency = [ x for x,y in Frequency.items() if y == self.frequency ]
         return self.parent.title + ': ' + frequency[0]
@@ -543,6 +552,7 @@ class Program (Publication):
         """
         Return the first schedule that matches a given date
         """
+        print(self)
         schedules = Schedule.objects.filter(parent = self)
         for schedule in schedules:
             if schedule.match(date):
@@ -570,12 +580,13 @@ class Episode (Publication):
                     , help_text = _('parent program')
                   )
     tracks      = SortedManyToManyField(
-    #tracks      = models.ManyToManyField(
                       Track
+                    , blank = True
                     , verbose_name = _('tracks')
                   )
     sounds      = SortedManyToManyField(
-                      SoundFile
+                      Sound
+                    , blank = True
                     , verbose_name = _('sounds')
                   )
 
@@ -593,7 +604,7 @@ class Diffusion (Model):
     - scheduled: when it has been generated following programs' Schedule
     - planified: when it has been generated manually/ponctually or scheduled
     """
-    parent      = models.ForeignKey (
+    episode     = models.ForeignKey (
                       Episode
                     , blank = True
                     , null = True
@@ -620,8 +631,8 @@ class Diffusion (Model):
                   )
 
     def save (self, *args, **kwargs):
-        if self.parent:
-            self.program = self.parent.parent
+        if self.episode:
+            self.program = self.episode.parent
         super(Diffusion, self).save(*args, **kwargs)
 
 

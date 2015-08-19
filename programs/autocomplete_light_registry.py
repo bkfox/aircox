@@ -4,7 +4,7 @@ from programs.models import *
 
 class SoundAutocomplete(al.AutocompleteModelBase):
     search_fields = ['title', 'file']
-    model = SoundFile
+    model = Sound
 
 al.register(SoundAutocomplete)
 

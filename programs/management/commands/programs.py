@@ -175,7 +175,7 @@ models = {
                       , 'frequency': int }
                     , { 'rerun': int } # FIXME: redo
                     )
-  , 'soundfile': Model( models.SoundFile
+  , 'sound': Model( models.Sound
                     , { 'parent_id': int, 'date': DateTime, 'file': str
                       , 'duration': Time}
                     , { 'fragment': bool, 'embed': str, 'removed': bool }
