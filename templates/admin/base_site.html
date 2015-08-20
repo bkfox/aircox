@@ -1,7 +1,25 @@
 {% extends "admin/base.html" %}
 
 {% block extrahead %}
-    <!-- <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.js" type="text/javascript"></script> -->
-    {% include 'autocomplete_light/static.html' %}
+<style>
+
+.grp-autocomplete-wrapper-m2m:focus, .grp-autocomplete-wrapper-m2m.grp-state-focus,
+.grp-autocomplete-wrapper-m2m {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  box-shadow: none;
+}
+
+.grp-autocomplete-wrapper-m2m ul.grp-repr li.grp-search {
+  background-color: #FDFDFD;
+  border: 1px solid #CCC;
+}
+
+.grp-autocomplete-wrapper-m2m ul.grp-repr li {
+  float: none;
+  display: block;
+}
+</style>
+
 {% endblock %}
 

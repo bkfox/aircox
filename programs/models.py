@@ -12,7 +12,6 @@ from django.utils.html                      import strip_tags
 
 # extensions
 from taggit.managers                        import TaggableManager
-from sortedm2m.fields                       import SortedManyToManyField
 
 import programs.settings                    as settings
 
@@ -112,12 +111,6 @@ class Metadata (Model):
                       _('private')
                     , default = False
                     , help_text = _('publication is private')
-                  )
-    # FIXME: add a field to specify if the element should be listed or not
-    meta        = models.TextField(
-                      _('meta')
-                    , blank = True
-                    , null = True
                   )
     tags        = TaggableManager(
                       _('tags')
@@ -234,8 +227,13 @@ class Track (Model):
     tags        = TaggableManager( blank = True )
 
 
+    @staticmethod
+    def autocomplete_search_fields():
+        return ("artist__icontains", 'title__icontains')
+
+
     def __str__(self):
-        return ' '.join([self.title, _('by'), self.artist,
+        return ' '.join([self.artist, ':', self.title,
                 (self.version and ('(' + self.version + ')') or '') ])
 
 
@@ -313,8 +311,13 @@ class Sound (Metadata):
         super(Sound, self).save(*args, **kwargs)
 
 
+    @staticmethod
+    def autocomplete_search_fields():
+        return ("id__iexact", "path__icontains", 'title__icontains')
+
+
     def __str__ (self):
-        return str(self.id) + ': ' + self.path
+        return '/'.join(self.path.split('/')[-3:])
 
 
     class Meta:
@@ -564,7 +567,6 @@ class Program (Publication):
         verbose_name_plural = _('Programs')
 
 
-
 class Episode (Publication):
     # Note:
     #   We do not especially need a duration here, because even if an
@@ -579,12 +581,12 @@ class Episode (Publication):
                     , verbose_name = _('parent')
                     , help_text = _('parent program')
                   )
-    tracks      = SortedManyToManyField(
+    tracks      = models.ManyToManyField(
                       Track
                     , blank = True
                     , verbose_name = _('tracks')
                   )
-    sounds      = SortedManyToManyField(
+    sounds      = models.ManyToManyField(
                       Sound
                     , blank = True
                     , verbose_name = _('sounds')
