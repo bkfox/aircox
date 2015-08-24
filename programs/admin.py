@@ -1,11 +1,11 @@
 import copy
 
 from django.contrib     import admin
-from django.forms       import Textarea
 from django.db          import models
 
-# import autocomplete_light as al
+from suit.admin import SortableTabularInline
 
+from programs.forms     import *
 from programs.models    import *
 
 
@@ -13,13 +13,6 @@ from programs.models    import *
 # Inlines
 #
 # TODO: inherits from the corresponding admin view
-class SoundInline (admin.TabularInline):
-    model = Sound
-    raw_id_fields=('parent',)
-    fields = ('title', 'private', 'tags', 'file', 'duration', 'fragment')
-    extra = 1
-
-
 class ScheduleInline (admin.TabularInline):
     model = Schedule
     extra = 1
@@ -27,9 +20,18 @@ class ScheduleInline (admin.TabularInline):
 
 class DiffusionInline (admin.TabularInline):
     model = Diffusion
-    raw_id_fields=('parent',)
-    fields = ('parent', 'type', 'date')
+    fields = ('episode', 'type', 'begin', 'end', 'stream')
+    readonly_fields = ('begin', 'end', 'stream')
     extra = 1
+
+
+
+class TrackInline (SortableTabularInline):
+    fields = ['artist', 'title', 'tags', 'position']
+    form = TrackForm
+    model = Track
+    sortable = 'position'
+    extra = 10
 
 
 #
@@ -41,7 +43,7 @@ class MetadataAdmin (admin.ModelAdmin):
             'fields': [ 'title', 'tags' ]
         }),
         ( None, {
-            'fields': [ 'date' ],
+            'fields': [ 'date', 'public', 'enumerable' ],
         }),
     ]
 
@@ -52,17 +54,19 @@ class MetadataAdmin (admin.ModelAdmin):
         obj.save()
 
 
+from autocomplete_light.contrib.taggit_field import TaggitWidget, TaggitField
 class PublicationAdmin (MetadataAdmin):
     fieldsets = copy.deepcopy(MetadataAdmin.fieldsets)
 
-    list_display = ('id', 'title', 'date', 'private')
-    list_filter = ['date', 'private']
+    list_display = ('id', 'title', 'date', 'public', 'parent')
+    list_filter = ['date', 'public', 'parent', 'author']
     search_fields = ['title', 'content']
 
 
     fieldsets[0][1]['fields'].insert(1, 'subtitle')
     fieldsets[0][1]['fields'] += [ 'img', 'content' ]
-    fieldsets[1][1]['fields'] += [ 'parent', 'private', 'can_comment' ] #, 'meta' ],
+    fieldsets[1][1]['fields'] += [ 'parent' ] #, 'meta' ],
+
 
 
 #
@@ -90,17 +94,19 @@ class ProgramAdmin (PublicationAdmin):
 
 class EpisodeAdmin (PublicationAdmin):
     fieldsets = copy.deepcopy(PublicationAdmin.fieldsets)
-    #inlines             = [ SoundInline ]
     list_filter         = ['parent'] + PublicationAdmin.list_filter
 
-    # FIXME later: when we have thousands of tracks
-    fieldsets[0][1]['fields'] += ['tracks']
     fieldsets[0][1]['fields'] += ['sounds']
 
-    raw_id_fields = ('tracks', 'sounds')
-    autocomplete_lookup_fields = {
-        'm2m': ['tracks', 'sounds'],
-    }
+    inlines = (TrackInline, DiffusionInline)
+
+
+class DiffusionAdmin (admin.ModelAdmin):
+    list_display = ('type', 'begin', 'end', 'episode', 'program', 'stream')
+    list_filter = ('type', 'begin', 'program', 'stream')
+
+
+
 
 admin.site.register(Track)
 admin.site.register(Sound, SoundAdmin)
@@ -108,5 +114,5 @@ admin.site.register(Schedule)
 admin.site.register(Article, ArticleAdmin)
 admin.site.register(Program, ProgramAdmin)
 admin.site.register(Episode, EpisodeAdmin)
-admin.site.register(Diffusion)
+admin.site.register(Diffusion, DiffusionAdmin)
 

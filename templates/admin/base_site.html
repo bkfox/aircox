@@ -1,8 +1,33 @@
 {% extends "admin/base.html" %}
 
 {% block extrahead %}
+{% include 'autocomplete_light/static.html' %}
 <style>
 
+/** autocomplete override **/
+.autocomplete-light-widget .deck [data-value] .remove {
+  float: right;
+}
+
+.autocomplete-light-widget .deck [data-value],
+.autocomplete-light-widget .deck .choice {
+  display: block;
+}
+
+.control-group .add-related,
+.inline-group .add-related {
+  vertical-align: bottom;
+}
+
+
+/** suit **/
+.controls textarea,
+.controls .vTextField {
+    width: calc(100% - 10px);
+}
+
+
+/** grappelli **/
 .grp-autocomplete-wrapper-m2m:focus, .grp-autocomplete-wrapper-m2m.grp-state-focus,
 .grp-autocomplete-wrapper-m2m {
   background: rgba(255, 255, 255, 0.2);
@@ -19,6 +44,7 @@
   float: none;
   display: block;
 }
+
 </style>
 
 {% endblock %}

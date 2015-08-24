@@ -49,10 +49,10 @@ ugettext_lazy('one on two')
 
 
 DiffusionType = {
-    'diffuse':  0x01   # the diffusion is planified or done
-  , 'cancel':   0x03   # the diffusion has been canceled from grid; useful to give
+    'diffuse':   0x01   # the diffusion is planified or done
+  , 'scheduled': 0x02   # the diffusion been scheduled automatically
+  , 'cancel':    0x03   # the diffusion has been canceled from grid; useful to give
                         # the info to the users
-  , 'stop':     0x04   # the diffusion been arbitrary stopped (non-stop or not)
 }
 
 
@@ -107,10 +107,15 @@ class Metadata (Model):
                       _('date')
                     , default = timezone.datetime.now
                   )
-    private     = models.BooleanField(
-                      _('private')
-                    , default = False
-                    , help_text = _('publication is private')
+    public      = models.BooleanField(
+                      _('public')
+                    , default = True
+                    , help_text = _('publication is public')
+                  )
+    enumerable  = models.BooleanField(
+                      _('enumerable')
+                    , default = True
+                    , help_text = _('publication is listable')
                   )
     tags        = TaggableManager(
                       _('tags')
@@ -143,7 +148,7 @@ class Publication (Metadata):
                       _('content')
                     , blank = True
                   )
-    can_comment = models.BooleanField(
+    commentable = models.BooleanField(
                       _('enable comments')
                     , default = True
                     , help_text = _('comments are enabled on this publication')
@@ -209,32 +214,31 @@ class Publication (Metadata):
 # Usable models
 #
 class Track (Model):
+    # There are no nice solution for M2M relations ship (even without
+    # through) in django-admin. So we unfortunately need to make one-
+    # to-one relations and add a position argument
+    episode     = models.ForeignKey(
+                      'Episode'
+                    , null = True
+                  )
     artist      = models.CharField(
                       _('artist')
                     , max_length = 128
-                    , blank = True
                   )
     title       = models.CharField(
                       _('title')
                     , max_length = 128
                   )
-    version     = models.CharField(
-                      _('version')
-                    , max_length = 128
-                    , blank = True
-                    , help_text = _('additional informations on that track')
-                  )
     tags        = TaggableManager( blank = True )
-
-
-    @staticmethod
-    def autocomplete_search_fields():
-        return ("artist__icontains", 'title__icontains')
+    # position can be used to specify a position in seconds
+    position    = models.SmallIntegerField(
+                      default = 0
+                    , help_text=_('position in the playlist')
+                  )
 
 
     def __str__(self):
-        return ' '.join([self.artist, ':', self.title,
-                (self.version and ('(' + self.version + ')') or '') ])
+        return ' '.join([self.artist, ':', self.title])
 
 
     class Meta:
@@ -532,12 +536,14 @@ class Program (Publication):
                   , null = True
                   , help_text = _('parent article')
                   )
+
     email       = models.EmailField(
                     _('email')
                   , max_length = 128
                   , null = True
                   , blank = True
                   )
+
     url         = models.URLField(
                     _('website')
                   , blank = True
@@ -567,6 +573,7 @@ class Program (Publication):
         verbose_name_plural = _('Programs')
 
 
+
 class Episode (Publication):
     # Note:
     #   We do not especially need a duration here, because even if an
@@ -580,11 +587,6 @@ class Episode (Publication):
                       Program
                     , verbose_name = _('parent')
                     , help_text = _('parent program')
-                  )
-    tracks      = models.ManyToManyField(
-                      Track
-                    , blank = True
-                    , verbose_name = _('tracks')
                   )
     sounds      = models.ManyToManyField(
                       Sound
@@ -620,22 +622,23 @@ class Diffusion (Model):
                       verbose_name = _('type')
                     , choices = [ (y, x) for x,y in DiffusionType.items() ]
                   )
-    date        = models.DateTimeField( _('date of diffusion start') )
+    begin       = models.DateTimeField( _('start of diffusion start') )
+    end         = models.DateTimeField( _('stop of diffusion stop') )
     stream      = models.SmallIntegerField(
                       verbose_name = _('stream')
                     , default = 0
                     , help_text = 'stream id on which the diffusion happens'
                   )
-    scheduled   = models.BooleanField(
-                      verbose_name = _('scheduled')
-                    , default = False
-                    , help_text = 'diffusion generated automatically'
-                  )
+
 
     def save (self, *args, **kwargs):
         if self.episode:
             self.program = self.episode.parent
         super(Diffusion, self).save(*args, **kwargs)
+
+    def __str__ (self):
+        return self.program.title + ' on ' + str(self.start) \
+               + str(self.type)
 
 
     class Meta:
