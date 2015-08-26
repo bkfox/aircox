@@ -35,7 +35,6 @@ Frequency = {
 }
 
 
-
 # Translators: html safe values
 ugettext_lazy('ponctual')
 ugettext_lazy('every')
@@ -54,7 +53,6 @@ DiffusionType = {
     'cancel': 0x03,     # the diffusion has been canceled from grid; useful to
                         # give the info to the users
 }
-
 
 
 class Model (models.Model):
@@ -93,8 +91,7 @@ class Metadata (Model):
     author = models.ForeignKey (
         User,
         verbose_name = _('author'),
-        blank = True,
-        null = True,
+        blank = True, null = True,
     )
     title = models.CharField(
         _('title'),
@@ -207,7 +204,6 @@ class Track (Model):
     # to-one relations and add a position argument
     episode = models.ForeignKey(
         'Episode',
-        null = True,
     )
     artist = models.CharField(
         _('artist'),
@@ -217,10 +213,10 @@ class Track (Model):
         _('title'),
         max_length = 128,
     )
-    tags        = TaggableManager( blank = True )
+    tags = TaggableManager( blank = True )
     # position can be used to specify a position in seconds for non-stop
     # programs
-    position    = models.SmallIntegerField(
+    position = models.SmallIntegerField(
         default = 0,
         help_text=_('position in the playlist'),
     )
@@ -252,13 +248,11 @@ class Sound (Metadata):
         path = settings.AIRCOX_PROGRAMS_DIR,
         match = '*(' + '|'.join(settings.AIRCOX_SOUNDFILE_EXT) + ')$',
         recursive = True,
-        blank = True,
-        null = True,
+        blank = True, null = True,
     )
     duration = models.TimeField(
         _('duration'),
-        blank = True,
-        null = True,
+        blank = True, null = True,
     )
     fragment = models.BooleanField(
         _('incomplete sound'),
@@ -267,8 +261,7 @@ class Sound (Metadata):
     )
     embed = models.TextField(
         _('embed HTML code from external website'),
-        blank = True,
-        null = True,
+        blank = True, null = True,
         help_text = _('if set, consider the sound podcastable'),
     )
     removed = models.BooleanField(
@@ -300,14 +293,12 @@ class Sound (Metadata):
 class Schedule (Model):
     parent = models.ForeignKey(
         'Program',
-        blank = True,
-        null = True,
+        blank = True, null = True,
     )
     begin = models.DateTimeField(_('begin'))
     end = models.DateTimeField(
         _('end'),
-        blank = True,
-        null = True,
+        blank = True, null = True,
     )
     frequency = models.SmallIntegerField(
         _('frequency'),
@@ -315,8 +306,7 @@ class Schedule (Model):
     )
     rerun = models.ForeignKey(
         'self',
-        blank = True,
-        null = True,
+        blank = True, null = True,
         help_text = "Schedule of a rerun",
     )
 
@@ -361,8 +351,7 @@ class Schedule (Model):
         """
         Set the time of a datetime to the schedule's one
         """
-        return date.replace(hour = self.date.hour,
-                            minute = self.date.minute)
+        return date.replace(hour = self.date.hour, minute = self.date.minute)
 
     def dates_of_month (self, date = None):
         """
@@ -375,17 +364,15 @@ class Schedule (Model):
         if not date:
             date = timezone.datetime.today()
 
-        date = timezone.datetime(year = date.year,
-                                 month = date.month,
-                                 day = 1)
+        date = timezone.datetime(year = date.year, month = date.month, day = 1)
         wday = self.date.weekday()
         fwday = date.weekday()
 
         # move date to the date weekday of the schedule
         # check on SO#3284452 for the formula
         date += timezone.timedelta(
-                    days = (7 if fwday > wday else 0) - fwday + wday
-                )
+            days = (7 if fwday > wday else 0) - fwday + wday
+        )
         fwday = date.weekday()
 
         # special frequency case
@@ -402,7 +389,7 @@ class Schedule (Model):
 
         dates = []
         for week in range(0,5):
-            # NB: there can be five weeks in a month
+            # there can be five weeks in a month
             if not weeks & (0b1 << week):
                 continue
 
@@ -447,14 +434,13 @@ class Schedule (Model):
 
             # make diffusion
             diffusion = Diffusion(
-                            episode = episode,
-                            program = self.parent,
-                            type = DiffusionType['scheduled'],
-                            begin = date,
-                            end = timezone.datetime.combine(date.date(),
-                                                            self.end.time()),
-                            stream = settings.AIRCOX_SCHEDULED_STREAM,
-                        )
+                episode = episode,
+                program = self.parent,
+                type = DiffusionType['scheduled'],
+                begin = date,
+                end = timezone.datetime.combine(date.date(), self.end.time()),
+                stream = settings.AIRCOX_SCHEDULED_STREAM
+            )
             diffusion.program = self.program
             diffusions.append(diffusion)
         return diffusions
@@ -472,8 +458,7 @@ class Article (Publication):
     parent = models.ForeignKey(
         'self',
         verbose_name = _('parent'),
-        blank = True,
-        null = True,
+        blank = True, null = True,
         help_text = _('parent article'),
     )
     static_page = models.BooleanField(
@@ -482,7 +467,6 @@ class Article (Publication):
     )
     focus = models.BooleanField(
         _('article is focus'),
-        blank = True,
         default = False,
     )
 
@@ -495,20 +479,17 @@ class Program (Publication):
     parent = models.ForeignKey(
         Article,
         verbose_name = _('parent'),
-        blank = True,
-        null = True,
+        blank = True, null = True,
         help_text = _('parent article'),
     )
     email = models.EmailField(
         _('email'),
         max_length = 128,
-        null = True,
-        blank = True,
+        null = True, blank = True,
     )
     url = models.URLField(
         _('website'),
-        blank = True,
-        null = True,
+        blank = True, null = True,
     )
     non_stop = models.BooleanField(
         _('non-stop'),
@@ -568,8 +549,7 @@ class Diffusion (Model):
     """
     episode = models.ForeignKey (
         Episode,
-        blank = True,
-        null = True,
+        blank = True, null = True,
         verbose_name = _('episode'),
     )
     program = models.ForeignKey (
@@ -583,8 +563,7 @@ class Diffusion (Model):
     begin = models.DateTimeField( _('start of the diffusion') )
     end = models.DateTimeField(
         _('end of the diffusion'),
-        blank = True,
-        null = True,
+        blank = True, null = True,
     )
     stream = models.SmallIntegerField(
         verbose_name = _('stream'),
@@ -604,5 +583,4 @@ class Diffusion (Model):
     class Meta:
         verbose_name = _('Diffusion')
         verbose_name_plural = _('Diffusions')
-
 
