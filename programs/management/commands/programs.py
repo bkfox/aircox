@@ -255,7 +255,6 @@ class Command (BaseCommand):
             parser.epilog += '\n  ' + model.model.type() + ': \n' \
                            + model.to_string()
 
-
     def handle (self, *args, **options):
         model = options.get('model')
         if not model:

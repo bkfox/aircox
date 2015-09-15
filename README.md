@@ -2,9 +2,13 @@
 Platform to manage radio programs, schedules, cms, etc. -- main test repo
 
 # Applications
-* **programs**: core application that have all defined models
+* **programs**: programs, episodes, schedules, sounds and tracks;
+* **streams**:  streams and diffusions, links with LiquidSoap;
+* **website**: website rendering, using models defined by the previous apps;
 
-# Note
-We make the assumption that admin is used with autocomplete-light and django-suit
 
+# Code and names conventions and uses
+* absolute dates: datetime fields, named "begin" "end" for ranges and "date" otherwise
+* time range: timefield name "duration"
+* parents: when only one parent, named "parent", otherwise model/reference's name
 

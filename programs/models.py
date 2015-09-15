@@ -7,7 +7,7 @@ from django.template.defaultfilters         import slugify
 from django.contrib.contenttypes.fields     import GenericForeignKey
 from django.contrib.contenttypes.models     import ContentType
 from django.utils.translation               import ugettext as _, ugettext_lazy
-from django.utils                           import timezone
+from django.utils                           import timezone as tz
 from django.utils.html                      import strip_tags
 
 # extensions
@@ -16,75 +16,42 @@ from taggit.managers                        import TaggableManager
 import programs.settings                    as settings
 
 
-
-# Frequency for schedules. Basically, it is a mask of bits where each bit is a
-# week. Bits > rank 5 are used for special schedules.
-# Important: the first week is always the first week where the weekday of the
-# schedule is present.
-Frequency = {
-    'ponctual':         0b000000,
-    'first':            0b000001,
-    'second':           0b000010,
-    'third':            0b000100,
-    'fourth':           0b001000,
-    'last':             0b010000,
-    'first and third':  0b000101,
-    'second and fourth': 0b001010,
-    'every':            0b011111,
-    'one on two':       0b100000,
-}
+def date_or_default (date, date_only = False):
+    """
+    Return date or default value (now) if not defined, and remove time info
+    if date_only is True
+    """
+    date = date or tz.datetime.today()
+    if not tz.is_aware(date):
+        date = tz.make_aware(date)
+    if date_only:
+        return date.replace(hour = 0, minute = 0, second = 0, microsecond = 0)
+    return date
 
 
-# Translators: html safe values
-ugettext_lazy('ponctual')
-ugettext_lazy('every')
-ugettext_lazy('first')
-ugettext_lazy('second')
-ugettext_lazy('third')
-ugettext_lazy('fourth')
-ugettext_lazy('first and third')
-ugettext_lazy('second and fourth')
-ugettext_lazy('one on two')
+#class Model (models.Model):
+#    @classmethod
+#    def type (cl):
+#        """
+#        Return a string with the type of the model (class name lowered)
+#        """
+#        name = cl.__name__.lower()
+#        return name
+
+#    @classmethod
+#    def name (cl, plural = False):
+#        """
+#        Return the name of the model using meta.verbose_name
+#        """
+#        if plural:
+#            return cl._meta.verbose_name_plural.title()
+#        return cl._meta.verbose_name.title()
+#
+#    class Meta:
+#        abstract = True
 
 
-DiffusionType = {
-    'diffuse': 0x01,    # the diffusion is planified or done
-    'scheduled': 0x02,  # the diffusion has been scheduled automatically
-    'cancel': 0x03,     # the diffusion has been canceled from grid; useful to
-                        # give the info to the users
-}
-
-
-class Model (models.Model):
-    @classmethod
-    def type (cl):
-        """
-        Return a string with the type of the model (class name lowered)
-        """
-        name = cl.__name__.lower()
-        return name
-
-    @classmethod
-    def type_plural (cl):
-        """
-        Return a string with the name in plural of the model (cf. name())
-        """
-        return cl.type() + 's'
-
-    @classmethod
-    def name (cl, plural = False):
-        """
-        Return the name of the model using meta.verbose_name
-        """
-        if plural:
-            return cl._meta.verbose_name_plural.title()
-        return cl._meta.verbose_name.title()
-
-    class Meta:
-        abstract = True
-
-
-class Metadata (Model):
+class Metadata (models.Model):
     """
     meta is used to extend a model for future needs
     """
@@ -99,7 +66,7 @@ class Metadata (Model):
     )
     date = models.DateTimeField(
         _('date'),
-        default = timezone.datetime.now,
+        default = tz.datetime.now,
     )
     public = models.BooleanField(
         _('public'),
@@ -170,7 +137,7 @@ class Publication (Metadata):
 
         res = {}
         res[prefix + 'public'] = False
-        res[prefix + 'date__gt'] = timezone.now()
+        res[prefix + 'date__gt'] = tz.now()
         return res
 
     @classmethod
@@ -182,7 +149,7 @@ class Publication (Metadata):
         Otherwise, return None
         """
         kwargs['public'] = True
-        kwargs['date__lte'] = timezone.now()
+        kwargs['date__lte'] = tz.now()
 
         e = cl.objects.filter(**kwargs)
 
@@ -197,8 +164,7 @@ class Publication (Metadata):
         abstract = True
 
 
-
-class Track (Model):
+class Track (models.Model):
     # There are no nice solution for M2M relations ship (even without
     # through) in django-admin. So we unfortunately need to make one-
     # to-one relations and add a position argument
@@ -250,6 +216,11 @@ class Sound (Metadata):
         recursive = True,
         blank = True, null = True,
     )
+    embed = models.TextField(
+        _('embed HTML code from external website'),
+        blank = True, null = True,
+        help_text = _('if set, consider the sound podcastable'),
+    )
     duration = models.TimeField(
         _('duration'),
         blank = True, null = True,
@@ -258,11 +229,6 @@ class Sound (Metadata):
         _('incomplete sound'),
         default = False,
         help_text = _("the file has been cut"),
-    )
-    embed = models.TextField(
-        _('embed HTML code from external website'),
-        blank = True, null = True,
-        help_text = _('if set, consider the sound podcastable'),
     )
     removed = models.BooleanField(
         default = False,
@@ -274,8 +240,8 @@ class Sound (Metadata):
         Get the last modification date from file
         """
         mtime = os.stat(self.path).st_mtime
-        mtime = timezone.datetime.fromtimestamp(mtime)
-        return timezone.make_aware(mtime, timezone.get_current_timezone())
+        mtime = tz.datetime.fromtimestamp(mtime)
+        return tz.make_aware(mtime, timezone.get_current_timezone())
 
     def save (self, *args, **kwargs):
         if not self.pk:
@@ -290,15 +256,33 @@ class Sound (Metadata):
         verbose_name_plural = _('Sounds')
 
 
-class Schedule (Model):
+class Schedule (models.Model):
+    # Frequency for schedules. Basically, it is a mask of bits where each bit is
+    # a week. Bits > rank 5 are used for special schedules.
+    # Important: the first week is always the first week where the weekday of
+    # the schedule is present.
+    # For ponctual programs, there is no need for a schedule, only a diffusion
+    Frequency = {
+        'first':            0b000001,
+        'second':           0b000010,
+        'third':            0b000100,
+        'fourth':           0b001000,
+        'last':             0b010000,
+        'first and third':  0b000101,
+        'second and fourth': 0b001010,
+        'every':            0b011111,
+        'one on two':       0b100000,
+    }
+    for key, value in Frequency.items():
+        ugettext_lazy(key)
+
     parent = models.ForeignKey(
         'Program',
         blank = True, null = True,
     )
-    begin = models.DateTimeField(_('begin'))
-    end = models.DateTimeField(
-        _('end'),
-        blank = True, null = True,
+    date = models.DateTimeField(_('date'))
+    duration = models.TimeField(
+        _('duration'),
     )
     frequency = models.SmallIntegerField(
         _('frequency'),
@@ -310,16 +294,14 @@ class Schedule (Model):
         help_text = "Schedule of a rerun",
     )
 
-    def match (self, date = None, check_time = False):
+    def match (self, date = None, check_time = True):
         """
         Return True if the given datetime matches the schedule
         """
-        if not date:
-            date = timezone.datetime.today()
+        date = date_or_default(date)
 
         if self.date.weekday() == date.weekday() and self.match_week(date):
-            return (check_time and self.date.time() == date.date.time()) \
-                    or True
+            return self.date.time() == date.time() if check_time else True
         return False
 
     def match_week (self, date = None):
@@ -328,17 +310,12 @@ class Schedule (Model):
         otherwise.
         If the schedule is ponctual, return None.
         """
-        if not date:
-            date = timezone.datetime.today()
-
-        if self.frequency == Frequency['ponctual']:
-            return None
-
-        if self.frequency == Frequency['one on two']:
+        date = date_or_default(date)
+        if self.frequency == Schedule.Frequency['one on two']:
             week = date.isocalendar()[1]
             return (week % 2) == (self.date.isocalendar()[1] % 2)
 
-        first_of_month = timezone.datetime.date(date.year, date.month, 1)
+        first_of_month = tz.datetime.date(date.year, date.month, 1)
         week = date.isocalendar()[1] - first_of_month.isocalendar()[1]
 
         # weeks of month
@@ -355,32 +332,23 @@ class Schedule (Model):
 
     def dates_of_month (self, date = None):
         """
-        Return a list with all matching dates of the month of the given
-        date (= today).
+        Return a list with all matching dates of date.month (=today)
         """
-        if self.frequency == Frequency['ponctual']:
-            return None
-
-        if not date:
-            date = timezone.datetime.today()
-
-        date = timezone.datetime(year = date.year, month = date.month, day = 1)
+        date = date_or_default(date, True).replace(day=1)
         wday = self.date.weekday()
         fwday = date.weekday()
 
         # move date to the date weekday of the schedule
         # check on SO#3284452 for the formula
-        date += timezone.timedelta(
-            days = (7 if fwday > wday else 0) - fwday + wday
-        )
+        date += tz.timedelta(days = (7 if fwday > wday else 0) - fwday + wday)
         fwday = date.weekday()
 
         # special frequency case
         weeks = self.frequency
-        if self.frequency == Frequency['last']:
-            date += timezone.timedelta(month = 1, days = -7)
+        if self.frequency == Schedule.Frequency['last']:
+            date += tz.timedelta(month = 1, days = -7)
             return self.normalize([date])
-        if weeks == Frequency['one on two']:
+        if weeks == Schedule.Frequency['one on two']:
             # if both week are the same, then the date week of the month
             # matches. Note: wday % 2 + fwday % 2 => (wday + fwday) % 2
             fweek = date.isocalendar()[1]
@@ -392,61 +360,55 @@ class Schedule (Model):
             # there can be five weeks in a month
             if not weeks & (0b1 << week):
                 continue
-
-            wdate = date + timezone.timedelta(days = week * 7)
+            wdate = date + tz.timedelta(days = week * 7)
             if wdate.month == date.month:
                 dates.append(self.normalize(wdate))
         return dates
 
-    def diffusions_of_month (self, date = None, exclude_saved = False):
+    def diffusions_of_month (self, date, exclude_saved = False):
         """
-        Return a list of generated (unsaved) diffusions for this program for the
-        month of the given date. If exclude_saved, exclude all diffusions that
-        are yet in the database.
+        Return a list of Diffusion instances, from month of the given date, that
+        can be not in the database.
 
-        When a diffusion is created, it tries to attach the corresponding
-        episode.
+        If exclude_saved, exclude all diffusions that are yet in the database.
+
+        When a Diffusion is created, it tries to attach the corresponding
+        episode using a match of episode.date (and takes care of rerun case);
         """
-        if not date:
-            date = timezone.datetime.today()
-
-        dates = self.dates_of_month()
+        dates = self.dates_of_month(date)
         saved = Diffusion.objects.filter(date__in = dates,
                                          program = self.parent)
         diffusions = []
 
         # existing diffusions
-        for saved_item in saved:
-            dates.remove(saved_item.date)
+        for item in saved:
+            if item.date in dates:
+                dates.remove(item.date)
             if not exclude_saved:
-                diffusions.append(saved_item)
+                diffusions.append(item)
 
         # others
         for date in dates:
-            # get episode
             ep_date = date
             if self.rerun:
-                ep_date = self.rerun.date
+                ep_date -= self.date - self.rerun.date
 
-            episode = Episode.objects().filter(date = ep_date,
-                                               parent = self.parent)
-            episode  = episode[0] if episode.count() else None
+            episode = Episode.objects.filter(date = date,
+                                             parent = self.parent)
+            episode = episode[0] if episode.count() else None
 
-            # make diffusion
-            diffusion = Diffusion(
-                episode = episode,
-                program = self.parent,
-                type = DiffusionType['scheduled'],
-                begin = date,
-                end = timezone.datetime.combine(date.date(), self.end.time()),
-                stream = settings.AIRCOX_SCHEDULED_STREAM
-            )
-            diffusion.program = self.program
-            diffusions.append(diffusion)
+            diffusions.append(Diffusion(
+                                 episode = episode,
+                                 program = self.parent,
+                                 stream = self.parent.stream,
+                                 type = Diffusion.Type['unconfirmed'],
+                                 date = date,
+                             ))
         return diffusions
 
     def __str__ (self):
-        frequency = [ x for x,y in Frequency.items() if y == self.frequency ]
+        frequency = [ x for x,y in Schedule.Frequency.items()
+                        if y == self.frequency ]
         return self.parent.title + ': ' + frequency[0]
 
     class Meta:
@@ -454,7 +416,104 @@ class Schedule (Model):
         verbose_name_plural = _('Schedules')
 
 
+class Diffusion (models.Model):
+    Type = {
+        'normal':       0x00,   # simple diffusion (done/planed)
+        'unconfirmed':  0x01,   # scheduled by the generator but not confirmed for diffusion
+        'cancel':       0x02,   # cancellation happened; used to inform users
+        'restart':      0x03,   # manual restart; used to remix/give up antenna
+        'stop':         0x04,   # diffusion has been forced to stop
+    }
+    for key, value in Type.items():
+        ugettext_lazy(key)
+
+    episode = models.ForeignKey (
+        'Episode',
+        blank = True, null = True,
+        verbose_name = _('episode'),
+    )
+    program = models.ForeignKey (
+        'Program',
+        verbose_name = _('program'),
+    )
+    # program.stream can change, but not the stream;
+    stream = models.ForeignKey(
+        'Stream',
+        verbose_name = _('stream'),
+        default = 0,
+        help_text = 'stream id on which the diffusion happens',
+    )
+    type = models.SmallIntegerField(
+        verbose_name = _('type'),
+        choices = [ (y, x) for x,y in Type.items() ],
+    )
+    date = models.DateTimeField( _('start of the diffusion') )
+
+    def save (self, *args, **kwargs):
+        if self.episode: # FIXME self.episode or kwargs['episode']
+            self.program = self.episode.parent
+        # check type against stream's type
+        super(Diffusion, self).save(*args, **kwargs)
+
+    def __str__ (self):
+        return self.program.title + ' on ' + str(self.date) \
+               + str(self.type)
+
+    class Meta:
+        verbose_name = _('Diffusion')
+        verbose_name_plural = _('Diffusions')
+
+
+class Stream (models.Model):
+    Type = {
+        'random':   0x00,   # selection using random function
+        'schedule': 0x01,   # selection using schedule
+    }
+    for key, value in Type.items():
+        ugettext_lazy(key)
+
+    # FIXME: id as integer?
+    name = models.CharField(
+        _('name'),
+        max_length = 32,
+        blank = True,
+        null = True,
+    )
+    type = models.SmallIntegerField(
+        verbose_name = _('type'),
+        choices = [ (y, x) for x,y in Type.items() ],
+    )
+    # FIXME unique value / suit's orderable
+    #
+    priority = models.SmallIntegerField(
+        _('priority'),
+        default = 0,
+        help_text = _('priority of the stream')
+    )
+    public = models.BooleanField(
+        _('public'),
+        default = True,
+        help_text = _('content is public'),
+    )
+    enumerable = models.BooleanField(
+        _('enumerable'),
+        default = True,
+        help_text = _('publication is listable'),
+    )
+
+    # get info for:
+    # - random lists
+    # - scheduled lists
+    # link between Streams and Programs:
+    #   - hours range (non-stop)
+    #   - stream/pgm
+
+    def __str__ (self):
+        return self.name + ' / ' + str(self.priority)
+
+
 class Article (Publication):
+    # FIXME: move to website?
     parent = models.ForeignKey(
         'self',
         verbose_name = _('parent'),
@@ -482,6 +541,10 @@ class Program (Publication):
         blank = True, null = True,
         help_text = _('parent article'),
     )
+    stream = models.ForeignKey(
+        Stream,
+        verbose_name = _('stream'),
+    )
     email = models.EmailField(
         _('email'),
         max_length = 128,
@@ -491,9 +554,10 @@ class Program (Publication):
         _('website'),
         blank = True, null = True,
     )
-    non_stop = models.BooleanField(
-        _('non-stop'),
-        default = False,
+    active = models.BooleanField(
+        _('inactive'),
+        default = True,
+        help_text = _('if not set this program is no longer active')
     )
 
     @property
@@ -507,21 +571,11 @@ class Program (Publication):
         """
         schedules = Schedule.objects.filter(parent = self)
         for schedule in schedules:
-            if schedule.match(date):
+            if schedule.match(date, check_time = False):
                 return schedule
-
-    class Meta:
-        verbose_name = _('Program')
-        verbose_name_plural = _('Programs')
 
 
 class Episode (Publication):
-    # Note:
-    #   We do not especially need a duration here, because even if an
-    #   program's schedule can have specified durations, in practice this
-    #   duration may vary. Furthermore, we want the users have to enter a
-    #   minimum of values.
-    #   Duration can be retrieved from the sound file if there is one.
     parent = models.ForeignKey(
         Program,
         verbose_name = _('parent'),
@@ -537,50 +591,4 @@ class Episode (Publication):
         verbose_name = _('Episode')
         verbose_name_plural = _('Episodes')
 
-
-
-class Diffusion (Model):
-    """
-    Diffusion logs and planifications.
-
-    A diffusion is:
-    - scheduled: when it has been generated following programs' Schedule
-    - planified: when it has been generated manually/ponctually or scheduled
-    """
-    episode = models.ForeignKey (
-        Episode,
-        blank = True, null = True,
-        verbose_name = _('episode'),
-    )
-    program = models.ForeignKey (
-        Program,
-        verbose_name = _('program'),
-    )
-    type = models.SmallIntegerField(
-        verbose_name = _('type'),
-        choices = [ (y, x) for x,y in DiffusionType.items() ],
-    )
-    begin = models.DateTimeField( _('start of the diffusion') )
-    end = models.DateTimeField(
-        _('end of the diffusion'),
-        blank = True, null = True,
-    )
-    stream = models.SmallIntegerField(
-        verbose_name = _('stream'),
-        default = 0,
-        help_text = 'stream id on which the diffusion happens',
-    )
-
-    def save (self, *args, **kwargs):
-        if self.episode:
-            self.program = self.episode.parent
-        super(Diffusion, self).save(*args, **kwargs)
-
-    def __str__ (self):
-        return self.program.title + ' on ' + str(self.start) \
-               + str(self.type)
-
-    class Meta:
-        verbose_name = _('Diffusion')
-        verbose_name_plural = _('Diffusions')
 

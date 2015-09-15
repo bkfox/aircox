@@ -3,16 +3,20 @@ import copy
 from django.contrib     import admin
 from django.db          import models
 
-from suit.admin import SortableTabularInline
+from suit.admin import SortableTabularInline, SortableModelAdmin
+from autocomplete_light.contrib.taggit_field import TaggitWidget, TaggitField
 
 from programs.forms     import *
 from programs.models    import *
-
 
 #
 # Inlines
 #
 # TODO: inherits from the corresponding admin view
+class SoundInline (admin.TabularInline):
+    model = Sound
+
+
 class ScheduleInline (admin.TabularInline):
     model = Schedule
     extra = 1
@@ -20,10 +24,9 @@ class ScheduleInline (admin.TabularInline):
 
 class DiffusionInline (admin.TabularInline):
     model = Diffusion
-    fields = ('episode', 'type', 'begin', 'end', 'stream')
-    readonly_fields = ('begin', 'end', 'stream')
+    fields = ('episode', 'type', 'date', 'stream')
+    readonly_fields = ('date', 'stream')
     extra = 1
-
 
 
 class TrackInline (SortableTabularInline):
@@ -34,9 +37,6 @@ class TrackInline (SortableTabularInline):
     extra = 10
 
 
-#
-# Parents
-#
 class MetadataAdmin (admin.ModelAdmin):
     fieldsets = [
         ( None, {
@@ -47,31 +47,27 @@ class MetadataAdmin (admin.ModelAdmin):
         }),
     ]
 
-
     def save_model (self, request, obj, form, change):
+        # FIXME: if request.data.author?
         if not obj.author:
             obj.author = request.user
         obj.save()
 
 
-from autocomplete_light.contrib.taggit_field import TaggitWidget, TaggitField
 class PublicationAdmin (MetadataAdmin):
     fieldsets = copy.deepcopy(MetadataAdmin.fieldsets)
 
-    list_display = ('id', 'title', 'date', 'public', 'parent')
+    list_display = ('id', 'title', 'date', 'public', 'enumerable', 'parent')
     list_filter = ['date', 'public', 'parent', 'author']
+    list_editable = ('public', 'enumerable')
     search_fields = ['title', 'content']
-
 
     fieldsets[0][1]['fields'].insert(1, 'subtitle')
     fieldsets[0][1]['fields'] += [ 'img', 'content' ]
     fieldsets[1][1]['fields'] += [ 'parent' ] #, 'meta' ],
 
 
-
-#
-# ModelAdmin list
-#
+@admin.register(Sound)
 class SoundAdmin (MetadataAdmin):
     fieldsets = [
         (None, { 'fields': ['title', 'tags', 'path' ] } ),
@@ -79,12 +75,21 @@ class SoundAdmin (MetadataAdmin):
     ]
 
 
+@admin.register(Stream)
+class StreamAdmin (SortableModelAdmin):
+    list_display = ('id', 'name', 'type', 'public', 'enumerable', 'priority')
+    list_editable = ('public', 'enumerable')
+    sortable = "priority"
+
+
+@admin.register(Article)
 class ArticleAdmin (PublicationAdmin):
     fieldsets           = copy.deepcopy(PublicationAdmin.fieldsets)
 
     fieldsets[1][1]['fields'] += ['static_page']
 
 
+@admin.register(Program)
 class ProgramAdmin (PublicationAdmin):
     fieldsets           = copy.deepcopy(PublicationAdmin.fieldsets)
     inlines             = [ ScheduleInline ]
@@ -92,6 +97,7 @@ class ProgramAdmin (PublicationAdmin):
     fieldsets[1][1]['fields'] += ['email', 'url']
 
 
+@admin.register(Episode)
 class EpisodeAdmin (PublicationAdmin):
     fieldsets = copy.deepcopy(PublicationAdmin.fieldsets)
     list_filter         = ['parent'] + PublicationAdmin.list_filter
@@ -101,18 +107,20 @@ class EpisodeAdmin (PublicationAdmin):
     inlines = (TrackInline, DiffusionInline)
 
 
+@admin.register(Diffusion)
 class DiffusionAdmin (admin.ModelAdmin):
-    list_display = ('type', 'begin', 'end', 'episode', 'program', 'stream')
-    list_filter = ('type', 'begin', 'program', 'stream')
+    list_display = ('id', 'type', 'date', 'episode', 'program', 'stream')
+    list_filter = ('type', 'date', 'program', 'stream')
+    list_editable = ('type', 'date')
 
-
+    def get_queryset(self, request):
+        qs = super(DiffusionAdmin, self).get_queryset(request)
+        if 'type__exact' in request.GET and \
+                str(Diffusion.Type['unconfirmed']) in request.GET['type__exact']:
+            return qs
+        return qs.exclude(type = Diffusion.Type['unconfirmed'])
 
 
 admin.site.register(Track)
-admin.site.register(Sound, SoundAdmin)
 admin.site.register(Schedule)
-admin.site.register(Article, ArticleAdmin)
-admin.site.register(Program, ProgramAdmin)
-admin.site.register(Episode, EpisodeAdmin)
-admin.site.register(Diffusion, DiffusionAdmin)
 
