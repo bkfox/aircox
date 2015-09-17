@@ -1,5 +1,22 @@
+"""
+Check over programs' sound files, scan them, and add them to the
+database if they are not there yet.
+
+It tries to parse the file name to get the date of the diffusion of an
+episode and associate the file with it; We use the following format:
+    yyyymmdd[_n][_][title]
+
+Where:
+    'yyyy' is the year of the episode's diffusion;
+    'mm' is the month of the episode's diffusion;
+    'dd' is the day of the episode's diffusion;
+    'n' is the number of the episode (if multiple episodes);
+    'title' the title of the sound;
+"""
+
 import os
 import re
+from argparse import RawTextHelpFormatter
 
 from django.core.management.base    import BaseCommand, CommandError
 from django.utils                   import timezone
@@ -8,8 +25,7 @@ import programs.settings            as settings
 
 
 class Command (BaseCommand):
-    help= "Take a look at the programs directory to check on new podcasts"
-
+    help= __doc__
 
     def report (self, program = None, component = None, *content):
         if not component:
@@ -17,82 +33,71 @@ class Command (BaseCommand):
         else:
             print('{}, {}: '.format(program, component), *content)
 
+    def add_arguments (self, parser):
+        parser.formatter_class=RawTextHelpFormatter
 
     def handle (self, *args, **options):
         programs = Program.objects.filter()
 
         for program in programs:
-            self.scan_dir(program, program.path + '/public', public = True)
-            self.scan_dir(program, program.path + '/podcasts', embed = True)
-            self.scan_dir(program, program.path + '/private')
+            self.check(program, program.path + '/public', public = True)
+            self.check(program, program.path + '/podcasts', embed = True)
+            self.check(program, program.path + '/private')
 
-
-    def ensure_episode (self, program, sound):
+    def get_sound_info (self, path):
         """
-        For a given program, check if there is an episode to associate to.
-        This makes the assumption that the name of the file has the following
-        format:
-            yyyymmdd[_n][_][title]
-
-            Where:
-            yyyy: is the year of the episode's diffusion
-            mm: is the month of the episode's diffusion
-            dd: is the day of the episode's diffusion
-            n: is the number of the episode (if multiple episodes)
-
-        We check against the diffusion rather than the episode's date, because
-        this is the diffusion that defines when the sound will be podcasted for
-        the first time.
-
-        We create the episode if it does not exists only if there is a diffusion
-        matching the date of the sound, in order to respect the hierarchy of
-        episode creation.
-
-        We dont create episode if it does not exists, because only episodes must
-        be created through diffusions
-
-        TODO: multiple diffusions at the same date
+        Parse file name to get info on the assumption it has the correct
+        format (given in Command.help)
         """
-        path = os.path.basename(sound.path)
         r = re.search('^(?P<year>[0-9]{4})'
-                       '(?P<month>[0-9]{2})'
-                       '(?P<day>[0-9]{2})'
-                       '(_(?P<n>[0-9]+))?'
-                       '_?(?P<name>.*)\.\w+$'
-                     , path)
+                      '(?P<month>[0-9]{2})'
+                      '(?P<day>[0-9]{2})'
+                      '(_(?P<n>[0-9]+))?'
+                      '_?(?P<name>.*)\.\w+$',
+                      os.path.basename(path))
 
-        if not r:
-            return
-        r = r.groupdict()
+        if not (r and r.groupdict()):
+            self.report(program, path, "file path is not correct, use defaults")
+            r = {
+                'name': os.path.splitext(path)
+            }
+        r['path'] = path
+        return r
 
+    def ensure_sound (self, sound_info):
+        """
+        Return the Sound for the given sound_info; If not found, create it
+        without saving it.
+        """
+        sound = Sound.objects.filter(path = path)
+        if sound:
+            sound = sound[0]
+        else:
+            sound = Sound(path = path, title = sound_info['name'])
+
+    def find_episode (self, program, sound_info):
+        """
+        For a given program, and sound path check if there is an episode to
+        associate to, using the diffusion's date.
+
+        If there is no matching episode, return None.
+        """
         # check on episodes
-        diffusion = Diffusion.objects.filter( program = program
-                                            , date__year = int(r['year'])
-                                            , date__month = int(r['month'])
-                                            , date__day = int(r['day'])
-                                            )
+        diffusion = Diffusion.objects.filter(
+            program = program,
+            date__year = int(sound_info['year']),
+            date__month = int(sound_info['month']),
+            date__day = int(sound_info['day'])
+        )
+
         if not diffusion.count():
             self.report(program, path, 'no diffusion found for the given date')
             return
-
         diffusion = diffusion[0]
-        if diffusion.episode:
-            return diffusion.episode
-
-        episode = Episode( parent = program
-                         , title = r.get('name') \
-                                    .replace('_', ' ') \
-                                    .capitalize()
-                         , date = diffusion.date
-                         )
-        episode.save()
-        if program.tags.all():
-            episode.tags.add(program.tags.all())
-        self.report(program, path, 'episode does not exist, create')
-        return episode
+        return diffusion.episode or None
 
 
-    def scan_dir (self, program, dir_path, public = False, embed = False):
+    def check (self, program, dir_path, public = False, embed = False):
         """
         Scan a given directory that is associated to the given program, and
         update sounds information
@@ -110,27 +115,22 @@ class Command (BaseCommand):
 
             paths.append(path)
 
-            # check for new sound files or update
-            sound = Sound.objects.filter(path = path)
-            if sound.count():
-                sound = sound[0]
-            else:
-                sound = Sound(path = path)
+            sound_info = self.get_sound_info(path)
+            sound = self.ensure_sound(sound_info)
 
-            # check for the corresponding episode:
-            episode = self.ensure_episode(program, sound)
-            if not episode:
-                continue
+            sound.public = public
 
-            sound.save()
-
-            for sound_ in episode.sounds.get_queryset():
-                if sound_.path == sound.path:
-                    continue
-
-            self.report(program, path, 'associate sound to episode '
-                       , episode.id)
-            episode.sounds.add(sound)
-
+            # episode and relation
+            if 'year' in sound_info:
+                episode = self.find_episode(program, sound_info)
+                if episode:
+                    for sound_ in episode.sounds.get_queryset():
+                        if sound_.path == sound.path:
+                            break
+                    else:
+                        self.report(program, path, 'associate sound to episode ',
+                                    episode.id)
+                        episode.sounds.add(sound)
         return paths
+
 

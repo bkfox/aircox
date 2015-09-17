@@ -1,3 +1,20 @@
+"""
+Manage diffusions using schedules, to update, clean up or check diffusions.
+A diffusion generated using this utility is considered has type "unconfirmed",
+and is not considered as ready for diffusion; To do so, users must confirm the
+diffusion case by changing it's type to "default".
+
+Different actions are available:
+- "update" is the process that is used to generated them using programs
+schedules for the (given) month.
+
+- "clean" will remove all diffusions that are still unconfirmed and have been
+planified before the (given) month.
+
+- "check" will remove all diffusions that are unconfirmed and have been planified
+from the (given) month and later.
+"""
+from argparse                       import RawTextHelpFormatter
 from django.core.management.base    import BaseCommand, CommandError
 from django.utils                   import timezone as tz
 from programs.models                import *
@@ -11,7 +28,7 @@ class Actions:
             items += schedule.diffusions_of_month(date, exclude_saved = True)
             print('> {} new diffusions for schedule #{} ({})'.format(
                     len(items), schedule.id, str(schedule)
-                  ))
+                 ))
 
         print('total of {} diffusions will be created. To be used, they need '
               'manual approval.'.format(len(items)))
@@ -44,9 +61,11 @@ class Actions:
 
 
 class Command (BaseCommand):
-    help= 'Monitor diffusions'
+    help= __doc__
 
     def add_arguments (self, parser):
+        parser.formatter_class=RawTextHelpFormatter
+
         now = tz.datetime.today()
 
         group = parser.add_argument_group('action')
@@ -66,9 +85,7 @@ class Command (BaseCommand):
                    'schedule')
 
         group = parser.add_argument_group(
-            'date',
-            'this information is used by the action, starting at the first (!) '
-                'of the given month')
+            'date')
         group.add_argument('--year', type=int, default=now.year,
                             help='used by update, default is today\'s year')
         group.add_argument('--month', type=int, default=now.month,
