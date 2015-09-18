@@ -119,16 +119,10 @@ class Model:
         elif options.get('tail'):
             items = items[-options.get('tail'):]
 
-        if options.get('json'):
-            if options.get('fields'):
-                print(json.dumps(fields))
-            print(json.dumps(items, default = lambda x: str(x)))
-            return
-
         if options.get('fields'):
-            print(' || '.join(fields))
-        for item in items:
-            print(' || '.join(item))
+            print(json.dumps(fields))
+        print(json.dumps(items, default = lambda x: str(x)))
+        return
 
 
 def DateTime (string):

@@ -1,19 +1,17 @@
 import os
 
-# django
-from django.db                              import models
-from django.contrib.auth.models             import User
-from django.template.defaultfilters         import slugify
-from django.contrib.contenttypes.fields     import GenericForeignKey
-from django.contrib.contenttypes.models     import ContentType
-from django.utils.translation               import ugettext as _, ugettext_lazy
-from django.utils                           import timezone as tz
-from django.utils.html                      import strip_tags
+from django.db import models
+from django.contrib.auth.models import User
+from django.template.defaultfilters import slugify
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
+from django.utils.translation import ugettext as _, ugettext_lazy
+from django.utils import timezone as tz
+from django.utils.html import strip_tags
 
-# extensions
-from taggit.managers                        import TaggableManager
+from taggit.managers import TaggableManager
 
-import programs.settings                    as settings
+import programs.settings as settings
 
 
 def date_or_default (date, date_only = False):
@@ -27,28 +25,6 @@ def date_or_default (date, date_only = False):
     if date_only:
         return date.replace(hour = 0, minute = 0, second = 0, microsecond = 0)
     return date
-
-
-#class Model (models.Model):
-#    @classmethod
-#    def type (cl):
-#        """
-#        Return a string with the type of the model (class name lowered)
-#        """
-#        name = cl.__name__.lower()
-#        return name
-
-#    @classmethod
-#    def name (cl, plural = False):
-#        """
-#        Return the name of the model using meta.verbose_name
-#        """
-#        if plural:
-#            return cl._meta.verbose_name_plural.title()
-#        return cl._meta.verbose_name.title()
-#
-#    class Meta:
-#        abstract = True
 
 
 class Metadata (models.Model):
@@ -73,15 +49,13 @@ class Metadata (models.Model):
         default = True,
         help_text = _('publication is public'),
     )
-    enumerable = models.BooleanField(
-        _('enumerable'),
-        default = True,
-        help_text = _('publication is listable'),
-    )
     tags = TaggableManager(
         _('tags'),
         blank = True,
     )
+
+    def get_slug_name (self):
+        return slugify(self.title)
 
     class Meta:
         abstract = True
@@ -107,28 +81,6 @@ class Publication (Metadata):
         default = True,
         help_text = _('comments are enabled on this publication'),
     )
-
-    def get_slug_name (self):
-        return slugify(self.title)
-
-    def get_parents (self, order_by = "desc", include_fields = None):
-        """
-        Return an array of the parents of the item.
-        If include_fields is an array of files to include.
-        """
-        # TODO: fields included
-        # FIXME: parameter name + container
-        parents = [ self ]
-        while parents[-1].parent:
-            parent = parents[-1].parent
-            if parent not in parents:
-                # avoid cycles
-                parents.append(parent)
-        parents = parents[1:]
-
-        if order_by == 'desc':
-            return reversed(parents)
-        return parents
 
     @staticmethod
     def _exclude_args (allow_unpublished = False, prefix = ''):
@@ -181,7 +133,7 @@ class Track (models.Model):
     )
     tags = TaggableManager( blank = True )
     # position can be used to specify a position in seconds for non-stop
-    # programs
+    # programs or a position in the playlist
     position = models.SmallIntegerField(
         default = 0,
         help_text=_('position in the playlist'),
@@ -389,11 +341,11 @@ class Schedule (models.Model):
 
         # others
         for date in dates:
-            ep_date = date
+            first_date = date
             if self.rerun:
-                ep_date -= self.date - self.rerun.date
+                first_date -= self.date - self.rerun.date
 
-            episode = Episode.objects.filter(date = date,
+            episode = Episode.objects.filter(date = first_date,
                                              parent = self.parent)
             episode = episode[0] if episode.count() else None
 
@@ -418,7 +370,7 @@ class Schedule (models.Model):
 
 class Diffusion (models.Model):
     Type = {
-        'normal':       0x00,   # simple diffusion (done/planed)
+        'default':      0x00,   # simple diffusion (done/planed)
         'unconfirmed':  0x01,   # scheduled by the generator but not confirmed for diffusion
         'cancel':       0x02,   # cancellation happened; used to inform users
         'restart':      0x03,   # manual restart; used to remix/give up antenna
@@ -472,9 +424,8 @@ class Stream (models.Model):
     for key, value in Type.items():
         ugettext_lazy(key)
 
-    # FIXME: id as integer?
-    name = models.CharField(
-        _('name'),
+    title = models.CharField(
+        _('title'),
         max_length = 32,
         blank = True,
         null = True,
@@ -483,8 +434,6 @@ class Stream (models.Model):
         verbose_name = _('type'),
         choices = [ (y, x) for x,y in Type.items() ],
     )
-    # FIXME unique value / suit's orderable
-    #
     priority = models.SmallIntegerField(
         _('priority'),
         default = 0,
@@ -493,12 +442,7 @@ class Stream (models.Model):
     public = models.BooleanField(
         _('public'),
         default = True,
-        help_text = _('content is public'),
-    )
-    enumerable = models.BooleanField(
-        _('enumerable'),
-        default = True,
-        help_text = _('publication is listable'),
+        help_text = _('program list is public'),
     )
 
     # get info for:
@@ -509,39 +453,11 @@ class Stream (models.Model):
     #   - stream/pgm
 
     def __str__ (self):
-        return self.name + ' / ' + str(self.priority)
-
-
-class Article (Publication):
-    # FIXME: move to website?
-    parent = models.ForeignKey(
-        'self',
-        verbose_name = _('parent'),
-        blank = True, null = True,
-        help_text = _('parent article'),
-    )
-    static_page = models.BooleanField(
-        _('static page'),
-        default = False,
-    )
-    focus = models.BooleanField(
-        _('article is focus'),
-        default = False,
-    )
-
-    class Meta:
-        verbose_name = _('Article')
-        verbose_name_plural = _('Articles')
+        return '#{} {}'.format(self.priority, self.title)
 
 
 class Program (Publication):
     parent = models.ForeignKey(
-        Article,
-        verbose_name = _('parent'),
-        blank = True, null = True,
-        help_text = _('parent article'),
-    )
-    stream = models.ForeignKey(
         Stream,
         verbose_name = _('stream'),
     )

@@ -1,13 +1,15 @@
 import copy
 
-from django.contrib     import admin
-from django.db          import models
+from django import forms
+from django.contrib import admin
+from django.db import models
 
 from suit.admin import SortableTabularInline, SortableModelAdmin
 from autocomplete_light.contrib.taggit_field import TaggitWidget, TaggitField
 
-from programs.forms     import *
-from programs.models    import *
+from programs.forms import *
+from programs.models import *
+
 
 #
 # Inlines
@@ -43,7 +45,7 @@ class MetadataAdmin (admin.ModelAdmin):
             'fields': [ 'title', 'tags' ]
         }),
         ( None, {
-            'fields': [ 'date', 'public', 'enumerable' ],
+            'fields': [ 'date', 'public' ],
         }),
     ]
 
@@ -57,9 +59,9 @@ class MetadataAdmin (admin.ModelAdmin):
 class PublicationAdmin (MetadataAdmin):
     fieldsets = copy.deepcopy(MetadataAdmin.fieldsets)
 
-    list_display = ('id', 'title', 'date', 'public', 'enumerable', 'parent')
+    list_display = ('id', 'title', 'date', 'public', 'parent')
     list_filter = ['date', 'public', 'parent', 'author']
-    list_editable = ('public', 'enumerable')
+    list_editable = ('public',)
     search_fields = ['title', 'content']
 
     fieldsets[0][1]['fields'].insert(1, 'subtitle')
@@ -77,22 +79,15 @@ class SoundAdmin (MetadataAdmin):
 
 @admin.register(Stream)
 class StreamAdmin (SortableModelAdmin):
-    list_display = ('id', 'name', 'type', 'public', 'enumerable', 'priority')
-    list_editable = ('public', 'enumerable')
+    list_display = ('id', 'title', 'type', 'public', 'priority')
+    list_editable = ('public',)
     sortable = "priority"
-
-
-@admin.register(Article)
-class ArticleAdmin (PublicationAdmin):
-    fieldsets           = copy.deepcopy(PublicationAdmin.fieldsets)
-
-    fieldsets[1][1]['fields'] += ['static_page']
 
 
 @admin.register(Program)
 class ProgramAdmin (PublicationAdmin):
-    fieldsets           = copy.deepcopy(PublicationAdmin.fieldsets)
-    inlines             = [ ScheduleInline ]
+    fieldsets = copy.deepcopy(PublicationAdmin.fieldsets)
+    inlines = [ ScheduleInline ]
 
     fieldsets[1][1]['fields'] += ['email', 'url']
 
@@ -100,7 +95,7 @@ class ProgramAdmin (PublicationAdmin):
 @admin.register(Episode)
 class EpisodeAdmin (PublicationAdmin):
     fieldsets = copy.deepcopy(PublicationAdmin.fieldsets)
-    list_filter         = ['parent'] + PublicationAdmin.list_filter
+    list_filter = ['parent'] + PublicationAdmin.list_filter
 
     fieldsets[0][1]['fields'] += ['sounds']
 
