@@ -33,12 +33,12 @@ class TrackArtistAutocomplete(OneFieldAutocomplete):
 al.register(TrackArtistAutocomplete)
 
 
-class TrackTitleAutocomplete(OneFieldAutocomplete):
-    search_fields = ['title']
+class TrackNameAutocomplete(OneFieldAutocomplete):
+    search_fields = ['name']
     model = Track
 
 
-al.register(TrackTitleAutocomplete)
+al.register(TrackNameAutocomplete)
 
 
 #class DiffusionAutocomplete(OneFieldAutocomplete):

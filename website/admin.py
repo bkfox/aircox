@@ -1,15 +1,42 @@
 import copy
 
 from django.contrib import admin
+from django.utils.translation import ugettext as _, ugettext_lazy
+from django.contrib.contenttypes.admin import GenericStackedInline
 
-from programs.admin import PublicationAdmin
+import programs.models as programs
 from website.models import *
 
-@admin.register(Article)
-class ArticleAdmin (PublicationAdmin):
-    fieldsets = copy.deepcopy(PublicationAdmin.fieldsets)
 
-    fieldsets[1][1]['fields'] += ['static_page']
+def add_inline (base_model, post_model, prepend = False):
+    class InlineModel (GenericStackedInline):
+        model = post_model
+        extra = 1
+        max_num = 1
+        ct_field = 'object_type'
+        verbose_name = _('Post')
+
+    registry = admin.site._registry
+    if not base_model in registry:
+        raise TypeError(str(base_model) + " not in admin registry")
+
+    inlines = list(registry[base_model].inlines) or []
+    if prepend:
+        inlines.insert(0, InlineModel)
+    else:
+        inlines.append(InlineModel)
+
+    registry[base_model].inlines = inlines
+
+
+add_inline(Program, ObjectDescription)
+add_inline(Episode, ObjectDescription)
+
+
+#class ArticleAdmin (DescriptionAdmin):
+#    fieldsets = copy.deepcopy(DescriptionAdmin.fieldsets)
+#
+#    fieldsets[1][1]['fields'] += ['static_page']
 
 
 

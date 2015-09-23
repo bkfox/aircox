@@ -10,10 +10,10 @@ from programs.models import *
 class TrackForm (forms.ModelForm):
     class Meta:
         model = Track
-        fields = ['artist', 'title', 'tags', 'position']
+        fields = ['artist', 'name', 'tags', 'position']
         widgets = {
             'artist': al.TextWidget('TrackArtistAutocomplete'),
-            'title': al.TextWidget('TrackTitleAutocomplete'),
+            'name': al.TextWidget('TrackNameAutocomplete'),
             'tags': TaggitWidget('TagAutocomplete'),
         }
 

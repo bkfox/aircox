@@ -32,72 +32,49 @@ class DiffusionInline (admin.TabularInline):
 
 
 class TrackInline (SortableTabularInline):
-    fields = ['artist', 'title', 'tags', 'position']
+    fields = ['artist', 'name', 'tags', 'position']
     form = TrackForm
     model = Track
     sortable = 'position'
     extra = 10
 
 
-class MetadataAdmin (admin.ModelAdmin):
-    fieldsets = [
-        ( None, {
-            'fields': [ 'title', 'tags' ]
-        }),
-        ( None, {
-            'fields': [ 'date', 'public' ],
-        }),
-    ]
+class DescriptionAdmin (admin.ModelAdmin):
+    fields = [ 'name', 'tags', 'description' ]
 
-    def save_model (self, request, obj, form, change):
-        # FIXME: if request.data.author?
-        if not obj.author:
-            obj.author = request.user
-        obj.save()
+    def tags (obj):
+        return ', '.join(obj.tags.names())
 
-
-class PublicationAdmin (MetadataAdmin):
-    fieldsets = copy.deepcopy(MetadataAdmin.fieldsets)
-
-    list_display = ('id', 'title', 'date', 'public', 'parent')
-    list_filter = ['date', 'public', 'parent', 'author']
-    list_editable = ('public',)
-    search_fields = ['title', 'content']
-
-    fieldsets[0][1]['fields'].insert(1, 'subtitle')
-    fieldsets[0][1]['fields'] += [ 'img', 'content' ]
-    fieldsets[1][1]['fields'] += [ 'parent' ] #, 'meta' ],
+    list_display = ['id', 'name', tags]
+    list_filter = []
+    search_fields = ['name',]
 
 
 @admin.register(Sound)
-class SoundAdmin (MetadataAdmin):
+class SoundAdmin (DescriptionAdmin):
+    fields = None
     fieldsets = [
-        (None, { 'fields': ['title', 'tags', 'path' ] } ),
+        (None, { 'fields': DescriptionAdmin.fields + ['path' ] } ),
         (None, { 'fields': ['duration', 'date', 'fragment' ] } )
     ]
 
 
 @admin.register(Stream)
 class StreamAdmin (SortableModelAdmin):
-    list_display = ('id', 'title', 'type', 'public', 'priority')
-    list_editable = ('public',)
+    list_display = ('id', 'name', 'type', 'priority')
     sortable = "priority"
 
 
 @admin.register(Program)
-class ProgramAdmin (PublicationAdmin):
-    fieldsets = copy.deepcopy(PublicationAdmin.fieldsets)
+class ProgramAdmin (DescriptionAdmin):
+    fields = DescriptionAdmin.fields + ['stream']
     inlines = [ ScheduleInline ]
-
-    fieldsets[1][1]['fields'] += ['email', 'url']
 
 
 @admin.register(Episode)
-class EpisodeAdmin (PublicationAdmin):
-    fieldsets = copy.deepcopy(PublicationAdmin.fieldsets)
-    list_filter = ['parent'] + PublicationAdmin.list_filter
-
-    fieldsets[0][1]['fields'] += ['sounds']
+class EpisodeAdmin (DescriptionAdmin):
+    list_filter = ['program'] + DescriptionAdmin.list_filter
+    fields = DescriptionAdmin.fields + ['sounds']
 
     inlines = (TrackInline, DiffusionInline)
 

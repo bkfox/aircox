@@ -1,10 +1,7 @@
 import os
 
 from django.db import models
-from django.contrib.auth.models import User
 from django.template.defaultfilters import slugify
-from django.contrib.contenttypes.fields import GenericForeignKey
-from django.contrib.contenttypes.models import ContentType
 from django.utils.translation import ugettext as _, ugettext_lazy
 from django.utils import timezone as tz
 from django.utils.html import strip_tags
@@ -27,27 +24,15 @@ def date_or_default (date, date_only = False):
     return date
 
 
-class Metadata (models.Model):
-    """
-    meta is used to extend a model for future needs
-    """
-    author = models.ForeignKey (
-        User,
-        verbose_name = _('author'),
-        blank = True, null = True,
-    )
-    title = models.CharField(
-        _('title'),
+class Description (models.Model):
+    name = models.CharField (
+        _('name'),
         max_length = 128,
     )
-    date = models.DateTimeField(
-        _('date'),
-        default = tz.datetime.now,
-    )
-    public = models.BooleanField(
-        _('public'),
-        default = True,
-        help_text = _('publication is public'),
+    description = models.TextField (
+        _('description'),
+        max_length = 1024,
+        blank = True, null = True
     )
     tags = TaggableManager(
         _('tags'),
@@ -55,68 +40,18 @@ class Metadata (models.Model):
     )
 
     def get_slug_name (self):
-        return slugify(self.title)
-
-    class Meta:
-        abstract = True
-
-
-class Publication (Metadata):
-    subtitle = models.CharField(
-        _('subtitle'),
-        max_length = 128,
-        blank = True,
-    )
-    img = models.ImageField(
-        _('image'),
-        upload_to = "images",
-        blank = True,
-    )
-    content = models.TextField(
-        _('content'),
-        blank = True,
-    )
-    commentable = models.BooleanField(
-        _('enable comments'),
-        default = True,
-        help_text = _('comments are enabled on this publication'),
-    )
-
-    @staticmethod
-    def _exclude_args (allow_unpublished = False, prefix = ''):
-        if allow_unpublished:
-            return {}
-
-        res = {}
-        res[prefix + 'public'] = False
-        res[prefix + 'date__gt'] = tz.now()
-        return res
-
-    @classmethod
-    def get_available (cl, first = False, **kwargs):
-        """
-        Return the result of filter(kargs) if the resulting publications
-        is published and public
-
-        Otherwise, return None
-        """
-        kwargs['public'] = True
-        kwargs['date__lte'] = tz.now()
-
-        e = cl.objects.filter(**kwargs)
-
-        if first:
-            return (e and e[0]) or None
-        return e or None
+        return slugify(self.name)
 
     def __str__ (self):
-        return self.title + ' (' + str(self.id) + ')'
+        if self.pk:
+            return '#{} {}'.format(self.pk, self.name)
+        return '{}'.format(self.name)
 
     class Meta:
         abstract = True
 
 
-class Track (models.Model):
+class Track (Description):
     # There are no nice solution for M2M relations ship (even without
     # through) in django-admin. So we unfortunately need to make one-
     # to-one relations and add a position argument
@@ -127,13 +62,8 @@ class Track (models.Model):
         _('artist'),
         max_length = 128,
     )
-    title = models.CharField(
-        _('title'),
-        max_length = 128,
-    )
-    tags = TaggableManager( blank = True )
-    # position can be used to specify a position in seconds for non-stop
-    # programs or a position in the playlist
+    # position can be used to specify a position in seconds for non-
+    # stop programs or a position in the playlist
     position = models.SmallIntegerField(
         default = 0,
         help_text=_('position in the playlist'),
@@ -147,7 +77,7 @@ class Track (models.Model):
         verbose_name_plural = _('Tracks')
 
 
-class Sound (Metadata):
+class Sound (Description):
     """
     A Sound is the representation of a sound, that can be:
     - An episode podcast/complete record
@@ -158,7 +88,7 @@ class Sound (Metadata):
     public, then we can podcast it. If a Sound is a fragment, then it is not
     usable for diffusion.
 
-    Each sound file can be associated to a filesystem's file or an embedded
+    Each sound can be associated to a filesystem's file or an embedded
     code (for external podcasts).
     """
     path = models.FilePathField(
@@ -177,10 +107,15 @@ class Sound (Metadata):
         _('duration'),
         blank = True, null = True,
     )
+    public = models.BooleanField(
+        _('public'),
+        default = False,
+        help_text = _("the element is public"),
+    )
     fragment = models.BooleanField(
         _('incomplete sound'),
         default = False,
-        help_text = _("the file has been cut"),
+        help_text = _("the file is a cut"),
     )
     removed = models.BooleanField(
         default = False,
@@ -198,6 +133,7 @@ class Sound (Metadata):
     def save (self, *args, **kwargs):
         if not self.pk:
             self.date = self.get_mtime()
+
         super(Sound, self).save(*args, **kwargs)
 
     def __str__ (self):
@@ -228,7 +164,7 @@ class Schedule (models.Model):
     for key, value in Frequency.items():
         ugettext_lazy(key)
 
-    parent = models.ForeignKey(
+    program = models.ForeignKey(
         'Program',
         blank = True, null = True,
     )
@@ -243,7 +179,7 @@ class Schedule (models.Model):
     rerun = models.ForeignKey(
         'self',
         blank = True, null = True,
-        help_text = "Schedule of a rerun",
+        help_text = "Schedule of a rerun of this one",
     )
 
     def match (self, date = None, check_time = True):
@@ -373,7 +309,7 @@ class Diffusion (models.Model):
         'default':      0x00,   # simple diffusion (done/planed)
         'unconfirmed':  0x01,   # scheduled by the generator but not confirmed for diffusion
         'cancel':       0x02,   # cancellation happened; used to inform users
-        'restart':      0x03,   # manual restart; used to remix/give up antenna
+        # 'restart':      0x03,   # manual restart; used to remix/give up antenna
         'stop':         0x04,   # diffusion has been forced to stop
     }
     for key, value in Type.items():
@@ -424,11 +360,16 @@ class Stream (models.Model):
     for key, value in Type.items():
         ugettext_lazy(key)
 
-    title = models.CharField(
-        _('title'),
+    name = models.CharField(
+        _('name'),
         max_length = 32,
         blank = True,
         null = True,
+    )
+    public = models.BooleanField(
+        _('public'),
+        default = True,
+        help_text = _('program list is public'),
     )
     type = models.SmallIntegerField(
         verbose_name = _('type'),
@@ -439,11 +380,6 @@ class Stream (models.Model):
         default = 0,
         help_text = _('priority of the stream')
     )
-    public = models.BooleanField(
-        _('public'),
-        default = True,
-        help_text = _('program list is public'),
-    )
 
     # get info for:
     # - random lists
@@ -453,22 +389,13 @@ class Stream (models.Model):
     #   - stream/pgm
 
     def __str__ (self):
-        return '#{} {}'.format(self.priority, self.title)
+        return '#{} {}'.format(self.priority, self.name)
 
 
-class Program (Publication):
-    parent = models.ForeignKey(
+class Program (Description):
+    stream = models.ForeignKey(
         Stream,
         verbose_name = _('stream'),
-    )
-    email = models.EmailField(
-        _('email'),
-        max_length = 128,
-        null = True, blank = True,
-    )
-    url = models.URLField(
-        _('website'),
-        blank = True, null = True,
     )
     active = models.BooleanField(
         _('inactive'),
@@ -491,8 +418,8 @@ class Program (Publication):
                 return schedule
 
 
-class Episode (Publication):
-    parent = models.ForeignKey(
+class Episode (Description):
+    program = models.ForeignKey(
         Program,
         verbose_name = _('parent'),
         help_text = _('parent program'),

@@ -36,7 +36,7 @@ class ListQueries:
         if not q:
             q = timezone.datetime.today()
         if type(q) is str:
-            q = timezone.datetime.strptime(q, '%Y/%m/%d').date()
+            q = timezone.datetime.strptime(q, '%Y%m%d').date()
 
         return qs.filter(date__startswith = q)
 

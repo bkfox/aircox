@@ -24,7 +24,7 @@ class Actions:
     @staticmethod
     def update (date):
         items = []
-        for schedule in Schedule.objects.filter(parent__active = True):
+        for schedule in Schedule.objects.filter(program__active = True):
             items += schedule.diffusions_of_month(date, exclude_saved = True)
             print('> {} new diffusions for schedule #{} ({})'.format(
                     len(items), schedule.id, str(schedule)
@@ -47,7 +47,7 @@ class Actions:
                                       date__gt = date)
         items = []
         for diffusion in qs:
-            schedules = Schedule.objects.filter(parent = diffusion.program)
+            schedules = Schedule.objects.filter(program = diffusion.program)
             for schedule in schedules:
                 if schedule.match(diffusion.date):
                     break
