@@ -13,10 +13,10 @@ class PostListView (ListView):
         """
         Request availables parameters
         """
+        embed = False
         exclude = None
         order = 'desc'
         reverse = False
-        format = 'normal'
 
         def __init__ (self, query):
             my_class = self.__class__
@@ -33,19 +33,13 @@ class PostListView (ListView):
     allow_empty = True
 
     query = None
-    format = None
     fields = [ 'date', 'time', 'image', 'title', 'content' ]
 
     route = None
     model = None
 
-    class Meta:
-        # FIXME
-        formats = ['normal', 'embed', 'json', 'yaml', 'xml']
-
     def __init__ (self, *args, **kwargs):
         super(PostListView, self).__init__(*args, **kwargs)
-
         if self.query:
             self.query = Query(self.query)
 
@@ -61,7 +55,6 @@ class PostListView (ListView):
             qs.order_by('date', 'id')
         else:
             qs.order_by('-date', '-id')
-
         return qs
 
 

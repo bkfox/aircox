@@ -8,7 +8,7 @@ from django.utils import timezone
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
-from programs.models import *
+import programs.models as programs
 
 
 class Thread (models.Model):
@@ -38,7 +38,7 @@ class Thread (models.Model):
         return str(self.post)
 
 
-class Post (models.Model):
+class BasePost (models.Model):
     thread = models.ForeignKey(
         Thread,
         on_delete=models.SET_NULL,
@@ -62,31 +62,8 @@ class Post (models.Model):
         blank = True, null = True
     )
 
-
-    def as_dict (self):
-        d = {}
-        d.update(self.__dict__)
-        d.update({
-            'title': self.get_title(),
-            'image': self.get_image(),
-            'date': self.get_date(),
-            'content': self.get_content()
-        })
-
-    def get_detail_url (self):
-        pass
-
-    def get_image (self):
-        return self.image
-
-    def get_date (self):
-        return self.date
-
-    def get_title (self):
-        pass
-
-    def get_content (self):
-        pass
+    title = ''
+    content = ''
 
     class Meta:
         abstract = True
@@ -97,24 +74,54 @@ def on_new_post (sender, instance, created, *args, **kwargs):
     """
     Signal handler to create a thread that is attached to the newly post
     """
-    if not issubclass(sender, Post) or not created:
+    if not issubclass(sender, BasePost) or not created:
         return
 
     thread = Thread(post = instance)
     thread.save()
 
 
-class ObjectDescription (Post):
-    object_type = models.ForeignKey(ContentType, blank = True, null = True)
-    object_id = models.PositiveIntegerField(blank = True, null = True)
-    object = GenericForeignKey('object_type', 'object_id')
+class Post (BasePost):
+    class Meta:
+        abstract = True
+
+    @staticmethod
+    def create_related_post (model, maps):
+        """
+        Create a subclass of BasePost model, that binds the common-fields
+        using the given maps. The maps' keys are the property to change, and
+        its value is the target model's attribute (or a callable)
+        """
+        class Meta:
+            pass
+
+        attrs = {
+            '__module__': BasePost.__module__,
+            'Meta': Meta,
+            'related': models.ForeignKey(model),
+            '__str__': lambda self: str(self.related)
+        }
+
+        def get_prop (name, related_name):
+            return property(related_name) if callable(related_name) \
+                    else property(lambda self: getattr(self.related, related_name))
+
+        attrs.update({
+            name: get_prop(name, related_name)
+                for name, related_name in maps.items()
+        })
+        return type(model.__name__ + 'Post', (BasePost,), attrs)
 
 
-
-class Article (Post):
+class Article (BasePost):
     title = models.CharField(
         _('title'),
         max_length = 128,
+        blank = False, null = False
+    )
+    content = models.TextField(
+        _('content'),
+        blank = False, null = False
     )
     static_page = models.BooleanField(
         _('static page'),
@@ -128,6 +135,19 @@ class Article (Post):
     class Meta:
         verbose_name = _('Article')
         verbose_name_plural = _('Articles')
+
+
+
+ProgramPost = Post.create_related_post(programs.Program, {
+                    'title': 'name',
+                    'content': 'description',
+               })
+EpisodePost = Post.create_related_post(programs.Episode, {
+                    'title': 'name',
+                    'content': 'description',
+               })
+
+
 
 #class MenuItem ():
 #    Menu = {

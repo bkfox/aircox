@@ -9,11 +9,10 @@ from website.models import *
 
 
 def add_inline (base_model, post_model, prepend = False):
-    class InlineModel (GenericStackedInline):
+    class InlineModel (admin.StackedInline):
         model = post_model
         extra = 1
         max_num = 1
-        ct_field = 'object_type'
         verbose_name = _('Post')
 
     registry = admin.site._registry
@@ -29,8 +28,8 @@ def add_inline (base_model, post_model, prepend = False):
     registry[base_model].inlines = inlines
 
 
-add_inline(Program, ObjectDescription)
-add_inline(Episode, ObjectDescription)
+add_inline(programs.Program, ProgramPost)
+add_inline(programs.Episode, EpisodePost)
 
 
 #class ArticleAdmin (DescriptionAdmin):

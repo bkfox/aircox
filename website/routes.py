@@ -68,9 +68,6 @@ class Route:
 
         pattern = '^{}/{}'.format(self.base_name, self.Meta.name)
 
-        if self.view.Meta.formats:
-            pattern += '(/(?P<format>{}))?'.format('|'.join(self.view.Meta.formats))
-
         if self._meta['url_args']:
             url_args = '/'.join([ '(?P<{}>{})'.format(arg, expr) \
                                     for arg, expr in self._meta['url_args']
