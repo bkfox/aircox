@@ -1,9 +1,3 @@
-{# Parameters are: #}
-{# * pub: publication itself; pub.meta must have been eval() #}
-{# * threads: list of parent, from top to bottom, including itself #}
-{# #}
-{# * views: a view object used to know which view to use for links #}
-{# #}
 {# {% extends embed|yesno:"website/single.html,website/base.html" %} #}
 
 {% load i18n %}
@@ -11,6 +5,7 @@
 {# {% load website_views %} #}
 
 
+{% block content %}
 <div class="post_list {{ classes }}">
 {% for post in object_list %}
     <a class="post_item"
@@ -47,5 +42,6 @@
     </a>
 {% endfor %}
 </div>
+{% endblock %}
 
 

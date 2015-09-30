@@ -137,11 +137,12 @@ class Article (BasePost):
         verbose_name_plural = _('Articles')
 
 
-
 ProgramPost = Post.create_related_post(programs.Program, {
                     'title': 'name',
                     'content': 'description',
                })
+
+
 EpisodePost = Post.create_related_post(programs.Episode, {
                     'title': 'name',
                     'content': 'description',

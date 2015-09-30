@@ -5,20 +5,42 @@ from website.views import *
 from website.routes import *
 
 
-routes = Routes()
+class ProgramSet (ViewSet):
+    model = ProgramPost
+    name = 'programs'
 
-routes.register( SearchRoute(Article, PostListView) )
-routes.register( SearchRoute(ProgramPost, PostListView, base_name = 'programs') )
-#routes.register( SearchRoute(EpisodePost, PostListView, base_name = 'episodes') )
+    list_routes = [
+        ThreadRoute,
+        SearchRoute,
+        DateRoute,
+    ]
 
-routes.register( ThreadRoute(Article, PostListView) )
-routes.register( ThreadRoute(ProgramPost, PostListView, base_name = 'programs') )
-#routes.register( ThreadRoute(EpisodePost, PostListView, base_name = 'episodes') )
 
-routes.register( DateRoute(Article, PostListView) )
-routes.register( DateRoute(ProgramPost, PostListView, base_name = 'programs') )
-#routes.register( DateRoute(EpisodePost, PostListView, base_name = 'episodes') )
+class EpisodeSet (ViewSet):
+    model = EpisodePost
+    name = 'episodes'
 
-urlpatterns = routes.get_urlpatterns()
+    list_routes = [
+        ThreadRoute,
+        SearchRoute,
+        DateRoute,
+    ]
+
+
+class ArticleSet (ViewSet):
+    model = Article
+    list_routes = [
+        ThreadRoute,
+        SearchRoute,
+        DateRoute,
+    ]
+
+
+router = Router()
+router.register_set(ProgramSet())
+router.register_set(EpisodeSet())
+router.register_set(ArticleSet())
+
+urlpatterns = router.get_urlpatterns()
 
 

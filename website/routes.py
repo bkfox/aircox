@@ -2,22 +2,24 @@ from django.conf.urls import url
 from django.utils import timezone
 
 from website.models import *
+from website.views import *
 
-class Routes:
+class Router:
     registry = []
 
     def register (self, route):
         if not route in self.registry:
             self.registry.append(route)
 
+    def register_set (self, view_set):
+        for route in view_set.routes:
+            self.register(route)
+
     def unregister (self, route):
         self.registry.remove(route)
 
     def get_urlpatterns (self):
-        patterns = []
-        for route in self.registry:
-            patterns += route.get_urlpatterns() or []
-        return patterns
+        return [ route.get_url() for route in self.registry ]
 
 
 class Route:
@@ -62,12 +64,16 @@ class Route:
         """
         Called by the view to get the queryset when it is needed
         """
+        pass
 
-    def get_urlpatterns (self):
-        view_kwargs = self.view_kwargs or {}
+    def get (self, request, **kwargs):
+        """
+        Called by the view to get the object when it is needed
+        """
+        pass
 
+    def get_url (self):
         pattern = '^{}/{}'.format(self.base_name, self.Meta.name)
-
         if self._meta['url_args']:
             url_args = '/'.join([ '(?P<{}>{})'.format(arg, expr) \
                                     for arg, expr in self._meta['url_args']
@@ -75,32 +81,26 @@ class Route:
             pattern += '/' + url_args
         pattern += '/?$'
 
-        return [ url(
-            pattern,
-            self.view and self.view.as_view(
-                route = self,
-                model = self.model,
-                **view_kwargs
-            ),
-            name = '{}'
-        ) ]
+        kwargs = {
+            'route': self,
+        }
+        if self.view_kwargs:
+            kwargs.update(self.view_kwargs)
+
+        return url(pattern, self.view, kwargs = kwargs, name = '{}')
 
 
-class SearchRoute (Route):
+class DetailRoute (Route):
     class Meta:
-        name = 'search'
-        is_list = True
+        name = 'detail'
+        is_list = False
+        url_args = [
+            ('pk', '[0-9]+'),
+            ('slug', '(\w|-|_)*'),
+        ]
 
-    def get_queryset (self, request, **kwargs):
-        q = request.GET.get('q') or ''
-        qs = self.model.objects
-        for search_field in model.search_fields or []:
-            r = self.model.objects.filter(**{ search_field + '__icontains': q })
-            if qs: qs = qs | r
-            else: qs = r
-
-        qs.distinct()
-        return qs
+    def get (self, request, **kwargs):
+        return self.model.objects.get(pk = int(kwargs['pk']))
 
 
 class ThreadRoute (Route):
@@ -112,7 +112,7 @@ class ThreadRoute (Route):
         ]
 
     def get_queryset (self, request, **kwargs):
-        return self.model.objects.filter(thread__id = int(kwargs['pk']))
+        return self.model.objects.filter(thread__pk = int(kwargs['pk']))
 
 
 class DateRoute (Route):
@@ -131,6 +131,23 @@ class DateRoute (Route):
             date__month = int(kwargs['month']),
             date__day = int(kwargs['day']),
         )
+
+
+class SearchRoute (Route):
+    class Meta:
+        name = 'search'
+        is_list = True
+
+    def get_queryset (self, request, **kwargs):
+        q = request.GET.get('q') or ''
+        qs = self.model.objects
+        for search_field in model.search_fields or []:
+            r = self.model.objects.filter(**{ search_field + '__icontains': q })
+            if qs: qs = qs | r
+            else: qs = r
+
+        qs.distinct()
+        return qs
 
 
 
