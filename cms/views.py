@@ -8,63 +8,6 @@ from django.utils.translation import ugettext as _, ugettext_lazy
 import cms.routes as routes
 
 
-class Section (DetailView):
-    """
-    Base class for sections. Sections are view that can be used in detail view
-    in order to have extra content about a post.
-    """
-    template_name = 'cms/section.html'
-    classes = ''
-    title = ''
-    content = ''
-    header = ''
-    bottom = ''
-
-    def get_context_data (self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context.update({
-            'title': self.title,
-            'header': self.header,
-            'content': self.content,
-            'bottom': self.bottom,
-            'classes': self.classes,
-        })
-        return context
-
-    def get (self, parent, request, object = None, **kwargs):
-        print(type(object))
-        self.object = object
-        context = self.get_context_data(**kwargs)
-        return render_to_string(self.template_name, context)
-
-
-class ListSection (Section):
-    """
-    Section to render list. The context item 'object_list' is used as list of
-    items to render.
-    """
-    class Item:
-        icon = None
-        title = None
-        text = None
-
-        def __init__ (self, icon, title = None, text = None):
-            self.icon = icon
-            self.title = title
-            self.text = text
-
-    template_name = 'cms/section_list.html'
-
-    def get_object_list (self):
-        return []
-
-    def get_context_data (self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['classes'] += ' section_list'
-        context['object_list'] = self.get_object_list()
-        return context
-
-
 class PostListView (ListView):
     """
     List view for posts and children
@@ -94,6 +37,9 @@ class PostListView (ListView):
 
     model = None
     query = None
+    classes = ''
+    title = ''
+    embed = False
     fields = [ 'date', 'time', 'image', 'title', 'content' ]
 
     def __init__ (self, *args, **kwargs):
@@ -101,14 +47,20 @@ class PostListView (ListView):
         if self.query:
             self.query = Query(self.query)
 
+    def dispatch (self, request, *args, **kwargs):
+        self.route = self.kwargs.get('route')
+        return super().dispatch(request, *args, **kwargs)
+
     def get_queryset (self):
-        route = self.kwargs['route']
-        qs = route.get_queryset(self.request, **self.kwargs)
+        qs = self.route.get_queryset(self.model, self.request, **self.kwargs)
         qs = qs.filter(public = True)
 
         query = self.query or PostListView.Query(self.request.GET)
         if query.exclude:
             qs = qs.exclude(id = int(exclude))
+
+        if query.embed:
+            self.embed = True
 
         if query.order == 'asc':
             qs.order_by('date', 'id')
@@ -116,14 +68,23 @@ class PostListView (ListView):
             qs.order_by('-date', '-id')
         return qs
 
-
     def get_context_data (self, **kwargs):
         context = super().get_context_data(**kwargs)
         context.update({
-            'list': self
+            'list': self,
+            'title': self.get_title(),
+            'classes': self.classes,
         })
 
         return context
+
+    def get_title (self):
+        if self.title:
+            return self.title
+
+        title = self.route and self.route.get_title(self.model, self.request,
+                                                    **self.kwargs)
+        return title
 
 
 class PostDetailView (DetailView):
@@ -153,7 +114,7 @@ class PostDetailView (DetailView):
         context = super().get_context_data(**kwargs)
         context.update({
             'sections': [
-                section.get(self, self.request, object = self.object)
+                section.get(self.request, object = self.object)
                     for section in self.sections
             ]
         })
@@ -186,8 +147,85 @@ class ViewSet:
             model = self.model
         )
 
-        self.routes = [ route(self.model, self.list_view)
+        self.urls = [ route.as_url(self.model, self.list_view)
                             for route in self.list_routes ] + \
-                      [ routes.DetailRoute(self.model, self.detail_view ) ]
+                      [ routes.DetailRoute.as_url(self.model, self.detail_view ) ]
+
+
+
+class Section (DetailView):
+    """
+    Base class for sections. Sections are view that can be used in detail view
+    in order to have extra content about a post.
+    """
+    template_name = 'cms/section.html'
+    classes = ''
+    title = ''
+    content = ''
+    header = ''
+    bottom = ''
+
+    def get_context_data (self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update({
+            'title': self.title,
+            'header': self.header,
+            'content': self.content,
+            'bottom': self.bottom,
+            'classes': self.classes,
+        })
+        return context
+
+    def get (self, request, **kwargs):
+        self.object = kwargs.get('object')
+        context = self.get_context_data(**kwargs)
+        return render_to_string(self.template_name, context)
+
+
+class ListSection (Section):
+    """
+    Section to render list. The context item 'object_list' is used as list of
+    items to render.
+    """
+    class Item:
+        icon = None
+        title = None
+        text = None
+
+        def __init__ (self, icon, title = None, text = None):
+            self.icon = icon
+            self.title = title
+            self.text = text
+
+    template_name = 'cms/section_list.html'
+
+    def get_object_list (self):
+        return []
+
+    def get_context_data (self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['classes'] += ' section_list'
+        context['object_list'] = self.get_object_list()
+        return context
+
+
+class PostListSection (PostListView):
+    route = None
+    model = None
+    embed = True
+
+    def __init__ (self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def get_kwargs (self, request, **kwargs):
+        return kwargs
+
+    def dispatch (self, request, *args, **kwargs):
+        kwargs = self.get_kwargs(kwargs)
+        # TODO: to_string
+        return super().dispatch(request, *args, **kwargs)
+
+# TODO:
+# - get_title: pass object / queryset
 
 
