@@ -42,8 +42,7 @@ class Route:
         is_list = False     # route is for a list
         url_args = []       # arguments passed from the url [ (name : regex),... ]
 
-    def __init__ (self, model, view, view_kwargs = None,
-                  base_name = None):
+    def __init__ (self, model, view, view_kwargs = None):
         self.model = model
         self.view = view
         self.view_kwargs = view_kwargs
@@ -54,11 +53,7 @@ class Route:
         _meta.update(self.Meta.__dict__)
         self._meta = _meta
 
-        if not base_name:
-            base_name = model._meta.verbose_name_plural if _meta['is_list'] \
-                    else model._meta.verbose_name
-            base_name = base_name.title().lower()
-        self.base_name = base_name
+        self.base_name = model._meta.verbose_name_plural.lower()
 
     def get_queryset (self, request, **kwargs):
         """
@@ -75,9 +70,13 @@ class Route:
     def get_url (self):
         pattern = '^{}/{}'.format(self.base_name, self.Meta.name)
         if self._meta['url_args']:
-            url_args = '/'.join([ '(?P<{}>{})'.format(arg, expr) \
-                                    for arg, expr in self._meta['url_args']
-                                ])
+            url_args = '/'.join([
+                '(?P<{}>{}){}'.format(
+                    arg, expr,
+                    (optional and optional[0] and '?') or ''
+                )
+                for arg, expr, *optional in self._meta['url_args']
+            ])
             pattern += '/' + url_args
         pattern += '/?$'
 
@@ -87,7 +86,8 @@ class Route:
         if self.view_kwargs:
             kwargs.update(self.view_kwargs)
 
-        return url(pattern, self.view, kwargs = kwargs, name = '{}')
+        return url(pattern, self.view, kwargs = kwargs,
+                   name = self.base_name + '_' + self.Meta.name)
 
 
 class DetailRoute (Route):
@@ -96,11 +96,20 @@ class DetailRoute (Route):
         is_list = False
         url_args = [
             ('pk', '[0-9]+'),
-            ('slug', '(\w|-|_)*'),
+            ('slug', '(\w|-|_)+', True),
         ]
 
     def get (self, request, **kwargs):
         return self.model.objects.get(pk = int(kwargs['pk']))
+
+
+class AllRoute (Route):
+    class Meta:
+        name = 'all'
+        is_list = True
+
+    def get_queryset (self, request, **kwargs):
+        return self.model.objects.all()
 
 
 class ThreadRoute (Route):
@@ -108,7 +117,7 @@ class ThreadRoute (Route):
         name = 'thread'
         is_list = True
         url_args = [
-            ('pk', '[0-9]+')
+            ('pk', '[0-9]+'),
         ]
 
     def get_queryset (self, request, **kwargs):

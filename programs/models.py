@@ -70,7 +70,7 @@ class Track (Description):
     )
 
     def __str__(self):
-        return ' '.join([self.artist, ':', self.title])
+        return ' '.join([self.artist, ':', self.name ])
 
     class Meta:
         verbose_name = _('Track')
@@ -178,6 +178,7 @@ class Schedule (models.Model):
     )
     rerun = models.ForeignKey(
         'self',
+        verbose_name = _('rerun'),
         blank = True, null = True,
         help_text = "Schedule of a rerun of this one",
     )
@@ -265,7 +266,7 @@ class Schedule (models.Model):
         """
         dates = self.dates_of_month(date)
         saved = Diffusion.objects.filter(date__in = dates,
-                                         program = self.parent)
+                                         program = self.program)
         diffusions = []
 
         # existing diffusions
@@ -282,13 +283,13 @@ class Schedule (models.Model):
                 first_date -= self.date - self.rerun.date
 
             episode = Episode.objects.filter(date = first_date,
-                                             parent = self.parent)
+                                             program = self.program)
             episode = episode[0] if episode.count() else None
 
             diffusions.append(Diffusion(
                                  episode = episode,
-                                 program = self.parent,
-                                 stream = self.parent.stream,
+                                 program = self.program,
+                                 stream = self.program.stream,
                                  type = Diffusion.Type['unconfirmed'],
                                  date = date,
                              ))
@@ -297,7 +298,7 @@ class Schedule (models.Model):
     def __str__ (self):
         frequency = [ x for x,y in Schedule.Frequency.items()
                         if y == self.frequency ]
-        return self.parent.title + ': ' + frequency[0]
+        return self.program.name + ': ' + frequency[0] + ' (' + str(self.date) + ')'
 
     class Meta:
         verbose_name = _('Schedule')
@@ -339,12 +340,12 @@ class Diffusion (models.Model):
 
     def save (self, *args, **kwargs):
         if self.episode: # FIXME self.episode or kwargs['episode']
-            self.program = self.episode.parent
+            self.program = self.episode.program
         # check type against stream's type
         super(Diffusion, self).save(*args, **kwargs)
 
     def __str__ (self):
-        return self.program.title + ' on ' + str(self.date) \
+        return self.program.name + ' on ' + str(self.date) \
                + str(self.type)
 
     class Meta:
@@ -406,13 +407,13 @@ class Program (Description):
     @property
     def path (self):
         return os.path.join(settings.AIRCOX_PROGRAMS_DIR,
-                            slugify(self.title + '_' + str(self.id)) )
+                            slugify(self.name + '_' + str(self.id)) )
 
     def find_schedule (self, date):
         """
         Return the first schedule that matches a given date
         """
-        schedules = Schedule.objects.filter(parent = self)
+        schedules = Schedule.objects.filter(program = self)
         for schedule in schedules:
             if schedule.match(date, check_time = False):
                 return schedule
@@ -421,7 +422,7 @@ class Program (Description):
 class Episode (Description):
     program = models.ForeignKey(
         Program,
-        verbose_name = _('parent'),
+        verbose_name = _('program'),
         help_text = _('parent program'),
     )
     sounds = models.ManyToManyField(

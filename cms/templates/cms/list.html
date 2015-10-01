@@ -9,8 +9,7 @@
 <div class="post_list {{ classes }}">
 {% for post in object_list %}
     <a class="post_item"
-       href="{{ post.get_detail_url }}">
-
+       href="{{ post.detail_url }}">
         {% if 'date' in list.fields or 'time' in list.fields %}
         <time datetime="{{ post.date }}" class="post_datetime">
             {% if 'date' in list.fields %}

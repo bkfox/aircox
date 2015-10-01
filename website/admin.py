@@ -28,8 +28,8 @@ def add_inline (base_model, post_model, prepend = False):
     registry[base_model].inlines = inlines
 
 
-add_inline(programs.Program, ProgramPost)
-add_inline(programs.Episode, EpisodePost)
+add_inline(programs.Program, Program)
+add_inline(programs.Episode, Episode)
 
 
 #class ArticleAdmin (DescriptionAdmin):
