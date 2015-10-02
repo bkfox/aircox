@@ -35,10 +35,12 @@ class PostListView (ListView):
     template_name = 'cms/list.html'
     allow_empty = True
 
-    model = None
-    query = None
-    classes = ''
+    website = None
     title = ''
+    classes = ''
+
+    route = None
+    query = None
     embed = False
     fields = [ 'date', 'time', 'image', 'title', 'content' ]
 
@@ -48,12 +50,11 @@ class PostListView (ListView):
             self.query = Query(self.query)
 
     def dispatch (self, request, *args, **kwargs):
-        self.route = self.kwargs.get('route')
+        self.route = self.kwargs.get('route') or self.route
         return super().dispatch(request, *args, **kwargs)
 
     def get_queryset (self):
         qs = self.route.get_queryset(self.model, self.request, **self.kwargs)
-        qs = qs.filter(public = True)
 
         query = self.query or PostListView.Query(self.request.GET)
         if query.exclude:
@@ -92,6 +93,9 @@ class PostDetailView (DetailView):
     Detail view for posts and children
     """
     template_name = 'cms/detail.html'
+    website = None
+
+    embed = False
     sections = []
 
     def __init__ (self, sections = None, *args, **kwargs):
@@ -100,13 +104,13 @@ class PostDetailView (DetailView):
 
     def get_queryset (self, **kwargs):
         if self.model:
-            return super().get_queryset(**kwargs).filter(public = True)
+            return super().get_queryset(**kwargs).filter(published = True)
         return []
 
     def get_object (self, **kwargs):
         if self.model:
             object = super().get_object(**kwargs)
-            if object.public:
+            if object.published:
                 return object
         return None
 
@@ -134,23 +138,50 @@ class ViewSet:
     detail_view = PostDetailView
     detail_sections = []
 
-    def __init__ (self):
+    def __init__ (self, website = None):
         self.detail_sections = [
             section()
                 for section in self.detail_sections
         ]
         self.detail_view = self.detail_view.as_view(
             model = self.model,
-            sections = self.detail_sections
+            sections = self.detail_sections,
+            website = website,
         )
         self.list_view = self.list_view.as_view(
-            model = self.model
+            model = self.model,
+            website = website,
         )
 
         self.urls = [ route.as_url(self.model, self.list_view)
                             for route in self.list_routes ] + \
                       [ routes.DetailRoute.as_url(self.model, self.detail_view ) ]
 
+
+class Menu (DetailView):
+    template_name = 'cms/menu.html'
+
+    name = ''
+    enabled = True
+    classes = ''
+    position = ''   # top, left, bottom, right
+    sections = None
+
+    def get_context_data (self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update({
+            'name': self.name,
+            'classes': self.classes,
+            'position': self.position,
+            'sections': [
+                section.get(self.request, object = self.object)
+                    for section in self.sections
+            ]
+        })
+
+    def get (self, **kwargs):
+        context = self.get_context_data(**kwargs)
+        return render_to_string(self.template_name, context)
 
 
 class Section (DetailView):
@@ -159,6 +190,7 @@ class Section (DetailView):
     in order to have extra content about a post.
     """
     template_name = 'cms/section.html'
+    require_object = False
     classes = ''
     title = ''
     content = ''
@@ -177,9 +209,10 @@ class Section (DetailView):
         return context
 
     def get (self, request, **kwargs):
-        self.object = kwargs.get('object')
+        self.object = kwargs.get('object') or self.object
         context = self.get_context_data(**kwargs)
         return render_to_string(self.template_name, context)
+
 
 
 class ListSection (Section):
@@ -197,6 +230,8 @@ class ListSection (Section):
             self.title = title
             self.text = text
 
+    use_icons = True
+    icon_size = '32x32'
     template_name = 'cms/section_list.html'
 
     def get_object_list (self):
@@ -204,9 +239,26 @@ class ListSection (Section):
 
     def get_context_data (self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['classes'] += ' section_list'
-        context['object_list'] = self.get_object_list()
+        context.update({
+            'classes': context.classes + ' section_list',
+            'icon_size': self.icon_size,
+            'object_list': self.get_object_list(),
+        })
         return context
+
+
+class UrlListSection (ListSection):
+    classes = 'section_urls'
+    targets = None
+
+    def get_object_list (self, request, **kwargs):
+        return [
+            ListSection.Item(
+                target.image or None,
+                '<a href="{}">{}</a>'.format(target.detail_url(), target.title)
+            )
+            for target in self.targets
+        ]
 
 
 class PostListSection (PostListView):
@@ -222,8 +274,8 @@ class PostListSection (PostListView):
 
     def dispatch (self, request, *args, **kwargs):
         kwargs = self.get_kwargs(kwargs)
-        # TODO: to_string
-        return super().dispatch(request, *args, **kwargs)
+        response = super().dispatch(request, *args, **kwargs)
+        return str(response.content)
 
 # TODO:
 # - get_title: pass object / queryset

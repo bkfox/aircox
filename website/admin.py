@@ -15,6 +15,15 @@ def add_inline (base_model, post_model, prepend = False):
         max_num = 1
         verbose_name = _('Post')
 
+        fieldsets = [
+                (None, {
+                    'fields': ['title', 'content', 'image', 'tags']
+                }),
+                (None, {
+                    'fields': ['date', 'published', 'author', 'thread']
+                })
+        ]
+
     registry = admin.site._registry
     if not base_model in registry:
         raise TypeError(str(base_model) + " not in admin registry")
@@ -28,8 +37,8 @@ def add_inline (base_model, post_model, prepend = False):
     registry[base_model].inlines = inlines
 
 
-add_inline(programs.Program, Program)
-add_inline(programs.Episode, Episode)
+add_inline(programs.Program, Program, True)
+add_inline(programs.Episode, Episode, True)
 
 
 #class ArticleAdmin (DescriptionAdmin):

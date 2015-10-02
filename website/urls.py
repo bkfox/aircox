@@ -4,7 +4,7 @@ from website.models import *
 from website.views import *
 
 from cms.models import Article
-from cms.views import ViewSet
+from cms.views import ViewSet, Menu
 from cms.routes import *
 
 class ProgramSet (ViewSet):
@@ -38,11 +38,20 @@ class ArticleSet (ViewSet):
         DateRoute,
     ]
 
-router = Router()
-router.register_set(ProgramSet())
-router.register_set(EpisodeSet())
-router.register_set(ArticleSet())
 
-urlpatterns = router.get_urlpatterns()
+website = Website(
+    name = 'RadioCampus',
+    menus = [
+        Menu(
+            position = 'top',
+            sections = []
+        )
+    ],
+})
 
+
+website.register_set(ProgramSet)
+website.register_set(EpisodeSet)
+website.register_set(ArticleSet)
+urlpatterns = website.urls
 

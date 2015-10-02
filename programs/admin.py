@@ -39,22 +39,19 @@ class TrackInline (SortableTabularInline):
     extra = 10
 
 
-class DescriptionAdmin (admin.ModelAdmin):
-    fields = [ 'name', 'tags', 'description' ]
+class NameableAdmin (admin.ModelAdmin):
+    fields = [ 'name' ]
 
-    def tags (obj):
-        return ', '.join(obj.tags.names())
-
-    list_display = ['id', 'name', tags]
+    list_display = ['id', 'name']
     list_filter = []
     search_fields = ['name',]
 
 
 @admin.register(Sound)
-class SoundAdmin (DescriptionAdmin):
+class SoundAdmin (NameableAdmin):
     fields = None
     fieldsets = [
-        (None, { 'fields': DescriptionAdmin.fields + ['path' ] } ),
+        (None, { 'fields': NameableAdmin.fields + ['path' ] } ),
         (None, { 'fields': ['duration', 'date', 'fragment' ] } )
     ]
 
@@ -66,15 +63,15 @@ class StreamAdmin (SortableModelAdmin):
 
 
 @admin.register(Program)
-class ProgramAdmin (DescriptionAdmin):
-    fields = DescriptionAdmin.fields + ['stream']
+class ProgramAdmin (NameableAdmin):
+    fields = NameableAdmin.fields + ['stream']
     inlines = [ ScheduleInline ]
 
 
 @admin.register(Episode)
-class EpisodeAdmin (DescriptionAdmin):
-    list_filter = ['program'] + DescriptionAdmin.list_filter
-    fields = DescriptionAdmin.fields + ['sounds']
+class EpisodeAdmin (NameableAdmin):
+    list_filter = ['program'] + NameableAdmin.list_filter
+    fields = NameableAdmin.fields + ['sounds']
 
     inlines = (TrackInline, DiffusionInline)
 

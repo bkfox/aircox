@@ -24,19 +24,10 @@ def date_or_default (date, date_only = False):
     return date
 
 
-class Description (models.Model):
+class Nameable (models.Model):
     name = models.CharField (
         _('name'),
         max_length = 128,
-    )
-    description = models.TextField (
-        _('description'),
-        max_length = 1024,
-        blank = True, null = True
-    )
-    tags = TaggableManager(
-        _('tags'),
-        blank = True,
     )
 
     def get_slug_name (self):
@@ -51,7 +42,7 @@ class Description (models.Model):
         abstract = True
 
 
-class Track (Description):
+class Track (Nameable):
     # There are no nice solution for M2M relations ship (even without
     # through) in django-admin. So we unfortunately need to make one-
     # to-one relations and add a position argument
@@ -68,6 +59,10 @@ class Track (Description):
         default = 0,
         help_text=_('position in the playlist'),
     )
+    tags = TaggableManager(
+        _('tags'),
+        blank = True,
+    )
 
     def __str__(self):
         return ' '.join([self.artist, ':', self.name ])
@@ -77,7 +72,7 @@ class Track (Description):
         verbose_name_plural = _('Tracks')
 
 
-class Sound (Description):
+class Sound (Nameable):
     """
     A Sound is the representation of a sound, that can be:
     - An episode podcast/complete record
@@ -134,7 +129,7 @@ class Sound (Description):
         if not self.pk:
             self.date = self.get_mtime()
 
-        super(Sound, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
     def __str__ (self):
         return '/'.join(self.path.split('/')[-3:])
@@ -393,7 +388,7 @@ class Stream (models.Model):
         return '#{} {}'.format(self.priority, self.name)
 
 
-class Program (Description):
+class Program (Nameable):
     stream = models.ForeignKey(
         Stream,
         verbose_name = _('stream'),
@@ -419,7 +414,7 @@ class Program (Description):
                 return schedule
 
 
-class Episode (Description):
+class Episode (Nameable):
     program = models.ForeignKey(
         Program,
         verbose_name = _('program'),
