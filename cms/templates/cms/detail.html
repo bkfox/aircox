@@ -1,0 +1,19 @@
+{# {% extends "website/base.html" %} #}
+
+{% block title %}
+{{ object.title }}
+{% endblock %}
+
+{% block pre_title %}
+<time datetime="{{ object.date }}">
+    {{ object.date|date:'l d F Y' }},
+    {{ object.date|time:'H\hi' }}
+</time>
+{% endblock %}
+
+{% block content %}
+{% for section in sections %}
+{{ section|safe }}
+{% endfor %}
+{% endblock %}
+

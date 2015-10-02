@@ -1,0 +1,11 @@
+
+<div class="menu menu_{{ position }} {{ classes }}"
+    {% if name %}
+        name="menu_{{ name }}"
+        id="menu_{{ name }}"
+    {% endif %}>
+    {% for section in sections %}
+    {{ section|safe }}
+    {% endfor %}
+</div>
+

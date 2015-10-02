@@ -1,0 +1,33 @@
+<div class="section {{ classes }}">
+    {% if title %}
+    <h1>
+        {% block section_title %}
+        {{ title }}
+        {% endblock %}
+    </h1>
+    {% endif %}
+
+    {% if header %}
+    <header class="section_header">
+        {% block section_header %}
+        {{ header }}
+        {% endblock %}
+    </header>
+    {% endif %}
+
+    <div class="section_content">
+        {% block section_content %}
+        {{ content|safe }}
+        {% endblock %}
+    </div>
+
+    {% if bottom %}
+    <div class="section_bottom">
+        {% block section_bottom %}
+        {{ bottom }}
+        {% endblock %}
+    </div>
+    {% endif %}
+</div>
+
+
