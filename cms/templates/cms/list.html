@@ -1,23 +1,21 @@
-{# {% extends embed|yesno:"website/single.html,website/base.html" %} #}
+{% extends embed|yesno:"cms/base_content.html,cms/base_site.html" %}
 
 {% load i18n %}
 {% load thumbnail %}
-{# {% load website_views %} #}
-
 
 {% block content %}
 <div class="post_list {{ classes }}">
 {% for post in object_list %}
     <a class="post_item"
        href="{{ post.detail_url }}">
-        {% if 'date' in list.fields or 'time' in list.fields %}
+        {% if 'date' in view.fields or 'time' in list.fields %}
         <time datetime="{{ post.date }}" class="post_datetime">
-            {% if 'date' in list.fields %}
+            {% if 'date' in view.fields %}
             <span class="post_date">
                 {{ post.date|date:'D. d F' }},
             </span>
             {% endif %}
-            {% if 'time' in list.fields %}
+            {% if 'time' in view.fields %}
             <span class="post_time">
                 {{ post.date|date:'H:i' }},
             </span>
@@ -25,15 +23,15 @@
         </time>
         {% endif %}
 
-        {% if 'image' in list.fields %}
+        {% if 'image' in view.fields %}
         <img src="{% thumbnail post.image "64x64" crop %}" class="post_image">
         {% endif %}
 
-        {% if 'title' in list.fields %}
+        {% if 'title' in view.fields %}
         <h4 class="post_title">{{ post.title }}</h4>
         {% endif %}
 
-        {% if 'content' in list.fields %}
+        {% if 'content' in view.fields %}
         <div class="post_content">
         {{ post.content|safe|striptags|truncatechars:"64" }}
         </div>

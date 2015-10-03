@@ -1,14 +1,48 @@
 from django.shortcuts import render
 from django.template.loader import render_to_string
-from django.views.generic import ListView
-from django.views.generic import DetailView
+from django.views.generic import ListView, DetailView
+from django.views.generic.base import View, TemplateResponseMixin
 from django.core import serializers
 from django.utils.translation import ugettext as _, ugettext_lazy
 
 import cms.routes as routes
 
 
-class PostListView (ListView):
+class PostBaseView:
+    website = None  # corresponding website
+    title = ''      # title of the page
+    embed = False   # page is embed (if True, only post content is printed
+    classes = ''    # extra classes for the content
+
+    def get_base_context (self):
+        """
+        Return a context with all attributes of this classe plus 'view' set
+        to self.
+        """
+        context = {
+            k: getattr(self, k)
+            for k, v in PostBaseView.__dict__.items()
+                if not k.startswith('__')
+        }
+
+        if not self.embed:
+            context['menus'] = {
+                k: v.get(self.request)
+                for k, v in {
+                    'top': self.website.get_menu('top'),
+                    'left': self.website.get_menu('left'),
+                    'bottom': self.website.get_menu('bottom'),
+                    'right': self.website.get_menu('right'),
+                    'header': self.website.get_menu('header'),
+                    'footer': self.website.get_menu('footer'),
+                }.items() if v
+            }
+
+        context['view'] = self
+        return context
+
+
+class PostListView (PostBaseView, ListView):
     """
     List view for posts and children
     """
@@ -20,34 +54,29 @@ class PostListView (ListView):
         exclude = None
         order = 'desc'
         reverse = False
+        fields = None
 
         def __init__ (self, query):
+            if query:
+                self.update(query)
+
+        def update (self, query):
             my_class = self.__class__
             if type(query) is my_class:
                 self.__dict__.update(query.__dict__)
                 return
-
-            if type(query) is not dict:
-                query = query.__dict__
-
-            self.__dict__ = { k: v for k,v in query.items() }
+            self.__dict__.update(query)
 
     template_name = 'cms/list.html'
     allow_empty = True
 
-    website = None
-    title = ''
-    classes = ''
-
     route = None
     query = None
-    embed = False
     fields = [ 'date', 'time', 'image', 'title', 'content' ]
 
     def __init__ (self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if self.query:
-            self.query = Query(self.query)
+        self.query = PostListView.Query(self.query)
 
     def dispatch (self, request, *args, **kwargs):
         self.route = self.kwargs.get('route') or self.route
@@ -55,8 +84,9 @@ class PostListView (ListView):
 
     def get_queryset (self):
         qs = self.route.get_queryset(self.model, self.request, **self.kwargs)
+        query = self.query
 
-        query = self.query or PostListView.Query(self.request.GET)
+        query.update(self.request.GET)
         if query.exclude:
             qs = qs.exclude(id = int(exclude))
 
@@ -67,16 +97,21 @@ class PostListView (ListView):
             qs.order_by('date', 'id')
         else:
             qs.order_by('-date', '-id')
+
+        if query.fields:
+            self.fields = [
+                field for field in query.fields
+                if field in self.__class__.fields
+            ]
+
         return qs
 
     def get_context_data (self, **kwargs):
         context = super().get_context_data(**kwargs)
+        context.update(self.get_base_context())
         context.update({
-            'list': self,
             'title': self.get_title(),
-            'classes': self.classes,
         })
-
         return context
 
     def get_title (self):
@@ -88,14 +123,12 @@ class PostListView (ListView):
         return title
 
 
-class PostDetailView (DetailView):
+class PostDetailView (DetailView, PostBaseView):
     """
     Detail view for posts and children
     """
     template_name = 'cms/detail.html'
-    website = None
 
-    embed = False
     sections = []
 
     def __init__ (self, sections = None, *args, **kwargs):
@@ -116,6 +149,7 @@ class PostDetailView (DetailView):
 
     def get_context_data (self, **kwargs):
         context = super().get_context_data(**kwargs)
+        context.update(self.get_base_context())
         context.update({
             'sections': [
                 section.get(self.request, object = self.object)
@@ -158,39 +192,44 @@ class ViewSet:
                       [ routes.DetailRoute.as_url(self.model, self.detail_view ) ]
 
 
-class Menu (DetailView):
+class Menu (View):
     template_name = 'cms/menu.html'
 
     name = ''
     enabled = True
     classes = ''
-    position = ''   # top, left, bottom, right
+    position = ''   # top, left, bottom, right, header, footer
     sections = None
 
+    def __init__ (self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.name = self.name or ('menu_' + self.position)
+
     def get_context_data (self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context.update({
+        return {
             'name': self.name,
             'classes': self.classes,
             'position': self.position,
             'sections': [
-                section.get(self.request, object = self.object)
+                section.get(self.request, object = None)
                     for section in self.sections
             ]
-        })
+        }
 
-    def get (self, **kwargs):
+    def get (self, request, **kwargs):
+        self.request = request
         context = self.get_context_data(**kwargs)
         return render_to_string(self.template_name, context)
 
 
-class Section (DetailView):
+class Section (View):
     """
     Base class for sections. Sections are view that can be used in detail view
     in order to have extra content about a post.
     """
     template_name = 'cms/section.html'
     require_object = False
+    object = None
     classes = ''
     title = ''
     content = ''
@@ -198,18 +237,18 @@ class Section (DetailView):
     bottom = ''
 
     def get_context_data (self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context.update({
+        context = {
             'title': self.title,
             'header': self.header,
             'content': self.content,
             'bottom': self.bottom,
             'classes': self.classes,
-        })
+        }
         return context
 
     def get (self, request, **kwargs):
         self.object = kwargs.get('object') or self.object
+        self.request = request
         context = self.get_context_data(**kwargs)
         return render_to_string(self.template_name, context)
 
@@ -240,7 +279,7 @@ class ListSection (Section):
     def get_context_data (self, **kwargs):
         context = super().get_context_data(**kwargs)
         context.update({
-            'classes': context.classes + ' section_list',
+            'classes': context.get('classes') + ' section_list',
             'icon_size': self.icon_size,
             'object_list': self.get_object_list(),
         })

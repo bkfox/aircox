@@ -1,5 +1,6 @@
 from django.conf.urls import url
 from django.utils import timezone
+from django.utils.translation import ugettext as _, ugettext_lazy
 
 from website.models import *
 from website.views import *
@@ -50,11 +51,9 @@ class Route:
         """
         pass
 
-
     @classmethod
     def get_title (cl, model, request, **kwargs):
         return ''
-
 
     @classmethod
     def as_url (cl, model, view, view_kwargs = None):
@@ -89,7 +88,6 @@ class DetailRoute (Route):
         ('slug', '(\w|-|_)+', True),
     ]
 
-
     @classmethod
     def get_object (cl, model, request, pk, **kwargs):
         return model.objects.get(pk = int(pk))
@@ -101,6 +99,12 @@ class AllRoute (Route):
     @classmethod
     def get_queryset (cl, model, request, **kwargs):
         return model.objects.all()
+
+    @classmethod
+    def get_title (cl, model, request, **kwargs):
+        return _('All %(model)s') % {
+            'model': model._meta.verbose_name_plural
+        }
 
 
 class ThreadRoute (Route):

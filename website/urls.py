@@ -4,8 +4,9 @@ from website.models import *
 from website.views import *
 
 from cms.models import Article
-from cms.views import ViewSet, Menu
+from cms.views import ViewSet, Menu, Section
 from cms.routes import *
+from cms.website import Website
 
 class ProgramSet (ViewSet):
     model = Program
@@ -44,10 +45,12 @@ website = Website(
     menus = [
         Menu(
             position = 'top',
-            sections = []
+            sections = [
+                Section(content = "Radio Campus le SITE")
+            ]
         )
     ],
-})
+)
 
 
 website.register_set(ProgramSet)

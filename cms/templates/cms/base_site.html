@@ -1,0 +1,49 @@
+<html>
+    <head>
+        <title>{{ website.name }} {% if title %}- {{ title }} {% endif %}</title>
+    </head>
+    <body>
+        {% if menus.top %}
+            {{ menus.top|safe }}
+        {% endif %}
+
+        {% block header %}
+            {% if menus.header %}
+            <header>
+                {{ menus.header|safe }}
+            </header>
+            {% endif %}
+        {% endblock %}
+
+        <div class="page">
+            {% if menus.left %}
+                {{ menus.left|safe }}
+            {% endif %}
+
+            <main>
+                {% block pre_title %}
+                {% endblock %}
+                <h1>
+                    {% block title %}
+                    {{ title }}
+                    {% endblock %}
+                </h1>
+                {% block post_title %}
+                {% endblock %}
+                <div class="content">
+                    {% block content %}
+                    {% endblock %}
+                </div>
+            </main>
+        </div>
+
+        {% block footer %}
+            {% if menus.footer %}
+            <footer>
+                {{ menus.footer|safe }}
+            </footer>
+            {% endif %}
+        {% endblock %}
+    </body>
+</html>
+

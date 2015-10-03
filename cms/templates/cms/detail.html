@@ -1,4 +1,4 @@
-{# {% extends "website/base.html" %} #}
+{% extends embed|yesno:"cms/base_content.html,cms/base_site.html" %}
 
 {% block title %}
 {{ object.title }}
