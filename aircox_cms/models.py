@@ -25,6 +25,8 @@ class Thread (models.Model):
     post_id = models.PositiveIntegerField()
     post = GenericForeignKey('post_type', 'post_id')
 
+    __initial_post = None
+
     @classmethod
     def __get_query_set (cl, function, model, post, kwargs):
         if post:
@@ -47,7 +49,7 @@ class Thread (models.Model):
         return self.__get_query_set('exclude', model, post, kwargs)
 
     def save (self, *args, **kwargs):
-        self.post = self.__initial_post
+        self.post = self.__initial_post or self.post
         super().save(*args, **kwargs)
 
     def __str__ (self):
@@ -130,6 +132,11 @@ class RelatedPostBase (models.base.ModelBase):
         if not '__str__' in attrs:
             attrs['__str__'] = lambda self: str(self.related)
 
+        if name is not 'RelatedPost':
+            _relation = RelatedPost.Relation()
+            _relation.__dict__.update(rel)
+            attrs['_relation'] = _relation
+
         return super().__new__(cls, name, bases, attrs)
 
 
@@ -146,14 +153,14 @@ class RelatedPost (Post, metaclass = RelatedPostBase):
 
 
     def get_attribute (self, attr):
-        attr = self.Relation.mappings.get(attr)
+        attr = self._relation.mappings.get(attr)
         return self.related.__dict__[attr] if attr else None
 
     def save (self, *args, **kwargs):
         if not self.title and self.related:
             self.title = self.get_attribute('title')
 
-        if self.Relation.bind_mapping:
+        if self._relation.bind_mapping:
             self.related.__dict__.update({
                 rel_attr: self.__dict__[attr]
                 for attr, rel_attr in self.Relation.mapping
