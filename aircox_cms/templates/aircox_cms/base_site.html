@@ -1,5 +1,14 @@
+{% load staticfiles %}
+
 <html>
     <head>
+        {# FIXME: page tags #}
+        <meta charset="utf-8">
+        <meta name="application-name" content="aircox-cms">
+        <meta name="description" content="{{ website.description }}">
+        <meta name="keywords" content="{{ website.tags }}">
+
+        <link rel="stylesheet" href="{% static "aircox_aircox_cms/styles.css" %}" type="text/css">
         <title>{{ website.name }} {% if title %}- {{ title }} {% endif %}</title>
     </head>
     <body>
@@ -35,6 +44,10 @@
                     {% endblock %}
                 </div>
             </main>
+
+            {% if menus.right %}
+                {{ menus.right|safe }}
+            {% endif %}
         </div>
 
         {% block footer %}
@@ -44,6 +57,10 @@
             </footer>
             {% endif %}
         {% endblock %}
+
+        {% if menus.bottom %}
+            {{ menus.bottom|safe }}
+        {% endif %}
     </body>
 </html>
 

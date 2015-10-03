@@ -1,7 +1,7 @@
 from django.db import models
 
-from cms.models import RelatedPost
-import programs.models as programs
+from aircox_cms.models import RelatedPost
+import aircox_programs.models as programs
 
 class Program (RelatedPost):
     class Relation:

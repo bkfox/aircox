@@ -3,10 +3,10 @@ from django.conf.urls import url, include
 from website.models import *
 from website.views import *
 
-from cms.models import Article
-from cms.views import ViewSet, Menu, Section
-from cms.routes import *
-from cms.website import Website
+from aircox_cms.models import Article
+from aircox_cms.views import ViewSet, Menu, Section
+from aircox_cms.routes import *
+from aircox_cms.website import Website
 
 class ProgramSet (ViewSet):
     model = Program

@@ -5,8 +5,8 @@ from django.views.generic import DetailView
 from django.core import serializers
 from django.utils.translation import ugettext as _, ugettext_lazy
 
-import programs.models as programs
-from cms.views import ListSection
+import aircox_programs.models as programs
+from aircox_cms.views import ListSection
 
 
 class PlaylistSection (ListSection):

@@ -5,7 +5,7 @@ from django.views.generic.base import View, TemplateResponseMixin
 from django.core import serializers
 from django.utils.translation import ugettext as _, ugettext_lazy
 
-import cms.routes as routes
+import aircox_cms.routes as routes
 
 
 class PostBaseView:
@@ -67,7 +67,7 @@ class PostListView (PostBaseView, ListView):
                 return
             self.__dict__.update(query)
 
-    template_name = 'cms/list.html'
+    template_name = 'aircox_cms/list.html'
     allow_empty = True
 
     route = None
@@ -127,7 +127,7 @@ class PostDetailView (DetailView, PostBaseView):
     """
     Detail view for posts and children
     """
-    template_name = 'cms/detail.html'
+    template_name = 'aircox_cms/detail.html'
 
     sections = []
 
@@ -135,9 +135,12 @@ class PostDetailView (DetailView, PostBaseView):
         super().__init__(*args, **kwargs)
         self.sections = sections or []
 
-    def get_queryset (self, **kwargs):
+    def get_queryset (self):
+        if self.request.GET.get('embed'):
+            self.embed = True
+
         if self.model:
-            return super().get_queryset(**kwargs).filter(published = True)
+            return super().get_queryset().filter(published = True)
         return []
 
     def get_object (self, **kwargs):
@@ -193,7 +196,7 @@ class ViewSet:
 
 
 class Menu (View):
-    template_name = 'cms/menu.html'
+    template_name = 'aircox_cms/menu.html'
 
     name = ''
     enabled = True
@@ -227,7 +230,7 @@ class Section (View):
     Base class for sections. Sections are view that can be used in detail view
     in order to have extra content about a post.
     """
-    template_name = 'cms/section.html'
+    template_name = 'aircox_cms/section.html'
     require_object = False
     object = None
     classes = ''
@@ -271,7 +274,7 @@ class ListSection (Section):
 
     use_icons = True
     icon_size = '32x32'
-    template_name = 'cms/section_list.html'
+    template_name = 'aircox_cms/section_list.html'
 
     def get_object_list (self):
         return []

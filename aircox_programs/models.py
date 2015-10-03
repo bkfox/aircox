@@ -8,7 +8,7 @@ from django.utils.html import strip_tags
 
 from taggit.managers import TaggableManager
 
-import programs.settings as settings
+import aircox_programs.settings as settings
 
 
 def date_or_default (date, date_only = False):

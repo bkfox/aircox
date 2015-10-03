@@ -1,8 +1,11 @@
-import cms.routes as routes
+import aircox_cms.routes as routes
 
 class Website:
     name = ''
     domain = ''
+    description = 'An aircox website'   # public description (used in meta info)
+    tags = 'aircox,radio,music'         # public keywords (used in meta info)
+
     logo = None
     menus = None
     router = None

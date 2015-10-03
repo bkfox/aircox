@@ -1,0 +1,10 @@
+body { padding: 0; margin: 0; }
+
+nav.menu_top {
+    width: 100%
+    position: absolute;
+    border-bottom: 1px grey solid;
+}
+
+
+

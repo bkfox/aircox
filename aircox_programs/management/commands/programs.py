@@ -3,7 +3,7 @@ import json
 
 from django.core.management.base    import BaseCommand, CommandError
 from django.utils                   import timezone
-import programs.models              as models
+import aircox_programs.models              as models
 
 
 class Model:

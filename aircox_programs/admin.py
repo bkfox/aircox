@@ -7,8 +7,8 @@ from django.db import models
 from suit.admin import SortableTabularInline, SortableModelAdmin
 from autocomplete_light.contrib.taggit_field import TaggitWidget, TaggitField
 
-from programs.forms import *
-from programs.models import *
+from aircox_programs.forms import *
+from aircox_programs.models import *
 
 
 #

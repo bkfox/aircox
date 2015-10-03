@@ -20,8 +20,8 @@ from argparse import RawTextHelpFormatter
 
 from django.core.management.base    import BaseCommand, CommandError
 from django.utils                   import timezone
-from programs.models                import *
-import programs.settings            as settings
+from aircox_programs.models                import *
+import aircox_programs.settings            as settings
 
 
 class Command (BaseCommand):
