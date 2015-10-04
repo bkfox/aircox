@@ -1,0 +1,44 @@
+
+body {
+    background-color: #F2F2F2;
+    font-family: "Myriad Pro",Calibri,Helvetica,Arial,sans-serif;
+}
+
+
+h1, h2, h3 {
+    font-family: "Myriad Pro",Calibri,Helvetica,Arial,sans-serif
+}
+
+
+nav.menu {
+    padding: 0.5em;
+}
+
+nav.menu_top {
+    background-color: #212121;
+    color: #007EDF;
+    font-size: 1.1em;
+}
+
+
+    header {
+        height: 9em;
+    }
+
+    header img {
+        height: 100%;
+        float: left;
+    }
+
+    header .colony {
+        position: fixed;
+        top: 0em;
+        right: 0;
+        z-index: -1;
+    }
+
+.page {
+    width: 100%;
+    background-color: rgba(255, 255, 255, 0.8);
+}
+

@@ -1,10 +1,10 @@
 
-<nav class="menu menu_{{ position }} {{ classes }}" {% if name %}
-        name="menu_{{ name }}"
-        id="menu_{{ name }}"
+<{{ tag }} class="menu menu_{{ position }} {{ classes }}" {% if name %}
+        name="{{ name }}"
+        id="{{ name }}"
     {% endif %}>
     {% for section in sections %}
     {{ section|safe }}
     {% endfor %}
-</nav>
+</{{ tag }}>
 

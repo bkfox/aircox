@@ -6,21 +6,21 @@ from django.core import serializers
 from django.utils.translation import ugettext as _, ugettext_lazy
 
 import aircox_programs.models as programs
-from aircox_cms.views import ListSection
+from aircox_cms.views import Sections
 
 
-class PlaylistSection (ListSection):
+class PlayListSection (Sections.List):
     title = _('Playlist')
 
     def get_object_list (self):
         tracks = programs.Track.objects \
                      .filter(episode = self.object) \
                      .order_by('position')
-        return [ ListSection.Item(None, track.title, track.artist)
+        return [ Sections.List.Item(None, track.title, track.artist)
                     for track in tracks ]
 
 
-class ScheduleSection (ListSection):
+class ScheduleSection (Sections.List):
     title = _('Schedule')
 
     def get_object_list (self):
@@ -28,7 +28,7 @@ class ScheduleSection (ListSection):
                     .filter(program = self.object.pk)
 
         return [
-            ListSection.Item(None, sched.get_frequency_display(),
+            Sections.List.Item(None, sched.get_frequency_display(),
                              _('rerun') if sched.rerun else None)
             for sched in scheds
         ]

@@ -8,21 +8,22 @@
         <meta name="description" content="{{ website.description }}">
         <meta name="keywords" content="{{ website.tags }}">
 
-        <link rel="stylesheet" href="{% static "aircox_aircox_cms/styles.css" %}" type="text/css">
+        <link rel="stylesheet" href="{% static "aircox_cms/styles.css" %}" type="text/css">
+        {% if website.styles %}
+        <link rel="stylesheet" href="{% static website.styles %}" type="text/css">
+        {% endif %}
         <title>{{ website.name }} {% if title %}- {{ title }} {% endif %}</title>
     </head>
     <body>
+        {% block header %}
+            {% if menus.header %}
+            {{ menus.header|safe }}
+            {% endif %}
+        {% endblock %}
+
         {% if menus.top %}
             {{ menus.top|safe }}
         {% endif %}
-
-        {% block header %}
-            {% if menus.header %}
-            <header>
-                {{ menus.header|safe }}
-            </header>
-            {% endif %}
-        {% endblock %}
 
         <div class="page">
             {% if menus.left %}
@@ -50,11 +51,13 @@
             {% endif %}
         </div>
 
+        {% if menus.page_bottom %}
+            {{ menus.page_bottom|safe }}
+        {% endif %}
+
         {% block footer %}
             {% if menus.footer %}
-            <footer>
-                {{ menus.footer|safe }}
-            </footer>
+            {{ menus.footer|safe }}
             {% endif %}
         {% endblock %}
 

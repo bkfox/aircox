@@ -1,9 +1,14 @@
+import re
+
+
+from django.templatetags.static import static
 from django.shortcuts import render
 from django.template.loader import render_to_string
 from django.views.generic import ListView, DetailView
 from django.views.generic.base import View, TemplateResponseMixin
 from django.core import serializers
 from django.utils.translation import ugettext as _, ugettext_lazy
+from django.utils.html import escape
 
 import aircox_cms.routes as routes
 
@@ -29,12 +34,8 @@ class PostBaseView:
             context['menus'] = {
                 k: v.get(self.request)
                 for k, v in {
-                    'top': self.website.get_menu('top'),
-                    'left': self.website.get_menu('left'),
-                    'bottom': self.website.get_menu('bottom'),
-                    'right': self.website.get_menu('right'),
-                    'header': self.website.get_menu('header'),
-                    'footer': self.website.get_menu('footer'),
+                    k: self.website.get_menu(k)
+                    for k in self.website.menu_layouts
                 }.items() if v
             }
 
@@ -162,6 +163,179 @@ class PostDetailView (DetailView, PostBaseView):
         return context
 
 
+class Menu (View):
+    template_name = 'aircox_cms/menu.html'
+
+    name = ''
+    tag = 'nav'
+    enabled = True
+    classes = ''
+    position = ''   # top, left, bottom, right, header, footer, page_top, page_bottom
+    sections = None
+
+    def __init__ (self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.name = self.name or ('menu_' + self.position)
+
+    def get_context_data (self, **kwargs):
+        return {
+            'name': self.name,
+            'tag': self.tag,
+            'classes': self.classes,
+            'position': self.position,
+            'sections': [
+                section.get(self.request, object = None)
+                    for section in self.sections
+            ]
+        }
+
+    def get (self, request, **kwargs):
+        self.request = request
+        context = self.get_context_data(**kwargs)
+        return render_to_string(self.template_name, context)
+
+
+
+class BaseSection (View):
+    """
+    Base class for sections. Sections are view that can be used in detail view
+    in order to have extra content about a post, or in menus.
+    """
+    template_name = 'aircox_cms/base_section.html'
+    tag = 'div'        # container tags
+    classes = ''    # container classes
+    attrs = ''      # container extra attributes
+    content = ''    # content
+
+
+    def get_context_data (self, **kwargs):
+        return {
+            'tag': self.tag,
+            'classes': self.classes,
+            'attrs': self.attrs,
+            'content': self.content,
+        }
+
+    def get (self, request, **kwargs):
+        self.request = request
+        context = self.get_context_data(**kwargs)
+        return render_to_string(self.template_name, context)
+
+
+class Section (BaseSection):
+    template_name = 'aircox_cms/section.html'
+    require_object = False
+    object = None
+    title = ''
+    header = ''
+    bottom = ''
+
+    def get_context_data (self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update({
+            'title': self.title,
+            'header': self.header,
+            'bottom': self.bottom,
+        })
+        return context
+
+    def get (self, request, **kwargs):
+        self.object = kwargs.get('object') or self.object
+        return super().get(request, **kwargs)
+
+
+class Sections:
+    class Image (BaseSection):
+        url = None # relative url to the image
+
+        @property
+        def content (self):
+            return '<img src="{}">'.format(
+                        static(self.url),
+                    )
+
+
+    class PostContent (Section):
+        @property
+        def content (self):
+            content = escape(self.object.content)
+            content = re.sub(r'(^|\n\n)((\n?[^\n])+)', r'<p>\2</p>', content)
+            content = re.sub(r'\n', r'<br>', content)
+            return content
+
+
+    class PostImage (Section):
+        @property
+        def content (self):
+            return '<img src="{}" class="post_image">'.format(
+                        self.object.image.url
+                    )
+
+
+    class List (Section):
+        """
+        Section to render list. The context item 'object_list' is used as list of
+        items to render.
+        """
+        class Item:
+            icon = None
+            title = None
+            text = None
+
+            def __init__ (self, icon, title = None, text = None):
+                self.icon = icon
+                self.title = title
+                self.text = text
+
+        use_icons = True
+        icon_size = '32x32'
+        template_name = 'aircox_cms/section_list.html'
+
+        def get_object_list (self):
+            return []
+
+        def get_context_data (self, **kwargs):
+            context = super().get_context_data(**kwargs)
+            context.update({
+                'classes': context.get('classes') + ' section_list',
+                'icon_size': self.icon_size,
+                'object_list': self.get_object_list(),
+            })
+            return context
+
+
+    class UrlList (List):
+        classes = 'section_urls'
+        targets = None
+
+        def get_object_list (self, request, **kwargs):
+            return [
+                List.Item(
+                    target.image or None,
+                    '<a href="{}">{}</a>'.format(target.detail_url(), target.title)
+                )
+                for target in self.targets
+            ]
+
+
+    class PostList (PostListView):
+        route = None
+        model = None
+        embed = True
+
+        def __init__ (self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+
+        def get_kwargs (self, request, **kwargs):
+            return kwargs
+
+        def dispatch (self, request, *args, **kwargs):
+            kwargs = self.get_kwargs(kwargs)
+            response = super().dispatch(request, *args, **kwargs)
+            return str(response.content)
+
+
+
 class ViewSet:
     """
     A ViewSet is a class helper that groups detail and list views that can be
@@ -173,7 +347,10 @@ class ViewSet:
     list_routes = []
 
     detail_view = PostDetailView
-    detail_sections = []
+    detail_sections = [
+        Sections.PostContent,
+        Sections.PostImage,
+    ]
 
     def __init__ (self, website = None):
         self.detail_sections = [
@@ -193,133 +370,5 @@ class ViewSet:
         self.urls = [ route.as_url(self.model, self.list_view)
                             for route in self.list_routes ] + \
                       [ routes.DetailRoute.as_url(self.model, self.detail_view ) ]
-
-
-class Menu (View):
-    template_name = 'aircox_cms/menu.html'
-
-    name = ''
-    enabled = True
-    classes = ''
-    position = ''   # top, left, bottom, right, header, footer
-    sections = None
-
-    def __init__ (self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.name = self.name or ('menu_' + self.position)
-
-    def get_context_data (self, **kwargs):
-        return {
-            'name': self.name,
-            'classes': self.classes,
-            'position': self.position,
-            'sections': [
-                section.get(self.request, object = None)
-                    for section in self.sections
-            ]
-        }
-
-    def get (self, request, **kwargs):
-        self.request = request
-        context = self.get_context_data(**kwargs)
-        return render_to_string(self.template_name, context)
-
-
-class Section (View):
-    """
-    Base class for sections. Sections are view that can be used in detail view
-    in order to have extra content about a post.
-    """
-    template_name = 'aircox_cms/section.html'
-    require_object = False
-    object = None
-    classes = ''
-    title = ''
-    content = ''
-    header = ''
-    bottom = ''
-
-    def get_context_data (self, **kwargs):
-        context = {
-            'title': self.title,
-            'header': self.header,
-            'content': self.content,
-            'bottom': self.bottom,
-            'classes': self.classes,
-        }
-        return context
-
-    def get (self, request, **kwargs):
-        self.object = kwargs.get('object') or self.object
-        self.request = request
-        context = self.get_context_data(**kwargs)
-        return render_to_string(self.template_name, context)
-
-
-
-class ListSection (Section):
-    """
-    Section to render list. The context item 'object_list' is used as list of
-    items to render.
-    """
-    class Item:
-        icon = None
-        title = None
-        text = None
-
-        def __init__ (self, icon, title = None, text = None):
-            self.icon = icon
-            self.title = title
-            self.text = text
-
-    use_icons = True
-    icon_size = '32x32'
-    template_name = 'aircox_cms/section_list.html'
-
-    def get_object_list (self):
-        return []
-
-    def get_context_data (self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context.update({
-            'classes': context.get('classes') + ' section_list',
-            'icon_size': self.icon_size,
-            'object_list': self.get_object_list(),
-        })
-        return context
-
-
-class UrlListSection (ListSection):
-    classes = 'section_urls'
-    targets = None
-
-    def get_object_list (self, request, **kwargs):
-        return [
-            ListSection.Item(
-                target.image or None,
-                '<a href="{}">{}</a>'.format(target.detail_url(), target.title)
-            )
-            for target in self.targets
-        ]
-
-
-class PostListSection (PostListView):
-    route = None
-    model = None
-    embed = True
-
-    def __init__ (self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-    def get_kwargs (self, request, **kwargs):
-        return kwargs
-
-    def dispatch (self, request, *args, **kwargs):
-        kwargs = self.get_kwargs(kwargs)
-        response = super().dispatch(request, *args, **kwargs)
-        return str(response.content)
-
-# TODO:
-# - get_title: pass object / queryset
 
 
