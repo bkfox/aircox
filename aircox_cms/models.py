@@ -12,57 +12,18 @@ from django.dispatch import receiver
 
 from taggit.managers import TaggableManager
 
-class Thread (models.Model):
-    """
-    Object assigned to any Post and children that can be used to have parent and
-    children relationship between posts of different kind.
-
-    We use this system instead of having directly a GenericForeignKey into the
-    Post because it avoids having to define the relationship with two models for
-    routing (one for the parent and one for the children).
-    """
-    post_type = models.ForeignKey(ContentType)
-    post_id = models.PositiveIntegerField()
-    post = GenericForeignKey('post_type', 'post_id')
-
-    __initial_post = None
-
-    @classmethod
-    def __get_query_set (cl, function, model, post, kwargs):
-        if post:
-            model = type(post)
-            kwargs['post_id'] = post.id
-
-        kwargs['post_type'] = ContentType.objects.get_for_model(model)
-        return getattr(cl.objects, function)(**kwargs)
-
-    @classmethod
-    def get (cl, model = None, post = None, **kwargs):
-        return cl.__get_query_set('get', model, post, kwargs)
-
-    @classmethod
-    def filter (cl, model = None, post = None, **kwargs):
-        return self.__get_query_set('filter', model, post, kwargs)
-
-    @classmethod
-    def exclude (cl, model = None, post = None, **kwargs):
-        return self.__get_query_set('exclude', model, post, kwargs)
-
-    def save (self, *args, **kwargs):
-        self.post = self.__initial_post or self.post
-        super().save(*args, **kwargs)
-
-    def __str__ (self):
-        return self.post_type.name + ': ' + str(self.post)
-
 
 class Post (models.Model):
-    thread = models.ForeignKey(
-        Thread,
+    thread_type = models.ForeignKey(
+        ContentType,
         on_delete=models.SET_NULL,
-        blank = True, null = True,
-        help_text = _('the publication is posted on this thread'),
+        blank = True, null = True
     )
+    thread_pk = models.PositiveIntegerField(
+        blank = True, null = True
+    )
+    thread = GenericForeignKey('thread_type', 'thread_pk')
+
     author = models.ForeignKey(
         User,
         verbose_name = _('author'),
@@ -94,7 +55,7 @@ class Post (models.Model):
     )
 
     def detail_url (self):
-        return reverse(self._meta.verbose_name_plural.lower() + '_detail',
+        return reverse(self._meta.verbose_name.lower() + '_detail',
                        kwargs = { 'pk': self.pk,
                                   'slug': slugify(self.title) })
 
@@ -151,7 +112,6 @@ class RelatedPost (Post, metaclass = RelatedPostBase):
         mapping = None          # dict of related mapping values
         bind_mapping = False    # update fields of related data on save
 
-
     def get_attribute (self, attr):
         attr = self._relation.mappings.get(attr)
         return self.related.__dict__[attr] if attr else None
@@ -163,32 +123,10 @@ class RelatedPost (Post, metaclass = RelatedPostBase):
         if self._relation.bind_mapping:
             self.related.__dict__.update({
                 rel_attr: self.__dict__[attr]
-                for attr, rel_attr in self.Relation.mapping
+                for attr, rel_attr in self.Relation.mapping.items()
             })
-
             self.related.save()
 
         super().save(*args, **kwargs)
 
-
-@receiver(post_init)
-def on_thread_init (sender, instance, **kwargs):
-    if not issubclass(Thread, sender):
-        return
-    instance.__initial_post = instance.post
-
-@receiver(post_save)
-def on_post_save (sender, instance, created, *args, **kwargs):
-    if not issubclass(sender, Post) or not created:
-        return
-
-    thread = Thread(post = instance)
-    thread.save()
-
-@receiver(post_delete)
-def on_post_delete (sender, instance, using, *args, **kwargs):
-    try:
-        Thread.get(sender, post = instance).delete()
-    except:
-        pass
 

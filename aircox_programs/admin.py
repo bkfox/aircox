@@ -71,7 +71,7 @@ class ProgramAdmin (NameableAdmin):
 @admin.register(Episode)
 class EpisodeAdmin (NameableAdmin):
     list_filter = ['program'] + NameableAdmin.list_filter
-    fields = NameableAdmin.fields + ['sounds']
+    fields = NameableAdmin.fields + ['sounds', 'program']
 
     inlines = (TrackInline, DiffusionInline)
 

@@ -8,6 +8,9 @@ from django.utils.translation import ugettext as _, ugettext_lazy
 import aircox_programs.models as programs
 from aircox_cms.views import Sections
 
+from website.models import *
+
+
 
 class PlayListSection (Sections.List):
     title = _('Playlist')
@@ -33,5 +36,11 @@ class ScheduleSection (Sections.List):
             for sched in scheds
         ]
 
+
+class EpisodesSection (Sections.Posts):
+    title = _('Episodes')
+
+    def get_object_list (self):
+        return Episode.objects.filter(related__program = self.object.pk)
 
 

@@ -12,6 +12,7 @@ class Website:
                     'right', 'bottom',
                     'header', 'footer']
     router = None
+    registry = {}
 
     @property
     def urls (self):
@@ -27,7 +28,9 @@ class Website:
         Register a ViewSet (or subclass) to the router,
         and connect it to self.
         """
-        view_set = view_set(website = self)
+        view_set = view_set()
+        view_set.connect(website = self)
+        self.registry[view_set.get_detail_name()] = view_set
         self.router.register_set(view_set)
 
     def get_menu (self, position):

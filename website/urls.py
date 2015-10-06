@@ -18,7 +18,8 @@ class ProgramSet (ViewSet):
     ]
 
     detail_sections = ViewSet.detail_sections + [
-        ScheduleSection,
+        ScheduleSection(),
+        EpisodesSection(),
     ]
 
 class EpisodeSet (ViewSet):
@@ -49,7 +50,7 @@ website = Website(
             position = 'header',
             sections = [
                 Sections.Image(url = 'website/logo.png'),
-                Sections.Image(url = 'website/colony.png', classes='colony'),
+                Sections.Image(url = 'website/colony.png', attrs = { 'id': 'colony' }),
             ]
         ),
 

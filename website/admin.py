@@ -20,7 +20,7 @@ def add_inline (base_model, post_model, prepend = False):
                     'fields': ['title', 'content', 'image', 'tags']
                 }),
                 (None, {
-                    'fields': ['date', 'published', 'author', 'thread']
+                    'fields': ['date', 'published', 'author', 'thread_pk', 'thread_type']
                 })
         ]
 
@@ -40,6 +40,8 @@ def add_inline (base_model, post_model, prepend = False):
 add_inline(programs.Program, Program, True)
 add_inline(programs.Episode, Episode, True)
 
+admin.site.register(Program)
+admin.site.register(Episode)
 
 #class ArticleAdmin (DescriptionAdmin):
 #    fieldsets = copy.deepcopy(DescriptionAdmin.fieldsets)

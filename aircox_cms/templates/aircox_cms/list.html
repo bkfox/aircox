@@ -12,23 +12,23 @@
         <time datetime="{{ post.date }}" class="post_datetime">
             {% if 'date' in view.fields %}
             <span class="post_date">
-                {{ post.date|date:'D. d F' }},
+                {{ post.date|date:'D. d F' }}
             </span>
             {% endif %}
             {% if 'time' in view.fields %}
             <span class="post_time">
-                {{ post.date|date:'H:i' }},
+                {{ post.date|date:'H:i' }}
             </span>
             {% endif %}
         </time>
         {% endif %}
 
         {% if 'image' in view.fields %}
-        <img src="{% thumbnail post.image "64x64" crop %}" class="post_image">
+        <img src="{% thumbnail post.image view.icon_size crop %}" class="post_image">
         {% endif %}
 
         {% if 'title' in view.fields %}
-        <h4 class="post_title">{{ post.title }}</h4>
+        <h3 class="post_title">{{ post.title }}</h3>
         {% endif %}
 
         {% if 'content' in view.fields %}

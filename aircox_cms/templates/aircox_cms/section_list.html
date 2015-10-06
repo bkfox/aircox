@@ -6,6 +6,9 @@
 <ul style="padding:0; margin:0">
     {% for item in object_list %}
     <li>
+        {% if item.url %}
+        <a href="{{item.url}}">
+        {% endif %}
         {% if use_icons and item.icon %}
         <img src="{% thumbnail item.icon icon_size crop %}" class="icon">
         {% endif %}
@@ -14,6 +17,9 @@
 
         {% if item.text %}
             <small>{{ item.text }}</small>
+        {% endif %}
+        {% if item.url %}
+        </a>
         {% endif %}
     </li>
     {% endfor %}

@@ -1,4 +1,5 @@
 from django.conf.urls import url
+from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
 from django.utils.translation import ugettext as _, ugettext_lazy
 
@@ -27,9 +28,9 @@ class Route:
     """
     Base class for routing. Given a model, we generate url specific for each
     route type. The generated url takes this form:
-        base_name + '/' + route_name + '/' + '/'.join(route_url_args)
+        model_name + '/' + route_name + '/' + '/'.join(route_url_args)
 
-    Where base_name by default is the given model's verbose_name (uses plural if
+    Where model_name by default is the given model's verbose_name (uses plural if
     Route is for a list).
 
     The given view is considered as a django class view, and has view_
@@ -38,14 +39,14 @@ class Route:
     url_args = []       # arguments passed from the url [ (name : regex),... ]
 
     @classmethod
-    def get_queryset (cl, model, request, **kwargs):
+    def get_queryset (cl, website, model, request, **kwargs):
         """
         Called by the view to get the queryset when it is needed
         """
         pass
 
     @classmethod
-    def get_object (cl, model, request, **kwargs):
+    def get_object (cl, website, model, request, **kwargs):
         """
         Called by the view to get the object when it is needed
         """
@@ -56,10 +57,8 @@ class Route:
         return ''
 
     @classmethod
-    def as_url (cl, model, view, view_kwargs = None):
-        base_name = model._meta.verbose_name_plural.lower()
-
-        pattern = '^{}/{}'.format(base_name, cl.name)
+    def as_url (cl, model, model_name, view, view_kwargs = None):
+        pattern = '^{}/{}'.format(model_name, cl.name)
         if cl.url_args:
             url_args = '/'.join([
                 '(?P<{}>{}){}'.format(
@@ -78,7 +77,7 @@ class Route:
             kwargs.update(view_kwargs)
 
         return url(pattern, view, kwargs = kwargs,
-                   name = base_name + '_' + cl.name)
+                   name = model_name + '_' + cl.name)
 
 
 class DetailRoute (Route):
@@ -89,7 +88,7 @@ class DetailRoute (Route):
     ]
 
     @classmethod
-    def get_object (cl, model, request, pk, **kwargs):
+    def get_object (cl, website, model, request, pk, **kwargs):
         return model.objects.get(pk = int(pk))
 
 
@@ -97,7 +96,7 @@ class AllRoute (Route):
     name = 'all'
 
     @classmethod
-    def get_queryset (cl, model, request, **kwargs):
+    def get_queryset (cl, website, model, request, **kwargs):
         return model.objects.all()
 
     @classmethod
@@ -108,14 +107,32 @@ class AllRoute (Route):
 
 
 class ThreadRoute (Route):
+    """
+    Select posts using by their assigned thread.
+
+    - "thread_model" can be a string with the name of a registered item on
+    website or a model.
+    - "pk" is the pk of the thread item.
+    """
     name = 'thread'
     url_args = [
+        ('thread_model', '(\w|_|-)+'),
         ('pk', '[0-9]+'),
     ]
 
     @classmethod
-    def get_queryset (cl, model, request, pk, **kwargs):
-        return model.objects.filter(thread__pk = int(pk))
+    def get_queryset (cl, website, model, request, thread_model, pk, **kwargs):
+        if type(thread_model) is str:
+            thread_model = website.registry.get(thread_model).model
+
+        if not thread_model:
+            return
+
+        thread_model = ContentType.objects.get_for_model(thread_model)
+        return model.objects.filter(
+            thread_type = thread_model,
+            thread_pk = int(pk)
+        )
 
 
 class DateRoute (Route):
@@ -127,7 +144,7 @@ class DateRoute (Route):
     ]
 
     @classmethod
-    def get_queryset (cl, model, request, year, month, day, **kwargs):
+    def get_queryset (cl, website, model, request, year, month, day, **kwargs):
         return model.objects.filter(
             date__year = int(year),
             date__month = int(month),
@@ -139,7 +156,7 @@ class SearchRoute (Route):
     name = 'search'
 
     @classmethod
-    def get_queryset (cl, model, request, **kwargs):
+    def get_queryset (cl, website, model, request, **kwargs):
         q = request.GET.get('q') or ''
         qs = model.objects
         for search_field in model.search_fields or []:
@@ -149,6 +166,5 @@ class SearchRoute (Route):
 
         qs.distinct()
         return qs
-
 
 
