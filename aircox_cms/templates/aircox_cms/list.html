@@ -8,7 +8,7 @@
 {% for post in object_list %}
     <a class="post_item"
        href="{{ post.detail_url }}">
-        {% if 'date' in view.fields or 'time' in list.fields %}
+        {% if 'date' in view.fields or 'time' in view.fields %}
         <time datetime="{{ post.date }}" class="post_datetime">
             {% if 'date' in view.fields %}
             <span class="post_date">

@@ -25,14 +25,15 @@ website = Website(
         Menu(
             position = 'top',
             sections = [
-                Section(content = "Radio Campus le SITE")
+                Section(content = "Radio Campus le SITE"),
             ]
         ),
 
         Menu(
             position = 'left',
             sections = [
-                Section(content = 'loool<br>blob')
+                Section(content = 'loool<br>blob'),
+                PreviousDiffusions(),
             ],
         ),
     ],

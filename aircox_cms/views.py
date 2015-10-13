@@ -320,6 +320,7 @@ class Sections:
 
         hide_empty = False      # hides the section if the list is empty
         use_icons = True        # print icons
+        paginate_by = 0         # number of items
         icon_size = '32x32'     # icons size
         template_name = 'aircox_cms/section_list.html'
 
@@ -337,6 +338,7 @@ class Sections:
                 'classes': context.get('classes') + ' section_list',
                 'icon_size': self.icon_size,
                 'object_list': object_list,
+                'paginate_by': self.paginate_by,
             })
             return context
 
@@ -363,6 +365,7 @@ class Sections:
         Render a list using PostListView's template.
         """
         embed = True
+        paginate_by = 5
         icon_size = '64x64'
         fields = [ 'date', 'time', 'image', 'title', 'content' ]
 
@@ -375,8 +378,8 @@ class Sections:
             context.update({
                 'object_list': self.get_object_list(),
                 'embed': True,
+                'paginate_by': self.paginate_by,
             })
-            print(context['object_list'][0].image)
             return render_to_string(PostListView.template_name, context)
 
         def get_context_data (self, **kwargs):

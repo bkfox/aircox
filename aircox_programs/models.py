@@ -146,18 +146,18 @@ class Schedule (models.Model):
     # the schedule is present.
     # For ponctual programs, there is no need for a schedule, only a diffusion
     Frequency = {
-        'first':            0b000001,
-        'second':           0b000010,
-        'third':            0b000100,
-        'fourth':           0b001000,
-        'last':             0b010000,
-        'first and third':  0b000101,
-        'second and fourth': 0b001010,
-        'every':            0b011111,
-        'one on two':       0b100000,
+        'first':            (0b000001, _('first week of the month')),
+        'second':           (0b000010, _('second week of the month')),
+        'third':            (0b000100, _('third week of the month')),
+        'fourth':           (0b001000, _('fourth week of the month')),
+        'last':             (0b010000, _('last week of the month')),
+        'first and third':  (0b000101, _('first and third weeks of the month')),
+        'second and fourth': (0b001010, _('second and fourth weeks of the month')),
+        'every':            (0b011111, _('once a week')),
+        'one on two':       (0b100000, _('one week on two')),
     }
-    for key, value in Frequency.items():
-        ugettext_lazy(key)
+    VerboseFrequency = { value[0]: value[1] for key, value in Frequency.items() }
+    Frequency = { key: value[0] for key, value in Frequency.items() }
 
     program = models.ForeignKey(
         'Program',
@@ -169,7 +169,7 @@ class Schedule (models.Model):
     )
     frequency = models.SmallIntegerField(
         _('frequency'),
-        choices = [ (y, x) for x,y in Frequency.items() ],
+        choices = VerboseFrequency.items(),
     )
     rerun = models.ForeignKey(
         'self',
@@ -277,9 +277,9 @@ class Schedule (models.Model):
             if self.rerun:
                 first_date -= self.date - self.rerun.date
 
-            episode = Episode.objects.filter(date = first_date,
-                                             program = self.program)
-            episode = episode[0] if episode.count() else None
+            diffusion = Diffusion.objects.filter(date = first_date,
+                                                 program = self.program)
+            episode = diffusion[0].episode if diffusion.count() else None
 
             diffusions.append(Diffusion(
                                  episode = episode,

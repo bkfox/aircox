@@ -2,6 +2,7 @@
 body {
     background-color: #F2F2F2;
     font-family: "Myriad Pro",Calibri,Helvetica,Arial,sans-serif;
+    margin: 0 3em;
 }
 
 
@@ -11,7 +12,7 @@ h1, h2, h3 {
 
 time {
     font-size: 0.9em;
-    color: #616161;
+    color: #818181;
 }
 
 a {
@@ -24,15 +25,15 @@ a:hover {
 }
 
 
-nav.menu {
+/** Menu **/
+.menu {
     padding: 0.5em;
 }
 
-    nav.menu_top {
+    .menu_top {
         background-color: #212121;
         color: #007EDF;
         font-size: 1.1em;
-        box-shadow: 0em 0.2em 0.5em 0.1em black
     }
 
 
@@ -54,6 +55,31 @@ nav.menu {
             z-index: -1;
         }
 
+    .menu h1 {
+        font-size: 1.1em;
+    }
+
+
+    .menu .post_list {
+        font-size: 0.9em;
+    }
+
+        .menu .post_list h3 {
+            font-size: 1.0em;
+            display: inline;
+        }
+
+        .menu .post_list time {
+            margin: 0.2em;
+        }
+
+
+/** Page **/
+.page-container {
+    box-shadow: 0em 0.2em 0.5em 0.1em black;
+    margin-bottom: 2em;
+}
+
 .page {
     width: 100%;
     padding: 1.5em 0em;
@@ -66,28 +92,28 @@ nav.menu {
     }
 
 
-.post_list {
+main .post_list {
     background-color: #F2F2F2;
-    box-shadow: inset 0.2em 0.2em 0.2em 0.01em black;
+    border: 1px #818181 dotted;
 }
 
-    .post_list .post_item {
+    main .post_list .post_item {
         min-height: 64px;
         padding: 0.2em;
     }
 
-    .post_list .post_item:hover {
+    main .post_list .post_item:hover {
     }
 
-    .post_list h3 {
+    main .post_list h3 {
         margin: 0.2em;
     }
 
-    .post_list time {
+    main .post_list time {
         float: right;
     }
 
-    .post_list img {
+    main .post_list img {
         float: left;
         margin-right: 0.5em;
     }
