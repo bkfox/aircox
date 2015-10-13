@@ -81,8 +81,8 @@ a:hover {
 }
 
 .page {
-    width: 100%;
-    padding: 1.5em 0em;
+    width: calc(100% - 0.4em);
+    padding: 1.5em 0.2em;
     background-color: rgba(255, 255, 255, 0.8);
 }
 
@@ -92,10 +92,19 @@ a:hover {
     }
 
 
-main .post_list {
-    background-color: #F2F2F2;
+.post_list {
+    padding: 0.1em;
     border: 1px #818181 dotted;
 }
+
+    .post_list.embed + nav {
+        text-align: right;
+    }
+
+    .post_list:not(.embed) + nav {
+        text-align: center;
+    }
+
 
     main .post_list .post_item {
         min-height: 64px;

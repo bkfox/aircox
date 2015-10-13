@@ -72,6 +72,7 @@ website.register (
     'episode',
     Episode,
     sections = base_sections,
+    routes = base_routes,
 )
 
 urlpatterns = website.urls

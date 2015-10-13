@@ -5,11 +5,13 @@ from django.shortcuts import render
 from django.template.loader import render_to_string
 from django.views.generic import ListView, DetailView
 from django.views.generic.base import View, TemplateResponseMixin
+from django.core.paginator import Paginator
 from django.core import serializers
 from django.utils.translation import ugettext as _, ugettext_lazy
 from django.utils.html import escape
 
 import aircox_cms.routes as routes
+import aircox_cms.utils as utils
 
 
 class PostBaseView:
@@ -31,7 +33,7 @@ class PostBaseView:
 
         if not self.embed:
             context['menus'] = {
-                k: v.get(self.request, **kwargs)
+                k: v.get(self.request, website = self.website, **kwargs)
                 for k, v in {
                     k: self.website.get_menu(k)
                     for k in self.website.menu_layouts
@@ -55,6 +57,7 @@ class PostListView (PostBaseView, ListView):
         order = 'desc'
         reverse = False
         fields = None
+        page = 1
 
         def __init__ (self, query):
             if query:
@@ -69,6 +72,7 @@ class PostListView (PostBaseView, ListView):
 
     template_name = 'aircox_cms/list.html'
     allow_empty = True
+    paginate_by = 50
     model = None
 
     route = None
@@ -128,6 +132,12 @@ class PostListView (PostBaseView, ListView):
                                                     **self.kwargs)
         return title
 
+    def get_url (self):
+        if self.route:
+            return utils.get_urls(self.website, self.route,
+                                  self.model, self.kwargs)
+        return ''
+
 
 class PostDetailView (DetailView, PostBaseView):
     """
@@ -161,7 +171,7 @@ class PostDetailView (DetailView, PostBaseView):
         context.update(self.get_base_context())
         context.update({
             'sections': [
-                section.get(self.request, **kwargs)
+                section.get(self.request, website = self.website, **kwargs)
                     for section in self.sections
             ]
         })
@@ -189,13 +199,15 @@ class Menu (View):
             'classes': self.classes,
             'position': self.position,
             'sections': [
-                section.get(self.request, object = None, **kwargs)
+                section.get(self.request, website = self.website,
+                            object = None, **kwargs)
                     for section in self.sections
             ]
         }
 
-    def get (self, request, **kwargs):
+    def get (self, request, website, **kwargs):
         self.request = request
+        self.website = website
         context = self.get_context_data(**kwargs)
         return render_to_string(self.template_name, context)
 
@@ -225,8 +237,9 @@ class BaseSection (View):
             'content': self.content,
         }
 
-    def get (self, request, **kwargs):
+    def get (self, request, website, **kwargs):
         self.request = request
+        self.website = website
         self.kwargs = kwargs
 
         context = self.get_context_data()
@@ -245,14 +258,14 @@ class Section (BaseSection):
     object_required = False
     title = ''
     header = ''
-    bottom = ''
+    footer = ''
 
     def get_context_data (self):
         context = super().get_context_data()
         context.update({
             'title': self.title,
             'header': self.header,
-            'bottom': self.bottom,
+            'footer': self.footer,
         })
         return context
 
@@ -277,7 +290,6 @@ class Sections:
                         static(self.url),
                     )
 
-
     class PostContent (Section):
         """
         Render the content of the Post (format the text a bit and escape HTML
@@ -290,7 +302,6 @@ class Sections:
             content = re.sub(r'\n', r'<br>', content)
             return content
 
-
     class PostImage (Section):
         """
         Render the image of the Post
@@ -300,7 +311,6 @@ class Sections:
             return '<img src="{}" class="post_image">'.format(
                         self.object.image.url
                     )
-
 
     class List (Section):
         """
@@ -342,7 +352,6 @@ class Sections:
             })
             return context
 
-
     class Urls (List):
         """
         Render a list of urls of targets that are Posts
@@ -368,6 +377,9 @@ class Sections:
         paginate_by = 5
         icon_size = '64x64'
         fields = [ 'date', 'time', 'image', 'title', 'content' ]
+
+        def get_url (self):
+            return ''
 
         def get_object_list (self):
             return []

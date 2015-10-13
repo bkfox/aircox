@@ -4,7 +4,7 @@
 {% load thumbnail %}
 
 {% block content %}
-<div class="post_list {{ classes }}">
+<div class="post_list {{ classes }} {% if embed %}embed{% endif %}">
 {% for post in object_list %}
     <a class="post_item"
        href="{{ post.detail_url }}">
@@ -39,6 +39,27 @@
     </a>
 {% endfor %}
 </div>
-{% endblock %}
 
+<nav>
+    {% if embed %}
+        {% with view.get_url as list_url %}
+        {% if list_url %}
+        <a href="{{list_url}}" title="More elements">&#8690;</a>
+        {% endif %}
+        {% endwith %}
+    {% else %}
+        {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}">previous</a>
+        {% endif %}
+
+        <span class="current">
+            {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+        </span>
+
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}">next</a>
+        {% endif %}
+    {% endif %}
+</nav>
+{% endblock %}
 

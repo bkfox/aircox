@@ -23,12 +23,12 @@
     {% endblock %}
 </div>
 
-{% if bottom %}
-<div class="section_bottom">
-    {% block section_bottom %}
-    {{ bottom }}
+{% if footer %}
+<footer class="section_footer">
+    {% block section_footer %}
+    {{ footer }}
     {% endblock %}
-</div>
+</footer>
 {% endif %}
-{% endblock %}
 
+{% endblock %}

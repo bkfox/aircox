@@ -57,6 +57,10 @@ class Route:
         return ''
 
     @classmethod
+    def get_view_name (cl, name):
+        return name + '_' + cl.name
+
+    @classmethod
     def as_url (cl, name, model, view, view_kwargs = None):
         pattern = '^{}/{}'.format(name, cl.name)
         if cl.url_args:
@@ -77,7 +81,7 @@ class Route:
             kwargs.update(view_kwargs)
 
         return url(pattern, view, kwargs = kwargs,
-                   name = name + '_' + cl.name)
+                   name = cl.get_view_name(name))
 
 
 class DetailRoute (Route):
@@ -123,7 +127,7 @@ class ThreadRoute (Route):
     @classmethod
     def get_queryset (cl, website, model, request, thread_model, pk, **kwargs):
         if type(thread_model) is str:
-            thread_model = website.registry.get(thread_model).model
+            thread_model = website.registry.get(thread_model)
 
         if not thread_model:
             return

@@ -21,6 +21,11 @@ class Website:
         self.urls = []
         self.__dict__.update(kwargs)
 
+    def name_of_model (self, model):
+        for name, _model in self.registry.items():
+            if model is _model:
+                return name
+
     def register_model (self, name, model):
         """
         Register a model and return the name under which it is registered.

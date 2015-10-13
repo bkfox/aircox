@@ -7,6 +7,8 @@ from django.utils import timezone as tz
 from django.utils.translation import ugettext as _, ugettext_lazy
 
 import aircox_programs.models as programs
+import aircox_cms.routes as routes
+import aircox_cms.utils as utils
 from aircox_cms.views import Sections
 
 from website.models import *
@@ -39,7 +41,11 @@ class EpisodesSection (Sections.Posts):
     title = _('Episodes')
 
     def get_object_list (self):
-        return Episode.objects.filter(related__program = self.object.related.pk)
+        return utils.filter_thread(Episode.objects, self.object)
+
+    def get_url (self):
+        return utils.get_url(self.website, routes.ThreadRoute, Episode,
+                             { 'thread_model': 'program', 'pk': self.object.pk})
 
 class PreviousDiffusions (Sections.Posts):
     title = _('Previous Diffusions')
@@ -64,5 +70,4 @@ class PreviousDiffusions (Sections.Posts):
                 break
 
         return episodes
-
 
