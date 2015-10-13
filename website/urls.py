@@ -4,41 +4,9 @@ from website.models import *
 from website.views import *
 
 from aircox_cms.models import Article
-from aircox_cms.views import Menu, Section, Sections, ViewSet
+from aircox_cms.views import Menu, Section, Sections
 from aircox_cms.routes import *
 from aircox_cms.website import Website
-
-class ProgramSet (ViewSet):
-    model = Program
-    list_routes = [
-        AllRoute,
-        ThreadRoute,
-        SearchRoute,
-        DateRoute,
-    ]
-
-    detail_sections = ViewSet.detail_sections + [
-        ScheduleSection(),
-        EpisodesSection(),
-    ]
-
-class EpisodeSet (ViewSet):
-    model = Episode
-    list_routes = [
-        AllRoute,
-        ThreadRoute,
-        SearchRoute,
-        DateRoute,
-    ]
-
-class ArticleSet (ViewSet):
-    model = Article
-    list_routes = [
-        AllRoute,
-        ThreadRoute,
-        SearchRoute,
-        DateRoute,
-    ]
 
 
 website = Website(
@@ -70,8 +38,40 @@ website = Website(
     ],
 )
 
-website.register_set(ProgramSet)
-website.register_set(EpisodeSet)
-website.register_set(ArticleSet)
+base_sections = [
+    Sections.PostContent(),
+    Sections.PostImage(),
+]
+
+base_routes =  [
+    AllRoute,
+    ThreadRoute,
+    SearchRoute,
+    DateRoute,
+]
+
+website.register(
+    'article',
+    Article,
+    sections = base_sections,
+    routes = base_routes
+)
+
+website.register(
+    'program',
+    Program,
+    sections = base_sections + [
+        ScheduleSection(),
+        EpisodesSection(),
+    ],
+    routes = base_routes,
+)
+
+website.register (
+    'episode',
+    Episode,
+    sections = base_sections,
+)
+
 urlpatterns = website.urls
 

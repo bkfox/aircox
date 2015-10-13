@@ -57,8 +57,8 @@ class Route:
         return ''
 
     @classmethod
-    def as_url (cl, model, model_name, view, view_kwargs = None):
-        pattern = '^{}/{}'.format(model_name, cl.name)
+    def as_url (cl, name, model, view, view_kwargs = None):
+        pattern = '^{}/{}'.format(name, cl.name)
         if cl.url_args:
             url_args = '/'.join([
                 '(?P<{}>{}){}'.format(
@@ -77,7 +77,7 @@ class Route:
             kwargs.update(view_kwargs)
 
         return url(pattern, view, kwargs = kwargs,
-                   name = model_name + '_' + cl.name)
+                   name = name + '_' + cl.name)
 
 
 class DetailRoute (Route):

@@ -17,6 +17,7 @@ class Episode (RelatedPost):
         related_model = programs.Episode
         bind_mapping = True
         mapping = {
+            'thread': 'program',
             'title': 'name',
             'content': 'description',
         }

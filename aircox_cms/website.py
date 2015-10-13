@@ -1,4 +1,5 @@
 import aircox_cms.routes as routes
+import aircox_cms.views as views
 
 class Website:
     name = ''
@@ -12,26 +13,67 @@ class Website:
                     'right', 'bottom',
                     'header', 'footer']
     router = None
+    urls = []
     registry = {}
 
-    @property
-    def urls (self):
-        return self.router.get_urlpatterns()
-
     def __init__ (self, **kwargs):
+        self.registry = {}
+        self.urls = []
         self.__dict__.update(kwargs)
-        if not self.router:
-            self.router = routes.Router()
 
-    def register_set (self, view_set):
+    def register_model (self, name, model):
         """
-        Register a ViewSet (or subclass) to the router,
-        and connect it to self.
+        Register a model and return the name under which it is registered.
+        Raise a ValueError if another model is yet associated under this name.
         """
-        view_set = view_set()
-        view_set.connect(website = self)
-        self.registry[view_set.get_detail_name()] = view_set
-        self.router.register_set(view_set)
+        if name in self.registry and self.registry[name] is not model:
+            raise ValueError('A model has yet been registered under "{}"'
+                             .format(name))
+        self.registry[name] = model
+        return name
+
+    def register_detail (self, name, model, view = views.PostDetailView,
+                         **view_kwargs):
+        """
+        Register a model and the detail view
+        """
+        name = self.register_model(name, model)
+        view = view.as_view(
+            website = self,
+            model = model,
+            **view_kwargs,
+        )
+        self.urls.append(routes.DetailRoute.as_url(name, model, view))
+        self.registry[name] = model
+
+    def register_list (self, name, model, view = views.PostListView,
+                       routes = [], **view_kwargs):
+        """
+        Register a model and the given list view using the given routes
+        """
+        name = self.register_model(name, model)
+        view = view.as_view(
+            website = self,
+            model = model,
+            **view_kwargs
+        )
+        self.urls += [ route.as_url(name, model, view) for route in routes ]
+        self.registry[name] = model
+
+    def register (self, name, model, sections = None, routes = None,
+                  list_kwargs = {}, detail_kwargs = {}):
+        if sections:
+            self.register_detail(
+                name, model,
+                sections = sections,
+                **detail_kwargs
+            )
+        if routes:
+            self.register_list(
+                name, model,
+                routes = routes,
+                **list_kwargs
+            )
 
     def get_menu (self, position):
         """
