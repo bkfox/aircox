@@ -1,6 +1,9 @@
 """
-Check over programs' sound files, scan them, and add them to the
-database if they are not there yet.
+Monitor sound files; For each program, check for:
+- new files;
+- deleted files;
+- differences between files and sound;
+- quality of the files;
 
 It tries to parse the file name to get the date of the diffusion of an
 episode and associate the file with it; We use the following format:
@@ -12,16 +15,20 @@ Where:
     'dd' is the day of the episode's diffusion;
     'n' is the number of the episode (if multiple episodes);
     'title' the title of the sound;
-"""
 
+
+To check quality of files, call the command sound_quality_check using the
+parameters given by the setting AIRCOX_SOUND_QUALITY.
+"""
 import os
 import re
 from argparse import RawTextHelpFormatter
 
-from django.core.management.base    import BaseCommand, CommandError
-from django.utils                   import timezone
-from aircox_programs.models                import *
-import aircox_programs.settings            as settings
+from django.core.management.base import BaseCommand, CommandError
+from django.utils import timezone
+
+from aircox_programs.models import *
+import aircox_programs.settings as settings
 
 
 class Command (BaseCommand):
@@ -40,9 +47,17 @@ class Command (BaseCommand):
         programs = Program.objects.filter()
 
         for program in programs:
-            self.check(program, program.path + '/public', public = True)
-            self.check(program, program.path + '/podcasts', embed = True)
-            self.check(program, program.path + '/private')
+            path = lambda x: os.path.join(program.path, x)
+            self.check_files(
+                program, path(settings.AIRCOX_SOUND_ARCHIVES_SUBDIR),
+                archive = True,
+            )
+            self.check_files(
+                program, path(settings.AIRCOX_SOUND_EXCERPTS_SUBDIR),
+                excerpt = True,
+            )
+
+        self.check_quality()
 
     def get_sound_info (self, path):
         """
@@ -97,28 +112,24 @@ class Command (BaseCommand):
         return diffusion.episode or None
 
 
-    def check (self, program, dir_path, public = False, embed = False):
+    def check_files (self, program, dir_path, **sound_kwargs):
         """
         Scan a given directory that is associated to the given program, and
-        update sounds information
-
-        Return a list of scanned sounds
+        update sounds information.
         """
         if not os.path.exists(dir_path):
             return
 
-        paths = []
+        # new/existing sounds
         for path in os.listdir(dir_path):
             path = dir_path + '/' + path
             if not path.endswith(settings.AIRCOX_SOUNDFILE_EXT):
                 continue
 
-            paths.append(path)
-
             sound_info = self.get_sound_info(path)
             sound = self.ensure_sound(sound_info)
-
-            sound.public = public
+            sound.__dict__.update(sound_kwargs)
+            sound.save(check = False)
 
             # episode and relation
             if 'year' in sound_info:
@@ -128,9 +139,20 @@ class Command (BaseCommand):
                         if sound_.path == sound.path:
                             break
                     else:
-                        self.report(program, path, 'associate sound to episode ',
+                        self.report(program, path, 'add sound to episode ',
                                     episode.id)
                         episode.sounds.add(sound)
-        return paths
+                        episode.save()
+
+        # check files
+        for sound in Sound.object.filter(path__startswith = path):
+            if sound.check():
+                sound.save(check = False)
+
+
+    def check_quality (self):
+        """
+        Check all files where quality has been set to bad
+        """
 
 
