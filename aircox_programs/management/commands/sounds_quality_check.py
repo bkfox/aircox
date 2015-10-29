@@ -66,10 +66,14 @@ class Sound:
 
     def __init__ (self, path, sample_length = None):
         self.path = path
-        self.sample_length = sample_length or self.sample_length
+        self.sample_length = sample_length if sample_length is not None \
+                                else self.sample_length
+
+    def get_file_stats (self):
+        return self.stats and self.stats[0]
 
     def analyse (self):
-        print('- Complete file analysis')
+        print('- complete file analysis')
         self.stats = [ Stats(self.path) ]
         position = 0
         length = self.stats[0].get('length')
@@ -77,25 +81,13 @@ class Sound:
         if not self.sample_length:
             return
 
-        print('- Samples analysis: ', end=' ')
+        print('- samples analysis: ', end=' ')
         while position < length:
             print(len(self.stats), end=' ')
             stats = Stats(self.path, at = position, length = self.sample_length)
             self.stats.append(stats)
             position += self.sample_length
         print()
-
-    def resume (self):
-        view = lambda array: [
-            'file' if index is 0 else
-            'sample {} (at {} seconds)'.format(index, (index-1) * self.sample_length)
-            for index in self.good
-        ]
-
-        if self.good:
-            print('- Good:\033[92m', ', '.join( view(self.good) ), '\033[0m')
-        if self.bad:
-            print('- Bad:\033[91m', ', '.join( view(self.bad) ), '\033[0m')
 
     def check (self, name, min_val, max_val):
         self.good = [ index for index, stats in enumerate(self.stats)
@@ -104,6 +96,17 @@ class Sound:
                       if index not in self.good ]
         self.resume()
 
+    def resume (self):
+        view = lambda array: [
+            'file' if index is 0 else
+            'sample {} (at {} seconds)'.format(index, (index-1) * self.sample_length)
+            for index in array
+        ]
+
+        if self.good:
+            print('- good:\033[92m', ', '.join( view(self.good) ), '\033[0m')
+        if self.bad:
+            print('- bad:\033[91m', ', '.join( view(self.bad) ), '\033[0m')
 
 class Command (BaseCommand):
     help = __doc__
@@ -117,7 +120,7 @@ class Command (BaseCommand):
             help='file(s) to analyse'
         )
         parser.add_argument(
-            '-s', '--sample_length', type=int,
+            '-s', '--sample_length', type=int, default=120,
             help='size of sample to analyse in seconds. If not set (or 0), does'
                  ' not analyse by sample',
         )
@@ -163,11 +166,11 @@ class Command (BaseCommand):
 
         # resume
         if options.get('resume'):
-            if good:
-                print('Files that did not failed the test:\033[92m\n    ',
-                      '\n    '.join(good), '\033[0m')
-            if bad:
+            if self.good:
+                print('files that did not failed the test:\033[92m\n   ',
+                      '\n    '.join([sound.path for sound in self.good]), '\033[0m')
+            if self.bad:
                 # bad at the end for ergonomy
-                print('Files that failed the test:\033[91m\n    ',
-                      '\n    '.join(bad),'\033[0m')
+                print('files that failed the test:\033[91m\n   ',
+                      '\n    '.join([sound.path for sound in self.bad]),'\033[0m')
 

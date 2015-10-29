@@ -14,10 +14,10 @@ planified before the (given) month.
 - "check" will remove all diffusions that are unconfirmed and have been planified
 from the (given) month and later.
 """
-from argparse                       import RawTextHelpFormatter
-from django.core.management.base    import BaseCommand, CommandError
-from django.utils                   import timezone as tz
-from aircox_programs.models                import *
+from argparse import RawTextHelpFormatter
+from django.core.management.base import BaseCommand, CommandError
+from django.utils import timezone as tz
+from aircox_programs.models import *
 
 
 class Actions:
@@ -52,7 +52,7 @@ class Actions:
                 if schedule.match(diffusion.date):
                     break
             else:
-                print('> #{}: {}'.format(diffusion.date, str(diffusion)))
+                print('> #{}: {}'.format(diffusion.pk, str(diffusion)))
                 items.append(diffusion.id)
 
         print('{} diffusions will be removed'.format(len(items)))

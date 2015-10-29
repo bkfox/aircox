@@ -74,47 +74,60 @@ class Track (Nameable):
 
 class Sound (Nameable):
     """
-    A Sound is the representation of a sound, that can be:
-    - An episode podcast/complete record
-    - An episode partial podcast
-    - An episode is a part of the episode but not usable for direct podcast
+    A Sound is the representation of a sound file that can be either an excerpt
+    or a complete archive of the related episode.
 
-    We can manage this using the "public" and "fragment" fields. If a Sound is
-    public, then we can podcast it. If a Sound is a fragment, then it is not
-    usable for diffusion.
-
-    Each sound can be associated to a filesystem's file or an embedded
-    code (for external podcasts).
+    The podcasting and public access permissions of a Sound are managed through
+    the related program info.
     """
+    Type = {
+        'other': 0x00,
+        'archive': 0x01,
+        'excerpt': 0x02,
+    }
+    for key, value in Type.items():
+        ugettext_lazy(key)
+
+    type = models.SmallIntegerField(
+        verbose_name = _('type'),
+        choices = [ (y, x) for x,y in Type.items() ],
+        blank = True, null = True
+    )
     path = models.FilePathField(
         _('file'),
         path = settings.AIRCOX_PROGRAMS_DIR,
-        match = '*(' + '|'.join(settings.AIRCOX_SOUNDFILE_EXT) + ')$',
+        match = '*(' + '|'.join(settings.AIRCOX_SOUND_FILE_EXT) + ')$',
         recursive = True,
         blank = True, null = True,
     )
     embed = models.TextField(
-        _('embed HTML code from external website'),
+        _('embed HTML code'),
         blank = True, null = True,
-        help_text = _('if set, consider the sound podcastable'),
+        help_text = _('HTML code used to embed a sound from external plateform'),
     )
     duration = models.TimeField(
         _('duration'),
         blank = True, null = True,
     )
+    date = models.DateTimeField(
+        _('date'),
+        blank = True, null = True,
+        help_text = _('last modification date and time'),
+    )
+    removed = models.BooleanField(
+        _('removed'),
+        default = False,
+        help_text = _('this sound has been removed from filesystem'),
+    )
+    good_quality = models.BooleanField(
+        _('good quality'),
+        default = False,
+        help_text = _('sound\'s quality is okay')
+    )
     public = models.BooleanField(
         _('public'),
         default = False,
-        help_text = _("the element is public"),
-    )
-    fragment = models.BooleanField(
-        _('incomplete sound'),
-        default = False,
-        help_text = _("the file is a cut"),
-    )
-    removed = models.BooleanField(
-        default = False,
-        help_text = _('this sound has been removed from filesystem'),
+        help_text = _('sound\'s is accessible through the website')
     )
 
     def get_mtime (self):
@@ -125,10 +138,34 @@ class Sound (Nameable):
         mtime = tz.datetime.fromtimestamp(mtime)
         return tz.make_aware(mtime, timezone.get_current_timezone())
 
-    def save (self, *args, **kwargs):
-        if not self.pk:
-            self.date = self.get_mtime()
+    def file_exists (self):
+        return os.path.exists(self.path)
 
+    def check_on_file (self):
+        """
+        Check sound file info again'st self, and update informations if
+        needed. Return True if there was changes.
+        """
+        if not self.file_exists():
+            if self.removed:
+                return
+            self.removed = True
+            return True
+
+        mtime = self.get_mtime()
+        if self.date != mtime:
+            self.date = mtime
+            self.good_quality = False
+            return True
+
+    def save (self, check = True, *args, **kwargs):
+        if check:
+            self.check_on_file()
+
+        if not self.name and self.path:
+            self.name = os.path.basename(self.path) \
+                            .splitext() \
+                            .replace('_', ' ')
         super().save(*args, **kwargs)
 
     def __str__ (self):
@@ -194,12 +231,13 @@ class Schedule (models.Model):
         otherwise.
         If the schedule is ponctual, return None.
         """
+        # FIXME: does not work if first_day > date_day
         date = date_or_default(date)
         if self.frequency == Schedule.Frequency['one on two']:
             week = date.isocalendar()[1]
             return (week % 2) == (self.date.isocalendar()[1] % 2)
 
-        first_of_month = tz.datetime.date(date.year, date.month, 1)
+        first_of_month = date.replace(day = 1)
         week = date.isocalendar()[1] - first_of_month.isocalendar()[1]
 
         # weeks of month
@@ -359,8 +397,7 @@ class Stream (models.Model):
     name = models.CharField(
         _('name'),
         max_length = 32,
-        blank = True,
-        null = True,
+        blank = True, null = True,
     )
     public = models.BooleanField(
         _('public'),
@@ -376,13 +413,22 @@ class Stream (models.Model):
         default = 0,
         help_text = _('priority of the stream')
     )
+    time_start = models.TimeField(
+        _('start'),
+        blank = True, null = True,
+        help_text = _('if random, used to define a time range this stream is'
+                      'played')
+    )
+    time_end = models.TimeField(
+        _('end'),
+        blank = True, null = True,
+        help_text = _('if random, used to define a time range this stream is'
+                      'played')
+    )
 
     # get info for:
     # - random lists
     # - scheduled lists
-    # link between Streams and Programs:
-    #   - hours range (non-stop)
-    #   - stream/pgm
 
     def __str__ (self):
         return '#{} {}'.format(self.priority, self.name)
@@ -391,7 +437,7 @@ class Stream (models.Model):
 class Program (Nameable):
     stream = models.ForeignKey(
         Stream,
-        verbose_name = _('stream'),
+        verbose_name = _('streams'),
     )
     active = models.BooleanField(
         _('inactive'),

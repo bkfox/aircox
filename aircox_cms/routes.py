@@ -160,8 +160,7 @@ class SearchRoute (Route):
     name = 'search'
 
     @classmethod
-    def get_queryset (cl, website, model, request, **kwargs):
-        q = request.GET.get('q') or ''
+    def get_queryset (cl, website, model, request, q, **kwargs):
         qs = model.objects
         for search_field in model.search_fields or []:
             r = model.objects.filter(**{ search_field + '__icontains': q })

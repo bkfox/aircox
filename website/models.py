@@ -5,7 +5,7 @@ import aircox_programs.models as programs
 
 class Program (RelatedPost):
     class Relation:
-        related_model = programs.Program
+        model = programs.Program
         bind_mapping = True
         mapping = {
             'title': 'name',
@@ -14,7 +14,7 @@ class Program (RelatedPost):
 
 class Episode (RelatedPost):
     class Relation:
-        related_model = programs.Episode
+        model = programs.Episode
         bind_mapping = True
         mapping = {
             'thread': 'program',

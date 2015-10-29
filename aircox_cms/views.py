@@ -52,12 +52,12 @@ class PostListView (PostBaseView, ListView):
         """
         Request availables parameters
         """
-        embed = False
-        exclude = None
-        order = 'desc'
-        reverse = False
-        fields = None
-        page = 1
+        embed = False   # view is embedded (only the list is shown)
+        exclude = None  # exclude item of this id
+        order = 'desc'  # order of the list when query
+        fields = None   # fields to show
+        page = 1        # page number
+        q = None        # query search
 
         def __init__ (self, query):
             if query:
@@ -118,7 +118,7 @@ class PostListView (PostBaseView, ListView):
 
     def get_context_data (self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context.update(self.get_base_context())
+        context.update(self.get_base_context(**kwargs))
         context.update({
             'title': self.get_title(),
         })
@@ -273,7 +273,6 @@ class Section (BaseSection):
         self.object = object or self.object
         if self.object_required and not self.object:
             raise ValueError('object is required by this Section but not given')
-
         return super().get(request, **kwargs)
 
 

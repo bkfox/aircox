@@ -42,22 +42,22 @@ class Command (BaseCommand):
 
     def add_arguments (self, parser):
         parser.formatter_class=RawTextHelpFormatter
+        parser.add_argument(
+            '-q', '--quality_check', action='store_true',
+            help='Enable quality check using sound_quality_check on all ' \
+                 'sounds marqued as not good'
+        )
+        parser.add_argument(
+            '-s', '--scan', action='store_true',
+            help='Scan programs directories for changes'
+        )
+
 
     def handle (self, *args, **options):
-        programs = Program.objects.filter()
-
-        for program in programs:
-            path = lambda x: os.path.join(program.path, x)
-            self.check_files(
-                program, path(settings.AIRCOX_SOUND_ARCHIVES_SUBDIR),
-                archive = True,
-            )
-            self.check_files(
-                program, path(settings.AIRCOX_SOUND_EXCERPTS_SUBDIR),
-                excerpt = True,
-            )
-
-        self.check_quality()
+        if options.get('scan'):
+            self.scan()
+        if options.get('quality_check'):
+            self.check_quality()
 
     def get_sound_info (self, path):
         """
@@ -111,12 +111,28 @@ class Command (BaseCommand):
         diffusion = diffusion[0]
         return diffusion.episode or None
 
+    def scan (self):
+        print('scan files for all programs...')
+        programs = Program.objects.filter()
 
-    def check_files (self, program, dir_path, **sound_kwargs):
+        for program in programs:
+            print('- program ', program.name)
+            path = lambda x: os.path.join(program.path, x)
+            self.scan_for_program(
+                program, path(settings.AIRCOX_SOUND_ARCHIVES_SUBDIR),
+                type = Sound.Type['archive'],
+            )
+            self.scan_for_program(
+                program, path(settings.AIRCOX_SOUND_EXCERPTS_SUBDIR),
+                type = Sound.Type['excerpt'],
+            )
+
+    def scan_for_program (self, program, dir_path, **sound_kwargs):
         """
         Scan a given directory that is associated to the given program, and
         update sounds information.
         """
+        print(' - scan files in', dir_path)
         if not os.path.exists(dir_path):
             return
 
@@ -154,5 +170,29 @@ class Command (BaseCommand):
         """
         Check all files where quality has been set to bad
         """
+        import sound_quality_check as quality_check
 
+        print('start quality check...')
+        files = [ sound.path
+                    for sound in Sound.objects.filter(good_quality = False) ]
+        cmd = quality_check.Command()
+        cmd.handle( files = files,
+                    **settings.AIRCOX_SOUND_QUALITY )
+
+        print('- update sounds in database')
+        def update_stats(sound_info, sound):
+            stats = sound_info.get_file_stats()
+            if stats:
+                sound.duration = int(stats.get('length'))
+
+        for sound_info in cmd.good:
+            sound = Sound.objects.get(path = sound_info.path)
+            sound.good_quality = True
+            update_stats(sound_info, sound)
+            sound.save(check = False)
+
+        for sound_info in cmd.bad:
+            sound = Sound.objects.get(path = sound_info.path)
+            update_stats(sound_info, sound)
+            sound.save(check = False)
 
