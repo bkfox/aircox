@@ -5,6 +5,7 @@ from django.utils import timezone as tz
 
 from aircox_programs.models import *
 
+
 class Programs (TestCase):
     def setUp (self):
         stream = Stream.objects.get_or_create(
@@ -13,12 +14,11 @@ class Programs (TestCase):
         )[0]
         Program.objects.create(name = 'source', stream = stream)
         Program.objects.create(name = 'microouvert', stream = stream)
-        #Stream.objects.create(name = 'bns', type = Stream.Type['random'], priority = 1)
-        #Stream.objects.create(name = 'jingle', type = Stream.Type['random'] priority = 2)
-        #Stream.objects.create(name = 'loves', type = Stream.Type['random'], priority = 3)
-        pass
 
-    def test_programs_schedules (self):
+        self.schedules = {}
+        self.programs = {}
+
+    def test_create_programs_schedules (self):
         program = Program.objects.get(name = 'source')
 
         sched_0 = self.create_schedule(program, 'one on two', [
@@ -33,6 +33,8 @@ class Programs (TestCase):
             ],
             rerun = sched_0
         )
+
+        self.programs[program.pk] = program
 
         program = Program.objects.get(name = 'microouvert')
         # special case with november first week starting on sunday
@@ -55,27 +57,31 @@ class Programs (TestCase):
         print(schedule.__dict__)
         schedule.save()
 
-        self.check_schedule(schedule, dates)
+        self.schedules[schedule.pk] = (schedule, dates)
         return schedule
 
-    def check_schedule (self, schedule, dates):
-        dates = [ tz.make_aware(date) for date in dates ]
-        dates.sort()
+    def test_check_schedule (self):
+        for schedule, dates in self.schedules:
+            dates = [ tz.make_aware(date) for date in dates ]
+            dates.sort()
 
-        # match date and weeks
-        for date in dates:
-            #self.assertTrue(schedule.match(date, check_time = False))
-            #self.assertTrue(schedule.match_week(date))
+            # match date and weeks
+            #for date in dates:
+                #self.assertTrue(schedule.match(date, check_time = False))
+                #self.assertTrue(schedule.match_week(date))
 
-        # dates
-        dates_ = schedule.dates_of_month(dates[0])
-        dates_.sort()
-        self.assertEqual(dates_, dates)
+            # dates
+            dates_ = schedule.dates_of_month(dates[0])
+            dates_.sort()
+            self.assertEqual(dates_, dates)
 
-        # diffusions
-        dates_ = schedule.diffusions_of_month(dates[0])
-        dates_ = [date_.date for date_ in dates_]
-        dates_.sort()
-        self.assertEqual(dates_, dates)
+            # diffusions
+            dates_ = schedule.diffusions_of_month(dates[0])
+            dates_ = [date_.date for date_ in dates_]
+            dates_.sort()
+            self.assertEqual(dates_, dates)
+
+
+class 
 
 

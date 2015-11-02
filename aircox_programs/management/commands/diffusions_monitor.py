@@ -32,7 +32,7 @@ class Actions:
 
         print('total of {} diffusions will be created. To be used, they need '
               'manual approval.'.format(len(items)))
-        print(Diffusion.objects.bulk_create(items))
+        Diffusion.objects.bulk_create(items)
 
     @staticmethod
     def clean (date):

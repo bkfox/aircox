@@ -21,8 +21,8 @@ ensure('AIRCOX_SOUND_EXCERPTS_SUBDIR', 'excerpts')
 # Quality attributes passed to sound_quality_check from sounds_monitor
 ensure('AIRCOX_SOUND_QUALITY', {
         'attribute': 'RMS lev dB',
-        'range': ('-18.0', '-8.0'),
-        'sample_length': '120',
+        'range': (-18.0, -8.0),
+        'sample_length': 120,
     }
 )
 

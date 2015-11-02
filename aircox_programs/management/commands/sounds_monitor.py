@@ -7,14 +7,14 @@ Monitor sound files; For each program, check for:
 
 It tries to parse the file name to get the date of the diffusion of an
 episode and associate the file with it; We use the following format:
-    yyyymmdd[_n][_][title]
+    yyyymmdd[_n][_][name]
 
 Where:
-    'yyyy' is the year of the episode's diffusion;
-    'mm' is the month of the episode's diffusion;
-    'dd' is the day of the episode's diffusion;
-    'n' is the number of the episode (if multiple episodes);
-    'title' the title of the sound;
+    'yyyy' the year of the episode's diffusion;
+    'mm' the month of the episode's diffusion;
+    'dd' the day of the episode's diffusion;
+    'n' the number of the episode (if multiple episodes);
+    'name' the title of the sound;
 
 
 To check quality of files, call the command sound_quality_check using the
@@ -25,7 +25,6 @@ import re
 from argparse import RawTextHelpFormatter
 
 from django.core.management.base import BaseCommand, CommandError
-from django.utils import timezone
 
 from aircox_programs.models import *
 import aircox_programs.settings as settings
@@ -57,7 +56,7 @@ class Command (BaseCommand):
         if options.get('scan'):
             self.scan()
         if options.get('quality_check'):
-            self.check_quality()
+            self.check_quality(check = (not options.get('scan')) )
 
     def get_sound_info (self, path):
         """
@@ -74,21 +73,14 @@ class Command (BaseCommand):
         if not (r and r.groupdict()):
             self.report(program, path, "file path is not correct, use defaults")
             r = {
-                'name': os.path.splitext(path)
+                'name': os.path.splitext(path)[0]
             }
+        else:
+            r = r.groupdict()
+
+        r['name'] = r['name'].replace('_', ' ').capitalize()
         r['path'] = path
         return r
-
-    def ensure_sound (self, sound_info):
-        """
-        Return the Sound for the given sound_info; If not found, create it
-        without saving it.
-        """
-        sound = Sound.objects.filter(path = path)
-        if sound:
-            sound = sound[0]
-        else:
-            sound = Sound(path = path, title = sound_info['name'])
 
     def find_episode (self, program, sound_info):
         """
@@ -111,39 +103,50 @@ class Command (BaseCommand):
         diffusion = diffusion[0]
         return diffusion.episode or None
 
+    @staticmethod
+    def check_sounds (qs):
+        # check files
+        for sound in qs:
+            if sound.check_on_file():
+                sound.save(check = False)
+
     def scan (self):
         print('scan files for all programs...')
         programs = Program.objects.filter()
 
         for program in programs:
             print('- program ', program.name)
-            path = lambda x: os.path.join(program.path, x)
             self.scan_for_program(
-                program, path(settings.AIRCOX_SOUND_ARCHIVES_SUBDIR),
+                program, settings.AIRCOX_SOUND_ARCHIVES_SUBDIR,
                 type = Sound.Type['archive'],
             )
             self.scan_for_program(
-                program, path(settings.AIRCOX_SOUND_EXCERPTS_SUBDIR),
+                program, settings.AIRCOX_SOUND_EXCERPTS_SUBDIR,
                 type = Sound.Type['excerpt'],
             )
 
-    def scan_for_program (self, program, dir_path, **sound_kwargs):
+    def scan_for_program (self, program, subdir, **sound_kwargs):
         """
         Scan a given directory that is associated to the given program, and
         update sounds information.
         """
-        print(' - scan files in', dir_path)
-        if not os.path.exists(dir_path):
+        print(' - scan files in', subdir)
+        if not program.ensure_dir(subdir):
             return
 
+        subdir = os.path.join(program.path, subdir)
+
         # new/existing sounds
-        for path in os.listdir(dir_path):
-            path = dir_path + '/' + path
-            if not path.endswith(settings.AIRCOX_SOUNDFILE_EXT):
+        for path in os.listdir(subdir):
+            path = os.path.join(subdir, path)
+            if not path.endswith(settings.AIRCOX_SOUND_FILE_EXT):
                 continue
 
             sound_info = self.get_sound_info(path)
-            sound = self.ensure_sound(sound_info)
+            sound = Sound.objects.get_or_create(
+                path = path,
+                defaults = { 'name': sound_info['name'] }
+            )[0]
             sound.__dict__.update(sound_kwargs)
             sound.save(check = False)
 
@@ -160,21 +163,24 @@ class Command (BaseCommand):
                         episode.sounds.add(sound)
                         episode.save()
 
-        # check files
-        for sound in Sound.object.filter(path__startswith = path):
-            if sound.check():
-                sound.save(check = False)
+        self.check_sounds(Sound.objects.filter(path__startswith == subdir))
 
-
-    def check_quality (self):
+    def check_quality (self, check = False):
         """
         Check all files where quality has been set to bad
         """
-        import sound_quality_check as quality_check
+        import aircox_programs.management.commands.sounds_quality_check \
+                as quality_check
+
+        sounds = Sound.objects.filter(good_quality = False)
+        if check:
+            self.check_sounds(sounds)
+            files = [ sound.path for sound in sounds if not sound.removed ]
+        else:
+            files = [ sound.path for sound in sounds.filter(removed = False) ]
+
 
         print('start quality check...')
-        files = [ sound.path
-                    for sound in Sound.objects.filter(good_quality = False) ]
         cmd = quality_check.Command()
         cmd.handle( files = files,
                     **settings.AIRCOX_SOUND_QUALITY )

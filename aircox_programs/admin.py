@@ -50,9 +50,11 @@ class NameableAdmin (admin.ModelAdmin):
 @admin.register(Sound)
 class SoundAdmin (NameableAdmin):
     fields = None
+    list_display = ['id', 'name', 'duration', 'type', 'date', 'good_quality', 'removed', 'public']
     fieldsets = [
-        (None, { 'fields': NameableAdmin.fields + ['path' ] } ),
-        (None, { 'fields': ['duration', 'date', 'fragment' ] } )
+        (None, { 'fields': NameableAdmin.fields + ['path', 'type'] } ),
+        (None, { 'fields': ['embed', 'duration', 'date'] }),
+        (None, { 'fields': ['removed', 'good_quality', 'public' ] } )
     ]
 
 

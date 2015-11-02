@@ -96,7 +96,7 @@ class Sound (Nameable):
     path = models.FilePathField(
         _('file'),
         path = settings.AIRCOX_PROGRAMS_DIR,
-        match = '*(' + '|'.join(settings.AIRCOX_SOUND_FILE_EXT) + ')$',
+        match = r'(' + '|'.join(settings.AIRCOX_SOUND_FILE_EXT).replace('.', r'\.') + ')$',
         recursive = True,
         blank = True, null = True,
     )
@@ -105,9 +105,10 @@ class Sound (Nameable):
         blank = True, null = True,
         help_text = _('HTML code used to embed a sound from external plateform'),
     )
-    duration = models.TimeField(
+    duration = models.IntegerField(
         _('duration'),
         blank = True, null = True,
+        help_text = _('duration in seconds'),
     )
     date = models.DateTimeField(
         _('date'),
@@ -136,7 +137,7 @@ class Sound (Nameable):
         """
         mtime = os.stat(self.path).st_mtime
         mtime = tz.datetime.fromtimestamp(mtime)
-        return tz.make_aware(mtime, timezone.get_current_timezone())
+        return tz.make_aware(mtime, tz.get_current_timezone())
 
     def file_exists (self):
         return os.path.exists(self.path)
@@ -144,7 +145,7 @@ class Sound (Nameable):
     def check_on_file (self):
         """
         Check sound file info again'st self, and update informations if
-        needed. Return True if there was changes.
+        needed (do not save). Return True if there was changes.
         """
         if not self.file_exists():
             if self.removed:
@@ -152,11 +153,15 @@ class Sound (Nameable):
             self.removed = True
             return True
 
+        old_removed = self.removed
+        self.removed = False
+
         mtime = self.get_mtime()
         if self.date != mtime:
             self.date = mtime
             self.good_quality = False
             return True
+        return old_removed != self.removed
 
     def save (self, check = True, *args, **kwargs):
         if check:
@@ -450,9 +455,25 @@ class Program (Nameable):
         return os.path.join(settings.AIRCOX_PROGRAMS_DIR,
                             slugify(self.name + '_' + str(self.id)) )
 
+    def ensure_dir (self, subdir = None):
+        """
+        Make sur the program's dir exists (and optionally subdir). Return True
+        if the dir (or subdir) exists.
+        """
+        path = self.path
+        if not os.path.exists(path):
+            os.mkdir(path)
+
+        if subdir:
+            path = os.path.join(path, subdir)
+            if not os.path.exists(path):
+                os.mkdir(path)
+        return os.path.exists(path)
+
+
     def find_schedule (self, date):
         """
-        Return the first schedule that matches a given date
+        Return the first schedule that matches a given date.
         """
         schedules = Schedule.objects.filter(program = self)
         for schedule in schedules:
