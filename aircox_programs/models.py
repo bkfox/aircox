@@ -404,14 +404,19 @@ class Stream (Nameable):
         default = True,
         help_text = _('program list is public'),
     )
+    active = models.BooleanField(
+        _('active'),
+        default = True,
+        help_text = _('stream is active')
+    )
     type = models.SmallIntegerField(
         verbose_name = _('type'),
         choices = [ (y, x) for x,y in Type.items() ],
     )
-    priority = models.SmallIntegerField(
-        _('priority'),
-        default = 0,
-        help_text = _('priority of the stream')
+    delay = models.TimeField(
+        _('delay'),
+        blank = True, null = True,
+        help_text = _('play this playlist at least every delay')
     )
     time_start = models.TimeField(
         _('start'),

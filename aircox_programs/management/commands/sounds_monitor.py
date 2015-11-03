@@ -102,7 +102,6 @@ class Command (BaseCommand):
             self.report(program, path, 'no diffusion found for the given date')
             return
         diffusion = diffusion[0]
-        print(diffusion, sound_info)
         return diffusion.episode or None
 
     @staticmethod

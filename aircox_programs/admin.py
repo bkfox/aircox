@@ -60,7 +60,7 @@ class SoundAdmin (NameableAdmin):
 
 @admin.register(Stream)
 class StreamAdmin (SortableModelAdmin):
-    list_display = ('id', 'name', 'type', 'priority')
+    list_display = ('id', 'name', 'type')
     sortable = "priority"
 
 
