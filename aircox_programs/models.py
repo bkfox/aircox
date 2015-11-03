@@ -34,8 +34,8 @@ class Nameable (models.Model):
         return slugify(self.name)
 
     def __str__ (self):
-        if self.pk:
-            return '#{} {}'.format(self.pk, self.name)
+        #if self.pk:
+        #    return '#{} {}'.format(self.pk, self.name)
         return '{}'.format(self.name)
 
     class Meta:
@@ -391,7 +391,7 @@ class Diffusion (models.Model):
         verbose_name_plural = _('Diffusions')
 
 
-class Stream (models.Model):
+class Stream (Nameable):
     Type = {
         'random':   0x00,   # selection using random function
         'schedule': 0x01,   # selection using schedule
@@ -399,11 +399,6 @@ class Stream (models.Model):
     for key, value in Type.items():
         ugettext_lazy(key)
 
-    name = models.CharField(
-        _('name'),
-        max_length = 32,
-        blank = True, null = True,
-    )
     public = models.BooleanField(
         _('public'),
         default = True,
@@ -434,9 +429,6 @@ class Stream (models.Model):
     # get info for:
     # - random lists
     # - scheduled lists
-
-    def __str__ (self):
-        return '#{} {}'.format(self.priority, self.name)
 
 
 class Program (Nameable):

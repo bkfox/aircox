@@ -48,7 +48,8 @@ class Command (BaseCommand):
         )
         parser.add_argument(
             '-s', '--scan', action='store_true',
-            help='Scan programs directories for changes'
+            help='Scan programs directories for changes, plus check for a '
+                 ' matching episode on sounds that have not been yet assigned'
         )
 
 
@@ -101,6 +102,7 @@ class Command (BaseCommand):
             self.report(program, path, 'no diffusion found for the given date')
             return
         diffusion = diffusion[0]
+        print(diffusion, sound_info)
         return diffusion.episode or None
 
     @staticmethod
@@ -163,7 +165,7 @@ class Command (BaseCommand):
                         episode.sounds.add(sound)
                         episode.save()
 
-        self.check_sounds(Sound.objects.filter(path__startswith == subdir))
+        self.check_sounds(Sound.objects.filter(path__startswith = subdir))
 
     def check_quality (self, check = False):
         """
@@ -178,7 +180,6 @@ class Command (BaseCommand):
             files = [ sound.path for sound in sounds if not sound.removed ]
         else:
             files = [ sound.path for sound in sounds.filter(removed = False) ]
-
 
         print('start quality check...')
         cmd = quality_check.Command()

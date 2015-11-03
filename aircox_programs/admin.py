@@ -80,7 +80,13 @@ class EpisodeAdmin (NameableAdmin):
 
 @admin.register(Diffusion)
 class DiffusionAdmin (admin.ModelAdmin):
-    list_display = ('id', 'type', 'date', 'episode', 'program', 'stream')
+    def archives (self, obj):
+        sounds = obj.episode and \
+                    (os.path.basename(sound.path) for sound in obj.episode.sounds.all()
+                        if sound.type == Sound.Type['archive'] )
+        return ', '.join(sounds) if sounds else ''
+
+    list_display = ('id', 'type', 'date', 'archives', 'episode', 'program', 'stream')
     list_filter = ('type', 'date', 'program', 'stream')
     list_editable = ('type', 'date')
 
