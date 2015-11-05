@@ -26,8 +26,8 @@ class ScheduleInline (admin.TabularInline):
 
 class DiffusionInline (admin.TabularInline):
     model = Diffusion
-    fields = ('episode', 'type', 'date', 'stream')
-    readonly_fields = ('date', 'stream')
+    fields = ('episode', 'type', 'date')
+    readonly_fields = ('date',)
     extra = 1
 
 
@@ -59,14 +59,13 @@ class SoundAdmin (NameableAdmin):
 
 
 @admin.register(Stream)
-class StreamAdmin (SortableModelAdmin):
-    list_display = ('id', 'name', 'type')
-    sortable = "priority"
+class StreamAdmin (admin.ModelAdmin):
+    list_display = ('id', 'program', 'delay', 'time_start', 'time_end')
 
 
 @admin.register(Program)
 class ProgramAdmin (NameableAdmin):
-    fields = NameableAdmin.fields + ['stream']
+    fields = NameableAdmin.fields
     inlines = [ ScheduleInline ]
 
 
@@ -86,8 +85,8 @@ class DiffusionAdmin (admin.ModelAdmin):
                         if sound.type == Sound.Type['archive'] )
         return ', '.join(sounds) if sounds else ''
 
-    list_display = ('id', 'type', 'date', 'archives', 'episode', 'program', 'stream')
-    list_filter = ('type', 'date', 'program', 'stream')
+    list_display = ('id', 'type', 'date', 'archives', 'episode', 'program')
+    list_filter = ('type', 'date', 'program')
     list_editable = ('type', 'date')
 
     def get_queryset(self, request):

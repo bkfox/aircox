@@ -31,7 +31,7 @@ class Nameable (models.Model):
     )
 
     def get_slug_name (self):
-        return slugify(self.name)
+        return slugify(self.name).replace('-', '_')
 
     def __str__ (self):
         #if self.pk:
@@ -137,6 +137,8 @@ class Sound (Nameable):
         """
         mtime = os.stat(self.path).st_mtime
         mtime = tz.datetime.fromtimestamp(mtime)
+        # db does not store microseconds
+        mtime = mtime.replace(microsecond = 0)
         return tz.make_aware(mtime, tz.get_current_timezone())
 
     def file_exists (self):
@@ -181,6 +183,38 @@ class Sound (Nameable):
         verbose_name_plural = _('Sounds')
 
 
+class Stream (models.Model):
+    """
+    When there are no program scheduled, it is possible to play sounds
+    in order to avoid blanks. A Stream is a Program that plays this role,
+    and whose linked to a Stream.
+
+    All sounds that are marked as good and that are under the related
+    program's archive dir are elligible for the sound's selection.
+    """
+    program = models.ForeignKey(
+        'Program',
+        verbose_name = _('related program'),
+    )
+    delay = models.TimeField(
+        _('delay'),
+        blank = True, null = True,
+        help_text = _('plays this playlist at least every delay')
+    )
+    time_start = models.TimeField(
+        _('start'),
+        blank = True, null = True,
+        help_text = _('used to define a time range this stream is'
+                      'played')
+    )
+    time_end = models.TimeField(
+        _('end'),
+        blank = True, null = True,
+        help_text = _('used to define a time range this stream is'
+                      'played')
+    )
+
+
 class Schedule (models.Model):
     # Frequency for schedules. Basically, it is a mask of bits where each bit is
     # a week. Bits > rank 5 are used for special schedules.
@@ -203,7 +237,7 @@ class Schedule (models.Model):
 
     program = models.ForeignKey(
         'Program',
-        blank = True, null = True,
+        verbose_name = _('related program'),
     )
     date = models.DateTimeField(_('date'))
     duration = models.TimeField(
@@ -327,7 +361,6 @@ class Schedule (models.Model):
             diffusions.append(Diffusion(
                                  episode = episode,
                                  program = self.program,
-                                 stream = self.program.stream,
                                  type = Diffusion.Type['unconfirmed'],
                                  date = date,
                              ))
@@ -363,13 +396,6 @@ class Diffusion (models.Model):
         'Program',
         verbose_name = _('program'),
     )
-    # program.stream can change, but not the stream;
-    stream = models.ForeignKey(
-        'Stream',
-        verbose_name = _('stream'),
-        default = 0,
-        help_text = 'stream id on which the diffusion happens',
-    )
     type = models.SmallIntegerField(
         verbose_name = _('type'),
         choices = [ (y, x) for x,y in Type.items() ],
@@ -379,7 +405,6 @@ class Diffusion (models.Model):
     def save (self, *args, **kwargs):
         if self.episode: # FIXME self.episode or kwargs['episode']
             self.program = self.episode.program
-        # check type against stream's type
         super(Diffusion, self).save(*args, **kwargs)
 
     def __str__ (self):
@@ -391,56 +416,7 @@ class Diffusion (models.Model):
         verbose_name_plural = _('Diffusions')
 
 
-class Stream (Nameable):
-    Type = {
-        'random':   0x00,   # selection using random function
-        'schedule': 0x01,   # selection using schedule
-    }
-    for key, value in Type.items():
-        ugettext_lazy(key)
-
-    public = models.BooleanField(
-        _('public'),
-        default = True,
-        help_text = _('program list is public'),
-    )
-    active = models.BooleanField(
-        _('active'),
-        default = True,
-        help_text = _('stream is active')
-    )
-    type = models.SmallIntegerField(
-        verbose_name = _('type'),
-        choices = [ (y, x) for x,y in Type.items() ],
-    )
-    delay = models.TimeField(
-        _('delay'),
-        blank = True, null = True,
-        help_text = _('play this playlist at least every delay')
-    )
-    time_start = models.TimeField(
-        _('start'),
-        blank = True, null = True,
-        help_text = _('if random, used to define a time range this stream is'
-                      'played')
-    )
-    time_end = models.TimeField(
-        _('end'),
-        blank = True, null = True,
-        help_text = _('if random, used to define a time range this stream is'
-                      'played')
-    )
-
-    # get info for:
-    # - random lists
-    # - scheduled lists
-
-
 class Program (Nameable):
-    stream = models.ForeignKey(
-        Stream,
-        verbose_name = _('streams'),
-    )
     active = models.BooleanField(
         _('inactive'),
         default = True,
@@ -450,7 +426,7 @@ class Program (Nameable):
     @property
     def path (self):
         return os.path.join(settings.AIRCOX_PROGRAMS_DIR,
-                            slugify(self.name + '_' + str(self.id)) )
+                            self.get_slug_name() + '_' + str(self.id) )
 
     def ensure_dir (self, subdir = None):
         """
@@ -477,12 +453,12 @@ class Program (Nameable):
             if schedule.match(date, check_time = False):
                 return schedule
 
-
 class Episode (Nameable):
     program = models.ForeignKey(
         Program,
         verbose_name = _('program'),
         help_text = _('parent program'),
+        blank = True, null = True,
     )
     sounds = models.ManyToManyField(
         Sound,

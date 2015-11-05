@@ -59,22 +59,24 @@ class Command (BaseCommand):
         if options.get('quality_check'):
             self.check_quality(check = (not options.get('scan')) )
 
-    def get_sound_info (self, path):
+    def get_sound_info (self, program, path):
         """
         Parse file name to get info on the assumption it has the correct
         format (given in Command.help)
         """
+        file_name = os.path.basename(path)
+        file_name = os.path.splitext(file_name)[0]
         r = re.search('^(?P<year>[0-9]{4})'
                       '(?P<month>[0-9]{2})'
                       '(?P<day>[0-9]{2})'
                       '(_(?P<n>[0-9]+))?'
-                      '_?(?P<name>.*)\.\w+$',
-                      os.path.basename(path))
+                      '_?(?P<name>.*)$',
+                      file_name)
 
         if not (r and r.groupdict()):
             self.report(program, path, "file path is not correct, use defaults")
             r = {
-                'name': os.path.splitext(path)[0]
+                'name': file_name
             }
         else:
             r = r.groupdict()
@@ -143,7 +145,7 @@ class Command (BaseCommand):
             if not path.endswith(settings.AIRCOX_SOUND_FILE_EXT):
                 continue
 
-            sound_info = self.get_sound_info(path)
+            sound_info = self.get_sound_info(program, path)
             sound = Sound.objects.get_or_create(
                 path = path,
                 defaults = { 'name': sound_info['name'] }

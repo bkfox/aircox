@@ -11,6 +11,7 @@ from django.views.generic.base import View
 from django.template.loader import render_to_string
 
 import aircox_liquidsoap.settings as settings
+import aircox_programs.settings as programs_settings
 import aircox_programs.models as models
 
 
@@ -51,7 +52,8 @@ class Command (BaseCommand):
         if options.get('stream'):
             stream = options['stream']
             if type(stream) is int:
-                stream = models.Stream.objects.get(id = stream)
+                stream = models.Stream.objects.get(id = stream,
+                                                   program__active = True)
 
             data = self.get_playlist(stream, output = output)
             return
@@ -65,7 +67,7 @@ class Command (BaseCommand):
             if options.get('all'):
                 self.handle(config = True)
 
-            for stream in models.Stream.objects.filter(active = True):
+            for stream in models.Stream.objects.filter(program__active = True):
                 self.handle(stream = stream)
             self.output_dir = settings.AIRCOX_LIQUIDSOAP_MEDIA
             return
@@ -85,13 +87,13 @@ class Command (BaseCommand):
     @staticmethod
     def __render_stream_in_radio (stream):
         if stream.time_start and stream.time_end:
-            data = '({}-{}, {})'.format(
-                stream.time_start.strftime('%Hh%M'),
-                stream.time_end.strftime('%Hh%M'),
-                stream.get_slug_name()
+            data = '({{{}h-{}h}}, {})'.format(
+                stream.time_start.hour,
+                stream.time_end.hour,
+                stream.program.get_slug_name()
             )
         else:
-            data = stream.get_slug_name()
+            data = stream.program.get_slug_name()
 
         if stream.delay:
             data = 'delay({}., {})'.format(
@@ -101,7 +103,7 @@ class Command (BaseCommand):
         return data
 
     def get_config (self, output = None):
-        streams = models.Stream.objects.filter(active = True).order_by('type')[:]
+        streams = models.Stream.objects.filter(program__active = True)
         for stream in streams:
             stream.render_in_radio = self.__render_stream_in_radio(stream)
 
@@ -111,15 +113,22 @@ class Command (BaseCommand):
         }
 
         data = render_to_string('aircox_liquidsoap/config.liq', context)
-        data = re.sub(r'\\\n', r'#\\n#', data)
+        data = re.sub(r'\s*\\\n', r'#\\n#', data)
         data = data.replace('\n', '')
         data = re.sub(r'#\\n#', '\n', data)
         self.print(data, output, 'aircox.liq')
 
     def get_playlist (self, stream, output = None):
-        data = '/media/data/musique/free/Professor Kliq -- 28 Days With The OP-1' \
-               '-- jm148689/1_Coffee.ogg\n'
+        path =  os.path.join(
+            programs_settings.AIRCOX_SOUND_ARCHIVES_SUBDIR,
+            stream.program.path
+        )
+        sounds = models.Sound.objects.filter(
+                # good_quality = True,
+                type = models.Sound.Type['archive'],
+                path__startswith = path
+        )
+        data = '\n'.join(sound.path for sound in sounds)
         self.print(data, output, 'stream_{}.m3u'.format(stream.pk))
-
 
 
