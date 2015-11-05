@@ -23,11 +23,15 @@ class ScheduleInline (admin.TabularInline):
     model = Schedule
     extra = 1
 
+class StreamInline (admin.TabularInline):
+    fields = ['delay', 'time_start', 'time_end']
+    model = Stream
+    extra = 1
+
 
 class DiffusionInline (admin.TabularInline):
     model = Diffusion
     fields = ('episode', 'type', 'date')
-    readonly_fields = ('date',)
     extra = 1
 
 
@@ -66,8 +70,16 @@ class StreamAdmin (admin.ModelAdmin):
 @admin.register(Program)
 class ProgramAdmin (NameableAdmin):
     fields = NameableAdmin.fields
-    inlines = [ ScheduleInline ]
+    inlines = [ ScheduleInline, StreamInline ]
 
+    def get_form (self, request, obj=None, **kwargs):
+        if obj and Stream.objects.filter(program = obj).count() \
+                and ScheduleInline in self.inlines:
+            self.inlines.remove(ScheduleInline)
+        elif obj and Schedule.objects.filter(program = obj).count() \
+                and StreamInline in self.inlines:
+            self.inlines.remove(StreamInline)
+        return super().get_form(request, obj, **kwargs)
 
 @admin.register(Episode)
 class EpisodeAdmin (NameableAdmin):

@@ -6,7 +6,7 @@ def ensure (key, default):
 
 
 # dict of values to set (do not forget to escape chars)
-ensure('AIRCOX_LIQUIDSOAP_CONFIG', {
+ensure('AIRCOX_LIQUIDSOAP_SET', {
     'log.file.path': '"/tmp/liquidsoap.log"',
     'server.socket': 'true',
     'server.socket.path': '"/tmp/liquidsoap.sock"'

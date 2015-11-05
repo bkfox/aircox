@@ -87,9 +87,9 @@ class Command (BaseCommand):
     @staticmethod
     def __render_stream_in_radio (stream):
         if stream.time_start and stream.time_end:
-            data = '({{{}h-{}h}}, {})'.format(
-                stream.time_start.hour,
-                stream.time_end.hour,
+            data = '({{{}-{}}}, {})'.format(
+                stream.time_start.strftime('%Hh%M'),
+                stream.time_end.strftime('%Hh%M'),
                 stream.program.get_slug_name()
             )
         else:
@@ -97,7 +97,7 @@ class Command (BaseCommand):
 
         if stream.delay:
             data = 'delay({}., {})'.format(
-                    stream.delay.strftime('%s'),
+                    3600*stream.delay.hour+60*stream.delay.minute+stream.delay.second,
                     data
                 )
         return data
