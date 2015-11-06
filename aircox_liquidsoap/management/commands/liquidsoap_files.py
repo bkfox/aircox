@@ -31,16 +31,21 @@ class Command (BaseCommand):
             help='Generate liquidsoap config file'
         )
         parser.add_argument(
+            '-d', '--diffusion', action='store_true',
+            help='Generate the playlist for the current scheduled diffusion'
+        )
+        parser.add_argument(
             '-s', '--stream', type=int,
             help='Generate the playlist of a stream with the given id'
         )
         parser.add_argument(
             '-S', '--streams', action='store_true',
-            help='Generate all playlists'
+            help='Generate all stream playlists'
         )
         parser.add_argument(
             '-a', '--all', action='store_true',
-            help='Generate all playlists and config file'
+            help='Generate all playlists (stream and scheduled diffusion) '
+                 'and config file'
         )
 
     def handle (self, *args, **options):
@@ -118,7 +123,7 @@ class Command (BaseCommand):
         data = re.sub(r'#\\n#', '\n', data)
         self.print(data, output, 'aircox.liq')
 
-    def get_playlist (self, stream, output = None):
+    def get_playlist (self, stream = None, output = None):
         path =  os.path.join(
             programs_settings.AIRCOX_SOUND_ARCHIVES_SUBDIR,
             stream.program.path
