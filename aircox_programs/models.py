@@ -201,13 +201,13 @@ class Stream (models.Model):
         blank = True, null = True,
         help_text = _('plays this playlist at least every delay')
     )
-    time_start = models.TimeField(
-        _('start'),
+    begin = models.TimeField(
+        _('begin'),
         blank = True, null = True,
         help_text = _('used to define a time range this stream is'
                       'played')
     )
-    time_end = models.TimeField(
+    end = models.TimeField(
         _('end'),
         blank = True, null = True,
         help_text = _('used to define a time range this stream is'

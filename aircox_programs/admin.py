@@ -24,7 +24,7 @@ class ScheduleInline (admin.TabularInline):
     extra = 1
 
 class StreamInline (admin.TabularInline):
-    fields = ['delay', 'time_start', 'time_end']
+    fields = ['delay', 'begin', 'end']
     model = Stream
     extra = 1
 
@@ -64,7 +64,7 @@ class SoundAdmin (NameableAdmin):
 
 @admin.register(Stream)
 class StreamAdmin (admin.ModelAdmin):
-    list_display = ('id', 'program', 'delay', 'time_start', 'time_end')
+    list_display = ('id', 'program', 'delay', 'begin', 'end')
 
 
 @admin.register(Program)

@@ -5,11 +5,11 @@ def ensure (key, default):
     globals()[key] = getattr(settings, key, default)
 
 
+ensure('AIRCOX_LIQUIDSOAP_SOCKET', '/tmp/liquidsoap.sock')
+
 # dict of values to set (do not forget to escape chars)
 ensure('AIRCOX_LIQUIDSOAP_SET', {
     'log.file.path': '"/tmp/liquidsoap.log"',
-    'server.socket': 'true',
-    'server.socket.path': '"/tmp/liquidsoap.sock"'
 })
 
 # security source: used when no source are available

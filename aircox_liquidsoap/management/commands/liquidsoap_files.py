@@ -90,30 +90,27 @@ class Command (BaseCommand):
             file.write(data)
 
     @staticmethod
-    def __render_stream_in_radio (stream):
-        if stream.time_start and stream.time_end:
-            data = '({{{}-{}}}, {})'.format(
-                stream.time_start.strftime('%Hh%M'),
-                stream.time_end.strftime('%Hh%M'),
-                stream.program.get_slug_name()
-            )
-        else:
-            data = stream.program.get_slug_name()
+    def liquid_stream (stream):
+        def to_seconds (time):
+            return 3600 * time.hour + 60 * time.minute + time.second
 
-        if stream.delay:
-            data = 'delay({}., {})'.format(
-                    3600*stream.delay.hour+60*stream.delay.minute+stream.delay.second,
-                    data
-                )
-        return data
+        return {
+            'name': stream.program.get_slug_name(),
+            'begin': stream.begin.strftime('%Hh%M') if stream.begin else None,
+            'end': stream.end.strftime('%Hh%M') if stream.end else None,
+            'delay': to_seconds(stream.delay) if stream.delay else None,
+            'file': '{}/stream_{}.m3u'.format(
+                settings.AIRCOX_LIQUIDSOAP_MEDIA,
+                stream.pk,
+            )
+        }
 
     def get_config (self, output = None):
-        streams = models.Stream.objects.filter(program__active = True)
-        for stream in streams:
-            stream.render_in_radio = self.__render_stream_in_radio(stream)
-
         context = {
-            'streams': streams,
+            'streams': [
+                self.liquid_stream(stream)
+                for stream in models.Stream.objects.filter(program__active = True)
+            ],
             'settings': settings,
         }
 
