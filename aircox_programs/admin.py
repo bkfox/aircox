@@ -67,9 +67,13 @@ class StreamAdmin (admin.ModelAdmin):
     list_display = ('id', 'program', 'delay', 'begin', 'end')
 
 
+@admin.register(Station)
+class StationAdmin (NameableAdmin):
+    fields = NameableAdmin.fields + [ 'active', 'public', 'fallback' ]
+
 @admin.register(Program)
 class ProgramAdmin (NameableAdmin):
-    fields = NameableAdmin.fields
+    fields = NameableAdmin.fields + [ 'stations', 'active' ]
     inlines = [ ScheduleInline, StreamInline ]
 
     def get_form (self, request, obj=None, **kwargs):

@@ -43,6 +43,10 @@ class Nameable (models.Model):
 
 
 class Track (Nameable):
+    """
+    Track of a playlist of an episode. The position can either be expressed
+    as the position in the playlist or as the moment in seconds it started.
+    """
     # There are no nice solution for M2M relations ship (even without
     # through) in django-admin. So we unfortunately need to make one-
     # to-one relations and add a position argument
@@ -96,7 +100,8 @@ class Sound (Nameable):
     path = models.FilePathField(
         _('file'),
         path = settings.AIRCOX_PROGRAMS_DIR,
-        match = r'(' + '|'.join(settings.AIRCOX_SOUND_FILE_EXT).replace('.', r'\.') + ')$',
+        match = r'(' + '|'.join(settings.AIRCOX_SOUND_FILE_EXT) \
+                                    .replace('.', r'\.') + ')$',
         recursive = True,
         blank = True, null = True,
     )
@@ -216,6 +221,10 @@ class Stream (models.Model):
 
 
 class Schedule (models.Model):
+    """
+    A Schedule defines time slots of programs' diffusions. It can be a run or
+    a rerun (in such case it is linked to the related schedule).
+    """
     # Frequency for schedules. Basically, it is a mask of bits where each bit is
     # a week. Bits > rank 5 are used for special schedules.
     # Important: the first week is always the first week where the weekday of
@@ -377,6 +386,18 @@ class Schedule (models.Model):
 
 
 class Diffusion (models.Model):
+    """
+    A Diffusion is a cell in the timetable that is linked to an episode. A
+    diffusion can have different status that tells us what happens / did
+    happened or not.
+
+    A Diffusion can have different types:
+    - default: simple diffusion that is planified / did occurred
+    - unconfirmed: a generated diffusion that has not been confirmed and thus
+        is not yet planified
+    - cancel: the diffusion has been canceled
+    - stop: the diffusion has been manually stopped
+    """
     Type = {
         'default':      0x00,   # simple diffusion (done/planed)
         'unconfirmed':  0x01,   # scheduled by the generator but not confirmed for diffusion
@@ -416,11 +437,55 @@ class Diffusion (models.Model):
         verbose_name_plural = _('Diffusions')
 
 
-class Program (Nameable):
+class Station (Nameable):
+    """
+    A Station regroup one or more programs (stream and normal), and is the top
+    element used to generate streams outputs and configuration.
+    """
     active = models.BooleanField(
-        _('inactive'),
+        _('active'),
+        default = True,
+        help_text = _('this station is active')
+    )
+    public = models.BooleanField(
+        _('public'),
+        default = True,
+        help_text = _('information are available to the public'),
+    )
+    fallback = models.FilePathField(
+        _('fallback song'),
+        match = r'(' + '|'.join(settings.AIRCOX_SOUND_FILE_EXT) \
+                                    .replace('.', r'\.') + ')$',
+        recursive = True,
+        blank = True, null = True,
+        help_text = _('use this song file if there is a problem and nothing is '
+                      'played')
+    )
+
+
+class Program (Nameable):
+    """
+    A Program can either be a Streamed or a Scheduled program.
+
+    A Streamed program is used to generate non-stop random playlists when there
+    is not scheduled diffusion. In such a case, a Stream is used to describe
+    diffusion informations.
+
+    A Scheduled program has a schedule and is the one with a normal use case.
+    """
+    station = models.ForeignKey(
+        Station,
+        verbose_name = _('station')
+    )
+    active = models.BooleanField(
+        _('active'),
         default = True,
         help_text = _('if not set this program is no longer active')
+    )
+    public = models.BooleanField(
+        _('public'),
+        default = True,
+        help_text = _('information are available to the public')
     )
 
     @property
@@ -454,6 +519,10 @@ class Program (Nameable):
                 return schedule
 
 class Episode (Nameable):
+    """
+    Occurrence of a program, can have multiple sounds (archive/excerpt) and
+    a playlist (with assigned tracks)
+    """
     program = models.ForeignKey(
         Program,
         verbose_name = _('program'),

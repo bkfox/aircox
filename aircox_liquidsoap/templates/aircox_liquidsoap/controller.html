@@ -1,0 +1,11 @@
+
+{% for station in stations %}
+{% for name, source in station.sources.items %}
+<div class="source">
+    {{ name }}:
+        {{ source.initial_uri }}
+        <time style="font-size: 0.9em; color: grey">{{ source.on_air }}</time>
+</div>
+{% endfor %}
+{% endfor %}
+

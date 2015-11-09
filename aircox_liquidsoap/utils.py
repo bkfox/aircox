@@ -1,4 +1,6 @@
 import socket
+import re
+
 import aircox_liquidsoap.settings as settings
 
 class Controller:
@@ -23,12 +25,26 @@ class Controller:
 
     def send (self, data):
         if self.open():
-            return -1
+            return ''
         data = bytes(data + '\n', encoding='utf-8')
         self.socket.sendall(data)
         return self.socket.recv(10240).decode('utf-8')
 
-    def get (self, stream = None):
-        print(self.send('station.get'))
+    def parse (self, string):
+        string = string.split('\n')
+        data = {}
+        for line in string:
+            line = re.search(r'(?P<key>[^=]+)="?(?P<value>([^"]|\\")+)"?', line)
+            if not line:
+                continue
+            line = line.groupdict()
+            data[line['key']] = line['value']
+        return data
 
+    def get (self, station, source = None):
+        if source:
+            r = self.send('{}_{}.get'.format(station.get_slug_name(), source))
+        else:
+            r = self.send('{}.get'.format(station.get_slug_name()))
+        return self.parse(r) if r else None
 

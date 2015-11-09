@@ -105,11 +105,19 @@ class Command (BaseCommand):
             )
         }
 
+    def liquid_station (self, station):
+        station.streams =  [
+            self.liquid_stream(stream)
+            for stream in models.Stream.objects.filter(
+                program__active = True, program__station = station
+            )
+        ]
+        return station
+
     def get_config (self, output = None):
         context = {
-            'streams': [
-                self.liquid_stream(stream)
-                for stream in models.Stream.objects.filter(program__active = True)
+            'stations': [ self.liquid_station(station)
+                for station in models.Station.objects.filter(active = True)
             ],
             'settings': settings,
         }
