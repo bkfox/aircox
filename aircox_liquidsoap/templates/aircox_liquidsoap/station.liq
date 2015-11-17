@@ -5,54 +5,50 @@ A station has multiple sources:
 - streams: a rotate source with all playlists
 - single: security song
 {% endcomment %}
-{% with name=station.name streams=station.streams %}
-def make_station_{{ name }} () = \
+def make_station_{{ controller.id }} () = \
     {# dealer #}
-    dealer = interactive_source('{{ name }}_dealer', playlist.once( \
+    {% with source=controller.dealer %}
+    {% if source %}
+    dealer = interactive_source('{{ source.id }}', playlist.once( \
         reload_mode='watch', \
-        '/tmp/dealer.m3u', \
+        "{{ source.path }}", \
     )) \
     \
-    dealer_on = interactive.bool("{{ name }}_dealer_on", false) \
+    dealer_on = interactive.bool("{{ source.id }}_on", false) \
+    {% endif %}
+    {% endwith %}
     \
     {# streams #}
     streams = interactive_source("streams", rotate([ \
-    {% for stream in streams %}
-    {% if stream.delay %}
-        delay({{ stream.delay }}., stream("{{ name }}_{{ stream.name }}", "{{ stream.file }}")), \
+    {% for source in controller.streams.values %}
+    {% with info=source.stream_info %}
+    {% if info.delay %}
+        delay({{ info.delay }}., stream("{{ source.id }}", "{{ source.path }}")), \
+    {% elif info.begin and info.end %}
+        at({ {{info.begin}}-{{info.end}} }, stream("{{ source.id }}", "{{ source.path }}")), \
     {% endif %}
+    {% endwith %}
     {% endfor %}
 
-        switch([ \
-    {% for stream in streams %}
-    {% if stream.begin and stream.end %}
-            ({ stream.begin, stream.end }, stream("{{ name }}_{{ stream.name }}", "{{ stream.file }}")), \
-    {% endif %}
-    {% endfor %}
-        ]), \
-
-    {% for stream in streams %}
-    {% if not stream.delay %}
-    {% if not stream.begin or not stream.end %}
-        stream("{{ name }}_{{ stream.name }}", "{{ stream.file }}"), \
-    {% endif %}
+    {% for source in controller.streams.values %}
+    {% if not source.stream_info %}
+        stream("{{ source.id }}", "{{ source.path }}"), \
     {% endif %}
     {% endfor %}
     ])) \
     \
     {# station #}
     interactive_source ( \
-        "{{ name }}", \
+        "{{ controller.id }}", \
         fallback(track_sensitive = false, [ \
             at(dealer_on, dealer), \
-        {% if station.fallback %}
             streams, \
-            single("{{ station.fallback }}") \
+        {% if controller.station.fallback %}
+            single("{{ controller.station.fallback }}"), \
         {% else %}
-            mksafe(streams) \
+            blank(), \
         {% endif %}
         ]) \
     ) \
 end \
-{% endwith %}
 

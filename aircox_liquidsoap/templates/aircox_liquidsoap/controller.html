@@ -1,11 +1,129 @@
+{% if not embed %}
+<html>
+    <head>
+        <style>
+        .station {
+            margin: 2em;
+            border: 1px grey solid;
+        }
 
-{% for station in stations %}
-{% for name, source in station.sources.items %}
-<div class="source">
-    {{ name }}:
-        {{ source.initial_uri }}
-        <time style="font-size: 0.9em; color: grey">{{ source.on_air }}</time>
-</div>
-{% endfor %}
-{% endfor %}
+            .sources {
+                padding: 0.5em;
+                box-shadow: inset 0.1em 0.1em 0.5em rgba(0, 0, 0, 0.5);
+            }
+
+        .station h1 {
+            font-size: 1.2em;
+            margin: 0.2em;
+        }
+
+        .source {
+            border-left: 0.5em solid grey;
+            font-size: 0.9em;
+        }
+
+            .on_air {
+                display: block;
+                border-left: 0.5em solid #f00;
+            }
+
+            .source h2 {
+                display: inline-block;
+                min-width: 10em;
+                font-size: 1em;
+                margin: 0.2em;
+            }
+
+            .source time {
+                display: inline-block;
+                margin-right: 2em;
+            }
+
+            .source span {
+                font-size: 1em;
+            }
+
+        .error {
+            padding: 0.2em;
+            color: red;
+            font-weight: bold;
+        }
+        </style>
+
+        <script>
+
+            function get_token() {
+                return document.cookie.replace(/.*csrftoken=([^;]+)(;.*|$)/, '$1');
+            }
+
+            function liquid_action (controller, source, action) {
+                params = 'controller=' + controller + '&&source=' + source +
+                         '&&action=' + action;
+
+                req = new XMLHttpRequest()
+                req.open('POST', '{% url 'liquid-controller' %}', false);
+                req.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+                req.setRequestHeader("Content-length", params.length);
+                req.setRequestHeader("Connection", "close");
+                req.setRequestHeader("X-CSRFToken", get_token());
+
+                req.send(params);
+                liquid_update()
+            }
+
+            function liquid_update (update) {
+                req = new XMLHttpRequest()
+                req.open('GET', '{% url 'liquid-controller' %}?embed', true);
+
+                req.onreadystatechange = function() {
+                    if(req.readyState != 4 || (req.status != 200 && req.status != 0))
+                        return;
+                    document.getElementById('liquid-stations').innerHTML =
+                        req.responseText;
+
+                    if(update)
+                        window.setTimeout(function() { liquid_update(update);}, 5000);
+                };
+                req.send();
+            }
+
+            liquid_update(true);
+        </script>
+    </head>
+    <body>
+        <main id="liquid-stations">
+{% endif %}
+            {% for c_id, controller in monitor.controllers.items %}
+            {% with on_air=controller.on_air %}
+            <div id="{{ c_id }}" class="station">
+                <header>
+                    {% if not controller.connector.available %}
+                    <span class="error" style="float:right;">disconnected</span>
+                    {% endif %}
+                    <h1>
+                        {{ controller.station.name }}
+                    </h1>
+                </header>
+                <div class="sources">
+                    {% with source=controller.master %}
+                    {% include 'aircox_liquidsoap/base_source.html' %}
+                    {% endwith %}
+
+                    {% with source=controller.dealer %}
+                    {% include 'aircox_liquidsoap/base_source.html' %}
+                    {% endwith %}
+
+                    {% for source in controller.streams.values %}
+                    {% include 'aircox_liquidsoap/base_source.html' %}
+                    {% endfor %}
+                </div>
+            </div>
+            {% endwith %}
+            {% endfor %}
+
+{% if not embed %}
+        </main>
+    </body>
+</html>
+{% endif %}
 

@@ -11,6 +11,7 @@ from django.views.generic.base import View
 from django.template.loader import render_to_string
 
 import aircox_liquidsoap.settings as settings
+import aircox_liquidsoap.utils as utils
 import aircox_programs.settings as programs_settings
 import aircox_programs.models as models
 
@@ -89,36 +90,9 @@ class Command (BaseCommand):
         with open(path, 'w+') as file:
             file.write(data)
 
-    @staticmethod
-    def liquid_stream (stream):
-        def to_seconds (time):
-            return 3600 * time.hour + 60 * time.minute + time.second
-
-        return {
-            'name': stream.program.get_slug_name(),
-            'begin': stream.begin.strftime('%Hh%M') if stream.begin else None,
-            'end': stream.end.strftime('%Hh%M') if stream.end else None,
-            'delay': to_seconds(stream.delay) if stream.delay else None,
-            'file': '{}/stream_{}.m3u'.format(
-                settings.AIRCOX_LIQUIDSOAP_MEDIA,
-                stream.pk,
-            )
-        }
-
-    def liquid_station (self, station):
-        station.streams =  [
-            self.liquid_stream(stream)
-            for stream in models.Stream.objects.filter(
-                program__active = True, program__station = station
-            )
-        ]
-        return station
-
     def get_config (self, output = None):
         context = {
-            'stations': [ self.liquid_station(station)
-                for station in models.Station.objects.filter(active = True)
-            ],
+            'monitor': utils.Monitor(),
             'settings': settings,
         }
 
@@ -129,16 +103,18 @@ class Command (BaseCommand):
         self.print(data, output, 'aircox.liq')
 
     def get_playlist (self, stream = None, output = None):
-        path =  os.path.join(
-            programs_settings.AIRCOX_SOUND_ARCHIVES_SUBDIR,
-            stream.program.path
-        )
+        program = stream.program
+        source = utils.Source(program = program)
+
         sounds = models.Sound.objects.filter(
-                # good_quality = True,
-                type = models.Sound.Type['archive'],
-                path__startswith = path
+            # good_quality = True,
+            type = models.Sound.Type['archive'],
+            path__startswith = os.path.join(
+                programs_settings.AIRCOX_SOUND_ARCHIVES_SUBDIR,
+                program.path
+            )
         )
         data = '\n'.join(sound.path for sound in sounds)
-        self.print(data, output, 'stream_{}.m3u'.format(stream.pk))
+        self.print(data, output, utils.Source(program = program).path)
 
 

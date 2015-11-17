@@ -9,35 +9,49 @@ import aircox_liquidsoap.settings as settings
 import aircox_liquidsoap.utils as utils
 import aircox_programs.models as models
 
+
+view_monitor = utils.Monitor(
+    utils.Connector(address = settings.AIRCOX_LIQUIDSOAP_SOCKET)
+)
+
+class Actions:
+    @classmethod
+    def exec (cl, monitor, controller, source, action):
+        controller = monitor.controllers.get(controller)
+        source = controller and controller.get(source)
+
+        if not controller or not source or \
+                action.startswith('__') or \
+                action not in cl.__dict__:
+            return -1
+
+        action = getattr(Actions, action)
+        return action(monitor, controller, source)
+
+    @classmethod
+    def skip (cl, monitor, controller, source):
+        source.skip()
+
+
 class LiquidControl (View):
     template_name = 'aircox_liquidsoap/controller.html'
 
     def get_context_data (self, **kwargs):
-        stations = models.Station.objects.all()
-        controller = utils.Controller()
-
-        for station in stations:
-            name = station.get_slug_name()
-            streams = models.Stream.objects.filter(
-                program__active = True,
-                program__station = station
-            )
-
-            # list sources
-            sources = [ 'dealer' ] + \
-                      [ stream.program.get_slug_name() for stream in streams]
-
-            # sources status
-            station.sources = { name: controller.get(station) }
-            station.sources.update({
-                source: controller.get(station, source)
-                for source in sources
-            })
-
+        view_monitor.update()
         return {
             'request': self.request,
-            'stations': stations,
+            'monitor': view_monitor,
+            'embed': 'embed' in self.request.GET,
         }
+
+    def post (self, request = None, **kwargs):
+        if 'action' in request.POST:
+            POST = request.POST
+            controller = POST.get('controller')
+            source = POST.get('source')
+            action = POST.get('action')
+            Actions.exec(view_monitor, controller, source, action)
+        return HttpResponse('')
 
     def get (self, request = None, **kwargs):
         self.request = request
