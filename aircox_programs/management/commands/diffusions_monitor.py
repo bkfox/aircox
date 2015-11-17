@@ -23,16 +23,20 @@ from aircox_programs.models import *
 class Actions:
     @staticmethod
     def update (date):
-        items = []
-        for schedule in Schedule.objects.filter(program__active = True):
-            items += schedule.diffusions_of_month(date, exclude_saved = True)
+        count = 0
+        for schedule in Schedule.objects.filter(program__active = True) \
+                .order_by('rerun'):
+            # in order to allow rerun links between diffusions, we save items
+            # by schedule;
+            items = schedule.diffusions_of_month(date, exclude_saved = True)
+            count += len(items)
+            Diffusion.objects.bulk_create(items)
             print('> {} new diffusions for schedule #{} ({})'.format(
                     len(items), schedule.id, str(schedule)
                  ))
 
-        print('total of {} diffusions will be created. To be used, they need '
-              'manual approval.'.format(len(items)))
-        Diffusion.objects.bulk_create(items)
+        print('total of {} diffusions have been created. They need a '
+              'manual approval.'.format(count))
 
     @staticmethod
     def clean (date):

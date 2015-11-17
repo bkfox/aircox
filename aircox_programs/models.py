@@ -30,6 +30,10 @@ class Nameable (models.Model):
         max_length = 128,
     )
 
+    @property
+    def slug (self):
+        return self.get_slug_name()
+
     def get_slug_name (self):
         return slugify(self.name).replace('-', '_')
 
@@ -305,8 +309,8 @@ class Schedule (models.Model):
         Return a list with all matching dates of date.month (=today)
         """
         date = date_or_default(date, True).replace(day=1)
-        wday = self.date.weekday()
         fwday = date.weekday()
+        wday = self.date.weekday()
 
         # move date to the date weekday of the schedule
         # check on SO#3284452 for the formula
@@ -322,8 +326,14 @@ class Schedule (models.Model):
             # if both week are the same, then the date week of the month
             # matches. Note: wday % 2 + fwday % 2 => (wday + fwday) % 2
             fweek = date.isocalendar()[1]
+
+            if date.month == 1 and fweek >= 50:
+                # isocalendar can think we are on the last week of the
+                # previous year
+                fweek = 0
             week = self.date.isocalendar()[1]
             weeks = 0b010101 if not (fweek + week) % 2 else 0b001010
+            print(date, fweek, week, "{0:b}".format(weeks))
 
         dates = []
         for week in range(0,5):
@@ -331,8 +341,10 @@ class Schedule (models.Model):
             if not weeks & (0b1 << week):
                 continue
             wdate = date + tz.timedelta(days = week * 7)
+            print(wdate, wdate.month == date.month)
             if wdate.month == date.month:
                 dates.append(self.normalize(wdate))
+        print(dates)
         return dates
 
     def diffusions_of_month (self, date, exclude_saved = False):
@@ -363,15 +375,18 @@ class Schedule (models.Model):
             if self.rerun:
                 first_date -= self.date - self.rerun.date
 
-            diffusion = Diffusion.objects.filter(date = first_date,
-                                                 program = self.program)
-            episode = diffusion[0].episode if diffusion.count() else None
-
+            first_diffusion = Diffusion.objects.filter(date = first_date,
+                                                       program = self.program)
+            first_diffusion = first_diffusion[0] if first_diffusion.count() \
+                              else None
+            episode = first_diffusion.episode if first_diffusion else None
+            # print(self.rerun, episode, first_diffusion, first_date)
             diffusions.append(Diffusion(
                                  episode = episode,
                                  program = self.program,
                                  type = Diffusion.Type['unconfirmed'],
                                  date = date,
+                                 rerun = first_diffusion if self.rerun else None
                              ))
         return diffusions
 
@@ -422,10 +437,47 @@ class Diffusion (models.Model):
         choices = [ (y, x) for x,y in Type.items() ],
     )
     date = models.DateTimeField( _('start of the diffusion') )
+    rerun = models.ForeignKey (
+        'self',
+        verbose_name = _('rerun'),
+        blank = True, null = True,
+        help_text = _('the diffusion is a rerun of this one. Remove this if '
+                      'you want to change the concerned episode')
+    )
+
+    @classmethod
+    def get_next (cl, station = None):
+        """
+        Return a queryset with the upcoming diffusions, ordered by
+        +date
+        """
+        args = {
+            'date__gte': tz.datetime.now()
+        }
+        if station:
+            args['program__station'] = station
+        return cl.objects.filter(**args).order_by('date')
+
+    @classmethod
+    def get_prev (cl, station = None):
+        """
+        Return a queryset with the previous diffusion, ordered by
+        -date
+        """
+        args = {
+            'date__lt': tz.datetime.now()
+        }
+        if station:
+            args['program__station'] = station
+        return cl.objects.filter(**args).order_by('-date')
 
     def save (self, *args, **kwargs):
-        if self.episode: # FIXME self.episode or kwargs['episode']
+        if self.rerun:
+            self.episode = self.rerun.episode
             self.program = self.episode.program
+        elif self.episode:
+            self.program = self.episode.program
+
         super(Diffusion, self).save(*args, **kwargs)
 
     def __str__ (self):

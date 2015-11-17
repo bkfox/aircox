@@ -5,7 +5,6 @@ from django.contrib import admin
 from django.db import models
 
 from suit.admin import SortableTabularInline, SortableModelAdmin
-from autocomplete_light.contrib.taggit_field import TaggitWidget, TaggitField
 
 from aircox_programs.forms import *
 from aircox_programs.models import *
@@ -73,7 +72,7 @@ class StationAdmin (NameableAdmin):
 
 @admin.register(Program)
 class ProgramAdmin (NameableAdmin):
-    fields = NameableAdmin.fields + [ 'stations', 'active' ]
+    fields = NameableAdmin.fields + [ 'station', 'active' ]
     inlines = [ ScheduleInline, StreamInline ]
 
     def get_form (self, request, obj=None, **kwargs):
@@ -101,13 +100,14 @@ class DiffusionAdmin (admin.ModelAdmin):
                         if sound.type == Sound.Type['archive'] )
         return ', '.join(sounds) if sounds else ''
 
-    list_display = ('id', 'type', 'date', 'archives', 'episode', 'program')
+    list_display = ('id', 'type', 'date', 'archives', 'episode', 'program', 'rerun')
     list_filter = ('type', 'date', 'program')
     list_editable = ('type', 'date')
 
     def get_queryset(self, request):
         qs = super(DiffusionAdmin, self).get_queryset(request)
-        if 'type__exact' in request.GET and \
+        if '_changelist_filters' in request.GET or \
+            'type__exact' in request.GET and \
                 str(Diffusion.Type['unconfirmed']) in request.GET['type__exact']:
             return qs
         return qs.exclude(type = Diffusion.Type['unconfirmed'])

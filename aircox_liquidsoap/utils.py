@@ -38,7 +38,7 @@ class Connector:
             self.__socket.connect(self.address)
             self.__available = True
         except:
-            print('can not connect to liquidsoap socket {}'.format(address))
+            print('can not connect to liquidsoap socket {}'.format(self.address))
             self.__available = False
             return -1
 
@@ -218,7 +218,12 @@ class Dealer (Source):
         pass
 
     def get_next_diffusion (self):
-        pass
+        diffusions = models.Diffusion.get_next(self.station)
+        if not diffusions.count():
+            return
+
+        diffusion = diffusions[0]
+        return diffusion
 
     def on_air (self, value = True):
         pass
@@ -286,6 +291,12 @@ class Controller:
             return self.dealer
         return self.streams.get(source_id)
 
+    def next_diffusions (self, count = 5):
+        """
+        Return a list of the count next diffusions
+        """
+        return models.Diffusion.get_next(self.station)[:count]
+
     def update_all (self):
         """
         Fetch and update all sources metadata.
@@ -314,6 +325,5 @@ class Monitor:
     def update (self):
         for controller in self.controllers.values():
             controller.update_all()
-
 
 
