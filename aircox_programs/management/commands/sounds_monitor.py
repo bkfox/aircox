@@ -28,6 +28,7 @@ from django.core.management.base import BaseCommand, CommandError
 
 from aircox_programs.models import *
 import aircox_programs.settings as settings
+import aircox_programs.utils as utils
 
 
 class Command (BaseCommand):
@@ -85,10 +86,10 @@ class Command (BaseCommand):
         r['path'] = path
         return r
 
-    def find_episode (self, program, sound_info):
+    def find_initial (self, program, sound_info):
         """
-        For a given program, and sound path check if there is an episode to
-        associate to, using the diffusion's date.
+        For a given program, and sound path check if there is an initial
+        diffusion to associate to, using the diffusion's date.
 
         If there is no matching episode, return None.
         """
@@ -101,10 +102,10 @@ class Command (BaseCommand):
         )
 
         if not diffusion.count():
-            self.report(program, path, 'no diffusion found for the given date')
+            self.report(program, sound_info['path'],
+                        'no diffusion found for the given date')
             return
-        diffusion = diffusion[0]
-        return diffusion.episode or None
+        return diffusion[0]
 
     @staticmethod
     def check_sounds (qs):
@@ -118,7 +119,7 @@ class Command (BaseCommand):
         programs = Program.objects.filter()
 
         for program in programs:
-            print('- program ', program.name)
+            print('- program', program.name)
             self.scan_for_program(
                 program, settings.AIRCOX_SOUND_ARCHIVES_SUBDIR,
                 type = Sound.Type['archive'],
@@ -153,18 +154,22 @@ class Command (BaseCommand):
             sound.__dict__.update(sound_kwargs)
             sound.save(check = False)
 
-            # episode and relation
+            # initial diffusion association
             if 'year' in sound_info:
-                episode = self.find_episode(program, sound_info)
-                if episode:
-                    for sound_ in episode.sounds.get_queryset():
-                        if sound_.path == sound.path:
-                            break
+                initial = self.find_initial(program, sound_info)
+                if initial:
+                    if initial.initial:
+                        # FIXME: allow user to overwrite rerun info?
+                        self.report(program, path,
+                                    'the diffusion must be an initial diffusion')
                     else:
-                        self.report(program, path, 'add sound to episode ',
-                                    episode.id)
-                        episode.sounds.add(sound)
-                        episode.save()
+                        sound = initial.sounds.get_queryset() \
+                                    .filter(path == sound.path)
+                        if not sound:
+                            self.report(program, path,
+                                        'add sound to diffusion ', initial.id)
+                            initial.sounds.add(sound)
+                            initial.save()
 
         self.check_sounds(Sound.objects.filter(path__startswith = subdir))
 
@@ -191,7 +196,8 @@ class Command (BaseCommand):
         def update_stats(sound_info, sound):
             stats = sound_info.get_file_stats()
             if stats:
-                sound.duration = int(stats.get('length'))
+                duration = int(stats.get('length'))
+                sound.duration = utils.seconds_to_time(duration)
 
         for sound_info in cmd.good:
             sound = Sound.objects.get(path = sound_info.path)

@@ -25,7 +25,7 @@ class Actions:
     def update (date):
         count = 0
         for schedule in Schedule.objects.filter(program__active = True) \
-                .order_by('rerun'):
+                .order_by('initial'):
             # in order to allow rerun links between diffusions, we save items
             # by schedule;
             items = schedule.diffusions_of_month(date, exclude_saved = True)

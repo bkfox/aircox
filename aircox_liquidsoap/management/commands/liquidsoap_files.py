@@ -16,7 +16,6 @@ import aircox_programs.settings as programs_settings
 import aircox_programs.models as models
 
 
-
 class Command (BaseCommand):
     help= __doc__
     output_dir = settings.AIRCOX_LIQUIDSOAP_MEDIA

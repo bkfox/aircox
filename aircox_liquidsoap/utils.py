@@ -5,6 +5,7 @@ import json
 
 from django.utils.translation import ugettext as _, ugettext_lazy
 
+from aircox_programs.utils import to_timedelta
 import aircox_programs.models as models
 import aircox_liquidsoap.settings as settings
 
@@ -25,7 +26,8 @@ class Connector:
         return self.__available
 
     def __init__ (self, address = None):
-        self.address = address
+        if address:
+            self.address = address
 
     def open (self):
         if self.__available:
@@ -145,7 +147,8 @@ class Source:
     @property
     def playlist (self):
         """
-        The playlist as an array
+        Get or set the playlist as an array, and update it into
+        the corresponding file.
         """
         try:
             with open(self.path, 'r') as file:
@@ -158,6 +161,12 @@ class Source:
         with open(self.path, 'w') as file:
             file.write('\n'.join(sounds))
             self.connector.send(self.name, '_playlist.reload')
+
+
+    @property
+    def current_sound (self):
+        self.update()
+        self.metadata['initial_uri']
 
     def stream_info (self):
         """
@@ -221,12 +230,18 @@ class Dealer (Source):
         diffusions = models.Diffusion.get_next(self.station)
         if not diffusions.count():
             return
-
         diffusion = diffusions[0]
         return diffusion
 
-    def on_air (self, value = True):
-        pass
+    @property
+    def on (self):
+        r = self.connector.send('var.get ', self.id, '_on')
+        return (r == 'true')
+
+    @on.setter
+    def on (self, value):
+        return self.connector.send('var.set ', self.id, '_on',
+                                    '=', 'true' if value else 'false')
 
     @property
     def playlist (self):
@@ -240,6 +255,46 @@ class Dealer (Source):
     def playlist (self, sounds):
         with open(self.path, 'w') as file:
             file.write('\n'.join(sounds))
+
+
+    def __get_queue (self, date):
+        """
+        Return a list of diffusion candidates of being running right now.
+        Add an attribute "sounds" with the episode's archives.
+        """
+        r = [ models.Diffusion.get_prev(self.station, date),
+              models.Diffusion.get_next(self.station, date) ]
+        r = [ diffusion.prefetch_related('episode__sounds')[0]
+                for diffusion in r if diffusion.count() ]
+        for diffusion in r:
+            setattr(diffusion, 'sounds',
+                    [ sound.path for sound in diffusion.get_sounds() ])
+        return r
+
+    def __what_now (self, date, on_air, queue):
+        """
+        Return which diffusion is on_air from the given queue
+        """
+        for diffusion in queue:
+            duration = diffusion.archives_duration()
+            end_at = diffusion.date + tz.timedelta(seconds = diffusion.archives_duration())
+            if end_at < date:
+                continue
+
+            if diffusion.sounds and on_air in diffusion.sounds:
+                return diffusion
+
+    def monitor (self):
+        """
+        Monitor playlist (if it is time to load) and if it time to trigger
+        the button to start a diffusion.
+        """
+        on_air = self.current_soudn
+        playlist = self.playlist
+
+        queue = self.__get_queue()
+        current_diffusion = self.__what_now()
+
 
 
 class Controller:

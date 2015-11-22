@@ -38,15 +38,9 @@ def add_inline (base_model, post_model, prepend = False):
 
 
 add_inline(programs.Program, Program, True)
-add_inline(programs.Episode, Episode, True)
+# add_inline(programs.Episode, Episode, True)
 
 admin.site.register(Program)
-admin.site.register(Episode)
-
-#class ArticleAdmin (DescriptionAdmin):
-#    fieldsets = copy.deepcopy(DescriptionAdmin.fieldsets)
-#
-#    fieldsets[1][1]['fields'] += ['static_page']
-
+# admin.site.register(Episode)
 
 

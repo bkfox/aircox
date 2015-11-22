@@ -14,11 +14,11 @@ class Program (RelatedPost):
 
 class Episode (RelatedPost):
     class Relation:
-        model = programs.Episode
+        model = programs.Diffusion
         bind_mapping = True
         mapping = {
             'thread': 'program',
-            'title': 'name',
-            'content': 'description',
+            # 'title': 'name',
+            # 'content': 'description',
         }
 

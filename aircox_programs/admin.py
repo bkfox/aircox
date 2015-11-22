@@ -28,12 +28,6 @@ class StreamInline (admin.TabularInline):
     extra = 1
 
 
-class DiffusionInline (admin.TabularInline):
-    model = Diffusion
-    fields = ('episode', 'type', 'date')
-    extra = 1
-
-
 class TrackInline (SortableTabularInline):
     fields = ['artist', 'name', 'tags', 'position']
     form = TrackForm
@@ -53,10 +47,10 @@ class NameableAdmin (admin.ModelAdmin):
 @admin.register(Sound)
 class SoundAdmin (NameableAdmin):
     fields = None
-    list_display = ['id', 'name', 'duration', 'type', 'date', 'good_quality', 'removed', 'public']
+    list_display = ['id', 'name', 'duration', 'type', 'mtime', 'good_quality', 'removed', 'public']
     fieldsets = [
         (None, { 'fields': NameableAdmin.fields + ['path', 'type'] } ),
-        (None, { 'fields': ['embed', 'duration', 'date'] }),
+        (None, { 'fields': ['embed', 'duration', 'mtime'] }),
         (None, { 'fields': ['removed', 'good_quality', 'public' ] } )
     ]
 
@@ -73,34 +67,25 @@ class StationAdmin (NameableAdmin):
 @admin.register(Program)
 class ProgramAdmin (NameableAdmin):
     fields = NameableAdmin.fields + [ 'station', 'active' ]
+    # TODO list_display
     inlines = [ ScheduleInline, StreamInline ]
 
-    def get_form (self, request, obj=None, **kwargs):
-        if obj and Stream.objects.filter(program = obj).count() \
-                and ScheduleInline in self.inlines:
-            self.inlines.remove(ScheduleInline)
-        elif obj and Schedule.objects.filter(program = obj).count() \
-                and StreamInline in self.inlines:
-            self.inlines.remove(StreamInline)
-        return super().get_form(request, obj, **kwargs)
-
-@admin.register(Episode)
-class EpisodeAdmin (NameableAdmin):
-    list_filter = ['program'] + NameableAdmin.list_filter
-    fields = NameableAdmin.fields + ['sounds', 'program']
-
-    inlines = (TrackInline, DiffusionInline)
-
+    # SO#8074161
+    #def get_form (self, request, obj=None, **kwargs):
+        #if obj:
+        #    if Schedule.objects.filter(program = obj).count():
+        #        self.inlines.remove(StreamInline)
+        #    elif Stream.objects.filter(program = obj).count():
+        #        self.inlines.remove(ScheduleInline)
+        #return super().get_form(request, obj, **kwargs)
 
 @admin.register(Diffusion)
 class DiffusionAdmin (admin.ModelAdmin):
     def archives (self, obj):
-        sounds = obj.episode and \
-                    (os.path.basename(sound.path) for sound in obj.episode.sounds.all()
-                        if sound.type == Sound.Type['archive'] )
+        sounds = obj.get_archives()
         return ', '.join(sounds) if sounds else ''
 
-    list_display = ('id', 'type', 'date', 'archives', 'episode', 'program', 'rerun')
+    list_display = ('id', 'type', 'date', 'archives', 'program', 'initial')
     list_filter = ('type', 'date', 'program')
     list_editable = ('type', 'date')
 

@@ -48,14 +48,14 @@ class Nameable (models.Model):
 
 class Track (Nameable):
     """
-    Track of a playlist of an episode. The position can either be expressed
+    Track of a playlist of a diffusion. The position can either be expressed
     as the position in the playlist or as the moment in seconds it started.
     """
     # There are no nice solution for M2M relations ship (even without
     # through) in django-admin. So we unfortunately need to make one-
     # to-one relations and add a position argument
-    episode = models.ForeignKey(
-        'Episode',
+    diffusion = models.ForeignKey(
+        'Diffusion',
     )
     artist = models.CharField(
         _('artist'),
@@ -83,7 +83,7 @@ class Track (Nameable):
 class Sound (Nameable):
     """
     A Sound is the representation of a sound file that can be either an excerpt
-    or a complete archive of the related episode.
+    or a complete archive of the related diffusion.
 
     The podcasting and public access permissions of a Sound are managed through
     the related program info.
@@ -114,13 +114,13 @@ class Sound (Nameable):
         blank = True, null = True,
         help_text = _('HTML code used to embed a sound from external plateform'),
     )
-    duration = models.IntegerField(
+    duration = models.TimeField(
         _('duration'),
         blank = True, null = True,
-        help_text = _('duration in seconds'),
+        help_text = _('duration of the sound'),
     )
-    date = models.DateTimeField(
-        _('date'),
+    mtime = models.DateTimeField(
+        _('modification time'),
         blank = True, null = True,
         help_text = _('last modification date and time'),
     )
@@ -151,6 +151,9 @@ class Sound (Nameable):
         return tz.make_aware(mtime, tz.get_current_timezone())
 
     def file_exists (self):
+        """
+        Return true if the file still exists
+        """
         return os.path.exists(self.path)
 
     def check_on_file (self):
@@ -168,8 +171,8 @@ class Sound (Nameable):
         self.removed = False
 
         mtime = self.get_mtime()
-        if self.date != mtime:
-            self.date = mtime
+        if self.mtime != mtime:
+            self.mtime = mtime
             self.good_quality = False
             return True
         return old_removed != self.removed
@@ -226,8 +229,8 @@ class Stream (models.Model):
 
 class Schedule (models.Model):
     """
-    A Schedule defines time slots of programs' diffusions. It can be a run or
-    a rerun (in such case it is linked to the related schedule).
+    A Schedule defines time slots of programs' diffusions. It can be an initial
+    run or a rerun (in such case it is linked to the related schedule).
     """
     # Frequency for schedules. Basically, it is a mask of bits where each bit is
     # a week. Bits > rank 5 are used for special schedules.
@@ -255,16 +258,17 @@ class Schedule (models.Model):
     date = models.DateTimeField(_('date'))
     duration = models.TimeField(
         _('duration'),
+        help_text = _('regular duration'),
     )
     frequency = models.SmallIntegerField(
         _('frequency'),
         choices = VerboseFrequency.items(),
     )
-    rerun = models.ForeignKey(
+    initial = models.ForeignKey(
         'self',
-        verbose_name = _('rerun'),
+        verbose_name = _('initial'),
         blank = True, null = True,
-        help_text = "Schedule of a rerun of this one",
+        help_text = 'this schedule is a rerun of this one',
     )
 
     def match (self, date = None, check_time = True):
@@ -333,7 +337,6 @@ class Schedule (models.Model):
                 fweek = 0
             week = self.date.isocalendar()[1]
             weeks = 0b010101 if not (fweek + week) % 2 else 0b001010
-            print(date, fweek, week, "{0:b}".format(weeks))
 
         dates = []
         for week in range(0,5):
@@ -341,10 +344,8 @@ class Schedule (models.Model):
             if not weeks & (0b1 << week):
                 continue
             wdate = date + tz.timedelta(days = week * 7)
-            print(wdate, wdate.month == date.month)
             if wdate.month == date.month:
                 dates.append(self.normalize(wdate))
-        print(dates)
         return dates
 
     def diffusions_of_month (self, date, exclude_saved = False):
@@ -353,9 +354,6 @@ class Schedule (models.Model):
         can be not in the database.
 
         If exclude_saved, exclude all diffusions that are yet in the database.
-
-        When a Diffusion is created, it tries to attach the corresponding
-        episode using a match of episode.date (and takes care of rerun case);
         """
         dates = self.dates_of_month(date)
         saved = Diffusion.objects.filter(date__in = dates,
@@ -372,21 +370,19 @@ class Schedule (models.Model):
         # others
         for date in dates:
             first_date = date
-            if self.rerun:
-                first_date -= self.date - self.rerun.date
+            if self.initial:
+                first_date -= self.date - self.initial.date
 
             first_diffusion = Diffusion.objects.filter(date = first_date,
                                                        program = self.program)
             first_diffusion = first_diffusion[0] if first_diffusion.count() \
                               else None
-            episode = first_diffusion.episode if first_diffusion else None
-            # print(self.rerun, episode, first_diffusion, first_date)
             diffusions.append(Diffusion(
-                                 episode = episode,
                                  program = self.program,
                                  type = Diffusion.Type['unconfirmed'],
+                                 initial = first_diffusion if self.initial else None,
                                  date = date,
-                                 rerun = first_diffusion if self.rerun else None
+                                 duration = self.duration,
                              ))
         return diffusions
 
@@ -400,93 +396,30 @@ class Schedule (models.Model):
         verbose_name_plural = _('Schedules')
 
 
-class Diffusion (models.Model):
+class Log (models.Model):
     """
-    A Diffusion is a cell in the timetable that is linked to an episode. A
-    diffusion can have different status that tells us what happens / did
-    happened or not.
-
-    A Diffusion can have different types:
-    - default: simple diffusion that is planified / did occurred
-    - unconfirmed: a generated diffusion that has not been confirmed and thus
-        is not yet planified
-    - cancel: the diffusion has been canceled
-    - stop: the diffusion has been manually stopped
+    Log a played sound start and stop, or a single message
     """
-    Type = {
-        'default':      0x00,   # simple diffusion (done/planed)
-        'unconfirmed':  0x01,   # scheduled by the generator but not confirmed for diffusion
-        'cancel':       0x02,   # cancellation happened; used to inform users
-        # 'restart':      0x03,   # manual restart; used to remix/give up antenna
-        'stop':         0x04,   # diffusion has been forced to stop
-    }
-    for key, value in Type.items():
-        ugettext_lazy(key)
-
-    episode = models.ForeignKey (
-        'Episode',
+    sound = models.ForeignKey(
+        'Sound',
+        help_text = 'Played sound',
         blank = True, null = True,
-        verbose_name = _('episode'),
     )
-    program = models.ForeignKey (
-        'Program',
-        verbose_name = _('program'),
-    )
-    type = models.SmallIntegerField(
-        verbose_name = _('type'),
-        choices = [ (y, x) for x,y in Type.items() ],
-    )
-    date = models.DateTimeField( _('start of the diffusion') )
-    rerun = models.ForeignKey (
-        'self',
-        verbose_name = _('rerun'),
+    stream = models.ForeignKey(
+        'Stream',
         blank = True, null = True,
-        help_text = _('the diffusion is a rerun of this one. Remove this if '
-                      'you want to change the concerned episode')
     )
-
-    @classmethod
-    def get_next (cl, station = None):
-        """
-        Return a queryset with the upcoming diffusions, ordered by
-        +date
-        """
-        args = {
-            'date__gte': tz.datetime.now()
-        }
-        if station:
-            args['program__station'] = station
-        return cl.objects.filter(**args).order_by('date')
-
-    @classmethod
-    def get_prev (cl, station = None):
-        """
-        Return a queryset with the previous diffusion, ordered by
-        -date
-        """
-        args = {
-            'date__lt': tz.datetime.now()
-        }
-        if station:
-            args['program__station'] = station
-        return cl.objects.filter(**args).order_by('-date')
-
-    def save (self, *args, **kwargs):
-        if self.rerun:
-            self.episode = self.rerun.episode
-            self.program = self.episode.program
-        elif self.episode:
-            self.program = self.episode.program
-
-        super(Diffusion, self).save(*args, **kwargs)
-
-    def __str__ (self):
-        return self.program.name + ' on ' + str(self.date) \
-               + str(self.type)
-
-    class Meta:
-        verbose_name = _('Diffusion')
-        verbose_name_plural = _('Diffusions')
+    start = models.DateTimeField(
+        'start',
+    )
+    stop = models.DateTimeField(
+        'stop',
+        blank = True, null = True,
+    )
+    comment = models.CharField(
+        max_length = 512,
+        blank = True, null = True,
+    )
 
 
 class Station (Nameable):
@@ -570,25 +503,114 @@ class Program (Nameable):
             if schedule.match(date, check_time = False):
                 return schedule
 
-class Episode (Nameable):
+
+class Diffusion (models.Model):
     """
-    Occurrence of a program, can have multiple sounds (archive/excerpt) and
-    a playlist (with assigned tracks)
+    A Diffusion is an occurrence of a Program that is scheduled on the
+    station's timetable. It can be a rerun of a previous diffusion. In such
+    a case, use rerun's info instead of its own.
+
+    A Diffusion without any rerun is named Episode (previously, a
+    Diffusion was different from an Episode, but in the end, an
+    episode only has a name, a linked program, and a list of sounds, so we
+    finally merge theme).
+
+    A Diffusion can have different types:
+    - default: simple diffusion that is planified / did occurred
+    - unconfirmed: a generated diffusion that has not been confirmed and thus
+        is not yet planified
+    - cancel: the diffusion has been canceled
+    - stop: the diffusion has been manually stopped
     """
-    program = models.ForeignKey(
-        Program,
+    Type = {
+        'default':      0x00,   # confirmed diffusion case FIXME
+        'unconfirmed':  0x01,   # scheduled by the generator but not confirmed for diffusion
+        'cancel':       0x02,   # cancellation happened; used to inform users
+        # 'restart':      0x03,   # manual restart; used to remix/give up antenna
+    }
+    for key, value in Type.items():
+        ugettext_lazy(key)
+
+    # common
+    program = models.ForeignKey (
+        'Program',
         verbose_name = _('program'),
-        help_text = _('parent program'),
-        blank = True, null = True,
     )
     sounds = models.ManyToManyField(
         Sound,
         blank = True,
         verbose_name = _('sounds'),
     )
+    # specific
+    type = models.SmallIntegerField(
+        verbose_name = _('type'),
+        choices = [ (y, x) for x,y in Type.items() ],
+    )
+    initial = models.ForeignKey (
+        'self',
+        verbose_name = _('initial'),
+        blank = True, null = True,
+        help_text = _('the diffusion is a rerun of this one')
+    )
+    date = models.DateTimeField( _('start of the diffusion') )
+    duration = models.TimeField(
+        _('duration'),
+        blank = True, null = True,
+        help_text = _('regular duration'),
+    )
+
+    def archives_duration (self):
+        """
+        Get total duration of the archives. May differ from the schedule
+        duration.
+        """
+        return sum([ sound.duration for sound in self.sounds
+                        if sound.type == Sound.Type['archive']])
+
+    def get_archives (self):
+        """
+        Return an ordered list of archives sounds for the given episode.
+        """
+        r = [ sound for sound in self.sounds.all()
+              if sound.type == Sound.Type['archive'] ]
+        r.sort(key = 'path')
+        return r
+
+    @classmethod
+    def get_next (cl, station = None, date = None, **filter_args):
+        """
+        Return a queryset with the upcoming diffusions, ordered by
+        +date
+        """
+        filter_args['date__gte'] = date_or_default(date)
+        if station:
+            filter_args['program__station'] = station
+        return cl.objects.filter(**filter_args).order_by('date')
+
+    @classmethod
+    def get_prev (cl, station = None, date = None, **filter_args):
+        """
+        Return a queryset with the previous diffusion, ordered by
+        -date
+        """
+        filter_args['date__lte'] = date_or_default(date)
+        if station:
+            filter_args['program__station'] = station
+        return cl.objects.filter(**filter_args).order_by('-date')
+
+    def save (self, *args, **kwargs):
+        if self.initial:
+            if self.initial.initial:
+                self.initial = self.initial.initial
+            self.program = self.initial.program
+        super(Diffusion, self).save(*args, **kwargs)
+
+    def __str__ (self):
+        return self.program.name + ' on ' + str(self.date) \
+               + str(self.type)
 
     class Meta:
-        verbose_name = _('Episode')
-        verbose_name_plural = _('Episodes')
+        verbose_name = _('Diffusion')
+        verbose_name_plural = _('Diffusions')
 
 
