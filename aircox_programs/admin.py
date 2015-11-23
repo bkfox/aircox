@@ -113,6 +113,7 @@ class DiffusionAdmin (admin.ModelAdmin):
         return qs.exclude(type = Diffusion.Type['unconfirmed'])
 
 
+admin.site.register(Log)
 admin.site.register(Track)
 admin.site.register(Schedule)
 

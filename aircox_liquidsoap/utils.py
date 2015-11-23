@@ -41,7 +41,7 @@ class Connector:
             self.__socket.connect(self.address)
             self.__available = True
         except:
-            print('can not connect to liquidsoap socket {}'.format(self.address))
+            # print('can not connect to liquidsoap socket {}'.format(self.address))
             self.__available = False
             return -1
 
@@ -167,7 +167,7 @@ class Source:
     @property
     def current_sound (self):
         self.update()
-        self.metadata.get('initial_uri')
+        return self.metadata.get('initial_uri') if self.metadata else {}
 
     def stream_info (self):
         """
@@ -308,15 +308,14 @@ class Dealer (Source):
         # run the diff
         if self.playlist == diff.playlist and diff.date <= now:
             self.on = True
-            for source in self.controller.source:
+            for source in self.controller.streams.values():
                 source.skip()
-
             self.controller.log(
                 source = self.id,
                 diffusion = diff,
                 date = now,
                 comment = 'trigger the scheduled diffusion to liquidsoap; '
-                          'skip all other sources',
+                          'skip all other streams',
             )
 
 
@@ -325,7 +324,7 @@ class Controller:
     station = None      # the related station
     master = None       # master source (station's source)
     dealer = None       # dealer source
-    streams = None      # streams sources
+    streams = None      # streams streams
 
     @property
     def on_air (self):
@@ -379,7 +378,7 @@ class Controller:
 
     def update_all (self):
         """
-        Fetch and update all sources metadata.
+        Fetch and update all streams metadata.
         """
         self.master.update()
         self.dealer.update()
@@ -389,26 +388,34 @@ class Controller:
     def __change_log (self, source):
         last_log = models.Log.objects.filter(
             source = source.id,
-        ).prefetch_related('sound').order('-date')
+        ).prefetch_related('sound').order_by('-date')
 
         on_air = source.current_sound
-        if on_air == last_log.sound.path:
+        if not on_air:
             return
+
+        if last_log:
+            last_log = last_log[0]
+            if last_log.sound and on_air == last_log.sound.path:
+                return
 
         self.log(
             source = source.id,
             sound = models.Sound.objects.get(path = on_air),
-            start = tz.make_aware(tz.datetime.now()),
+            date = tz.make_aware(tz.datetime.now()),
             comment = 'sound has changed'
         )
 
     def monitor (self):
         """
-        Log changes in the sources, and call dealer.monitor.
+        Log changes in the streams, and call dealer.monitor.
         """
+        if not self.connector.available and self.connector.open():
+            return
+
         self.dealer.monitor()
         self.__change_log(self.dealer)
-        for source in self.sources:
+        for source in self.streams.values():
             self.__change_log(source)
 
 

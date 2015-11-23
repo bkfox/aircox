@@ -8,6 +8,7 @@ from django.utils.html import strip_tags
 
 from taggit.managers import TaggableManager
 
+import aircox_programs.utils as utils
 import aircox_programs.settings as settings
 
 
@@ -541,7 +542,7 @@ class Diffusion (models.Model):
         r = [ sound.duration
                 for sound in self.sounds.filter(type = Sound.Type['archive'])
                 if sound.duration ]
-        return sum(r) or self.duration
+        return utils.time_sum(r) if r else self.duration
 
     def get_archives (self):
         """
