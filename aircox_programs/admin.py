@@ -53,6 +53,7 @@ class SoundAdmin (NameableAdmin):
         (None, { 'fields': ['embed', 'duration', 'mtime'] }),
         (None, { 'fields': ['removed', 'good_quality', 'public' ] } )
     ]
+    readonly_fields = ('path', 'duration',)
 
 
 @admin.register(Stream)
@@ -82,7 +83,7 @@ class ProgramAdmin (NameableAdmin):
 @admin.register(Diffusion)
 class DiffusionAdmin (admin.ModelAdmin):
     def archives (self, obj):
-        sounds = obj.get_archives()
+        sounds = [ str(s) for s in obj.get_archives()]
         return ', '.join(sounds) if sounds else ''
 
     list_display = ('id', 'type', 'date', 'archives', 'program', 'initial')

@@ -4,6 +4,7 @@ import re
 import json
 
 from django.utils.translation import ugettext as _, ugettext_lazy
+from django.utils import timezone as tz
 
 from aircox_programs.utils import to_timedelta
 import aircox_programs.models as models
@@ -50,10 +51,10 @@ class Connector:
         data = bytes(''.join([str(d) for d in data]) + '\n', encoding='utf-8')
 
         try:
-            reg = re.compile('(.*)[\n\r]+END[\n\r]*$')
+            reg = re.compile(r'(.*)\s+END\s*$')
             self.__socket.sendall(data)
             data = ''
-            while not reg.match(data):
+            while not reg.search(data):
                 data += self.__socket.recv(1024).decode('unicode_escape')
 
             if data:
@@ -166,7 +167,7 @@ class Source:
     @property
     def current_sound (self):
         self.update()
-        self.metadata['initial_uri']
+        self.metadata.get('initial_uri')
 
     def stream_info (self):
         """
@@ -201,15 +202,29 @@ class Source:
 
         Return -1 in case no update happened
         """
-        if metadata:
+        if metadata is not None:
             source = metadata.get('source') or ''
             if self.program and not source.startswith(self.id):
                 return -1
             self.metadata = metadata
             return
 
-        r = self.connector.send('var.get ', self.id + '_meta', parse_json=True)
-        return self.update(metadata = r) if r else -1
+        # r = self.connector.send('var.get ', self.id + '_meta', parse_json=True)
+        r = self.connector.send(self.id, '.get', parse=True)
+        return self.update(metadata = r or {})
+
+
+class Master (Source):
+    """
+    A master Source
+    """
+    def update (self, metadata = None):
+        if metadata is not None:
+            return super().update(metadata)
+
+        r = self.connector.send('request.on_air')
+        r = self.connector.send('request.metadata ', r, parse = True)
+        return self.update(metadata = r or {})
 
 
 class Dealer (Source):
@@ -221,7 +236,7 @@ class Dealer (Source):
 
     @property
     def id (self):
-        return self.station.name + '_dealer'
+        return self.station.slug + '_dealer'
 
     def stream_info (self):
         pass
@@ -257,31 +272,24 @@ class Dealer (Source):
             file.write('\n'.join(sounds))
 
 
-    def __get_queue (self, date):
+    def __get_next (self, date, on_air):
         """
-        Return a list of diffusion candidates of being running right now.
-        Add an attribute "sounds" with the episode's archives.
+        Return which diffusion should be played now and not playing
         """
         r = [ models.Diffusion.get_prev(self.station, date),
               models.Diffusion.get_next(self.station, date) ]
-        r = [ diffusion.prefetch_related('episode__sounds')[0]
+        r = [ diffusion.prefetch_related('sounds')[0]
                 for diffusion in r if diffusion.count() ]
-        for diffusion in r:
-            setattr(diffusion, 'sounds',
-                    [ sound.path for sound in diffusion.get_sounds() ])
-        return r
 
-    def __what_now (self, date, on_air, queue):
-        """
-        Return which diffusion is on_air from the given queue
-        """
-        for diffusion in queue:
-            duration = diffusion.archives_duration()
-            end_at = diffusion.date + tz.timedelta(seconds = diffusion.archives_duration())
+        for diffusion in r:
+            duration = to_timedelta(diffusion.archives_duration())
+            end_at = diffusion.date + duration
             if end_at < date:
                 continue
 
-            if diffusion.sounds and on_air in diffusion.sounds:
+            diffusion.playlist = [ sound.path
+                                    for sound in diffusion.get_archives() ]
+            if diffusion.playlist and on_air not in diffusion.playlist:
                 return diffusion
 
     def monitor (self):
@@ -289,12 +297,25 @@ class Dealer (Source):
         Monitor playlist (if it is time to load) and if it time to trigger
         the button to start a diffusion.
         """
-        on_air = self.current_soudn
         playlist = self.playlist
+        on_air = self.current_sound
+        now = tz.make_aware(tz.datetime.now())
 
-        queue = self.__get_queue()
-        current_diffusion = self.__what_now()
+        diff = self.__get_next(now, on_air)
+        if not diff:
+            return # there is nothing we can do
 
+        # playlist reload
+        if self.playlist != diff.playlist:
+            if not playlist or on_air == playlist[-1] or \
+                on_air not in playlist:
+                self.on = False
+                self.playlist = diff.playlist
+
+        # run the diff
+        if self.playlist == diff.playlist and diff.date <= now:
+            # FIXME: log
+            self.on = True
 
 
 class Controller:
@@ -324,7 +345,7 @@ class Controller:
         self.station = station
         self.station.controller = self
 
-        self.master = Source(self)
+        self.master = Master(self)
         self.dealer = Dealer(self)
         self.streams = {
             source.id : source

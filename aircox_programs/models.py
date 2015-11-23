@@ -564,16 +564,17 @@ class Diffusion (models.Model):
         Get total duration of the archives. May differ from the schedule
         duration.
         """
-        return sum([ sound.duration for sound in self.sounds
-                        if sound.type == Sound.Type['archive']])
+        r = [ sound.duration
+                for sound in self.sounds.filter(type = Sound.Type['archive'])
+                if sound.duration ]
+        return sum(r) or self.duration
 
     def get_archives (self):
         """
         Return an ordered list of archives sounds for the given episode.
         """
-        r = [ sound for sound in self.sounds.all()
+        r = [ sound for sound in self.sounds.all().order_by('path')
               if sound.type == Sound.Type['archive'] ]
-        r.sort(key = 'path')
         return r
 
     @classmethod

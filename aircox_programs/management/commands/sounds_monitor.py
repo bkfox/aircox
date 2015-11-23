@@ -18,10 +18,12 @@ Where:
 
 
 To check quality of files, call the command sound_quality_check using the
-parameters given by the setting AIRCOX_SOUND_QUALITY.
+parameters given by the setting AIRCOX_SOUND_QUALITY. This script requires
+Sox (and soxi).
 """
 import os
 import re
+import subprocess
 from argparse import RawTextHelpFormatter
 
 from django.core.management.base import BaseCommand, CommandError
@@ -53,12 +55,18 @@ class Command (BaseCommand):
                  ' matching episode on sounds that have not been yet assigned'
         )
 
-
     def handle (self, *args, **options):
         if options.get('scan'):
             self.scan()
         if options.get('quality_check'):
             self.check_quality(check = (not options.get('scan')) )
+
+    def _get_duration (self, path):
+        p = subprocess.Popen(['soxi', '-D', path], stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE)
+        out, err = p.communicate()
+        if not err:
+            return utils.seconds_to_time(int(float(out)))
 
     def get_sound_info (self, program, path):
         """
@@ -82,6 +90,7 @@ class Command (BaseCommand):
         else:
             r = r.groupdict()
 
+        r['duration'] = self._get_duration(path)
         r['name'] = r['name'].replace('_', ' ').capitalize()
         r['path'] = path
         return r
@@ -109,12 +118,18 @@ class Command (BaseCommand):
 
     @staticmethod
     def check_sounds (qs):
+        """
+        Only check for the sound existence or update
+        """
         # check files
         for sound in qs:
             if sound.check_on_file():
                 sound.save(check = False)
 
     def scan (self):
+        """
+        For all programs, scan dirs
+        """
         print('scan files for all programs...')
         programs = Program.objects.filter()
 
@@ -149,7 +164,8 @@ class Command (BaseCommand):
             sound_info = self.get_sound_info(program, path)
             sound = Sound.objects.get_or_create(
                 path = path,
-                defaults = { 'name': sound_info['name'] }
+                defaults = { 'name': sound_info['name'],
+                             'duration': sound_info['duration'] or None }
             )[0]
             sound.__dict__.update(sound_kwargs)
             sound.save(check = False)

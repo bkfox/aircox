@@ -1,11 +1,6 @@
 {# Utilities #}
 def interactive_source (id, s, ) = \
-    def apply_metadata(m) = \
-        m = json_of(compact=true, m) \
-        ignore(interactive.string('#{id}_meta', m)) \
-    end \
-    \
-    s = on_metadata(id = id, apply_metadata, s) \
+    s = store_metadata(id=id, size=1, s) \
     add_skip_command(s) \
     s \
 end \

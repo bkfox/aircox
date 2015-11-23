@@ -49,9 +49,8 @@ class Stats:
 
         args.append('stats')
 
-        p = subprocess.Popen(args,
-                             stdout=subprocess.PIPE,
-                             stderr = subprocess.PIPE)
+        p = subprocess.Popen(args, stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE)
         # sox outputs to stderr (my god WHYYYY)
         out_, out = p.communicate()
         self.parse(str(out, encoding='utf-8'))

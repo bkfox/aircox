@@ -8,7 +8,7 @@ def to_timedelta (time):
     return datetime.timedelta(
         hours = time.hour,
         minutes = time.minute,
-        seconds = time.seconds
+        seconds = time.second
     )
 
 
