@@ -241,13 +241,6 @@ class Dealer (Source):
     def stream_info (self):
         pass
 
-    def get_next_diffusion (self):
-        diffusions = models.Diffusion.get_next(self.station)
-        if not diffusions.count():
-            return
-        diffusion = diffusions[0]
-        return diffusion
-
     @property
     def on (self):
         r = self.connector.send('var.get ', self.id, '_on')
@@ -314,10 +307,17 @@ class Dealer (Source):
 
         # run the diff
         if self.playlist == diff.playlist and diff.date <= now:
-            # FIXME: log
             self.on = True
             for source in self.controller.source:
                 source.skip()
+
+            self.controller.log(
+                source = self.id,
+                diffusion = diff,
+                date = now,
+                comment = 'trigger the scheduled diffusion to liquidsoap; '
+                          'skip all other sources',
+            )
 
 
 class Controller:
@@ -369,11 +369,13 @@ class Controller:
             return self.dealer
         return self.streams.get(source_id)
 
-    def next_diffusions (self, count = 5):
+    def log (self, **kwargs):
         """
-        Return a list of the count next diffusions
+        Create a log using **kwargs, and print info
         """
-        return models.Diffusion.get_next(self.station)[:count]
+        log = models.Log(**kwargs)
+        log.save()
+        log.print()
 
     def update_all (self):
         """
@@ -383,6 +385,31 @@ class Controller:
         self.dealer.update()
         for source in self.streams.values():
             source.update()
+
+    def __change_log (self, source):
+        last_log = models.Log.objects.filter(
+            source = source.id,
+        ).prefetch_related('sound').order('-date')
+
+        on_air = source.current_sound
+        if on_air == last_log.sound.path:
+            return
+
+        self.log(
+            source = source.id,
+            sound = models.Sound.objects.get(path = on_air),
+            start = tz.make_aware(tz.datetime.now()),
+            comment = 'sound has changed'
+        )
+
+    def monitor (self):
+        """
+        Log changes in the sources, and call dealer.monitor.
+        """
+        self.dealer.monitor()
+        self.__change_log(self.dealer)
+        for source in self.sources:
+            self.__change_log(source)
 
 
 class Monitor:

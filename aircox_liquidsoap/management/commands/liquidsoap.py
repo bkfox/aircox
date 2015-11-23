@@ -47,7 +47,7 @@ class Command (BaseCommand):
             delay = options.get('delay') / 1000
             while True:
                 for controller in self.monitor.controllers.values():
-                    controller.dealer.monitor()
+                    controller.monitor()
                 time.sleep(delay)
 
 

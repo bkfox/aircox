@@ -396,32 +396,6 @@ class Schedule (models.Model):
         verbose_name_plural = _('Schedules')
 
 
-class Log (models.Model):
-    """
-    Log a played sound start and stop, or a single message
-    """
-    sound = models.ForeignKey(
-        'Sound',
-        help_text = 'Played sound',
-        blank = True, null = True,
-    )
-    stream = models.ForeignKey(
-        'Stream',
-        blank = True, null = True,
-    )
-    start = models.DateTimeField(
-        'start',
-    )
-    stop = models.DateTimeField(
-        'stop',
-        blank = True, null = True,
-    )
-    comment = models.CharField(
-        max_length = 512,
-        blank = True, null = True,
-    )
-
-
 class Station (Nameable):
     """
     A Station regroup one or more programs (stream and normal), and is the top
@@ -607,11 +581,51 @@ class Diffusion (models.Model):
         super(Diffusion, self).save(*args, **kwargs)
 
     def __str__ (self):
-        return self.program.name + ' on ' + str(self.date) \
-               + str(self.type)
+        return self.program.name + ', ' + \
+                self.date.strftime('%Y-%m-%d %H:%M') +\
+                '' # FIXME str(self.type_display)
 
     class Meta:
         verbose_name = _('Diffusion')
         verbose_name_plural = _('Diffusions')
+
+
+class Log (models.Model):
+    """
+    Log a played sound start and stop, or a single message
+    """
+    source = models.CharField(
+        _('source'),
+        max_length = 64,
+        help_text = 'source information',
+        blank = True, null = True,
+    )
+    diffusion = models.ForeignKey(
+        'Diffusion',
+        help_text = _('related diffusion'),
+        blank = True, null = True,
+    )
+    sound = models.ForeignKey(
+        'Sound',
+        help_text = _('played sound'),
+        blank = True, null = True,
+    )
+    date = models.DateTimeField(
+        'date',
+    )
+    comment = models.CharField(
+        max_length = 512,
+        blank = True, null = True,
+    )
+
+    def print (self):
+        print(str(self), ':', self.comment or '')
+        if self.diffusion:
+            print(' - diffusion #' + str(self.diffusion.id))
+        if self.sound:
+            print(' - sound #' + str(self.sound.id), self.sound.path)
+
+    def __str__ (self):
+        return self.date.strftime('%Y-%m-%d %H:%M') + ', ' + self.source
 
 

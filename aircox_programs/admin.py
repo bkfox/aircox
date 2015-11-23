@@ -90,6 +90,20 @@ class DiffusionAdmin (admin.ModelAdmin):
     list_filter = ('type', 'date', 'program')
     list_editable = ('type', 'date')
 
+    fields = ['type', 'date', 'initial', 'sounds', 'program']
+    readonly_fields = ('duration',)
+
+    def get_form(self, request, obj=None, **kwargs):
+        if obj:
+            if obj.date < tz.make_aware(tz.datetime.now()):
+                self.readonly_fields = list(self.fields)
+                self.readonly_fields.remove('type')
+            elif obj.initial:
+                self.readonly_fields = ['program', 'sounds']
+            else:
+                self.readonly_fields = []
+        return super().get_form(request, obj, **kwargs)
+
     def get_queryset(self, request):
         qs = super(DiffusionAdmin, self).get_queryset(request)
         if '_changelist_filters' in request.GET or \
