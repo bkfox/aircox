@@ -316,6 +316,8 @@ class Dealer (Source):
         if self.playlist == diff.playlist and diff.date <= now:
             # FIXME: log
             self.on = True
+            for source in self.controller.source:
+                source.skip()
 
 
 class Controller:
