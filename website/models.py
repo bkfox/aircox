@@ -8,8 +8,6 @@ class Program (RelatedPost):
         model = programs.Program
         bind_mapping = True
         mapping = {
-            'title': 'name',
-            'content': 'description',
         }
 
 class Episode (RelatedPost):

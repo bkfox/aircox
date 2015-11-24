@@ -4,7 +4,6 @@ from django import forms
 from django.contrib import admin
 from django.db import models
 
-from suit.admin import SortableTabularInline, SortableModelAdmin
 
 from aircox_programs.forms import *
 from aircox_programs.models import *
@@ -13,7 +12,6 @@ from aircox_programs.models import *
 #
 # Inlines
 #
-# TODO: inherits from the corresponding admin view
 class SoundInline (admin.TabularInline):
     model = Sound
 
@@ -28,12 +26,13 @@ class StreamInline (admin.TabularInline):
     extra = 1
 
 
-class TrackInline (SortableTabularInline):
-    fields = ['artist', 'name', 'tags', 'position']
-    form = TrackForm
-    model = Track
-    sortable = 'position'
-    extra = 10
+# from suit.admin import SortableTabularInline, SortableModelAdmin
+#class TrackInline (SortableTabularInline):
+#    fields = ['artist', 'name', 'tags', 'position']
+#    form = TrackForm
+#    model = Track
+#    sortable = 'position'
+#    extra = 10
 
 
 class NameableAdmin (admin.ModelAdmin):
@@ -86,22 +85,20 @@ class DiffusionAdmin (admin.ModelAdmin):
         sounds = [ str(s) for s in obj.get_archives()]
         return ', '.join(sounds) if sounds else ''
 
-    list_display = ('id', 'type', 'date', 'archives', 'program', 'initial')
+    list_display = ('id', 'type', 'date', 'program', 'initial', 'archives')
     list_filter = ('type', 'date', 'program')
     list_editable = ('type', 'date')
 
-    fields = ['type', 'date', 'initial', 'sounds', 'program']
-    readonly_fields = ('duration',)
+    fields = ['type', 'date', 'initial', 'program', 'sounds']
 
     def get_form(self, request, obj=None, **kwargs):
-        if obj:
-            if obj.date < tz.make_aware(tz.datetime.now()):
-                self.readonly_fields = list(self.fields)
-                self.readonly_fields.remove('type')
-            elif obj.initial:
-                self.readonly_fields = ['program', 'sounds']
-            else:
-                self.readonly_fields = []
+        if request.user.has_perm('aircox_program.programming'):
+            self.readonly_fields = []
+        else:
+            self.readonly_fields = ['program', 'date', 'duration']
+
+        if obj.initial:
+            self.readonly_fields += ['program', 'sounds']
         return super().get_form(request, obj, **kwargs)
 
     def get_queryset(self, request):
@@ -113,7 +110,11 @@ class DiffusionAdmin (admin.ModelAdmin):
         return qs.exclude(type = Diffusion.Type['unconfirmed'])
 
 
-admin.site.register(Log)
+@admin.register(Log)
+class LogAdmin (admin.ModelAdmin):
+    list_display = ['id', 'date', 'source', 'comment', 'related_object']
+    list_filter = ['date', 'related_type']
+
 admin.site.register(Track)
 admin.site.register(Schedule)
 

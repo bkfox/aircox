@@ -1,22 +1,30 @@
 This application defines all base models and basic control of them. We have:
 * **Nameable**: generic class used in any class needing to be named. Includes some utility functions;
 * **Program**: the program itself;
-* **Episode**: occurence of a program;
-* **Diffusion**: diffusion of an episode in the timetable, linked to an episode (an episode can have multiple diffusions);
+* **Diffusion**: occurrence of a program planified in the timetable. For rerun, informations are bound to the initial diffusion;
 * **Schedule**: describes diffusions frequencies for each program;
-* **Track**: track informations in a playlist of an episode;
+* **Track**: track informations in a playlist of a diffusion;
 * **Sound**: information about a sound that can be used for podcast or rerun;
+* **Log**: logs
 
-# Program
-Each program has a directory in **AIRCOX_PROGRAMS_DATA**; For each, subdir:
+
+# Architecture
+A Station is basically an object that represent a radio station. On each station, we use the Program object, that is declined in two different type:
+* **Scheduled**: the diffusion is based on a timetable and planified through one Schedule or more; Diffusion object represent the occurrence of these programs;
+* **Streamed**: the diffusion is based on random playlist, used to fill gaps between the programs;
+
+Each program has a directory in **AIRCOX_PROGRAMS_DIR**; For each, subdir:
 * **archives**: complete episode record, can be used for diffusions or as a podcast
 * **excerpts**: excerpt of an episode, or other elements, can be used as a podcast
 
-Each program has a schedule, defined through multiple schedule elements. This schedule can calculate the next dates of diffusion, if is a rerun (of wich diffusion), etc.
 
-Basically, for each program created, we can define some options, a directory in **AIRCOX_PROGRAMS_DATA**, where subfolders defines some informations about a file.
+# manage.py's commands
+* **diffusions_monitor**: update/create, check and clean diffusions; When a diffusion is created, its type is unconfirmed, and requires a manual approval to be on the timetable.
+* **sound_monitor**: check for existing and missing sounds files in programs directories and synchronize the database. Can also check for the quality of file and synchronize the database according to them.
+* **sound_quality_check**: check for the quality of the file (don't update database)
 
 
-# Notes
-We don't give any view on what should be now, because it is up to the stream generator to give info about what is running.
+# External Requirements
+* Sox (and soxi): sound file monitor and quality check
+* Requirements.txt for python's dependecies
 

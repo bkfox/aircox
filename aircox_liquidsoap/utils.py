@@ -312,10 +312,10 @@ class Dealer (Source):
                 source.skip()
             self.controller.log(
                 source = self.id,
-                diffusion = diff,
                 date = now,
                 comment = 'trigger the scheduled diffusion to liquidsoap; '
                           'skip all other streams',
+                related_object = diff,
             )
 
 
@@ -401,9 +401,9 @@ class Controller:
 
         self.log(
             source = source.id,
-            sound = models.Sound.objects.get(path = on_air),
             date = tz.make_aware(tz.datetime.now()),
-            comment = 'sound has changed'
+            comment = 'sound has changed',
+            related_object = models.Sound.objects.get(path = on_air),
         )
 
     def monitor (self):

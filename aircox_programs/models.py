@@ -5,6 +5,8 @@ from django.template.defaultfilters import slugify
 from django.utils.translation import ugettext as _, ugettext_lazy
 from django.utils import timezone as tz
 from django.utils.html import strip_tags
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
 
 from taggit.managers import TaggableManager
 
@@ -33,9 +35,9 @@ class Nameable (models.Model):
 
     @property
     def slug (self):
-        return self.get_slug_name()
-
-    def get_slug_name (self):
+        """
+        Slug based on the name. We replace '-' by '_'
+        """
         return slugify(self.name).replace('-', '_')
 
     def __str__ (self):
@@ -450,8 +452,11 @@ class Program (Nameable):
 
     @property
     def path (self):
+        """
+        Return the path to the programs directory
+        """
         return os.path.join(settings.AIRCOX_PROGRAMS_DIR,
-                            self.get_slug_name() + '_' + str(self.id) )
+                            self.slug + '_' + str(self.id) )
 
     def ensure_dir (self, subdir = None):
         """
@@ -498,10 +503,9 @@ class Diffusion (models.Model):
     - stop: the diffusion has been manually stopped
     """
     Type = {
-        'default':      0x00,   # confirmed diffusion case FIXME
+        'default':      0x00,   # diffusion is planified
         'unconfirmed':  0x01,   # scheduled by the generator but not confirmed for diffusion
-        'cancel':       0x02,   # cancellation happened; used to inform users
-        # 'restart':      0x03,   # manual restart; used to remix/give up antenna
+        'cancel':       0x02,   # diffusion canceled
     }
     for key, value in Type.items():
         ugettext_lazy(key)
@@ -592,6 +596,10 @@ class Diffusion (models.Model):
         verbose_name = _('Diffusion')
         verbose_name_plural = _('Diffusions')
 
+        permissions = (
+            ('programming', _('edit the diffusion\'s planification')),
+        )
+
 
 class Log (models.Model):
     """
@@ -601,11 +609,6 @@ class Log (models.Model):
         _('source'),
         max_length = 64,
         help_text = 'source information',
-        blank = True, null = True,
-    )
-    diffusion = models.ForeignKey(
-        'Diffusion',
-        help_text = _('related diffusion'),
         blank = True, null = True,
     )
     sound = models.ForeignKey(
@@ -619,6 +622,16 @@ class Log (models.Model):
     comment = models.CharField(
         max_length = 512,
         blank = True, null = True,
+    )
+    related_type = models.ForeignKey(
+        ContentType,
+        blank = True, null = True,
+    )
+    related_id = models.PositiveIntegerField(
+        blank = True, null = True,
+    )
+    related_object = GenericForeignKey(
+        'related_type', 'related_id',
     )
 
     def print (self):
