@@ -1,5 +1,5 @@
 """
-Control Liquidsoap
+Monitor Liquidsoap's sources, logs, and even print what's on air.
 """
 import time
 from argparse import RawTextHelpFormatter
@@ -31,7 +31,6 @@ class Command (BaseCommand):
             default=1000,
             help='Time to sleep in milliseconds before update on monitor'
         )
-        # start and run liquidsoap
 
 
     def handle (self, *args, **options):
@@ -41,13 +40,16 @@ class Command (BaseCommand):
 
         if options.get('on_air'):
             for id, controller in self.monitor.controller.items():
-                print(id, controller.master.current_sound())
+                print(id, controller.on_air)
 
         if options.get('monitor'):
             delay = options.get('delay') / 1000
             while True:
                 for controller in self.monitor.controllers.values():
-                    controller.monitor()
+                    try:
+                        controller.monitor()
+                    except Exception, e:
+                        print(e)
                 time.sleep(delay)
 
 

@@ -1,8 +1,10 @@
 """
 Manage diffusions using schedules, to update, clean up or check diffusions.
-A diffusion generated using this utility is considered has type "unconfirmed",
-and is not considered as ready for diffusion; To do so, users must confirm the
-diffusion case by changing it's type to "default".
+
+A generated diffusion can be unconfirmed, that means that the user must confirm
+it by changing its type to "normal". The behaviour is controlled using
+--approval.
+
 
 Different actions are available:
 - "update" is the process that is used to generated them using programs
@@ -22,21 +24,56 @@ from aircox_programs.models import *
 
 class Actions:
     @staticmethod
-    def update (date):
-        count = 0
+    def __check_conflicts (item, saved_items):
+        """
+        Check for conflicts, and update conflictual
+        items if they have been generated during this
+        update.
+
+        Return the number of conflicts
+        """
+        conflicts = item.get_conflicts()
+        if not conflicts:
+            item.type = Diffusion.Type['normal']
+            return 0
+
+        item.type = Diffusion.Type['unconfirmed']
+        for conflict in conflicts:
+            if conflict.pk in saved_items and \
+                    conflict.type != Diffusion.Type['unconfirmed']:
+                conflict.type = Diffusion.Type['unconfirmed']
+                conflict.save()
+        return len(conflicts)
+
+    @classmethod
+    def update (cl, date, mode):
+        manual = (mode == 'manual')
+        if not manual:
+            saved_items = set()
+
+        count = [0, 0]
         for schedule in Schedule.objects.filter(program__active = True) \
                 .order_by('initial'):
             # in order to allow rerun links between diffusions, we save items
             # by schedule;
             items = schedule.diffusions_of_month(date, exclude_saved = True)
-            count += len(items)
-            Diffusion.objects.bulk_create(items)
+            count[0] += len(items)
+
+            if manual:
+                Diffusion.objects.bulk_create(items)
+            else:
+                for item in items:
+                    count[1] += cl.__check_conflicts(item, saved_items)
+                    item.save()
+                    saved_items.add(item)
+
             print('> {} new diffusions for schedule #{} ({})'.format(
                     len(items), schedule.id, str(schedule)
                  ))
 
-        print('total of {} diffusions have been created. They need a '
-              'manual approval.'.format(count))
+        print('total of {} diffusions have been created,'.format(count[0]),
+              'do not forget manual approval' if manual else
+                '{} conflicts found'.format(count[1]))
 
     @staticmethod
     def clean (date):
@@ -87,14 +124,23 @@ class Command (BaseCommand):
                  'agains\'t schedules and remove it if that do not match any '
                  'schedule')
 
-        group = parser.add_argument_group(
-            'date')
+        group = parser.add_argument_group('date')
         group.add_argument(
             '--year', type=int, default=now.year,
             help='used by update, default is today\'s year')
         group.add_argument(
             '--month', type=int, default=now.month,
             help='used by update, default is today\'s month')
+
+        group = parser.add_argument_group('mode')
+        group.add_argument(
+            '--approval', type=str, choices=['manual', 'auto'],
+            default='auto',
+            help='manual means that all generated diffusions are unconfirmed, '
+                 'thus must be approved manually; auto confirmes all '
+                 'diffusions except those that conflicts with others'
+        )
+
 
     def handle (self, *args, **options):
         date = tz.datetime(year = options.get('year'),
@@ -103,7 +149,7 @@ class Command (BaseCommand):
         date = tz.make_aware(date)
 
         if options.get('update'):
-            Actions.update(date)
+            Actions.update(date, mode = options.get('mode'))
         elif options.get('clean'):
             Actions.clean(date)
         elif options.get('check'):

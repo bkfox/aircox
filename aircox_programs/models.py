@@ -473,7 +473,6 @@ class Program (Nameable):
                 os.mkdir(path)
         return os.path.exists(path)
 
-
     def find_schedule (self, date):
         """
         Return the first schedule that matches a given date.
@@ -503,7 +502,7 @@ class Diffusion (models.Model):
     - stop: the diffusion has been manually stopped
     """
     Type = {
-        'default':      0x00,   # diffusion is planified
+        'normal':       0x00,   # diffusion is planified
         'unconfirmed':  0x01,   # scheduled by the generator but not confirmed for diffusion
         'cancel':       0x02,   # diffusion canceled
     }
@@ -534,7 +533,6 @@ class Diffusion (models.Model):
     date = models.DateTimeField( _('start of the diffusion') )
     duration = models.TimeField(
         _('duration'),
-        blank = True, null = True,
         help_text = _('regular duration'),
     )
 
@@ -580,6 +578,43 @@ class Diffusion (models.Model):
             filter_args['program__station'] = station
         return cl.objects.filter(**filter_args).order_by('-date')
 
+    def get_conflicts (self):
+        """
+        Return a list of conflictual diffusions, based on the scheduled duration.
+
+        Note: for performance reason, check next and prev are limited to a
+        certain amount of diffusions.
+        """
+        r = []
+        # prev
+        qs = self.get_prev(self.program.station, self.date)
+        count = 0
+        for diff in qs:
+            if diff.pk == self.pk:
+                continue
+
+            end = diff.date + utils.to_timedelta(diff.duration)
+            if end > self.date:
+                r.append(diff)
+                continue
+            count+=1
+            if count > 5: break
+
+        # next
+        end = self.date + utils.to_timedelta(self.duration)
+        qs = self.get_next(self.program.station, self.date)
+        count = 0
+        for diff in qs:
+            if diff.pk == self.pk:
+                continue
+
+            if diff.date < end:
+                r.append(diff)
+                continue
+            count+=1
+            if count > 5: break
+        return r
+
     def save (self, *args, **kwargs):
         if self.initial:
             if self.initial.initial:
@@ -599,7 +634,6 @@ class Diffusion (models.Model):
         permissions = (
             ('programming', _('edit the diffusion\'s planification')),
         )
-
 
 class Log (models.Model):
     """

@@ -85,7 +85,12 @@ class DiffusionAdmin (admin.ModelAdmin):
         sounds = [ str(s) for s in obj.get_archives()]
         return ', '.join(sounds) if sounds else ''
 
-    list_display = ('id', 'type', 'date', 'program', 'initial', 'archives')
+    def conflicts (self, obj):
+        if obj.type == Diffusion.Type['unconfirmed']:
+            return ', '.join([ str(d) for d in obj.get_conflicts()])
+        return ''
+
+    list_display = ('id', 'type', 'date', 'program', 'initial', 'archives', 'conflicts')
     list_filter = ('type', 'date', 'program')
     list_editable = ('type', 'date')
 

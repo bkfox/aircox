@@ -65,11 +65,6 @@ class Programs (TestCase):
             dates = [ tz.make_aware(date) for date in dates ]
             dates.sort()
 
-            # match date and weeks
-            #for date in dates:
-                #self.assertTrue(schedule.match(date, check_time = False))
-                #self.assertTrue(schedule.match_week(date))
-
             # dates
             dates_ = schedule.dates_of_month(dates[0])
             dates_.sort()
@@ -80,8 +75,5 @@ class Programs (TestCase):
             dates_ = [date_.date for date_ in dates_]
             dates_.sort()
             self.assertEqual(dates_, dates)
-
-
-class 
 
 
