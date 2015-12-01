@@ -3,10 +3,10 @@ from django.conf.urls import url, include
 from website.models import *
 from website.views import *
 
-from aircox_cms.models import Article
-from aircox_cms.views import Menu, Section, Sections
-from aircox_cms.routes import *
-from aircox_cms.website import Website
+from aircox.cms.models import Article
+from aircox.cms.views import Menu, Section, Sections
+from aircox.cms.routes import *
+from aircox.cms.website import Website
 
 
 website = Website(

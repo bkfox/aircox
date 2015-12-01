@@ -1,5 +1,5 @@
 import autocomplete_light.shortcuts as al
-from aircox_programs.models import *
+from aircox.programs.models import *
 
 from taggit.models import Tag
 al.register(Tag)

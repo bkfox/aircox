@@ -4,9 +4,7 @@ from django import forms
 from django.contrib import admin
 from django.db import models
 
-
-from aircox_programs.forms import *
-from aircox_programs.models import *
+from aircox.programs.models import *
 
 
 #

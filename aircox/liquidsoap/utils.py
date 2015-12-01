@@ -6,9 +6,9 @@ import json
 from django.utils.translation import ugettext as _, ugettext_lazy
 from django.utils import timezone as tz
 
-from aircox_programs.utils import to_timedelta
-import aircox_programs.models as models
-import aircox_liquidsoap.settings as settings
+from aircox.programs.utils import to_timedelta
+import aircox.programs.models as models
+import aircox.liquidsoap.settings as settings
 
 
 class Connector:

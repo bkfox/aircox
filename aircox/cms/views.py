@@ -10,8 +10,8 @@ from django.core import serializers
 from django.utils.translation import ugettext as _, ugettext_lazy
 from django.utils.html import escape
 
-import aircox_cms.routes as routes
-import aircox_cms.utils as utils
+import aircox.cms.routes as routes
+import aircox.cms.utils as utils
 
 
 class PostBaseView:

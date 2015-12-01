@@ -28,5 +28,5 @@ Each program has a directory in **AIRCOX_PROGRAMS_DIR**; For each, subdir:
 
 ## Requirements
 * Sox (and soxi): sound file monitor and quality check
-* Requirements.txt for python's dependecies
+* requirements.txt for python's dependecies
 

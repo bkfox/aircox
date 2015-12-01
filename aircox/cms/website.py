@@ -1,5 +1,5 @@
-import aircox_cms.routes as routes
-import aircox_cms.views as views
+import aircox.cms.routes as routes
+import aircox.cms.views as views
 
 class Website:
     name = ''

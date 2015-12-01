@@ -6,10 +6,10 @@ from django.core import serializers
 from django.utils import timezone as tz
 from django.utils.translation import ugettext as _, ugettext_lazy
 
-import aircox_programs.models as programs
-import aircox_cms.routes as routes
-import aircox_cms.utils as utils
-from aircox_cms.views import Sections
+import aircox.programs.models as programs
+import aircox.cms.routes as routes
+import aircox.cms.utils as utils
+from aircox.cms.views import Sections
 
 from website.models import *
 

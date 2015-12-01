@@ -10,10 +10,10 @@ from django.core.management.base import BaseCommand, CommandError
 from django.views.generic.base import View
 from django.template.loader import render_to_string
 
-import aircox_liquidsoap.settings as settings
-import aircox_liquidsoap.utils as utils
-import aircox_programs.settings as programs_settings
-import aircox_programs.models as models
+import aircox.liquidsoap.settings as settings
+import aircox.liquidsoap.utils as utils
+import aircox.programs.settings as programs_settings
+import aircox.programs.models as models
 
 
 class Command (BaseCommand):

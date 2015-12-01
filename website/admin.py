@@ -4,7 +4,7 @@ from django.contrib import admin
 from django.utils.translation import ugettext as _, ugettext_lazy
 from django.contrib.contenttypes.admin import GenericStackedInline
 
-import aircox_programs.models as programs
+import aircox.programs.models as programs
 from website.models import *
 
 

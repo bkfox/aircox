@@ -7,9 +7,9 @@ from argparse import RawTextHelpFormatter
 from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone as tz
 
-import aircox_liquidsoap.settings as settings
-import aircox_liquidsoap.utils as utils
-import aircox_programs.models as models
+import aircox.liquidsoap.settings as settings
+import aircox.liquidsoap.utils as utils
+import aircox.programs.models as models
 
 
 class Command (BaseCommand):

@@ -10,8 +10,8 @@ from django.contrib.contenttypes.models import ContentType
 
 from taggit.managers import TaggableManager
 
-import aircox_programs.utils as utils
-import aircox_programs.settings as settings
+import aircox.programs.utils as utils
+import aircox.programs.settings as settings
 
 
 def date_or_default (date, date_only = False):
@@ -71,8 +71,7 @@ class Track (Nameable):
         help_text=_('position in the playlist'),
     )
     tags = TaggableManager(
-        _('tags'),
-        blank = True,
+        verbose_name=_('tags'),
     )
 
     def __str__(self):

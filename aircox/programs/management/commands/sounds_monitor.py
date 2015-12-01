@@ -28,9 +28,9 @@ from argparse import RawTextHelpFormatter
 
 from django.core.management.base import BaseCommand, CommandError
 
-from aircox_programs.models import *
-import aircox_programs.settings as settings
-import aircox_programs.utils as utils
+from aircox.programs.models import *
+import aircox.programs.settings as settings
+import aircox.programs.utils as utils
 
 
 class Command (BaseCommand):
@@ -193,7 +193,7 @@ class Command (BaseCommand):
         """
         Check all files where quality has been set to bad
         """
-        import aircox_programs.management.commands.sounds_quality_check \
+        import aircox.programs.management.commands.sounds_quality_check \
                 as quality_check
 
         sounds = Sound.objects.filter(good_quality = False)

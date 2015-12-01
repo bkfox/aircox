@@ -19,7 +19,7 @@ from the (given) month and later.
 from argparse import RawTextHelpFormatter
 from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone as tz
-from aircox_programs.models import *
+from aircox.programs.models import *
 
 
 class Actions:

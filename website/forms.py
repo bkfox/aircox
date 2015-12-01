@@ -4,7 +4,7 @@ from django.contrib.admin import widgets
 import autocomplete_light.shortcuts as al
 from autocomplete_light.contrib.taggit_field import TaggitWidget
 
-from aircox_programs.models import *
+from aircox.programs.models import *
 
 
 class TrackForm (forms.ModelForm):

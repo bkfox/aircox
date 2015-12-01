@@ -3,7 +3,7 @@ import datetime
 from django.test import TestCase
 from django.utils import timezone as tz
 
-from aircox_programs.models import *
+from aircox.programs.models import *
 
 
 class Programs (TestCase):
