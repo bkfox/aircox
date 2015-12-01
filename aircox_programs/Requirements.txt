@@ -1,2 +1,0 @@
-django-taggit >= 0.17.1
-
