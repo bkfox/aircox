@@ -3,8 +3,8 @@ This application makes the bridge between Aircox and LiquidSoap. It can monitor 
 
 
 ## manage.py's commands
-** liquidsoap **: monitor LiquidSoap, logs what is playing on the different sources, and plays scheduled diffusions;
-** liquidsoap_files**: generates playlists and LiquidSoap config based on Programs' parameters;
+* ** liquidsoap **: monitor LiquidSoap, logs what is playing on the different sources, and plays scheduled diffusions;
+* ** liquidsoap_files**: generates playlists and LiquidSoap config based on Programs' parameters;
 
 
 ## Requirements

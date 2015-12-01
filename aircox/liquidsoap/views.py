@@ -10,9 +10,14 @@ import aircox.liquidsoap.utils as utils
 import aircox.programs.models as models
 
 
-view_monitor = utils.Monitor(
-    utils.Connector(address = settings.AIRCOX_LIQUIDSOAP_SOCKET)
-)
+view_monitor = None
+
+def get_monitor():
+    if not view_monitor:
+        view_monitor = utils.Monitor(
+            utils.Connector(address = settings.AIRCOX_LIQUIDSOAP_SOCKET)
+        )
+    return view_monitor
 
 class Actions:
     @classmethod
@@ -37,10 +42,10 @@ class LiquidControl (View):
     template_name = 'aircox_liquidsoap/controller.html'
 
     def get_context_data (self, **kwargs):
-        view_monitor.update()
+        get_view_monitor().update()
         return {
             'request': self.request,
-            'monitor': view_monitor,
+            'monitor': get_view_monitor(),
             'embed': 'embed' in self.request.GET,
         }
 
@@ -50,7 +55,7 @@ class LiquidControl (View):
             controller = POST.get('controller')
             source = POST.get('source')
             action = POST.get('action')
-            Actions.exec(view_monitor, controller, source, action)
+            Actions.exec(get_view_monitor(), controller, source, action)
         return HttpResponse('')
 
     def get (self, request = None, **kwargs):
