@@ -1,8 +1,13 @@
 import os
 from setuptools import setup
 
-with open(os.path.join(os.path.dirname(__file__), 'README.md')) as readme:
+cwd = os.path.dirname(__file__)
+with open(os.path.join(cwd, 'README.md')) as readme:
     README = readme.read()
+
+with open(os.path.join(cwd, 'requirements.txt')) as requirements:
+    REQUIREMENTS = requirements.read()
+    REQUIREMENTS = [r for r in REQUIREMENTS.split('\n') if r]
 
 os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 
@@ -15,7 +20,7 @@ setup(
     long_description=README,
     url='http://bkfox.net/',
     include_package_data=True,
-    install_requires=['django>=1.9.0', 'django-taggit>=0.12.1'],
+    install_requires=REQUIREMENTS,
     classifiers=[
         'Framework :: Django',
         'Intended Audience :: Developers',
