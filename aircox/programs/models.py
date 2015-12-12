@@ -462,14 +462,9 @@ class Program (Nameable):
         Make sur the program's dir exists (and optionally subdir). Return True
         if the dir (or subdir) exists.
         """
-        path = self.path
-        if not os.path.exists(path):
-            os.mkdir(path)
-
-        if subdir:
-            path = os.path.join(path, subdir)
-            if not os.path.exists(path):
-                os.mkdir(path)
+        path = os.path.join(self.path, subdir) if subdir else \
+               self.path
+        os.makedirs(path, exist_ok = True)
         return os.path.exists(path)
 
     def find_schedule (self, date):
