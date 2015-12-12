@@ -7,7 +7,9 @@ from django.utils.translation import ugettext as _, ugettext_lazy
 from django.utils import timezone as tz
 
 from aircox.programs.utils import to_timedelta
-import aircox.programs.models as models
+import aircox.programs.models as programs
+
+import aircox.liquidsoap.models as models
 import aircox.liquidsoap.settings as settings
 
 
@@ -161,7 +163,6 @@ class Source:
     def playlist (self, sounds):
         with open(self.path, 'w') as file:
             file.write('\n'.join(sounds))
-            self.connector.send(self.name, '_playlist.reload')
 
 
     @property
@@ -176,7 +177,7 @@ class Source:
         if not self.program:
             return
 
-        stream = models.Stream.objects.get(program = self.program)
+        stream = programs.Stream.objects.get(program = self.program)
         if not stream.begin and not stream.delay:
             return
 
@@ -231,6 +232,9 @@ class Dealer (Source):
     """
     The Dealer source is a source that is used for scheduled diffusions and
     manual sound diffusion.
+
+    Since we need to cache buffers for the scheduled track, we use an on-off
+    switch in order to have no latency and enable preload.
     """
     name = _('Dealer')
 
@@ -243,6 +247,9 @@ class Dealer (Source):
 
     @property
     def on (self):
+        """
+        Switch on-off;
+        """
         r = self.connector.send('var.get ', self.id, '_on')
         return (r == 'true')
 
@@ -251,26 +258,12 @@ class Dealer (Source):
         return self.connector.send('var.set ', self.id, '_on',
                                     '=', 'true' if value else 'false')
 
-    @property
-    def playlist (self):
-        try:
-            with open(self.path, 'r') as file:
-                return file.readlines()
-        except:
-            return []
-
-    @playlist.setter
-    def playlist (self, sounds):
-        with open(self.path, 'w') as file:
-            file.write('\n'.join(sounds))
-
-
     def __get_next (self, date, on_air):
         """
-        Return which diffusion should be played now and not playing
+        Return which diffusion should be played now and is not playing
         """
-        r = [ models.Diffusion.get_prev(self.station, date),
-              models.Diffusion.get_next(self.station, date) ]
+        r = [ programs.Diffusion.get_prev(self.station, date),
+              programs.Diffusion.get_next(self.station, date) ]
         r = [ diffusion.prefetch_related('sounds')[0]
                 for diffusion in r if diffusion.count() ]
 
@@ -345,6 +338,7 @@ class Controller:
         self.connector = connector
         self.station = station
         self.station.controller = self
+        self.outputs = models.Output.objects.filter(station = station)
 
         self.master = Master(self)
         self.dealer = Dealer(self)
@@ -352,7 +346,7 @@ class Controller:
             source.id : source
             for source in [
                 Source(self, program)
-                for program in models.Program.objects.filter(station = station,
+                for program in programs.Program.objects.filter(station = station,
                                                              active = True)
                 if program.stream_set.count()
             ]
@@ -372,7 +366,7 @@ class Controller:
         """
         Create a log using **kwargs, and print info
         """
-        log = models.Log(**kwargs)
+        log = programs.Log(**kwargs)
         log.save()
         log.print()
 
@@ -386,7 +380,7 @@ class Controller:
             source.update()
 
     def __change_log (self, source):
-        last_log = models.Log.objects.filter(
+        last_log = programs.Log.objects.filter(
             source = source.id,
         ).prefetch_related('sound').order_by('-date')
 
@@ -403,7 +397,7 @@ class Controller:
             source = source.id,
             date = tz.make_aware(tz.datetime.now()),
             comment = 'sound has changed',
-            related_object = models.Sound.objects.get(path = on_air),
+            related_object = programs.Sound.objects.get(path = on_air),
         )
 
     def monitor (self):
@@ -430,7 +424,7 @@ class Monitor:
             controller.id : controller
             for controller in [
                 Controller(station, connector)
-                for station in models.Station.objects.filter(active = True)
+                for station in programs.Station.objects.filter(active = True)
             ]
         }
 

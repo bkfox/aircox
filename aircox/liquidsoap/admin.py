@@ -1,3 +1,8 @@
 from django.contrib import admin
+import aircox.liquidsoap.models as models
 
-# Register your models here.
+@admin.register(models.Output)
+class OutputAdmin (admin.ModelAdmin):
+    list_display = ('id', 'type', 'station')
+
+
