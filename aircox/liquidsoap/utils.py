@@ -371,7 +371,6 @@ class Controller:
         self.station.controller = self
         self.outputs = models.Output.objects.filter(station = station)
 
-        os.makedirs(self.path, exist_ok = True)
         self.connector = connector and Connector(self.socket_path)
 
         self.master = Master(self)
