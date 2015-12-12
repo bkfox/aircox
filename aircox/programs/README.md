@@ -2,6 +2,7 @@
 
 This application defines all base models and basic control of them. We have:
 * **Nameable**: generic class used in any class needing to be named. Includes some utility functions;
+* **Station**: a station
 * **Program**: the program itself;
 * **Diffusion**: occurrence of a program planified in the timetable. For rerun, informations are bound to the initial diffusion;
 * **Schedule**: describes diffusions frequencies for each program;
@@ -21,7 +22,7 @@ Each program has a directory in **AIRCOX_PROGRAMS_DIR**; For each, subdir:
 
 
 ## manage.py's commands
-* **diffusions_monitor**: update/create, check and clean diffusions; When a diffusion is created, its type is unconfirmed, and requires a manual approval to be on the timetable.
+* **diffusions_monitor**: update/create, check and clean diffusions; When a diffusion is created its type can be set on "unconfirmed" (this depends on the approval mode).
 * **sound_monitor**: check for existing and missing sounds files in programs directories and synchronize the database. Can also check for the quality of file and synchronize the database according to them.
 * **sound_quality_check**: check for the quality of the file (don't update database)
 
