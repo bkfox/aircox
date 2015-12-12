@@ -14,11 +14,8 @@ view_monitor = None
 
 def get_monitor():
     global view_monitor
-
     if not view_monitor:
-        view_monitor = utils.Monitor(
-            utils.Connector(address = settings.AIRCOX_LIQUIDSOAP_SOCKET)
-        )
+        view_monitor = utils.Monitor()
     return view_monitor
 
 class Actions:

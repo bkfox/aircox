@@ -5,8 +5,6 @@ def ensure (key, default):
     globals()[key] = getattr(settings, key, default)
 
 
-ensure('AIRCOX_LIQUIDSOAP_SOCKET', '/tmp/liquidsoap.sock')
-
 # dict of values to set (do not forget to escape chars)
 ensure('AIRCOX_LIQUIDSOAP_SET', {
     'log.file.path': '"/tmp/liquidsoap.log"',
@@ -18,7 +16,8 @@ ensure('AIRCOX_LIQUIDSOAP_SECURITY_SOURCE', '/media/data/musique/creation/Mega C
 # start the server on monitor if not present
 ensure('AIRCOX_LIQUIDSOAP_AUTOSTART', True)
 
-# output directory for the generated files
+# output directory for the generated files and socket. Each station has a subdir
+# with the station's slug as name.
 ensure('AIRCOX_LIQUIDSOAP_MEDIA', '/tmp')
 
 

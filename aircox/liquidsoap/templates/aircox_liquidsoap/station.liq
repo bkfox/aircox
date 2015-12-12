@@ -1,4 +1,7 @@
-{# Utilities #}
+{# Context: #}
+{# - controller: controller used to generate the current file #}
+{# - settings: global settings #}
+
 def interactive_source (id, s) = \
     s = store_metadata(id=id, size=1, s) \
     add_skip_command(s) \
@@ -13,13 +16,11 @@ end \
 \
 {# Config #}
 set("server.socket", true) \
-set("server.socket.path", "{{ settings.AIRCOX_LIQUIDSOAP_SOCKET }}") \
+set("server.socket.path", {{ controller.socket_path }}) \
 {% for key, value in settings.AIRCOX_LIQUIDSOAP_SET.items %}
 set("{{ key|safe }}", {{ value|safe }}) \
 {% endfor %}
 \
-\
-{% for controller in monitor.controllers.values %}
 {# station #}
 {{ controller.id }} = interactive_source ( \
     "{{ controller.id }}", \
@@ -71,6 +72,5 @@ output.{{ output.get_type_display }}( \
     {{ controller.settings }}
     {% endif %}
 ) \
-{% endfor %}
 {% endfor %}
 

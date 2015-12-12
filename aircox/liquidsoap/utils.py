@@ -22,7 +22,7 @@ class Connector:
     """
     __socket = None
     __available = False
-    address = settings.AIRCOX_LIQUIDSOAP_SOCKET
+    address = None
 
     @property
     def available (self):
@@ -144,6 +144,7 @@ class Source:
         """
         return os.path.join(
             settings.AIRCOX_LIQUIDSOAP_MEDIA,
+            self.station.slug,
             self.id + '.m3u'
         )
 
@@ -313,6 +314,9 @@ class Dealer (Source):
 
 
 class Controller:
+    """
+    Main class controller for station and sources (streams and dealer)
+    """
     connector = None
     station = None      # the related station
     master = None       # master source (station's source)
@@ -331,14 +335,44 @@ class Controller:
     def name (self):
         return self.master and self.master.name
 
-    def __init__ (self, station, connector = None):
+    @property
+    def path (self):
         """
-        use_connector: avoids the creation of a Connector, in case it is not needed
+        Directory path where all station's related files are put.
         """
-        self.connector = connector
+        return os.path.join(settings.AIRCOX_LIQUIDSOAP_MEDIA,
+                            self.station.slug)
+
+    @property
+    def socket_path (self):
+        """
+        Connector's socket path
+        """
+        return os.path.join(self.path, 'station.sock')
+
+    @property
+    def config_path (self):
+        """
+        Connector's socket path
+        """
+        return os.path.join(self.path, 'station.liq')
+
+    def __init__ (self, station, connector = True):
+        """
+        Params:
+        - station: managed station
+        - connector: if true, create a connector, else do not
+
+        Initialize a master, a dealer and all streams that are connected
+        to the given station; We ensure the existence of the controller's
+        files dir.
+        """
         self.station = station
         self.station.controller = self
         self.outputs = models.Output.objects.filter(station = station)
+
+        os.makedirs(self.path, exist_ok = True)
+        self.connector = connector and Connector(self.socket_path)
 
         self.master = Master(self)
         self.dealer = Dealer(self)
@@ -419,11 +453,11 @@ class Monitor:
     """
     controllers = None
 
-    def __init__ (self, connector = None):
+    def __init__ (self):
         self.controllers = {
             controller.id : controller
             for controller in [
-                Controller(station, connector)
+                Controller(station, True)
                 for station in programs.Station.objects.filter(active = True)
             ]
         }
