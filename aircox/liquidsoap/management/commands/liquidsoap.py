@@ -131,7 +131,10 @@ class Command (BaseCommand):
             delay = options.get('delay') / 1000
             while True:
                 for controller in self.monitor.controllers.values():
-                    controller.monitor()
+                    try:
+                        controller.monitor()
+                    except Exception as err:
+                        print(err)
                 time.sleep(delay)
             return
 
