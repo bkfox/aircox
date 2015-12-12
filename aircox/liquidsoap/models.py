@@ -24,7 +24,7 @@ class Output (models.Model):
     settings = models.TextField(
         _('output settings'),
         help_text = _('list of comma separated params available; '
-                      'this is put in the output config as raw text'),
+                      'this is put in the output config as raw code'),
         blank = True, null = True
     )
 

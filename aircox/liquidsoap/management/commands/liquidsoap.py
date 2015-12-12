@@ -20,12 +20,16 @@ import aircox.liquidsoap.utils as utils
 
 
 class StationConfig:
+    """
+    Configuration and playlist generator for a station.
+    """
     controller = None
 
     def __init__ (self, station):
         self.controller = utils.Controller(station, False)
 
     def handle (self, options):
+        os.makedirs(self.controller.path, exist_ok = True)
         if options.get('config') or options.get('all'):
             self.make_config()
         if options.get('streams') or options.get('all'):
