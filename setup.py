@@ -15,7 +15,7 @@ setup(
     name='aircox',
     version='0.1',
     license='GPLv3',
-    author='lordblackfox',
+    author='bkfox',
     description='Aircox is a radio programs manager that includes tools and cms'
     long_description=README,
     url='http://bkfox.net/',
