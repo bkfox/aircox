@@ -1,9 +1,14 @@
 {# Context: #}
 {# - controller: controller used to generate the current file #}
 {# - settings: global settings #}
-
 def interactive_source (id, s) = \
-    s = store_metadata(id=id, size=1, s) \
+    def handler(m) = \
+        file = string.escape(m['filename']) \
+        system('{{ log_script }} -s "#{id}" -p "#{file}" -c "liquidsoap: play" &') \
+    end \
+    \
+    s = on_track(id=id, handler, s)
+    # s = store_metadata(id=id, size=1, s) \
     add_skip_command(s) \
     s \
 end \
@@ -16,7 +21,7 @@ end \
 \
 {# Config #}
 set("server.socket", true) \
-set("server.socket.path", {{ controller.socket_path }}) \
+set("server.socket.path", "{{ controller.socket_path }}") \
 {% for key, value in settings.AIRCOX_LIQUIDSOAP_SET.items %}
 set("{{ key|safe }}", {{ value|safe }}) \
 {% endfor %}

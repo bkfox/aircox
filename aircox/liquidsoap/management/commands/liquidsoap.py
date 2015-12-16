@@ -8,6 +8,7 @@ import time
 import re
 from argparse import RawTextHelpFormatter
 
+from django.conf import settings as main_settings
 from django.core.management.base import BaseCommand, CommandError
 from django.template.loader import render_to_string
 from django.utils import timezone as tz
@@ -36,12 +37,20 @@ class StationConfig:
             self.make_playlists()
 
     def make_config (self):
+        log_script = main_settings.BASE_DIR \
+                     if hasattr(main_settings, 'BASE_DIR') else \
+                     main_settings.PROJECT_ROOT
+        log_script = os.path.join(log_script, 'manage.py') + \
+                        ' liquidsoap_log'
+
+
         context = {
             'controller': self.controller,
             'settings': settings,
+            'log_script': log_script,
         }
 
-        data = render_to_string('aircox_liquidsoap/station.liq', context)
+        data = render_to_string('aircox/liquidsoap/station.liq', context)
         data = re.sub(r'\s*\\\n', r'#\\n#', data)
         data = data.replace('\n', '')
         data = re.sub(r'#\\n#', '\n', data)

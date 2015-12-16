@@ -70,7 +70,7 @@ class PostListView (PostBaseView, ListView):
                 return
             self.__dict__.update(query)
 
-    template_name = 'aircox_cms/list.html'
+    template_name = 'aircox/cms/list.html'
     allow_empty = True
     paginate_by = 50
     model = None
@@ -143,7 +143,7 @@ class PostDetailView (DetailView, PostBaseView):
     """
     Detail view for posts and children
     """
-    template_name = 'aircox_cms/detail.html'
+    template_name = 'aircox/cms/detail.html'
 
     sections = []
 
@@ -179,7 +179,7 @@ class PostDetailView (DetailView, PostBaseView):
 
 
 class Menu (View):
-    template_name = 'aircox_cms/menu.html'
+    template_name = 'aircox/cms/menu.html'
 
     name = ''
     tag = 'nav'
@@ -218,7 +218,7 @@ class BaseSection (View):
     Base class for sections. Sections are view that can be used in detail view
     in order to have extra content about a post, or in menus.
     """
-    template_name = 'aircox_cms/base_section.html'
+    template_name = 'aircox/cms/base_section.html'
     kwargs = None   # kwargs argument passed to get
     tag = 'div'     # container tags
     classes = ''    # container classes
@@ -253,7 +253,7 @@ class Section (BaseSection):
     """
     A Section that can be related to an object.
     """
-    template_name = 'aircox_cms/section.html'
+    template_name = 'aircox/cms/section.html'
     object = None
     object_required = False
     title = ''
@@ -331,7 +331,7 @@ class Sections:
         use_icons = True        # print icons
         paginate_by = 0         # number of items
         icon_size = '32x32'     # icons size
-        template_name = 'aircox_cms/section_list.html'
+        template_name = 'aircox/cms/section_list.html'
 
         def get_object_list (self):
             return []

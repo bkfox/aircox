@@ -639,13 +639,9 @@ class Log (models.Model):
         help_text = 'source information',
         blank = True, null = True,
     )
-    sound = models.ForeignKey(
-        'Sound',
-        help_text = _('played sound'),
-        blank = True, null = True,
-    )
     date = models.DateTimeField(
         'date',
+        auto_now_add=True,
     )
     comment = models.CharField(
         max_length = 512,
@@ -662,12 +658,20 @@ class Log (models.Model):
         'related_type', 'related_id',
     )
 
+
+    @classmethod
+    def get_for_related_model (cl, model):
+        """
+        Return a queryset that filter related_type to the given one.
+        """
+        return cl.objects.filter(related_type__pk =
+                                    ContentType.objects.get_for_model(model).id)
+
     def print (self):
         print(str(self), ':', self.comment or '')
-        if self.diffusion:
-            print(' - diffusion #' + str(self.diffusion.id))
-        if self.sound:
-            print(' - sound #' + str(self.sound.id), self.sound.path)
+        if self.related_object:
+            print(' - {}: #{}'.format(self.related_type,
+                                      self.related_id))
 
     def __str__ (self):
         return self.date.strftime('%Y-%m-%d %H:%M') + ', ' + self.source

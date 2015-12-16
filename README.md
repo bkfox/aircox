@@ -12,10 +12,6 @@ Platform to manage a radio. We use the power of Django
 ## Applications
 * **programs**: managing stations, programs, schedules and diffusions. This is the core application, that handle most of the work.
 * **cms**: cms manager with reusable tools.
-* **liquidsoap**: liquidsoap manager and control.
+* **liquidsoap**: liquidsoap controls.
 
-## Code and names conventions and uses
-* absolute dates: datetime fields, named "begin" "end" for ranges and "date" otherwise
-* time range: timefield name "duration"
-* parents: when only one parent, named "parent", otherwise model/reference's name
 

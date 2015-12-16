@@ -279,39 +279,6 @@ class Dealer (Source):
             if diffusion.playlist and on_air not in diffusion.playlist:
                 return diffusion
 
-    def monitor (self):
-        """
-        Monitor playlist (if it is time to load) and if it time to trigger
-        the button to start a diffusion.
-        """
-        playlist = self.playlist
-        on_air = self.current_sound
-        now = tz.make_aware(tz.datetime.now())
-
-        diff = self.__get_next(now, on_air)
-        if not diff:
-            return # there is nothing we can do
-
-        # playlist reload
-        if self.playlist != diff.playlist:
-            if not playlist or on_air == playlist[-1] or \
-                on_air not in playlist:
-                self.on = False
-                self.playlist = diff.playlist
-
-        # run the diff
-        if self.playlist == diff.playlist and diff.date <= now:
-            self.on = True
-            for source in self.controller.streams.values():
-                source.skip()
-            self.controller.log(
-                source = self.id,
-                date = now,
-                comment = 'trigger the scheduled diffusion to liquidsoap; '
-                          'skip all other streams',
-                related_object = diff,
-            )
-
 
 class Controller:
     """
@@ -412,27 +379,6 @@ class Controller:
         for source in self.streams.values():
             source.update()
 
-    def __change_log (self, source):
-        last_log = programs.Log.objects.filter(
-            source = source.id,
-        ).prefetch_related('sound').order_by('-date')
-
-        on_air = source.current_sound
-        if not on_air:
-            return
-
-        if last_log:
-            last_log = last_log[0]
-            if last_log.sound and on_air == last_log.sound.path:
-                return
-
-        self.log(
-            source = source.id,
-            date = tz.make_aware(tz.datetime.now()),
-            comment = 'sound has changed',
-            related_object = programs.Sound.objects.get(path = on_air),
-        )
-
     def monitor (self):
         """
         Log changes in the streams, and call dealer.monitor.
@@ -441,9 +387,6 @@ class Controller:
             return
 
         self.dealer.monitor()
-        self.__change_log(self.dealer)
-        for source in self.streams.values():
-            self.__change_log(source)
 
 
 class Monitor:

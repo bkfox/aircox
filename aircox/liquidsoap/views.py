@@ -38,7 +38,7 @@ class Actions:
 
 
 class LiquidControl (View):
-    template_name = 'aircox_liquidsoap/controller.html'
+    template_name = 'aircox/liquidsoap/controller.html'
 
     def get_context_data (self, **kwargs):
         get_monitor().update()

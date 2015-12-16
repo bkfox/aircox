@@ -100,7 +100,7 @@ class DiffusionAdmin (admin.ModelAdmin):
         else:
             self.readonly_fields = ['program', 'date', 'duration']
 
-        if obj.initial:
+        if obj and obj.initial:
             self.readonly_fields += ['program', 'sounds']
         return super().get_form(request, obj, **kwargs)
 
