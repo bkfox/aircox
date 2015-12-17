@@ -1,27 +1,29 @@
 import os
-from setuptools import setup
+from setuptools import setup, find_packages
 
-cwd = os.path.dirname(__file__)
-with open(os.path.join(cwd, 'README.md')) as readme:
-    README = readme.read()
+def to_rst (path):
+    try:
+        from pypandoc import convert
+        return convert(path, 'rst')
+    except ImportError:
+        print("pypandoc module not found, can not convert Markdown to RST")
+        return open(path, 'r').read()
 
-with open(os.path.join(cwd, 'requirements.txt')) as requirements:
-    REQUIREMENTS = requirements.read()
-    REQUIREMENTS = [r for r in REQUIREMENTS.split('\n') if r]
-
-os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
+def to_array (path):
+    with open(path, 'r') as file:
+        return [r for r in file.read().split('\n') if r]
 
 setup(
     name='aircox',
     version='0.1',
     license='GPLv3',
     author='bkfox',
-    description='Aircox is a radio programs manager that includes tools and cms'
-    long_description=README,
+    description='Aircox is a radio programs manager that includes tools and cms',
+    long_description=to_rst('README.md'),
     url='http://bkfox.net/',
+    packages=find_packages(),
     include_package_data=True,
-    packages = ['aircox']
-    install_requires=REQUIREMENTS,
+    install_requires=to_array('requirements.txt'),
     classifiers=[
         'Framework :: Django',
         'Programming Language :: Python',
