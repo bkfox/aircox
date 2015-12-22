@@ -2,11 +2,14 @@
 Analyse and check files using Sox, prints good and bad files.
 """
 import sys
+import logging
 import re
 import subprocess
-
 from argparse import RawTextHelpFormatter
+
 from django.core.management.base import BaseCommand, CommandError
+
+logger = logging.getLogger('aircox.programs.' + __name__)
 
 class Stats:
     attributes = [
@@ -72,7 +75,7 @@ class Sound:
         return self.stats and self.stats[0]
 
     def analyse (self):
-        print('- complete file analysis')
+        logger.info('complete file analysis')
         self.stats = [ Stats(self.path) ]
         position = 0
         length = self.stats[0].get('length')
@@ -80,13 +83,11 @@ class Sound:
         if not self.sample_length:
             return
 
-        print('- samples analysis: ', end=' ')
+        logger.info('start samples analysis...')
         while position < length:
-            print(len(self.stats), end=' ')
             stats = Stats(self.path, at = position, length = self.sample_length)
             self.stats.append(stats)
             position += self.sample_length
-        print()
 
     def check (self, name, min_val, max_val):
         self.good = [ index for index, stats in enumerate(self.stats)
@@ -103,9 +104,11 @@ class Sound:
         ]
 
         if self.good:
-            print('- good:\033[92m', ', '.join( view(self.good) ), '\033[0m')
+            logger.info(self.path, ': good samples:\033[92m',
+                        ', '.join( view(self.good) ), '\033[0m')
         if self.bad:
-            print('- bad:\033[91m', ', '.join( view(self.bad) ), '\033[0m')
+            loggeer.info(self.path ': bad samples:\033[91m',
+                         ', '.join( view(self.bad) ), '\033[0m')
 
 class Command (BaseCommand):
     help = __doc__
@@ -154,10 +157,9 @@ class Command (BaseCommand):
         self.bad = []
         self.good = []
         for sound in self.sounds:
-            print(sound.path)
+            logger.info('analyse ', sound.path)
             sound.analyse()
             sound.check(attr, minmax[0], minmax[1])
-            print()
             if sound.bad:
                 self.bad.append(sound)
             else:
@@ -166,10 +168,12 @@ class Command (BaseCommand):
         # resume
         if options.get('resume'):
             if self.good:
-                print('files that did not failed the test:\033[92m\n   ',
-                      '\n    '.join([sound.path for sound in self.good]), '\033[0m')
+                logger.info('files that did not failed the test:\033[92m\n   ',
+                      '\n    '.join([sound.path for sound in self.good]),
+                      '\033[0m')
             if self.bad:
                 # bad at the end for ergonomy
-                print('files that failed the test:\033[91m\n   ',
-                      '\n    '.join([sound.path for sound in self.bad]),'\033[0m')
+                logger.info('files that failed the test:\033[91m\n   ',
+                      '\n    '.join([sound.path for sound in self.bad]),
+                      '\033[0m')
 

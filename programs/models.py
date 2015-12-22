@@ -1,4 +1,6 @@
 import os
+import shutil
+import logging
 
 from django.db import models
 from django.template.defaultfilters import slugify
@@ -12,6 +14,9 @@ from taggit.managers import TaggableManager
 
 import aircox.programs.utils as utils
 import aircox.programs.settings as settings
+
+
+logger = logging.getLogger(__name__)
 
 
 def date_or_default (date, date_only = False):
@@ -166,6 +171,7 @@ class Sound (Nameable):
         if not self.file_exists():
             if self.removed:
                 return
+            logger.info('sound file {} has been removed'.format(self.path))
             self.removed = True
             return True
 
@@ -176,6 +182,8 @@ class Sound (Nameable):
         if self.mtime != mtime:
             self.mtime = mtime
             self.good_quality = False
+            logger.info('sound file {} m_time has changed. Reset quality info'
+                        .format(self.path))
             return True
         return old_removed != self.removed
 
@@ -433,6 +441,9 @@ class Program (Nameable):
     diffusion informations.
 
     A Scheduled program has a schedule and is the one with a normal use case.
+
+    Renaming a Program rename the corresponding directory to matches the new
+    name if it does not exists.
     """
     station = models.ForeignKey(
         Station,
@@ -476,6 +487,17 @@ class Program (Nameable):
             if schedule.match(date, check_time = False):
                 return schedule
 
+    def __init__ (self, *kargs, **kwargs):
+        super().__init__(*kargs, **kwargs)
+        self.__original_path = self.path
+
+    def save (self, *kargs, **kwargs):
+        super().__init__(*kargs, **kwargs)
+        if self.__original_path != self.path and \
+                not os.path.exists(self.path):
+            logger.info('program {} name changed to {}. Change dir name' \
+                        .format(self.id, self.name))
+            shutil.move(self.__original_path, self.path)
 
 class Diffusion (models.Model):
     """
@@ -611,6 +633,7 @@ class Diffusion (models.Model):
 
     def save (self, *args, **kwargs):
         if self.initial:
+            # force link to the top initial diffusion
             if self.initial.initial:
                 self.initial = self.initial.initial
             self.program = self.initial.program
@@ -668,12 +691,16 @@ class Log (models.Model):
                                     ContentType.objects.get_for_model(model).id)
 
     def print (self):
-        print(str(self), ':', self.comment or '')
-        if self.related_object:
-            print(' - {}: #{}'.format(self.related_type,
-                                      self.related_id))
+        logger.info('log #{} ({}): {}{}'.format(
+            str(self),
+            self.comment or '',
+            '\n - {}: #{}'.format(self.related_type, self.related_id)
+                if self.related_object else ''
+        ))
 
     def __str__ (self):
-        return self.date.strftime('%Y-%m-%d %H:%M') + ', ' + self.source
+        return 'log #{} ({}, {})'.format(
+                self.id, self.date.strftime('%Y-%m-%d %H:%M'), self.source
+        )
 
 

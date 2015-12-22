@@ -23,6 +23,7 @@ Sox (and soxi).
 """
 import os
 import re
+import logging
 import subprocess
 from argparse import RawTextHelpFormatter
 
@@ -32,15 +33,16 @@ from aircox.programs.models import *
 import aircox.programs.settings as settings
 import aircox.programs.utils as utils
 
+logger = logging.getLogger('aircox.programs.' + __name__)
 
 class Command (BaseCommand):
     help= __doc__
 
     def report (self, program = None, component = None, *content):
         if not component:
-            print('{}: '.format(program), *content)
+            logger.info('{}: '.format(program), *content)
         else:
-            print('{}, {}: '.format(program, component), *content)
+            logger.info('{}, {}: '.format(program, component), *content)
 
     def add_arguments (self, parser):
         parser.formatter_class=RawTextHelpFormatter
@@ -130,11 +132,11 @@ class Command (BaseCommand):
         """
         For all programs, scan dirs
         """
-        print('scan files for all programs...')
+        logger.info('scan files for all programs...')
         programs = Program.objects.filter()
 
         for program in programs:
-            print('- program', program.name)
+            logger.info('program', program.name)
             self.scan_for_program(
                 program, settings.AIRCOX_SOUND_ARCHIVES_SUBDIR,
                 type = Sound.Type['archive'],
@@ -149,7 +151,7 @@ class Command (BaseCommand):
         Scan a given directory that is associated to the given program, and
         update sounds information.
         """
-        print(' - scan files in', subdir)
+        logger.info('scan files in', subdir)
         if not program.ensure_dir(subdir):
             return
 
@@ -203,12 +205,12 @@ class Command (BaseCommand):
         else:
             files = [ sound.path for sound in sounds.filter(removed = False) ]
 
-        print('start quality check...')
+        logger.info('start quality check...')
         cmd = quality_check.Command()
         cmd.handle( files = files,
                     **settings.AIRCOX_SOUND_QUALITY )
 
-        print('- update sounds in database')
+        logger.info('update sounds in database')
         def update_stats(sound_info, sound):
             stats = sound_info.get_file_stats()
             if stats:

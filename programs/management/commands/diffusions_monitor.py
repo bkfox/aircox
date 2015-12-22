@@ -15,11 +15,15 @@ planified before the (given) month.
 - "check" will remove all diffusions that are unconfirmed and have been planified
 from the (given) month and later.
 """
+import logging
 from argparse import RawTextHelpFormatter
+
 from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone as tz
+
 from aircox.programs.models import *
 
+logger = logging.getLogger('aircox.programs.' + __name__)
 
 class Actions:
     @staticmethod
@@ -66,11 +70,11 @@ class Actions:
                     item.save()
                     saved_items.add(item)
 
-            print('> {} new diffusions for schedule #{} ({})'.format(
+            logger.info('[update] {} new diffusions for schedule #{} ({})'.format(
                     len(items), schedule.id, str(schedule)
                  ))
 
-        print('total of {} diffusions have been created,'.format(count[0]),
+        logger.info('[update] total of {} diffusions have been created,'.format(count[0]),
               'do not forget manual approval' if manual else
                 '{} conflicts found'.format(count[1]))
 
@@ -78,7 +82,7 @@ class Actions:
     def clean (date):
         qs = Diffusion.objects.filter(type = Diffusion.Type['unconfirmed'],
                                       date__lt = date)
-        print('{} diffusions will be removed'.format(qs.count()))
+        logger.info('[clean] {} diffusions will be removed'.format(qs.count()))
         qs.delete()
 
     @staticmethod
@@ -92,10 +96,9 @@ class Actions:
                 if schedule.match(diffusion.date):
                     break
             else:
-                print('> #{}: {}'.format(diffusion.pk, str(diffusion)))
                 items.append(diffusion.id)
 
-        print('{} diffusions will be removed'.format(len(items)))
+        logger.info('[check] {} diffusions will be removed'.format(len(items)))
         if len(items):
             Diffusion.objects.filter(id__in = items).delete()
 
