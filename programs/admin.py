@@ -3,6 +3,7 @@ import copy
 from django import forms
 from django.contrib import admin
 from django.db import models
+from django.utils.translation import ugettext as _, ugettext_lazy
 
 from aircox.programs.models import *
 
@@ -64,6 +65,12 @@ class StationAdmin (NameableAdmin):
 
 @admin.register(Program)
 class ProgramAdmin (NameableAdmin):
+    def schedule (self, obj):
+        return Schedule.objects.filter(program = obj).count() > 0
+    schedule.boolean = True
+    schedule.short_description = _("Schedule")
+
+    list_display = ('id', 'name', 'active', 'schedule')
     fields = NameableAdmin.fields + [ 'station', 'active' ]
     # TODO list_display
     inlines = [ ScheduleInline, StreamInline ]
@@ -92,7 +99,7 @@ class DiffusionAdmin (admin.ModelAdmin):
     list_filter = ('type', 'date', 'program')
     list_editable = ('type', 'date')
 
-    fields = ['type', 'date', 'initial', 'program', 'sounds']
+    fields = ['type', 'date', 'duration', 'initial', 'program', 'sounds']
 
     def get_form(self, request, obj=None, **kwargs):
         if request.user.has_perm('aircox_program.programming'):
@@ -118,6 +125,24 @@ class LogAdmin (admin.ModelAdmin):
     list_display = ['id', 'date', 'source', 'comment', 'related_object']
     list_filter = ['date', 'related_type']
 
+
+@admin.register(Schedule)
+class ScheduleAdmin (admin.ModelAdmin):
+    def program_name (self, obj):
+        return obj.program.name
+    program_name.short_description = _('Program')
+
+    def day (self, obj):
+        return obj.date.strftime('%A')
+    day.short_description = _('Day')
+
+    def rerun (self, obj):
+        return obj.initial != None
+    rerun.short_description = _('Rerun')
+    rerun.boolean = True
+
+    list_display = ['id', 'program_name', 'frequency', 'date', 'day', 'rerun']
+    list_editable = ['frequency', 'date']
+
 admin.site.register(Track)
-admin.site.register(Schedule)
 

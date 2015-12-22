@@ -16,7 +16,7 @@ import aircox.programs.utils as utils
 import aircox.programs.settings as settings
 
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('aircox.core')
 
 
 def date_or_default (date, date_only = False):
@@ -171,7 +171,7 @@ class Sound (Nameable):
         if not self.file_exists():
             if self.removed:
                 return
-            logger.info('sound file {} has been removed'.format(self.path))
+            logger.info('sound %s: has been removed', self.path)
             self.removed = True
             return True
 
@@ -182,8 +182,8 @@ class Sound (Nameable):
         if self.mtime != mtime:
             self.mtime = mtime
             self.good_quality = False
-            logger.info('sound file {} m_time has changed. Reset quality info'
-                        .format(self.path))
+            logger.info('sound %s: m_time has changed. Reset quality info',
+                        self.path)
             return True
         return old_removed != self.removed
 
@@ -255,7 +255,7 @@ class Schedule (models.Model):
         'last':             (0b010000, _('last week of the month')),
         'first and third':  (0b000101, _('first and third weeks of the month')),
         'second and fourth': (0b001010, _('second and fourth weeks of the month')),
-        'every':            (0b011111, _('once a week')),
+        'every':            (0b011111, _('every week')),
         'one on two':       (0b100000, _('one week on two')),
     }
     VerboseFrequency = { value[0]: value[1] for key, value in Frequency.items() }
@@ -323,40 +323,42 @@ class Schedule (models.Model):
         Return a list with all matching dates of date.month (=today)
         """
         date = date_or_default(date, True).replace(day=1)
-        fwday = date.weekday()
-        wday = self.date.weekday()
+        freq = self.frequency
 
-        # move date to the date weekday of the schedule
+        # move to the first day of the month that matches the schedule's weekday
         # check on SO#3284452 for the formula
-        date += tz.timedelta(days = (7 if fwday > wday else 0) - fwday + wday)
-        fwday = date.weekday()
+        first_weekday = date.weekday()
+        sched_weekday = self.date.weekday()
+        date += tz.timedelta(days = (7 if first_weekday > sched_weekday else 0) \
+                                    - first_weekday + sched_weekday)
+        month = date.month
 
-        # special frequency case
-        weeks = self.frequency
-        if self.frequency == Schedule.Frequency['last']:
-            date += tz.timedelta(month = 1, days = -7)
-            return self.normalize([date])
-        if weeks == Schedule.Frequency['one on two']:
-            # if both week are the same, then the date week of the month
-            # matches. Note: wday % 2 + fwday % 2 => (wday + fwday) % 2
-            fweek = date.isocalendar()[1]
-
-            if date.month == 1 and fweek >= 50:
-                # isocalendar can think we are on the last week of the
-                # previous year
-                fweek = 0
-            week = self.date.isocalendar()[1]
-            weeks = 0b010101 if not (fweek + week) % 2 else 0b001010
+        # last of the month
+        if freq == Schedule.Frequency['last']:
+            date += tz.timedelta(days = 4 * 7)
+            next_date = date + tz.timedelta(days = 7)
+            if next_date.month == month:
+                date = next_date
+            return [self.normalize(date)]
 
         dates = []
-        for week in range(0,5):
-            # there can be five weeks in a month
-            if not weeks & (0b1 << week):
-                continue
-            wdate = date + tz.timedelta(days = week * 7)
-            if wdate.month == date.month:
-                dates.append(self.normalize(wdate))
-        return dates
+        if freq == Schedule.Frequency['one on two']:
+            # NOTE previous algorithm was based on the week number, but this
+            # approach is wrong because number of weeks in a year can be
+            # 52 or 53. This also clashes with the first week of the year.
+            if not (date - self.date).days % 14:
+                date += tz.timedelta(days = 7)
+
+            while date.month == month:
+                dates.append(date)
+                date += tz.timedelta(days = 14)
+        else:
+            week = 0
+            while week < 5 and date.month == month:
+                if freq & (0b1 << week):
+                    dates.append(date)
+                date += tz.timedelta(days = 7)
+        return [self.normalize(date) for date in dates]
 
     def diffusions_of_month (self, date, exclude_saved = False):
         """
@@ -397,9 +399,16 @@ class Schedule (models.Model):
         return diffusions
 
     def __str__ (self):
-        frequency = [ x for x,y in Schedule.Frequency.items()
-                        if y == self.frequency ]
-        return self.program.name + ': ' + frequency[0] + ' (' + str(self.date) + ')'
+        return ' | '.join([ '#' + str(self.id), self.program.name,
+                            self.get_frequency_display(),
+                            self.date.strftime('%a %H:%M') ])
+
+    def save (self, *args, **kwargs):
+        if self.initial:
+            self.program = self.initial.program
+            self.duration = self.initial.duration
+            self.frequency = self.initial.frequency
+        super().save(*args, **kwargs)
 
     class Meta:
         verbose_name = _('Schedule')
@@ -489,15 +498,23 @@ class Program (Nameable):
 
     def __init__ (self, *kargs, **kwargs):
         super().__init__(*kargs, **kwargs)
-        self.__original_path = self.path
+        if self.name:
+            self.__original_path = self.path
 
     def save (self, *kargs, **kwargs):
-        super().__init__(*kargs, **kwargs)
-        if self.__original_path != self.path and \
+        super().save(*kargs, **kwargs)
+        if hasattr(self, '__original_path') and \
+                self.__original_path != self.path and \
+                os.path.exists(self.__original_path) and \
                 not os.path.exists(self.path):
-            logger.info('program {} name changed to {}. Change dir name' \
-                        .format(self.id, self.name))
+            logger.info('program #%s\'s name changed to %s. Change dir name',
+                        self.id, self.name)
             shutil.move(self.__original_path, self.path)
+
+            sounds = Sounds.objects.filter(path__startswith = self.__original_path)
+            for sound in sounds:
+                sound.path.replace(self.__original_path, self.path)
+                sound.save()
 
 class Diffusion (models.Model):
     """
@@ -624,7 +641,7 @@ class Diffusion (models.Model):
             if diff.pk == self.pk:
                 continue
 
-            if diff.date < end:
+            if diff.date < end and diff not in r:
                 r.append(diff)
                 continue
             count+=1
@@ -637,10 +654,10 @@ class Diffusion (models.Model):
             if self.initial.initial:
                 self.initial = self.initial.initial
             self.program = self.initial.program
-        super(Diffusion, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
     def __str__ (self):
-        return self.program.name + ', ' + \
+        return '#' + str(self.pk) + ' ' + self.program.name + ', ' + \
                 self.date.strftime('%Y-%m-%d %H:%M') +\
                 '' # FIXME str(self.type_display)
 
@@ -691,15 +708,15 @@ class Log (models.Model):
                                     ContentType.objects.get_for_model(model).id)
 
     def print (self):
-        logger.info('log #{} ({}): {}{}'.format(
+        logger.info('log #%s: %s%s',
             str(self),
             self.comment or '',
             '\n - {}: #{}'.format(self.related_type, self.related_id)
                 if self.related_object else ''
-        ))
+        )
 
     def __str__ (self):
-        return 'log #{} ({}, {})'.format(
+        return '#{} ({}, {})'.format(
                 self.id, self.date.strftime('%Y-%m-%d %H:%M'), self.source
         )
 

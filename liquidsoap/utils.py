@@ -173,7 +173,7 @@ class Source:
 
     def stream_info (self):
         """
-        Return a dict with info related to the program's stream
+        Return a dict with info related to the program's stream.
         """
         if not self.program:
             return
@@ -279,6 +279,38 @@ class Dealer (Source):
             if diffusion.playlist and on_air not in diffusion.playlist:
                 return diffusion
 
+    def monitor (self):
+        """
+        Monitor playlist (if it is time to load) and if it time to trigger
+        the button to start a diffusion.
+        """
+        playlist = self.playlist
+        on_air = self.current_sound
+        now = tz.make_aware(tz.datetime.now())
+
+        diff = self.__get_next(now, on_air)
+        if not diff:
+            return # there is nothing we can do
+
+        # playlist reload
+        if self.playlist != diff.playlist:
+            if not playlist or on_air == playlist[-1] or \
+                on_air not in playlist:
+                self.on = False
+                self.playlist = diff.playlist
+
+        # run the diff
+        if self.playlist == diff.playlist and diff.date <= now and not self.on:
+            self.on = True
+            for source in self.controller.streams.values():
+                source.skip()
+            self.controller.log(
+                source = self.id,
+                date = now,
+                comment = 'trigger the scheduled diffusion to liquidsoap; '
+                          'skip all other streams',
+                related_object = diff,
+            )
 
 class Controller:
     """
@@ -385,7 +417,6 @@ class Controller:
         """
         if not self.connector.available and self.connector.open():
             return
-
         self.dealer.monitor()
 
 

@@ -9,7 +9,7 @@ from argparse import RawTextHelpFormatter
 
 from django.core.management.base import BaseCommand, CommandError
 
-logger = logging.getLogger('aircox.programs.' + __name__)
+logger = logging.getLogger('aircox.tools')
 
 class Stats:
     attributes = [
@@ -104,11 +104,11 @@ class Sound:
         ]
 
         if self.good:
-            logger.info(self.path, ': good samples:\033[92m',
-                        ', '.join( view(self.good) ), '\033[0m')
+            logger.info(self.path + ': good samples:\033[92m%s\033[0m',
+                        ', '.join(view(self.good)))
         if self.bad:
-            loggeer.info(self.path ': bad samples:\033[91m',
-                         ', '.join( view(self.bad) ), '\033[0m')
+            logger.info(self.path + ': good samples:\033[91m%s\033[0m',
+                        ', '.join(view(self.bad)))
 
 class Command (BaseCommand):
     help = __doc__
@@ -157,7 +157,7 @@ class Command (BaseCommand):
         self.bad = []
         self.good = []
         for sound in self.sounds:
-            logger.info('analyse ', sound.path)
+            logger.info('analyse ' + sound.path)
             sound.analyse()
             sound.check(attr, minmax[0], minmax[1])
             if sound.bad:
@@ -167,13 +167,8 @@ class Command (BaseCommand):
 
         # resume
         if options.get('resume'):
-            if self.good:
-                logger.info('files that did not failed the test:\033[92m\n   ',
-                      '\n    '.join([sound.path for sound in self.good]),
-                      '\033[0m')
-            if self.bad:
-                # bad at the end for ergonomy
-                logger.info('files that failed the test:\033[91m\n   ',
-                      '\n    '.join([sound.path for sound in self.bad]),
-                      '\033[0m')
+            for sound in self.good:
+                logger.info('\033[92m+ %s\033[0m', sound.path)
+            for sound in self.bad:
+                logger.info('\033[91m+ %s\033[0m', sound.path)
 

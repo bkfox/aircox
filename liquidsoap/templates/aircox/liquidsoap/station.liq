@@ -4,7 +4,8 @@
 def interactive_source (id, s) = \
     def handler(m) = \
         file = string.escape(m['filename']) \
-        system('{{ log_script }} -s "#{id}" -p "#{file}" -c "liquidsoap: play" &') \
+        system('echo {{ log_script }} -s "#{id}" -p \"#{file}\" -c "liquidsoap: play" &') \
+        system('{{ log_script }} -s "#{id}" -p \"#{file}\" -c "liquidsoap: play" &') \
     end \
     \
     s = on_track(id=id, handler, s)
@@ -65,7 +66,7 @@ set("{{ key|safe }}", {{ value|safe }}) \
         {% if controller.station.fallback %}
             single("{{ controller.station.fallback }}"), \
         {% else %}
-            blank(), \
+            blank(duration=0.1), \
         {% endif %}
     ]) \
 ) \

@@ -33,16 +33,17 @@ from aircox.programs.models import *
 import aircox.programs.settings as settings
 import aircox.programs.utils as utils
 
-logger = logging.getLogger('aircox.programs.' + __name__)
+logger = logging.getLogger('aircox.tools')
 
 class Command (BaseCommand):
     help= __doc__
 
     def report (self, program = None, component = None, *content):
         if not component:
-            logger.info('{}: '.format(program), *content)
+            logger.info('%s: %s', str(program), ' '.join([str(c) for c in content]))
         else:
-            logger.info('{}, {}: '.format(program, component), *content)
+            logger.info('%s, %s: %s', str(program), str(component),
+                        ' '.join([str(c) for c in content]))
 
     def add_arguments (self, parser):
         parser.formatter_class=RawTextHelpFormatter
@@ -70,7 +71,7 @@ class Command (BaseCommand):
         if not err:
             return utils.seconds_to_time(int(float(out)))
 
-    def get_sound_info (self, program, path):
+    def _get_sound_info (self, program, path):
         """
         Parse file name to get info on the assumption it has the correct
         format (given in Command.help)
@@ -92,7 +93,6 @@ class Command (BaseCommand):
         else:
             r = r.groupdict()
 
-        r['duration'] = self._get_duration(path)
         r['name'] = r['name'].replace('_', ' ').capitalize()
         r['path'] = path
         return r
@@ -132,11 +132,11 @@ class Command (BaseCommand):
         """
         For all programs, scan dirs
         """
-        logger.info('scan files for all programs...')
+        logger.info('scan all programs...')
         programs = Program.objects.filter()
 
         for program in programs:
-            logger.info('program', program.name)
+            logger.info('#%d %s', program.id, program.name)
             self.scan_for_program(
                 program, settings.AIRCOX_SOUND_ARCHIVES_SUBDIR,
                 type = Sound.Type['archive'],
@@ -151,7 +151,7 @@ class Command (BaseCommand):
         Scan a given directory that is associated to the given program, and
         update sounds information.
         """
-        logger.info('scan files in', subdir)
+        logger.info('- %s/', subdir)
         if not program.ensure_dir(subdir):
             return
 
@@ -163,14 +163,17 @@ class Command (BaseCommand):
             if not path.endswith(settings.AIRCOX_SOUND_FILE_EXT):
                 continue
 
-            sound_info = self.get_sound_info(program, path)
-            sound = Sound.objects.get_or_create(
+            sound, created = Sound.objects.get_or_create(
                 path = path,
-                defaults = { 'name': sound_info['name'],
-                             'duration': sound_info['duration'] or None }
-            )[0]
-            sound.__dict__.update(sound_kwargs)
-            sound.save(check = False)
+                defaults = sound_kwargs,
+            )
+
+            sound_info = self._get_sound_info(program, path)
+
+            if created or sound.check_on_file():
+                sound_info['duration'] = self._get_duration()
+                sound.__dict__.update(sound_info)
+                sound.save(check = False)
 
             # initial diffusion association
             if 'year' in sound_info:
@@ -181,12 +184,12 @@ class Command (BaseCommand):
                         self.report(program, path,
                                     'the diffusion must be an initial diffusion')
                     else:
-                        sound = initial.sounds.get_queryset() \
-                                    .filter(path == sound.path)
-                        if not sound:
+                        sound_ = initial.sounds.get_queryset() \
+                                    .filter(path = sound.path)
+                        if not sound_:
                             self.report(program, path,
                                         'add sound to diffusion ', initial.id)
-                            initial.sounds.add(sound)
+                            initial.sounds.add(sound.pk)
                             initial.save()
 
         self.check_sounds(Sound.objects.filter(path__startswith = subdir))
@@ -201,16 +204,18 @@ class Command (BaseCommand):
         sounds = Sound.objects.filter(good_quality = False)
         if check:
             self.check_sounds(sounds)
-            files = [ sound.path for sound in sounds if not sound.removed ]
+            files = [ sound.path for sound in sounds
+                        if not sound.removed and os.path.exists(sound.path) ]
         else:
-            files = [ sound.path for sound in sounds.filter(removed = False) ]
+            files = [ sound.path for sound in sounds.filter(removed = False)
+                        if os.path.exists(sound.path) ]
 
-        logger.info('start quality check...')
+        logger.info('quality check...',)
         cmd = quality_check.Command()
         cmd.handle( files = files,
                     **settings.AIRCOX_SOUND_QUALITY )
 
-        logger.info('update sounds in database')
+        logger.info('update database')
         def update_stats(sound_info, sound):
             stats = sound_info.get_file_stats()
             if stats:

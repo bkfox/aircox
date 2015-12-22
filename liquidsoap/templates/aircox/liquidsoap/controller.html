@@ -106,15 +106,15 @@
                 </header>
                 <div class="sources">
                     {% with source=controller.master %}
-                    {% include 'aircox_liquidsoap/source.html' %}
+                    {% include 'aircox/liquidsoap/source.html' %}
                     {% endwith %}
 
                     {% with source=controller.dealer %}
-                    {% include 'aircox_liquidsoap/source.html' %}
+                    {% include 'aircox/liquidsoap/source.html' %}
                     {% endwith %}
 
                     {% for source in controller.streams.values %}
-                    {% include 'aircox_liquidsoap/source.html' %}
+                    {% include 'aircox/liquidsoap/source.html' %}
                     {% endfor %}
                 </div>
                 <div class="next">

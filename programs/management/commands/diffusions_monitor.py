@@ -23,7 +23,7 @@ from django.utils import timezone as tz
 
 from aircox.programs.models import *
 
-logger = logging.getLogger('aircox.programs.' + __name__)
+logger = logging.getLogger('aircox.tools')
 
 class Actions:
     @staticmethod
@@ -33,19 +33,28 @@ class Actions:
         items if they have been generated during this
         update.
 
+        It set an attribute 'do_not_save' if the item should not
+        be saved. FIXME: find proper way
+
         Return the number of conflicts
         """
         conflicts = item.get_conflicts()
+        for i, conflict in enumerate(conflicts):
+            if conflict.program == item.program:
+                item.do_not_save = True
+                del conflicts[i]
+                continue
+
+            if conflict.pk in saved_items and \
+                    conflict.type != Diffusion.Type['unconfirmed']:
+                conflict.type = Diffusion.Type['unconfirmed']
+                conflict.save()
+
         if not conflicts:
             item.type = Diffusion.Type['normal']
             return 0
 
         item.type = Diffusion.Type['unconfirmed']
-        for conflict in conflicts:
-            if conflict.pk in saved_items and \
-                    conflict.type != Diffusion.Type['unconfirmed']:
-                conflict.type = Diffusion.Type['unconfirmed']
-                conflict.save()
         return len(conflicts)
 
     @classmethod
@@ -67,14 +76,18 @@ class Actions:
             else:
                 for item in items:
                     count[1] += cl.__check_conflicts(item, saved_items)
+                    if hasattr(item, 'do_not_save'):
+                        count[0] -= 1
+                        continue
+
                     item.save()
                     saved_items.add(item)
 
-            logger.info('[update] {} new diffusions for schedule #{} ({})'.format(
-                    len(items), schedule.id, str(schedule)
-                 ))
+            logger.info('[update] schedule %s: %d new diffusions',
+                    str(schedule), len(items),
+                 )
 
-        logger.info('[update] total of {} diffusions have been created,'.format(count[0]),
+        logger.info('[update] %d diffusions have been created, %s', count[0],
               'do not forget manual approval' if manual else
                 '{} conflicts found'.format(count[1]))
 
@@ -82,7 +95,7 @@ class Actions:
     def clean (date):
         qs = Diffusion.objects.filter(type = Diffusion.Type['unconfirmed'],
                                       date__lt = date)
-        logger.info('[clean] {} diffusions will be removed'.format(qs.count()))
+        logger.info('[clean] %d diffusions will be removed', qs.count())
         qs.delete()
 
     @staticmethod
@@ -98,7 +111,7 @@ class Actions:
             else:
                 items.append(diffusion.id)
 
-        logger.info('[check] {} diffusions will be removed'.format(len(items)))
+        logger.info('[check] %d diffusions will be removed', len(items))
         if len(items):
             Diffusion.objects.filter(id__in = items).delete()
 
