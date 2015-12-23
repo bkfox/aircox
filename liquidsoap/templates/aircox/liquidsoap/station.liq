@@ -2,21 +2,15 @@
 {# - controller: controller used to generate the current file #}
 {# - settings: global settings #}
 def interactive_source (id, s) = \
-    def handler(m) = \
-        file = string.escape(m['filename']) \
-        system('echo {{ log_script }} -s "#{id}" -p \"#{file}\" -c "liquidsoap: play" &') \
-        system('{{ log_script }} -s "#{id}" -p \"#{file}\" -c "liquidsoap: play" &') \
-    end \
-    \
-    s = on_track(id=id, handler, s)
-    # s = store_metadata(id=id, size=1, s) \
+    s = store_metadata(id=id, size=1, s) \
     add_skip_command(s) \
     s \
 end \
 \
 def stream (id, file) = \
-    s = playlist(id = '#{id}_playlist', mode = "random", \
-                 reload_mode='watch', file) \
+    #s = playlist(id = '#{id}_playlist', mode = "random", \
+    #             file) \
+    s = playlist(id = '#{id}_playlist', mode = "random", file)
     interactive_source(id, s) \
 end \
 \
@@ -66,7 +60,7 @@ set("{{ key|safe }}", {{ value|safe }}) \
         {% if controller.station.fallback %}
             single("{{ controller.station.fallback }}"), \
         {% else %}
-            blank(duration=0.1), \
+            blank(id="scheize_blank", duration=0.1), \
         {% endif %}
     ]) \
 ) \

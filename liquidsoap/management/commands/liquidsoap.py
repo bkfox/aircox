@@ -13,8 +13,9 @@ from django.core.management.base import BaseCommand, CommandError
 from django.template.loader import render_to_string
 from django.utils import timezone as tz
 
-import aircox.programs.models as models
+import aircox.programs.models as programs
 import aircox.programs.settings as programs_settings
+from aircox.programs.utils import to_timedelta
 
 import aircox.liquidsoap.settings as settings
 import aircox.liquidsoap.utils as utils
@@ -61,9 +62,9 @@ class StationConfig:
         for stream in self.controller.streams.values():
             program = stream.program
 
-            sounds = models.Sound.objects.filter(
+            sounds = programs.Sound.objects.filter(
                 # good_quality = True,
-                type = models.Sound.Type['archive'],
+                type = programs.Sound.Type['archive'],
                 path__startswith = os.path.join(
                     programs_settings.AIRCOX_SOUND_ARCHIVES_SUBDIR,
                     program.path
@@ -71,6 +72,120 @@ class StationConfig:
             )
             with open(stream.path, 'w+') as file:
                 file.write('\n'.join(sound.path for sound in sounds))
+
+
+class Monitor:
+    @classmethod
+    def run (cl, controller):
+        """
+        Run once the monitor on the controller
+        """
+        if not controller.connector.available and controller.connector.open():
+            return
+
+        cl.run_source(controller.master)
+        cl.run_dealer(controller)
+
+        for stream in controller.streams.values():
+            cl.run_source(stream)
+
+    @staticmethod
+    def log (**kwargs):
+        """
+        Create a log using **kwargs, and print info
+        """
+        log = programs.Log(**kwargs)
+        log.save()
+        log.print()
+
+    @staticmethod
+    def expected_diffusion (station, date, on_air):
+        """
+        Return which diffusion should be played now and is not playing
+        on the given station
+        """
+        r = [ programs.Diffusion.get_prev(station, date),
+              programs.Diffusion.get_next(station, date) ]
+        r = [ diffusion.prefetch_related('sounds')[0]
+                for diffusion in r if diffusion.count() ]
+
+        for diffusion in r:
+            duration = to_timedelta(diffusion.archives_duration())
+            end_at = diffusion.date + duration
+            if end_at < date:
+                continue
+
+            diffusion.playlist = [ sound.path
+                                    for sound in diffusion.get_archives() ]
+            if diffusion.playlist and on_air not in diffusion.playlist:
+                return diffusion
+
+    @classmethod
+    def run_dealer (cl, controller):
+        """
+        Monitor dealer playlist (if it is time to load) and whether it is time
+        to trigger the button to start a diffusion.
+        """
+        dealer = controller.dealer
+        playlist = dealer.playlist
+        on_air = dealer.current_sound
+        now = tz.make_aware(tz.datetime.now())
+
+        diff = cl.expected_diffusion(controller.station, now, on_air)
+        if not diff:
+            return # there is nothing we can do
+
+        # playlist reload
+        if dealer.playlist != diff.playlist:
+            if not playlist or on_air == playlist[-1] or \
+                on_air not in playlist:
+                dealer.on = False
+                dealer.playlist = diff.playlist
+
+        # run the diff
+        if dealer.playlist == diff.playlist and diff.date <= now and not dealer.on:
+            dealer.on = True
+            for source in controller.streams.values():
+                source.skip()
+            cl.log(
+                source = dealer.id,
+                date = now,
+                comment = 'trigger the scheduled diffusion to liquidsoap; '
+                          'skip all other streams',
+                related_object = diff,
+            )
+
+    @classmethod
+    def run_source (cl, source):
+        """
+        Keep trace of played sounds on the given source. For the moment we only
+        keep track of known sounds.
+        """
+        last_log = programs.Log.objects.filter(
+            source = source.id,
+        ).prefetch_related('related_object').order_by('-date')
+
+        on_air = source.current_sound
+        if not on_air:
+            return
+
+        if last_log:
+            last_log = last_log[0]
+            if type(last_log.related_object) == programs.Sound and \
+                    on_air == last_log.related_object.path:
+                return
+
+        sound = programs.Sound.objects.filter(path = on_air)
+        if not sound:
+            return
+
+        sound = sound[0]
+        cl.log(
+            source = source.id,
+            date = tz.make_aware(tz.datetime.now()),
+            comment = 'sound has changed',
+            related_object = sound or None,
+        )
 
 
 class Command (BaseCommand):
@@ -117,33 +232,37 @@ class Command (BaseCommand):
 
     def handle (self, *args, **options):
         if options.get('station'):
-            station = models.Station.objects.get(id = options.get('station'))
+            station = programs.Station.objects.get(id = options.get('station'))
             StationConfig(station).handle(options)
         elif options.get('all') or options.get('config') or \
                 options.get('streams'):
-            for station in models.Station.objects.filter(active = True):
+            for station in programs.Station.objects.filter(active = True):
                 StationConfig(station).handle(options)
 
         if options.get('on_air') or options.get('monitor'):
             self.handle_monitor(options)
 
     def handle_monitor (self, options):
-        self.monitor = utils.Monitor()
-        self.monitor.update()
+        controllers = [
+            utils.Controller(station)
+            for station in programs.Station.objects.filter(active = True)
+        ]
+        for controller in controllers:
+            controller.update()
 
         if options.get('on_air'):
-            for id, controller in self.monitor.controller.items():
-                print(id, controller.on_air)
+            for controller in controllers:
+                print(controller.id, controller.on_air)
             return
 
         if options.get('monitor'):
             delay = options.get('delay') / 1000
             while True:
-                for controller in self.monitor.controllers.values():
-                    try:
-                        controller.monitor()
-                    except Exception as err:
-                        print(err)
+                for controller in controllers:
+                    #try:
+                    Monitor.run(controller)
+                    #except Exception as err:
+                    # print(err)
                 time.sleep(delay)
             return
 

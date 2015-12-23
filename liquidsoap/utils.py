@@ -6,9 +6,7 @@ import json
 from django.utils.translation import ugettext as _, ugettext_lazy
 from django.utils import timezone as tz
 
-from aircox.programs.utils import to_timedelta
 import aircox.programs.models as programs
-
 import aircox.liquidsoap.models as models
 import aircox.liquidsoap.settings as settings
 
@@ -57,7 +55,7 @@ class Connector:
             self.__socket.sendall(data)
             data = ''
             while not reg.search(data):
-                data += self.__socket.recv(1024).decode('unicode_escape')
+                data += self.__socket.recv(1024).decode('utf-8')
 
             if data:
                 data = reg.sub(r'\1', data)
@@ -259,59 +257,6 @@ class Dealer (Source):
         return self.connector.send('var.set ', self.id, '_on',
                                     '=', 'true' if value else 'false')
 
-    def __get_next (self, date, on_air):
-        """
-        Return which diffusion should be played now and is not playing
-        """
-        r = [ programs.Diffusion.get_prev(self.station, date),
-              programs.Diffusion.get_next(self.station, date) ]
-        r = [ diffusion.prefetch_related('sounds')[0]
-                for diffusion in r if diffusion.count() ]
-
-        for diffusion in r:
-            duration = to_timedelta(diffusion.archives_duration())
-            end_at = diffusion.date + duration
-            if end_at < date:
-                continue
-
-            diffusion.playlist = [ sound.path
-                                    for sound in diffusion.get_archives() ]
-            if diffusion.playlist and on_air not in diffusion.playlist:
-                return diffusion
-
-    def monitor (self):
-        """
-        Monitor playlist (if it is time to load) and if it time to trigger
-        the button to start a diffusion.
-        """
-        playlist = self.playlist
-        on_air = self.current_sound
-        now = tz.make_aware(tz.datetime.now())
-
-        diff = self.__get_next(now, on_air)
-        if not diff:
-            return # there is nothing we can do
-
-        # playlist reload
-        if self.playlist != diff.playlist:
-            if not playlist or on_air == playlist[-1] or \
-                on_air not in playlist:
-                self.on = False
-                self.playlist = diff.playlist
-
-        # run the diff
-        if self.playlist == diff.playlist and diff.date <= now and not self.on:
-            self.on = True
-            for source in self.controller.streams.values():
-                source.skip()
-            self.controller.log(
-                source = self.id,
-                date = now,
-                comment = 'trigger the scheduled diffusion to liquidsoap; '
-                          'skip all other streams',
-                related_object = diff,
-            )
-
 class Controller:
     """
     Main class controller for station and sources (streams and dealer)
@@ -356,7 +301,7 @@ class Controller:
         """
         return os.path.join(self.path, 'station.liq')
 
-    def __init__ (self, station, connector = True):
+    def __init__ (self, station, connector = True, update = False):
         """
         Params:
         - station: managed station
@@ -384,6 +329,9 @@ class Controller:
             ]
         }
 
+        if update:
+            self.update()
+
     def get (self, source_id):
         """
         Get a source by its id
@@ -394,15 +342,8 @@ class Controller:
             return self.dealer
         return self.streams.get(source_id)
 
-    def log (self, **kwargs):
-        """
-        Create a log using **kwargs, and print info
-        """
-        log = programs.Log(**kwargs)
-        log.save()
-        log.print()
 
-    def update_all (self):
+    def update (self):
         """
         Fetch and update all streams metadata.
         """
@@ -410,14 +351,6 @@ class Controller:
         self.dealer.update()
         for source in self.streams.values():
             source.update()
-
-    def monitor (self):
-        """
-        Log changes in the streams, and call dealer.monitor.
-        """
-        if not self.connector.available and self.connector.open():
-            return
-        self.dealer.monitor()
 
 
 class Monitor:
@@ -437,6 +370,6 @@ class Monitor:
 
     def update (self):
         for controller in self.controllers.values():
-            controller.update_all()
+            controller.update()
 
 
