@@ -186,7 +186,7 @@ class Source:
         return {
             'begin': stream.begin.strftime('%Hh%M') if stream.begin else None,
             'end': stream.end.strftime('%Hh%M') if stream.end else None,
-            'delay': to_seconds(stream.delay) if stream.delay else None
+            'delay': to_seconds(stream.delay) if stream.delay else 0
         }
 
     def skip (self):

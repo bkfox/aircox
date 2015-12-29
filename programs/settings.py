@@ -12,7 +12,7 @@ ensure('AIRCOX_PROGRAMS_DIR',
 
 # Default directory for the sounds that not linked to a program
 ensure('AIRCOX_SOUND_DEFAULT_DIR',
-       os.path.join(AIRCOX_PROGRAMS_DIR, 'defaults'))
+       os.path.join(AIRCOX_PROGRAMS_DIR, 'defaults')),
 # Sub directory used for the complete episode sounds
 ensure('AIRCOX_SOUND_ARCHIVES_SUBDIR', 'archives')
 # Sub directory used for the excerpts of the episode

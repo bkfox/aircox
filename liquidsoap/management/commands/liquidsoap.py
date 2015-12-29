@@ -44,7 +44,6 @@ class StationConfig:
         log_script = os.path.join(log_script, 'manage.py') + \
                         ' liquidsoap_log'
 
-
         context = {
             'controller': self.controller,
             'settings': settings,
@@ -161,6 +160,7 @@ class Monitor:
         Keep trace of played sounds on the given source. For the moment we only
         keep track of known sounds.
         """
+        # TODO: repetition of the same sound out of an interval of time
         last_log = programs.Log.objects.filter(
             source = source.id,
         ).prefetch_related('related_object').order_by('-date')
@@ -170,10 +170,13 @@ class Monitor:
             return
 
         if last_log:
+            now = tz.datetime.now()
             last_log = last_log[0]
-            if type(last_log.related_object) == programs.Sound and \
-                    on_air == last_log.related_object.path:
-                return
+            last_obj = last_log.related_object
+            if type(last_obj) == programs.Sound and on_air == last_obj.path:
+                if not last_obj.duration or
+                    now < log.date + programs_utils.to_timedelta(last_obj.duration)
+                    return
 
         sound = programs.Sound.objects.filter(path = on_air)
         if not sound:
@@ -194,6 +197,10 @@ class Command (BaseCommand):
 
     def add_arguments (self, parser):
         parser.formatter_class=RawTextHelpFormatter
+        parser.add_argument(
+            '-e', '--exec', action='store_true',
+            help='run liquidsoap on exit'
+        )
 
         group = parser.add_argument_group('monitor')
         group.add_argument(
@@ -211,24 +218,19 @@ class Command (BaseCommand):
         )
 
         group = parser.add_argument_group('configuration')
-        parser.add_argument(
+        group.add_argument(
             '-s', '--station', type=int,
             help='generate files for the given station (if not set, do it for'
                  ' all available stations)'
         )
-        parser.add_argument(
+        group.add_argument(
             '-c', '--config', action='store_true',
             help='generate liquidsoap config file'
         )
-        parser.add_argument(
+        group.add_argument(
             '-S', '--streams', action='store_true',
             help='generate all stream playlists'
         )
-        parser.add_argument(
-            '-a', '--all', action='store_true',
-            help='shortcut for -cS'
-        )
-
 
     def handle (self, *args, **options):
         if options.get('station'):

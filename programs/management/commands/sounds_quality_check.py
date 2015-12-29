@@ -104,10 +104,10 @@ class Sound:
         ]
 
         if self.good:
-            logger.info(self.path + ': good samples:\033[92m%s\033[0m',
+            logger.info(self.path + ' -> good: \033[92m%s\033[0m',
                         ', '.join(view(self.good)))
         if self.bad:
-            logger.info(self.path + ': good samples:\033[91m%s\033[0m',
+            logger.info(self.path + ' -> bad: \033[91m%s\033[0m',
                         ', '.join(view(self.bad)))
 
 class Command (BaseCommand):

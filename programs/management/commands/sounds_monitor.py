@@ -22,10 +22,15 @@ parameters given by the setting AIRCOX_SOUND_QUALITY. This script requires
 Sox (and soxi).
 """
 import os
+import time
 import re
 import logging
 import subprocess
 from argparse import RawTextHelpFormatter
+import atexit
+
+from watchdog.observers import Observer
+from watchdog.events import PatternMatchingEventHandler, FileModifiedEvent
 
 from django.core.management.base import BaseCommand, CommandError
 
@@ -34,6 +39,172 @@ import aircox.programs.settings as settings
 import aircox.programs.utils as utils
 
 logger = logging.getLogger('aircox.tools')
+
+class SoundInfo:
+    name = ''
+    sound = None
+
+    year = None
+    month = None
+    day = None
+    n = None
+    duration = None
+
+    @property
+    def path (self):
+        return self._path
+
+    @path.setter
+    def path (self, value):
+        """
+        Parse file name to get info on the assumption it has the correct
+        format (given in Command.help)
+        """
+        file_name = os.path.basename(value)
+        file_name = os.path.splitext(file_name)[0]
+        r = re.search('^(?P<year>[0-9]{4})'
+                      '(?P<month>[0-9]{2})'
+                      '(?P<day>[0-9]{2})'
+                      '(_(?P<n>[0-9]+))?'
+                      '_?(?P<name>.*)$',
+                      file_name)
+
+        if not (r and r.groupdict()):
+            r = { 'name': file_name }
+            logger.info('file name can not be parsed -> %s', value)
+        else:
+            r = r.groupdict()
+
+        self._path = value
+        self.name = r['name'].replace('_', ' ').capitalize()
+        self.year = int(r.get('year')) if 'year' in r else None
+        self.month = int(r.get('month')) if 'month' in r else None
+        self.day = int(r.get('day')) if 'day' in r else None
+        self.n = r.get('n')
+        return r
+
+    def __init__ (self, path = ''):
+        self.path = path
+
+    def get_duration (self):
+        p = subprocess.Popen(['soxi', '-D', self.path],
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE)
+        out, err = p.communicate()
+        if not err:
+            duration = utils.seconds_to_time(int(float(out)))
+            self.duration = duration
+            return duration
+
+    def get_sound (self, kwargs = None, save = True):
+        """
+        Get or create a sound using self info.
+
+        If the sound is created/modified, get its duration and update it
+        (if save is True, sync to DB).
+        """
+        sound, created = Sound.objects.get_or_create(
+            path = self.path,
+            defaults = kwargs
+        )
+        if created or sound.check_on_file():
+            logger.info('sound is new or have been modified -> %s', self.path)
+            sound.duration = self.get_duration()
+            sound.name = self.name
+            if save:
+                sound.save()
+        self.sound = sound
+        return sound
+
+    def find_diffusion (self, program, attach = False):
+        """
+        For a given program, check if there is an initial diffusion
+        to associate to, using the date info we have.
+
+        We only allow initial diffusion since there should be no
+        rerun.
+
+        If attach is True and we have self.sound, we add self.sound to
+        the diffusion and update the DB.
+        """
+        if self.year == None:
+            return;
+
+        # check on episodes
+        diffusion = Diffusion.objects.filter(
+            program = program,
+            date__year = self.year,
+            date__month = self.month,
+            date__day = self.day,
+            initial = None,
+        )
+        if not diffusion:
+            return
+
+        diffusion = diffusion[0]
+        if attach and self.sound:
+            qs = diffusion.sounds.get_queryset().filter(path = sound.path)
+            if not qs:
+                logger.info('diffusion %s mathes to sound -> %s', str(diffusion),
+                            sound.path)
+                diffusion.sounds.add(sound.pk)
+                diffusion.save()
+        return diffusion
+
+
+class MonitorHandler (PatternMatchingEventHandler):
+    """
+    Event handler for watchdog, in order to be used in monitoring.
+    """
+    def __init__ (self, subdir):
+        """
+        subdir: AIRCOX_SOUND_ARCHIVES_SUBDIR or AIRCOX_SOUND_EXCERPTS_SUBDIR
+        """
+        self.subdir = subdir
+        if self.subdir == settings.AIRCOX_SOUND_ARCHIVES_SUBDIR:
+            self.sound_kwargs = { 'type': Sound.Type['archive'] }
+        else:
+            self.sound_kwargs = { 'type': Sound.Type['excerpt'] }
+
+        patterns = ['*/{}/*{}'.format(self.subdir, ext)
+                    for ext in settings.AIRCOX_SOUND_FILE_EXT ]
+        super().__init__(patterns=patterns, ignore_directories=True)
+
+    def on_created (self, event):
+        self.on_modified(event)
+
+    def on_modified (self, event):
+        logger.info('sound modified: %s', event.src_path)
+        program = Program.get_from_path(event.src_path)
+        if not program:
+            return
+
+        si = SoundInfo(event.src_path)
+        si.get_sound(self.sound_kwargs, True)
+        if si.year != None:
+            si.find_diffusion(program, True)
+
+    def on_deleted (self, event):
+        logger.info('sound deleted: %s', event.src_path)
+        sound = Sound.objects.filter(path = event.src_path)
+        if sound:
+            sound = sound[0]
+            sound.removed = True
+            sound.save()
+
+    def on_moved (self, event):
+        logger.info('sound moved: %s -> %s', event.src_path, event.dest_path)
+        sound = Sound.objects.filter(path = event.src_path)
+        if not sound:
+            self.on_modified(
+                FileModifiedEvent(event.dest_path)
+            )
+            return
+
+        sound = sound[0]
+        sound.path = event.dest_path
+        sound.save()
+
 
 class Command (BaseCommand):
     help= __doc__
@@ -57,66 +228,20 @@ class Command (BaseCommand):
             help='Scan programs directories for changes, plus check for a '
                  ' matching episode on sounds that have not been yet assigned'
         )
+        parser.add_argument(
+            '-m', '--monitor', action='store_true',
+            help='Run in monitor mode, watch for modification in the filesystem '
+                 'and react in consequence'
+        )
+
 
     def handle (self, *args, **options):
         if options.get('scan'):
             self.scan()
         if options.get('quality_check'):
             self.check_quality(check = (not options.get('scan')) )
-
-    def _get_duration (self, path):
-        p = subprocess.Popen(['soxi', '-D', path], stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE)
-        out, err = p.communicate()
-        if not err:
-            return utils.seconds_to_time(int(float(out)))
-
-    def _get_sound_info (self, program, path):
-        """
-        Parse file name to get info on the assumption it has the correct
-        format (given in Command.help)
-        """
-        file_name = os.path.basename(path)
-        file_name = os.path.splitext(file_name)[0]
-        r = re.search('^(?P<year>[0-9]{4})'
-                      '(?P<month>[0-9]{2})'
-                      '(?P<day>[0-9]{2})'
-                      '(_(?P<n>[0-9]+))?'
-                      '_?(?P<name>.*)$',
-                      file_name)
-
-        if not (r and r.groupdict()):
-            self.report(program, path, "file path is not correct, use defaults")
-            r = {
-                'name': file_name
-            }
-        else:
-            r = r.groupdict()
-
-        r['name'] = r['name'].replace('_', ' ').capitalize()
-        r['path'] = path
-        return r
-
-    def find_initial (self, program, sound_info):
-        """
-        For a given program, and sound path check if there is an initial
-        diffusion to associate to, using the diffusion's date.
-
-        If there is no matching episode, return None.
-        """
-        # check on episodes
-        diffusion = Diffusion.objects.filter(
-            program = program,
-            date__year = int(sound_info['year']),
-            date__month = int(sound_info['month']),
-            date__day = int(sound_info['day'])
-        )
-
-        if not diffusion.count():
-            self.report(program, sound_info['path'],
-                        'no diffusion found for the given date')
-            return
-        return diffusion[0]
+        if options.get('monitor'):
+            self.monitor()
 
     @staticmethod
     def check_sounds (qs):
@@ -156,43 +281,23 @@ class Command (BaseCommand):
             return
 
         subdir = os.path.join(program.path, subdir)
+        new_sounds = []
 
-        # new/existing sounds
+        # sounds in directory
         for path in os.listdir(subdir):
             path = os.path.join(subdir, path)
             if not path.endswith(settings.AIRCOX_SOUND_FILE_EXT):
                 continue
 
-            sound, created = Sound.objects.get_or_create(
-                path = path,
-                defaults = sound_kwargs,
-            )
+            si = SoundInfo(path)
+            si.get_sound(sound_kwargs, True)
+            if si.year != None:
+                si.find_diffusion(program, True)
+            new_sounds = [si.sound.pk]
 
-            sound_info = self._get_sound_info(program, path)
-
-            if created or sound.check_on_file():
-                sound_info['duration'] = self._get_duration()
-                sound.__dict__.update(sound_info)
-                sound.save(check = False)
-
-            # initial diffusion association
-            if 'year' in sound_info:
-                initial = self.find_initial(program, sound_info)
-                if initial:
-                    if initial.initial:
-                        # FIXME: allow user to overwrite rerun info?
-                        self.report(program, path,
-                                    'the diffusion must be an initial diffusion')
-                    else:
-                        sound_ = initial.sounds.get_queryset() \
-                                    .filter(path = sound.path)
-                        if not sound_:
-                            self.report(program, path,
-                                        'add sound to diffusion ', initial.id)
-                            initial.sounds.add(sound.pk)
-                            initial.save()
-
-        self.check_sounds(Sound.objects.filter(path__startswith = subdir))
+        # sounds in db
+        self.check_sounds(Sound.objects.filter(path__startswith = subdir) \
+                                       .exclude(pk__in = new_sounds ))
 
     def check_quality (self, check = False):
         """
@@ -232,4 +337,31 @@ class Command (BaseCommand):
             sound = Sound.objects.get(path = sound_info.path)
             update_stats(sound_info, sound)
             sound.save(check = False)
+
+    def monitor (self):
+        """
+        Run in monitor mode
+        """
+        archives_handler = MonitorHandler(
+            subdir = settings.AIRCOX_SOUND_ARCHIVES_SUBDIR
+        )
+        excerpts_handler = MonitorHandler(
+            subdir = settings.AIRCOX_SOUND_EXCERPTS_SUBDIR
+        )
+
+        observer = Observer()
+        observer.schedule(archives_handler, settings.AIRCOX_PROGRAMS_DIR,
+                          recursive=True)
+        observer.schedule(excerpts_handler, settings.AIRCOX_PROGRAMS_DIR,
+                          recursive=True)
+        observer.start()
+
+        def leave():
+            observer.stop()
+            observer.join()
+        atexit.register(leave)
+
+        while True:
+            time.sleep(1)
+
 

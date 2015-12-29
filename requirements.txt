@@ -3,4 +3,5 @@ django-taggit>=0.12.1
 django-suit>=0.2.15
 django-autocomplete-light>=2.2.8
 easy-thumbnails>=2.2
+watchdog>=0.8.3
 

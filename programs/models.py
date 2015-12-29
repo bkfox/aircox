@@ -192,9 +192,9 @@ class Sound (Nameable):
             self.check_on_file()
 
         if not self.name and self.path:
-            self.name = os.path.basename(self.path) \
-                            .splitext() \
-                            .replace('_', ' ')
+            self.name = os.path.basename(self.path)
+            self.name = os.path.splitext(self.name)[0]
+            self.name = self.name.replace('_', ' ')
         super().save(*args, **kwargs)
 
     def __str__ (self):
@@ -221,7 +221,7 @@ class Stream (models.Model):
     delay = models.TimeField(
         _('delay'),
         blank = True, null = True,
-        help_text = _('plays this playlist at least every delay')
+        help_text = _('delay between two sound plays')
     )
     begin = models.TimeField(
         _('begin'),
@@ -515,6 +515,24 @@ class Program (Nameable):
             for sound in sounds:
                 sound.path.replace(self.__original_path, self.path)
                 sound.save()
+
+    @classmethod
+    def get_from_path (cl, path):
+        """
+        Return a Program from the given path. We assume the path has been
+        given in a previous time by this model (Program.path getter).
+        """
+        path = path.replace(settings.AIRCOX_PROGRAMS_DIR, '')
+        while path[0] == '/': path = path[1:]
+        while path[-1] == '/': path = path[:-2]
+        if '/' in path:
+            path = path[:path.index('/')]
+
+        path = path.split('_')
+        path = path[-1]
+        qs = cl.objects.filter(id = int(path))
+        return qs[0] if qs else None
+
 
 class Diffusion (models.Model):
     """
