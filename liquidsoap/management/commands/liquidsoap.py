@@ -174,7 +174,7 @@ class Monitor:
             last_log = last_log[0]
             last_obj = last_log.related_object
             if type(last_obj) == programs.Sound and on_air == last_obj.path:
-                if not last_obj.duration or
+                if not last_obj.duration or \
                     now < log.date + programs_utils.to_timedelta(last_obj.duration)
                     return
 
