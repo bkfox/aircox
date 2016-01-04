@@ -140,7 +140,7 @@ class Monitor:
                 dealer.playlist = diff.playlist
 
         # run the diff
-        if dealer.playlist == diff.playlist and diff.date <= now and not dealer.on:
+        if dealer.playlist == diff.playlist and diff.start <= now and not dealer.on:
             dealer.on = True
             for source in controller.streams.values():
                 source.skip()
