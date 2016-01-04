@@ -101,7 +101,7 @@ class Monitor:
     def expected_diffusion (station, date, on_air):
         """
         Return which diffusion should be played now and is not playing
-        on the given station
+        on the given station.
         """
         r = [ programs.Diffusion.get_prev(station, date),
               programs.Diffusion.get_next(station, date) ]
@@ -109,13 +109,11 @@ class Monitor:
                 for diffusion in r if diffusion.count() ]
 
         for diffusion in r:
-            duration = to_timedelta(diffusion.archives_duration())
-            end_at = diffusion.date + duration
-            if end_at < date:
+            if diffusion.end < date:
                 continue
 
             diffusion.playlist = [ sound.path
-                                    for sound in diffusion.get_archives() ]
+                                   for sound in diffusion.get_archives() ]
             if diffusion.playlist and on_air not in diffusion.playlist:
                 return diffusion
 

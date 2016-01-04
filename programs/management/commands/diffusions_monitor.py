@@ -94,19 +94,19 @@ class Actions:
     @staticmethod
     def clean (date):
         qs = Diffusion.objects.filter(type = Diffusion.Type['unconfirmed'],
-                                      date__lt = date)
+                                      start__lt = date)
         logger.info('[clean] %d diffusions will be removed', qs.count())
         qs.delete()
 
     @staticmethod
     def check (date):
         qs = Diffusion.objects.filter(type = Diffusion.Type['unconfirmed'],
-                                      date__gt = date)
+                                      start__gt = date)
         items = []
         for diffusion in qs:
             schedules = Schedule.objects.filter(program = diffusion.program)
             for schedule in schedules:
-                if schedule.match(diffusion.date):
+                if schedule.match(diffusion.start):
                     break
             else:
                 items.append(diffusion.id)
@@ -152,9 +152,9 @@ class Command (BaseCommand):
                  ' (if next month from today'
         )
 
-        group = parser.add_argument_group('mode')
+        group = parser.add_argument_group('options')
         group.add_argument(
-            '--approval', type=str, choices=['manual', 'auto'],
+            '--mode', type=str, choices=['manual', 'auto'],
             default='auto',
             help='manual means that all generated diffusions are unconfirmed, '
                  'thus must be approved manually; auto confirmes all '

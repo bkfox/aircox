@@ -95,17 +95,17 @@ class DiffusionAdmin (admin.ModelAdmin):
             return ', '.join([ str(d) for d in obj.get_conflicts()])
         return ''
 
-    list_display = ('id', 'type', 'date', 'program', 'initial', 'archives', 'conflicts')
-    list_filter = ('type', 'date', 'program')
-    list_editable = ('type', 'date')
+    list_display = ('id', 'type', 'start', 'end', 'program', 'initial', 'archives', 'conflicts')
+    list_filter = ('type', 'start', 'program')
+    list_editable = ('type', 'start', 'end')
 
-    fields = ['type', 'date', 'duration', 'initial', 'program', 'sounds']
+    fields = ['type', 'start', 'end', 'initial', 'program', 'sounds']
 
     def get_form(self, request, obj=None, **kwargs):
         if request.user.has_perm('aircox_program.programming'):
             self.readonly_fields = []
         else:
-            self.readonly_fields = ['program', 'date', 'duration']
+            self.readonly_fields = ['program', 'start', 'end']
 
         if obj and obj.initial:
             self.readonly_fields += ['program', 'sounds']

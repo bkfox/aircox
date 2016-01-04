@@ -368,14 +368,16 @@ class Schedule (models.Model):
         If exclude_saved, exclude all diffusions that are yet in the database.
         """
         dates = self.dates_of_month(date)
-        saved = Diffusion.objects.filter(date__in = dates,
+        saved = Diffusion.objects.filter(start__in = dates,
                                          program = self.program)
         diffusions = []
 
+        duration = utils.to_timedelta(self.duration)
+
         # existing diffusions
         for item in saved:
-            if item.date in dates:
-                dates.remove(item.date)
+            if item.start in dates:
+                dates.remove(item.start)
             if not exclude_saved:
                 diffusions.append(item)
 
@@ -385,7 +387,7 @@ class Schedule (models.Model):
             if self.initial:
                 first_date -= self.date - self.initial.date
 
-            first_diffusion = Diffusion.objects.filter(date = first_date,
+            first_diffusion = Diffusion.objects.filter(start = first_date,
                                                        program = self.program)
             first_diffusion = first_diffusion[0] if first_diffusion.count() \
                               else None
@@ -393,8 +395,8 @@ class Schedule (models.Model):
                                  program = self.program,
                                  type = Diffusion.Type['unconfirmed'],
                                  initial = first_diffusion if self.initial else None,
-                                 date = date,
-                                 duration = self.duration,
+                                 start = date,
+                                 end = date + duration,
                              ))
         return diffusions
 
@@ -581,11 +583,16 @@ class Diffusion (models.Model):
         blank = True, null = True,
         help_text = _('the diffusion is a rerun of this one')
     )
-    date = models.DateTimeField( _('start of the diffusion') )
-    duration = models.TimeField(
-        _('duration'),
-        help_text = _('regular duration'),
-    )
+    start = models.DateTimeField( _('start of the diffusion') )
+    end = models.DateTimeField( _('end of the diffusion') )
+
+    @property
+    def duration (self):
+        return self.end - self.start
+
+    @property
+    def date (self):
+        return self.start
 
     def archives_duration (self):
         """
@@ -596,7 +603,7 @@ class Diffusion (models.Model):
         r = [ sound.duration
                 for sound in sounds.filter(type = Sound.Type['archive'])
                 if sound.duration ]
-        return utils.time_sum(r) if r else self.duration
+        return utils.time_sum(r)
 
     def get_archives (self):
         """
@@ -613,10 +620,10 @@ class Diffusion (models.Model):
         Return a queryset with the upcoming diffusions, ordered by
         +date
         """
-        filter_args['date__gte'] = date_or_default(date)
+        filter_args['start__gte'] = date_or_default(date)
         if station:
             filter_args['program__station'] = station
-        return cl.objects.filter(**filter_args).order_by('date')
+        return cl.objects.filter(**filter_args).order_by('start')
 
     @classmethod
     def get_prev (cl, station = None, date = None, **filter_args):
@@ -624,46 +631,21 @@ class Diffusion (models.Model):
         Return a queryset with the previous diffusion, ordered by
         -date
         """
-        filter_args['date__lte'] = date_or_default(date)
+        filter_args['start__lte'] = date_or_default(date)
         if station:
             filter_args['program__station'] = station
-        return cl.objects.filter(**filter_args).order_by('-date')
+        return cl.objects.filter(**filter_args).order_by('-start')
 
     def get_conflicts (self):
         """
         Return a list of conflictual diffusions, based on the scheduled duration.
-
-        Note: for performance reason, check next and prev are limited to a
-        certain amount of diffusions.
         """
-        r = []
-        # prev
-        qs = self.get_prev(self.program.station, self.date)
-        count = 0
-        for diff in qs:
-            if diff.pk == self.pk:
-                continue
-
-            end = diff.date + utils.to_timedelta(diff.duration)
-            if end > self.date:
-                r.append(diff)
-                continue
-            count+=1
-            if count > 5: break
-
-        # next
-        end = self.date + utils.to_timedelta(self.duration)
-        qs = self.get_next(self.program.station, self.date)
-        count = 0
-        for diff in qs:
-            if diff.pk == self.pk:
-                continue
-
-            if diff.date < end and diff not in r:
-                r.append(diff)
-                continue
-            count+=1
-            if count > 5: break
+        r = Diffusion.objects.filter(
+            models.Q(start__lte = self.start,
+                     end__gte = self.start) |
+            models.Q(start__gte = self.start,
+                     start__lte = self.end)
+        )
         return r
 
     def save (self, *args, **kwargs):
