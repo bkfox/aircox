@@ -146,6 +146,11 @@ class Command (BaseCommand):
         group.add_argument(
             '--month', type=int, default=now.month,
             help='used by update, default is today\'s month')
+        group.add_argument(
+            '--next-month', action='store_true',
+            help='set the date to the next month of given date'
+                 ' (if next month from today'
+        )
 
         group = parser.add_argument_group('mode')
         group.add_argument(
@@ -162,6 +167,13 @@ class Command (BaseCommand):
                                  month = options.get('month'),
                                  day = 1)
         date = tz.make_aware(date)
+        if options.get('next_month'):
+            month = options.get('month')
+            date += tz.timedelta(days = 28)
+            if date.month == month:
+                date += tz.timedelta(days = 28)
+
+            date = date.replace(day = 1)
 
         if options.get('update'):
             Actions.update(date, mode = options.get('mode'))
