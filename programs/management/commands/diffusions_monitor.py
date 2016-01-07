@@ -177,10 +177,8 @@ class Command (BaseCommand):
 
         if options.get('update'):
             Actions.update(date, mode = options.get('mode'))
-        elif options.get('clean'):
+        if options.get('clean'):
             Actions.clean(date)
-        elif options.get('check'):
+        if options.get('check'):
             Actions.check(date)
-        else:
-            raise CommandError('no action has been given')
 
