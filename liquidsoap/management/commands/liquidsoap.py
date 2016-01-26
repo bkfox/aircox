@@ -6,6 +6,8 @@ Main tool to work with liquidsoap. We can:
 import os
 import time
 import re
+import subprocess
+import atexit
 from argparse import RawTextHelpFormatter
 
 from django.conf import settings as main_settings
@@ -26,6 +28,7 @@ class StationConfig:
     Configuration and playlist generator for a station.
     """
     controller = None
+    process = None
 
     def __init__ (self, station):
         self.controller = utils.Controller(station, False)
@@ -71,6 +74,17 @@ class StationConfig:
             )
             with open(stream.path, 'w+') as file:
                 file.write('\n'.join(sound.path for sound in sounds))
+
+    def run (self):
+        """
+        Run subprocess in background, register a terminate handler, and
+        return process instance.
+        """
+        self.process = \
+            subprocess.Popen(['liquidsoap', '-v', self.controller.config_path],
+                             stderr=subprocess.STDOUT)
+        atexit.register(self.process.terminate)
+        return self.process
 
 
 class Monitor:
@@ -218,8 +232,11 @@ class Command (BaseCommand):
         group = parser.add_argument_group('configuration')
         group.add_argument(
             '-s', '--station', type=int,
-            help='generate files for the given station (if not set, do it for'
-                 ' all available stations)'
+            help='generate files for the given station'
+        )
+        group.add_argument(
+            '-a', '--all', action='store_true',
+            help='generate files for all stations'
         )
         group.add_argument(
             '-c', '--config', action='store_true',
@@ -229,18 +246,38 @@ class Command (BaseCommand):
             '-S', '--streams', action='store_true',
             help='generate all stream playlists'
         )
+        group.add_argument(
+            '-r', '--run', action='store_true',
+            help='run liquidsoap with the generated configuration'
+        )
 
     def handle (self, *args, **options):
+        stations = []
         if options.get('station'):
-            station = programs.Station.objects.get(id = options.get('station'))
-            StationConfig(station).handle(options)
+            stations = [ StationConfig(
+                            programs.Station.objects.get(
+                                id = options.get('station')
+                            )) ]
         elif options.get('all') or options.get('config') or \
                 options.get('streams'):
-            for station in programs.Station.objects.filter(active = True):
-                StationConfig(station).handle(options)
+            stations = [ StationConfig(station)
+                            for station in \
+                                programs.Station.objects.filter(active = True)
+                       ]
+
+        run = options.get('run')
+        for station in stations:
+            station.handle(options)
+            if run:
+                station.run()
 
         if options.get('on_air') or options.get('monitor'):
             self.handle_monitor(options)
+
+        if run:
+            for station in stations:
+                station.process.wait()
+
 
     def handle_monitor (self, options):
         controllers = [
