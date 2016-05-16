@@ -23,70 +23,6 @@ import aircox.liquidsoap.settings as settings
 import aircox.liquidsoap.utils as utils
 
 
-class StationConfig:
-    """
-    Configuration and playlist generator for a station.
-    """
-    controller = None
-    process = None
-
-    def __init__ (self, station):
-        self.controller = utils.Controller(station, False)
-
-    def handle (self, options):
-        os.makedirs(self.controller.path, exist_ok = True)
-        if options.get('config') or options.get('all'):
-            self.make_config()
-        if options.get('streams') or options.get('all'):
-            self.make_playlists()
-
-    def make_config (self):
-        log_script = main_settings.BASE_DIR \
-                     if hasattr(main_settings, 'BASE_DIR') else \
-                     main_settings.PROJECT_ROOT
-        log_script = os.path.join(log_script, 'manage.py') + \
-                        ' liquidsoap_log'
-
-        context = {
-            'controller': self.controller,
-            'settings': settings,
-            'log_script': log_script,
-        }
-
-        data = render_to_string('aircox/liquidsoap/station.liq', context)
-        data = re.sub(r'\s*\\\n', r'#\\n#', data)
-        data = data.replace('\n', '')
-        data = re.sub(r'#\\n#', '\n', data)
-        with open(self.controller.config_path, 'w+') as file:
-            file.write(data)
-
-    def make_playlists (self):
-        for stream in self.controller.streams.values():
-            program = stream.program
-
-            sounds = programs.Sound.objects.filter(
-                # good_quality = True,
-                type = programs.Sound.Type['archive'],
-                path__startswith = os.path.join(
-                    programs_settings.AIRCOX_SOUND_ARCHIVES_SUBDIR,
-                    program.path
-                )
-            )
-            with open(stream.path, 'w+') as file:
-                file.write('\n'.join(sound.path for sound in sounds))
-
-    def run (self):
-        """
-        Run subprocess in background, register a terminate handler, and
-        return process instance.
-        """
-        self.process = \
-            subprocess.Popen(['liquidsoap', '-v', self.controller.config_path],
-                             stderr=subprocess.STDOUT)
-        atexit.register(self.process.terminate)
-        return self.process
-
-
 class Monitor:
     @classmethod
     def run (cl, controller):
@@ -128,6 +64,7 @@ class Monitor:
 
             diffusion.playlist = [ sound.path
                                    for sound in diffusion.get_archives() ]
+            diffusion.playlist.save()
             if diffusion.playlist and on_air not in diffusion.playlist:
                 return diffusion
 
@@ -152,6 +89,7 @@ class Monitor:
                 on_air not in playlist:
                 dealer.on = False
                 dealer.playlist = diff.playlist
+                dealer.playlist.save()
 
         # run the diff
         if dealer.playlist == diff.playlist and diff.start <= now and not dealer.on:
@@ -214,70 +152,79 @@ class Command (BaseCommand):
             help='run liquidsoap on exit'
         )
 
-        group = parser.add_argument_group('monitor')
+        group = parser.add_argument_group('actions')
         group.add_argument(
-            '-o', '--on_air', action='store_true',
-            help='print what is on air'
+            '-d', '--delay', type=int,
+            default=1000,
+            help='time to sleep in milliseconds between two updates when we '
+                 'monitor'
         )
         group.add_argument(
             '-m', '--monitor', action='store_true',
             help='run in monitor mode'
         )
         group.add_argument(
-            '-d', '--delay', type=int,
-            default=1000,
-            help='time to sleep in milliseconds before update on monitor'
-        )
-
-        group = parser.add_argument_group('configuration')
-        group.add_argument(
-            '-s', '--station', type=int,
-            help='generate files for the given station'
-        )
-        group.add_argument(
-            '-a', '--all', action='store_true',
-            help='generate files for all stations'
-        )
-        group.add_argument(
-            '-c', '--config', action='store_true',
-            help='generate liquidsoap config file'
-        )
-        group.add_argument(
-            '-S', '--streams', action='store_true',
-            help='generate all stream playlists'
+            '-o', '--on_air', action='store_true',
+            help='print what is on air'
         )
         group.add_argument(
             '-r', '--run', action='store_true',
             help='run liquidsoap with the generated configuration'
         )
+        group.add_argument(
+            '-w', '--write', action='store_true',
+            help='write configuration and playlist'
+        )
+
+        group = parser.add_argument_group('selector')
+        group.add_argument(
+            '-s', '--station', type=int, action='append',
+            help='select station(s) with this id'
+        )
+        group.add_argument(
+            '-a', '--all', action='store_true',
+            help='select all stations'
+        )
 
     def handle (self, *args, **options):
+        # selector
         stations = []
-        if options.get('station'):
-            stations = [ StationConfig(
-                            programs.Station.objects.get(
-                                id = options.get('station')
-                            )) ]
-        elif options.get('all') or options.get('config') or \
-                options.get('streams'):
-            stations = [ StationConfig(station)
-                            for station in \
-                                programs.Station.objects.filter(active = True)
-                       ]
+        if options.get('all'):
+            stations = programs.Station.objects.filter(active = True)
+        elif options.get('station'):
+            stations = programs.Station.objects.filter(
+                id__in = options.get('station')
+            )
 
         run = options.get('run')
-        for station in stations:
-            station.handle(options)
-            if run:
-                station.run()
+        monitor = options.get('on_air') or options.get('monitor')
 
-        if options.get('on_air') or options.get('monitor'):
+        self.controllers = [ utils.Controller(station, connector = monitor)
+                                for station in stations ]
+
+        # actions
+        if options.get('write') or run:
+            self.handle_write()
+        if run:
+            self.handle_run()
+        if monitor:
             self.handle_monitor(options)
 
+        # post
         if run:
-            for station in stations:
-                station.process.wait()
+            for controller in self.controllers:
+                controller.process.wait()
 
+    def handle_write (self):
+        for controller in self.controllers:
+            controller.write_data()
+
+    def handle_run (self):
+        for controller in self.controllers:
+            controller.process = \
+                subprocess.Popen(['liquidsoap', '-v', controller.config_path],
+                                 stderr=subprocess.STDOUT)
+            atexit.register(controller.process.terminate)
 
     def handle_monitor (self, options):
         controllers = [

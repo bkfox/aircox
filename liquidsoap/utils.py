@@ -2,11 +2,15 @@ import os
 import socket
 import re
 import json
+import subprocess
 
 from django.utils.translation import ugettext as _, ugettext_lazy
 from django.utils import timezone as tz
+from django.conf import settings as main_settings
+from django.template.loader import render_to_string
 
 import aircox.programs.models as programs
+import aircox.programs.settings as programs_settings
 import aircox.liquidsoap.models as models
 import aircox.liquidsoap.settings as settings
 
@@ -23,14 +27,14 @@ class Connector:
     address = None
 
     @property
-    def available (self):
+    def available(self):
         return self.__available
 
-    def __init__ (self, address = None):
+    def __init__(self, address = None):
         if address:
             self.address = address
 
-    def open (self):
+    def open(self):
         if self.__available:
             return
 
@@ -45,7 +49,7 @@ class Connector:
             self.__available = False
             return -1
 
-    def send (self, *data, try_count = 1, parse = False, parse_json = False):
+    def send(self, *data, try_count = 1, parse = False, parse_json = False):
         if self.open():
             return ''
         data = bytes(''.join([str(d) for d in data]) + '\n', encoding='utf-8')
@@ -71,7 +75,7 @@ class Connector:
             if try_count > 0:
                 return self.send(data, try_count - 1)
 
-    def parse (self, string):
+    def parse(self, string):
         string = string.split('\n')
         data = {}
         for line in string:
@@ -82,7 +86,7 @@ class Connector:
             data[line['key']] = line['value']
         return data
 
-    def parse_json (self, string):
+    def parse_json(self, string):
         try:
             if string[0] == '"' and string[-1] == '"':
                 string = string[1:-1]
@@ -91,85 +95,142 @@ class Connector:
             return None
 
 
-class Source:
-    """
-    A structure that holds informations about a LiquidSoap source.
-    """
+class Playlist(list):
+    path = None
+
+    def __init__(self, path = None, items = None, program = None):
+        self.path = path
+        self.program = program
+        if program:
+            self.load_from_db()
+        elif path:
+            self.load()
+        elif items:
+            self.extend(items)
+
+    def save(self):
+        """
+        Save data to the playlist file
+        """
+        os.makedirs(os.path.dirname(self.path), exist_ok = True)
+        with open(self.path, 'w') as file:
+            file.write('\n'.join(self))
+
+    def load(self):
+        """
+        Load data from playlist file
+        """
+        if not os.path.exists(self.path):
+            return
+        with open(self.path, 'r') as file:
+            self.clear()
+            self.extend(file.readlines())
+
+    def load_from_db(self, clear = True):
+        """
+        Update content from the database using the given program
+        If clear is True, clear older items, otherwise append to the
+        current playlist.
+        If save is True, save the playlist to the playlist file
+        """
+        sounds = programs.Sound.objects.filter(
+            type = programs.Sound.Type['archive'],
+            path__startswith = os.path.join(
+                programs_settings.AIRCOX_SOUND_ARCHIVES_SUBDIR,
+                self.program.path
+            ),
+            # good_quality = True
+            removed = False
+        )
+        self.clear()
+        self.extend([sound.path for sound in sounds])
+
+class BaseSource:
+    id = None
+    name = None
     controller = None
-    program = None
     metadata = None
 
-    def __init__ (self, controller = None, program = None):
+    def __init__(self, controller, id, name):
+        self.id = id
+        self.name = name
         self.controller = controller
-        self.program = program
+
+    def _send(self, *args, **kwargs):
+        self.controller.connector.send(*args, **kwargs)
 
     @property
-    def station (self):
-        """
-        Proxy to self.(program|controller).station
-        """
-        return self.program.station if self.program else \
-                self.controller.station
-
-    @property
-    def connector (self):
-        """
-        Proxy to self.controller.connector
-        """
-        return self.controller.connector
-
-    @property
-    def id (self):
-        """
-        Identifier for the source, scoped in the station's one
-        """
-        postfix = ('_stream_' + str(self.program.id)) if self.program else ''
-        return self.station.slug + postfix
-
-    @property
-    def name (self):
-        """
-        Name of the related object (program or station)
-        """
-        if self.program:
-            return self.program.name
-        return self.station.name
-
-    @property
-    def path (self):
-        """
-        Path to the playlist
-        """
-        return os.path.join(
-            settings.AIRCOX_LIQUIDSOAP_MEDIA,
-            self.station.slug,
-            self.id + '.m3u'
-        )
-
-    @property
-    def playlist (self):
-        """
-        Get or set the playlist as an array, and update it into
-        the corresponding file.
-        """
-        try:
-            with open(self.path, 'r') as file:
-                return file.readlines()
-        except:
-            return []
-
-    @playlist.setter
-    def playlist (self, sounds):
-        with open(self.path, 'w') as file:
-            file.write('\n'.join(sounds))
-
-
-    @property
-    def current_sound (self):
+    def current_sound(self):
         self.update()
         return self.metadata.get('initial_uri') if self.metadata else {}
 
-    def stream_info (self):
+    def skip(self):
+        """
+        Skip a given source. If no source, use master.
+        """
+        self._send(self.id, '.skip')
+
+    def update(self, metadata = None):
+        """
+        Update metadata with the given metadata dict or request them to
+        liquidsoap if nothing is given.
+
+        Return -1 in case no update happened
+        """
+        if metadata is None:
+            r = self._send(self.id, '.get', parse=True)
+            return self.update(metadata = r or {})
+
+        source = metadata.get('source') or ''
+        # FIXME: self.program
+        if hasattr(self, 'program') and self.program \
+                and not source.startswith(self.id):
+            return -1
+        self.metadata = metadata
+        return
+
+
+class Source(BaseSource):
+    playlist = None     # playlist file
+    program = None      # related program (if given)
+    is_dealer = False   # Source is a dealer
+    metadata = None
+
+    def __init__(self, controller, program = None, is_dealer = None):
+        station = controller.station
+        if is_dealer:
+            id, name = '{}_dealer'.format(station.slug), \
+                       'Dealer'
+            self.is_dealer = True
+        else:
+            id, name = '{}_stream_{}'.format(station.slug, program.id), \
+                       program.name
+
+        super().__init__(controller, id, name)
+
+        path = os.path.join(settings.AIRCOX_LIQUIDSOAP_MEDIA,
+                            station.slug,
+                            self.id + '.m3u')
+        self.playlist = Playlist(path, program = program)
+
+    @property
+    def on(self):
+        """
+        Switch on-off;
+        """
+        if not self.is_dealer:
+            raise RuntimeError('only dealers can do that')
+        r = self._send('var.get ', self.id, '_on')
+        return (r == 'true')
+
+    @on.setter
+    def on(self, value):
+        if not self.is_dealer:
+            raise RuntimeError('only dealers can do that')
+        return self._send('var.set ', self.id, '_on', '=',
+                           'true' if value else 'false')
+
+    def stream_info(self):
         """
         Return a dict with info related to the program's stream.
         """
@@ -180,7 +241,7 @@ class Source:
         if not stream.begin and not stream.delay:
             return
 
-        def to_seconds (time):
+        def to_seconds(time):
             return 3600 * time.hour + 60 * time.minute + time.second
 
         return {
@@ -189,119 +250,59 @@ class Source:
             'delay': to_seconds(stream.delay) if stream.delay else 0
         }
 
-    def skip (self):
-        """
-        Skip a given source. If no source, use master.
-        """
-        self.connector.send(self.id, '.skip')
 
-    def update (self, metadata = None):
-        """
-        Update metadata with the given metadata dict or request them to
-        liquidsoap if nothing is given.
-
-        Return -1 in case no update happened
-        """
-        if metadata is not None:
-            source = metadata.get('source') or ''
-            if self.program and not source.startswith(self.id):
-                return -1
-            self.metadata = metadata
-            return
-
-        # r = self.connector.send('var.get ', self.id + '_meta', parse_json=True)
-        r = self.connector.send(self.id, '.get', parse=True)
-        return self.update(metadata = r or {})
-
-
-class Master (Source):
+class Master (BaseSource):
     """
-    A master Source
+    A master Source based on a given station
     """
-    def update (self, metadata = None):
+    def __init__(self, controller):
+        station = controller.station
+        super().__init__(controller, station.slug, station.name)
+
+    def update(self, metadata = None):
         if metadata is not None:
             return super().update(metadata)
 
-        r = self.connector.send('request.on_air')
-        r = self.connector.send('request.metadata ', r, parse = True)
+        r = self._send('request.on_air')
+        r = self._send('request.metadata ', r, parse = True)
         return self.update(metadata = r or {})
 
-
-class Dealer (Source):
-    """
-    The Dealer source is a source that is used for scheduled diffusions and
-    manual sound diffusion.
-
-    Since we need to cache buffers for the scheduled track, we use an on-off
-    switch in order to have no latency and enable preload.
-    """
-    name = _('Dealer')
-
-    @property
-    def id (self):
-        return self.station.slug + '_dealer'
-
-    def stream_info (self):
-        pass
-
-    @property
-    def on (self):
-        """
-        Switch on-off;
-        """
-        r = self.connector.send('var.get ', self.id, '_on')
-        return (r == 'true')
-
-    @on.setter
-    def on (self, value):
-        return self.connector.send('var.set ', self.id, '_on',
-                                    '=', 'true' if value else 'false')
 
 class Controller:
     """
     Main class controller for station and sources (streams and dealer)
     """
+    id = None
+    name = None
+    path = None
+
     connector = None
     station = None      # the related station
     master = None       # master source (station's source)
     dealer = None       # dealer source
     streams = None      # streams streams
 
+    # FIXME: used nowhere except in liquidsoap cli to get on air item but is not
+    #       correctly
     @property
-    def on_air (self):
+    def on_air(self):
         return self.master
 
     @property
-    def id (self):
-        return self.master and self.master.id
-
-    @property
-    def name (self):
-        return self.master and self.master.name
-
-    @property
-    def path (self):
-        """
-        Directory path where all station's related files are put.
-        """
-        return os.path.join(settings.AIRCOX_LIQUIDSOAP_MEDIA,
-                            self.station.slug)
-
-    @property
-    def socket_path (self):
+    def socket_path(self):
         """
         Connector's socket path
         """
         return os.path.join(self.path, 'station.sock')
 
     @property
-    def config_path (self):
+    def config_path(self):
         """
         Connector's socket path
         """
         return os.path.join(self.path, 'station.liq')
 
-    def __init__ (self, station, connector = True, update = False):
+    def __init__(self, station, connector = True, update = False):
         """
         Params:
         - station: managed station
@@ -311,6 +312,10 @@ class Controller:
         to the given station; We ensure the existence of the controller's
         files dir.
         """
+        self.id = station.slug
+        self.name = station.name
+        self.path = os.path.join(settings.AIRCOX_LIQUIDSOAP_MEDIA, station.slug)
+
         self.station = station
         self.station.controller = self
         self.outputs = models.Output.objects.filter(station = station)
@@ -318,7 +323,7 @@ class Controller:
         self.connector = connector and Connector(self.socket_path)
 
         self.master = Master(self)
-        self.dealer = Dealer(self)
+        self.dealer = Source(self, is_dealer = True)
         self.streams = {
             source.id : source
             for source in [
@@ -332,7 +337,7 @@ class Controller:
         if update:
             self.update()
 
-    def get (self, source_id):
+    def get(self, source_id):
         """
         Get a source by its id
         """
@@ -342,8 +347,7 @@ class Controller:
             return self.dealer
         return self.streams.get(source_id)
 
-
-    def update (self):
+    def update(self):
         """
         Fetch and update all streams metadata.
         """
@@ -352,6 +356,38 @@ class Controller:
         for source in self.streams.values():
             source.update()
 
+    def write_data(self, playlist = True, config = True):
+        """
+        Write stream's playlists, and config
+        """
+        os.makedirs(self.path, exist_ok = True)
+        if playlist:
+            for source in self.streams.values():
+                source.playlist.save()
+            self.dealer.playlist.save()
+
+        if not config:
+            return
+
+        log_script = main_settings.BASE_DIR \
+                     if hasattr(main_settings, 'BASE_DIR') else \
+                     main_settings.PROJECT_ROOT
+        log_script = os.path.join(log_script, 'manage.py') + \
+                        ' liquidsoap_log'
+
+        context = {
+            'controller': self,
+            'settings': settings,
+            'log_script': log_script,
+        }
+
+        data = render_to_string('aircox/liquidsoap/station.liq', context)
+        data = re.sub(r'\s*\\\n', r'#\\n#', data)
+        data = data.replace('\n', '')
+        data = re.sub(r'#\\n#', '\n', data)
+        with open(self.config_path, 'w+') as file:
+            file.write(data)
+
 
 class Monitor:
     """
@@ -359,7 +395,7 @@ class Monitor:
     """
     controllers = None
 
-    def __init__ (self):
+    def __init__(self):
         self.controllers = {
             controller.id : controller
             for controller in [
@@ -368,7 +404,7 @@ class Monitor:
             ]
         }
 
-    def update (self):
+    def update(self):
         for controller in self.controllers.values():
             controller.update()
 

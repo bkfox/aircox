@@ -133,9 +133,9 @@ class SoundInfo:
         # check on episodes
         diffusion = Diffusion.objects.filter(
             program = program,
-            date__year = self.year,
-            date__month = self.month,
-            date__day = self.day,
+            start__year = self.year,
+            start__month = self.month,
+            start__day = self.day,
             initial = None,
         )
         if not diffusion:
