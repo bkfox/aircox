@@ -115,6 +115,7 @@ class Sound (Nameable):
                                     .replace('.', r'\.') + ')$',
         recursive = True,
         blank = True, null = True,
+        max_length = 256
     )
     embed = models.TextField(
         _('embed HTML code'),
@@ -594,6 +595,15 @@ class Diffusion (models.Model):
     def date (self):
         return self.start
 
+    @property
+    def playlist(self):
+        """
+        List of sounds as playlist
+        """
+        playlist = [ sound.path for sound in self.sounds.all() ]
+        playlist.sort()
+        return playlist
+
     def archives_duration (self):
         """
         Get total duration of the archives. May differ from the schedule
@@ -615,26 +625,49 @@ class Diffusion (models.Model):
         return r
 
     @classmethod
-    def get_next (cl, station = None, date = None, **filter_args):
+    def get (cl, station = None, date = None,
+             now = False, next = False, prev = False,
+             **filter_args):
         """
-        Return a queryset with the upcoming diffusions, ordered by
-        +date
-        """
-        filter_args['start__gte'] = date_or_default(date)
-        if station:
-            filter_args['program__station'] = station
-        return cl.objects.filter(**filter_args).order_by('start')
+        Return a queryset of diffusions, depending on value of now/next/prev
+        - now: that have date in their start-end range or start after
+        - next: that start after date
+        - prev: that end before date
 
-    @classmethod
-    def get_prev (cl, station = None, date = None, **filter_args):
+        Diffusions are ordered by +start for now and next; -start for prev
         """
-        Return a queryset with the previous diffusion, ordered by
-        -date
-        """
-        filter_args['start__lte'] = date_or_default(date)
+        #FIXME: conflicts? ( + calling functions)
+        date = date_or_default(date)
         if station:
             filter_args['program__station'] = station
-        return cl.objects.filter(**filter_args).order_by('-start')
+
+        if now:
+            return cl.objects.filter(
+                models.Q(start__lte = date,
+                         end__gte = date) |
+                models.Q(start__gte = date),
+                **filter_args
+            ).order_by('start')
+
+        if next:
+            return cl.objects.filter(
+                start__gte = date,
+                **filter_args
+            ).order_by('start')
+
+        if prev:
+            return cl.objects.filter(
+                end__lte = date,
+                **filter_args
+            ).order_by('-start')
+
+
+    def is_date_in_my_range(self, date):
+        """
+        Return true if the given date is in the diffusion's start-end
+        range.
+        """
+        return self.start < date_or_default(date) < self.end
 
     def get_conflicts (self):
         """

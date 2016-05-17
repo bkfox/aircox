@@ -34,6 +34,7 @@ class Monitor:
 
         cl.run_source(controller.master)
         cl.run_dealer(controller)
+        cl.run_source(controller.dealer)
 
         for stream in controller.streams.values():
             cl.run_source(stream)
@@ -47,61 +48,76 @@ class Monitor:
         log.save()
         log.print()
 
-    @staticmethod
-    def expected_diffusion (station, date, on_air):
-        """
-        Return which diffusion should be played now and is not playing
-        on the given station.
-        """
-        r = [ programs.Diffusion.get_prev(station, date),
-              programs.Diffusion.get_next(station, date) ]
-        r = [ diffusion.prefetch_related('sounds')[0]
-                for diffusion in r if diffusion.count() ]
+    @classmethod
+    def __get_prev_diff(cl, source, played_sounds = True):
+        diff_logs = programs.Log.get_for_related_model(programs.Diffusion) \
+                        .filter(source = source.id) \
+                        .order_by('-date')
+        if played_sounds:
+            sound_logs = programs.Log.get_for_related_model(programs.Sound) \
+                            .filter(source = source.id) \
+                            .order_by('-date')
+        if not diff_logs:
+            return
 
-        for diffusion in r:
-            if diffusion.end < date:
-                continue
-
-            diffusion.playlist = [ sound.path
-                                   for sound in diffusion.get_archives() ]
-            diffusion.playlist.save()
-            if diffusion.playlist and on_air not in diffusion.playlist:
-                return diffusion
+        diff = diff_logs[0].related_object
+        playlist = diff.playlist
+        if played_sounds:
+            diff.played = [ sound.related_object.path
+                            for sound in sound_logs[0:len(playlist)] ]
+        return diff
 
     @classmethod
-    def run_dealer (cl, controller):
-        """
-        Monitor dealer playlist (if it is time to load) and whether it is time
-        to trigger the button to start a diffusion.
-        """
+    def run_dealer(cl, controller):
+        # - this function must recover last state in case of crash
+        #   -> don't store data out of hdd
+        # - construct gradually the playlist and update it if needed
+        #   -> we force liquidsoap to preload tracks of next diff
+        # - dealer.on while last logged diff is playing, otherwise off
+        # - when next diff is now and last diff no more active, play it
+        #   -> log and dealer.on
         dealer = controller.dealer
-        playlist = dealer.playlist
-        on_air = dealer.current_sound
         now = tz.make_aware(tz.datetime.now())
+        playlist = []
 
-        diff = cl.expected_diffusion(controller.station, now, on_air)
-        if not diff:
-            return # there is nothing we can do
+        # - the last logged diff is the last one played, it can be playing
+        #   -> no sound left or the diff is not more current: dealer.off
+        #   -> otherwise, ensure dealer.on
+        # - played sounds are logged in run_source
+        prev_diff = cl.__get_prev_diff(dealer)
+        if prev_diff and prev_diff.is_date_in_my_range(now):
+            playlist = [ path for path in prev_diff.playlist
+                            if path not in prev_diff.played ]
+            dealer.on = bool(playlist)
+        else:
+            playlist = []
+            dealer.on = False
 
-        # playlist reload
-        if dealer.playlist != diff.playlist:
-            if not playlist or on_air == playlist[-1] or \
-                on_air not in playlist:
-                dealer.on = False
-                dealer.playlist = diff.playlist
-                dealer.playlist.save()
+        # - preload next diffusion's tracks
+        args = {'start__gt': prev_diff.start } if prev_diff else {}
+        next_diff = programs.Diffusion \
+                        .get(controller.station, now, now = True,
+                             sounds__isnull = False, **args) \
+                        .prefetch_related('sounds')
+        if next_diff:
+            next_diff = next_diff[0]
+            playlist += next_diff.playlist
 
-        # run the diff
-        if dealer.playlist == diff.playlist and diff.start <= now and not dealer.on:
+        # playlist update
+        if dealer.playlist != playlist:
+            dealer.playlist = playlist
+
+        # dealer.on when next_diff.start <= now
+        if next_diff and not dealer.on and next_diff.start <= now:
             dealer.on = True
             for source in controller.streams.values():
                 source.skip()
             cl.log(
                 source = dealer.id,
                 date = now,
-                comment = 'trigger the scheduled diffusion to liquidsoap; '
-                          'skip all other streams',
-                related_object = diff,
+                comment = 'trigger diffusion to liquidsoap; '
+                          'skip other streams',
+                related_object = next_diff,
             )
 
     @classmethod
@@ -124,9 +140,9 @@ class Monitor:
             last_log = last_log[0]
             last_obj = last_log.related_object
             if type(last_obj) == programs.Sound and on_air == last_obj.path:
-                if not last_obj.duration or \
-                        now < log.date + programs_utils.to_timedelta(last_obj.duration):
-                    return
+                #if not last_obj.duration or \
+                #        now < last_log.date + to_timedelta(last_obj.duration):
+                return
 
         sound = programs.Sound.objects.filter(path = on_air)
         if not sound:
@@ -136,7 +152,7 @@ class Monitor:
         cl.log(
             source = source.id,
             date = tz.make_aware(tz.datetime.now()),
-            comment = 'sound has changed',
+            comment = 'sound changed',
             related_object = sound or None,
         )
 
@@ -198,7 +214,6 @@ class Command (BaseCommand):
 
         run = options.get('run')
         monitor = options.get('on_air') or options.get('monitor')
-
         self.controllers = [ utils.Controller(station, connector = monitor)
                                 for station in stations ]
 
@@ -217,7 +232,7 @@ class Command (BaseCommand):
 
     def handle_write (self):
         for controller in self.controllers:
-            controller.write_data()
+            controller.write()
 
     def handle_run (self):
         for controller in self.controllers:
@@ -227,22 +242,18 @@ class Command (BaseCommand):
             atexit.register(controller.process.terminate)
 
     def handle_monitor (self, options):
-        controllers = [
-            utils.Controller(station)
-            for station in programs.Station.objects.filter(active = True)
-        ]
-        for controller in controllers:
+        for controller in self.controllers:
             controller.update()
 
         if options.get('on_air'):
-            for controller in controllers:
+            for controller in self.controllers:
                 print(controller.id, controller.on_air)
             return
 
         if options.get('monitor'):
             delay = options.get('delay') / 1000
             while True:
-                for controller in controllers:
+                for controller in self.controllers:
                     #try:
                     Monitor.run(controller)
                     #except Exception as err:

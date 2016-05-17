@@ -45,7 +45,6 @@ class Connector:
             self.__socket.connect(self.address)
             self.__available = True
         except:
-            # print('can not connect to liquidsoap socket {}'.format(self.address))
             self.__available = False
             return -1
 
@@ -94,57 +93,6 @@ class Connector:
         except:
             return None
 
-
-class Playlist(list):
-    path = None
-
-    def __init__(self, path = None, items = None, program = None):
-        self.path = path
-        self.program = program
-        if program:
-            self.load_from_db()
-        elif path:
-            self.load()
-        elif items:
-            self.extend(items)
-
-    def save(self):
-        """
-        Save data to the playlist file
-        """
-        os.makedirs(os.path.dirname(self.path), exist_ok = True)
-        with open(self.path, 'w') as file:
-            file.write('\n'.join(self))
-
-    def load(self):
-        """
-        Load data from playlist file
-        """
-        if not os.path.exists(self.path):
-            return
-        with open(self.path, 'r') as file:
-            self.clear()
-            self.extend(file.readlines())
-
-    def load_from_db(self, clear = True):
-        """
-        Update content from the database using the given program
-        If clear is True, clear older items, otherwise append to the
-        current playlist.
-        If save is True, save the playlist to the playlist file
-        """
-        sounds = programs.Sound.objects.filter(
-            type = programs.Sound.Type['archive'],
-            path__startswith = os.path.join(
-                programs_settings.AIRCOX_SOUND_ARCHIVES_SUBDIR,
-                self.program.path
-            ),
-            # good_quality = True
-            removed = False
-        )
-        self.clear()
-        self.extend([sound.path for sound in sounds])
-
 class BaseSource:
     id = None
     name = None
@@ -157,7 +105,7 @@ class BaseSource:
         self.controller = controller
 
     def _send(self, *args, **kwargs):
-        self.controller.connector.send(*args, **kwargs)
+        return self.controller.connector.send(*args, **kwargs)
 
     @property
     def current_sound(self):
@@ -191,7 +139,7 @@ class BaseSource:
 
 
 class Source(BaseSource):
-    playlist = None     # playlist file
+    __playlist = None   # playlist file
     program = None      # related program (if given)
     is_dealer = False   # Source is a dealer
     metadata = None
@@ -208,10 +156,12 @@ class Source(BaseSource):
 
         super().__init__(controller, id, name)
 
-        path = os.path.join(settings.AIRCOX_LIQUIDSOAP_MEDIA,
-                            station.slug,
-                            self.id + '.m3u')
-        self.playlist = Playlist(path, program = program)
+        self.program = program
+        self.path = os.path.join(settings.AIRCOX_LIQUIDSOAP_MEDIA,
+                                 station.slug,
+                                 self.id + '.m3u')
+        if program:
+            self.playlist_from_db()
 
     @property
     def on(self):
@@ -229,6 +179,38 @@ class Source(BaseSource):
             raise RuntimeError('only dealers can do that')
         return self._send('var.set ', self.id, '_on', '=',
                            'true' if value else 'false')
+
+    @property
+    def playlist(self):
+        return self.__playlist
+
+    @playlist.setter
+    def playlist(self, value):
+        self.__playlist = value
+        self.write()
+
+    def write(self):
+        """
+        Write stream's data (playlist)
+        """
+        os.makedirs(os.path.dirname(self.path), exist_ok = True)
+        with open(self.path, 'w') as file:
+            file.write('\n'.join(self.playlist or []))
+
+    def playlist_from_db(self):
+        """
+        Update content from the database using the source's program
+        """
+        sounds = programs.Sound.objects.filter(
+            type = programs.Sound.Type['archive'],
+            path__startswith = os.path.join(
+                programs_settings.AIRCOX_SOUND_ARCHIVES_SUBDIR,
+                self.program.path
+            ),
+            # good_quality = True
+            removed = False
+        )
+        self.playlist = [sound.path for sound in sounds]
 
     def stream_info(self):
         """
@@ -356,15 +338,14 @@ class Controller:
         for source in self.streams.values():
             source.update()
 
-    def write_data(self, playlist = True, config = True):
+    def write(self, playlist = True, config = True):
         """
         Write stream's playlists, and config
         """
-        os.makedirs(self.path, exist_ok = True)
         if playlist:
             for source in self.streams.values():
-                source.playlist.save()
-            self.dealer.playlist.save()
+                source.write()
+            self.dealer.write()
 
         if not config:
             return

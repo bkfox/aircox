@@ -31,7 +31,7 @@ set("{{ key|safe }}", {{ value|safe }}) \
         at(interactive.bool('{{ source.id }}_on', false), \
             interactive_source('{{ source.id }}', playlist.once( \
                 reload_mode='watch', \
-                "{{ source.playlist.path }}", \
+                "{{ source.path }}", \
             )) \
         ), \
         {% endif %}
@@ -41,21 +41,17 @@ set("{{ key|safe }}", {{ value|safe }}) \
         interactive_source("{{ controller.id }}_streams", rotate([ \
             {% for source in controller.streams.values %}
             {% with info=source.stream_info %}
-            {% with path=source.playlist.path %}
                     {% if info.delay %}
-                delay({{ info.delay }}., stream("{{ source.id }}", "{{ path }}")), \
+                delay({{ info.delay }}., stream("{{ source.id }}", "{{ source.path }}")), \
                     {% elif info.begin and info.end %}
-                at({ {{info.begin}}-{{info.end}} }, stream("{{ source.id }}", "{{ path }}")), \
+                at({ {{info.begin}}-{{info.end}} }, stream("{{ source.id }}", "{{ source.path }}")), \
                     {% endif %}
-            {% endwith %}
             {% endwith %}
             {% endfor %}
 
             {% for source in controller.streams.values %}
                 {% if not source.stream_info %}
-                {% with path=source.playlist.path %}
             stream("{{ source.id }}", "{{ source.path }}"), \
-                {% endwith %}
                 {% endif %}
             {% endfor %}
         ])), \
