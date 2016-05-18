@@ -123,7 +123,7 @@ class DiffusionAdmin (admin.ModelAdmin):
 @admin.register(Log)
 class LogAdmin (admin.ModelAdmin):
     list_display = ['id', 'date', 'source', 'comment', 'related_object']
-    list_filter = ['date', 'related_type']
+    list_filter = ['date', 'source', 'related_type']
 
 
 @admin.register(Schedule)
