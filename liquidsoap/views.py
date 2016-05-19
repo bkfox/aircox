@@ -36,7 +36,6 @@ class Actions:
     def skip (cl, monitor, controller, source):
         source.skip()
 
-
 class LiquidControl (View):
     template_name = 'aircox/liquidsoap/controller.html'
 

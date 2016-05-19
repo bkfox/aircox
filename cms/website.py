@@ -67,6 +67,11 @@ class Website:
 
     def register (self, name, model, sections = None, routes = None,
                   list_kwargs = {}, detail_kwargs = {}):
+        """
+        Register a detail and list view for a given model, using
+        routes. Just a wrapper around register_detail and
+        register_list.
+        """
         if sections:
             self.register_detail(
                 name, model,

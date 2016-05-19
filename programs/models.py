@@ -744,7 +744,7 @@ class Log (models.Model):
         logger.info('log #%s: %s%s',
             str(self),
             self.comment or '',
-            '\n - {}: #{}'.format(self.related_type, self.related_id)
+            ' -- {} #{}'.format(self.related_type, self.related_id)
                 if self.related_object else ''
         )
 
