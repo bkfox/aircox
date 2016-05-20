@@ -12,7 +12,7 @@ This application defines all base models and basic control of them. We have:
 
 
 ## Architecture
-A Station is basically an object that represent a radio station. On each station, we use the Program object, that is declined in two different type:
+A Station is basically an object that represent a radio station. On each station, we use the Program object, that is declined in two different types:
 * **Scheduled**: the diffusion is based on a timetable and planified through one Schedule or more; Diffusion object represent the occurrence of these programs;
 * **Streamed**: the diffusion is based on random playlist, used to fill gaps between the programs;
 

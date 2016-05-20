@@ -104,45 +104,57 @@ class RelatedPostBase (models.base.ModelBase):
         return key
 
     @classmethod
-    def check_thread_mapping (cl, relation, model, field):
+    def make_relation(cl, name, attrs):
         """
-        Add information related to the mapping 'thread' info.
+        Make instance of RelatedPost.Relation
         """
-        if not field:
-            return
+        rel = RelatedPost.Relation()
+        if 'Relation' not in attrs:
+            raise ValueError('RelatedPost item has not defined Relation class')
+        rel.__dict__.update(attrs['Relation'].__dict__)
 
-        parent_model = model._meta.get_field(field).rel.to
-        thread_model = cl.registry.get(parent_model)
+        if not rel.model or not issubclass(rel.model, models.Model):
+            raise ValueError('Relation.model is not a django model (None?)')
 
-        if not thread_model:
-            raise ValueError('no registered RelatedPost for the model {}'
-                             .format(model.__name__))
-        relation.thread_model = thread_model
+        if not rel.bindings:
+            rel.bindings = {}
+
+        # thread model
+        if rel.bindings.get('thread'):
+            rel.thread_model = rel.bindings.get('thread')
+            rel.thread_model = rel.model._meta.get_field(rel.thread_model). \
+                               rel.to
+            rel.thread_model = cl.registry.get(rel.thread_model)
+
+            if not rel.thread_model:
+                raise ValueError(
+                    'no registered RelatedPost for the bound thread. Is there '
+                    ' a RelatedPost for {} declared before {}?'
+                    .format(rel.bindings.get('thread').__class__.__name__,
+                            name)
+                )
+
+        return rel
 
     def __new__ (cl, name, bases, attrs):
-        rel = attrs.get('Relation')
-        rel = (rel and rel.__dict__) or {}
+        if name == 'RelatedPost':
+            return super().__new__(cl, name, bases, attrs)
 
-        related_model = rel.get('model')
-        if related_model:
-            attrs['related'] = models.ForeignKey(related_model)
-
-        if not '__str__' in attrs:
-            attrs['__str__'] = lambda self: str(self.related)
-
-        if name is not 'RelatedPost':
-            _relation = RelatedPost.Relation()
-            _relation.__dict__.update(rel)
-            mapping = rel.get('mapping')
-            cl.check_thread_mapping(
-                _relation,
-                related_model,
-                mapping and mapping.get('thread')
-            )
-            attrs['_relation'] = _relation
+        rel = cl.make_relation(name, attrs)
+        attrs['_relation'] = rel
+        attrs.update({ x:y for x,y in {
+            'related': models.ForeignKey(rel.model),
+            '__str__': lambda self: str(self.related)
+        }.items() if not attrs.get(x) })
 
         model = super().__new__(cl, name, bases, attrs)
-        cl.register(related_model, model)
+        cl.register(rel.model, model)
+
+        # name clashes
+        name = rel.model._meta.object_name
+        if name == model._meta.object_name:
+            model._meta.default_related_name = '{} Post'.format(name)
+
         return model
 
 
@@ -152,10 +164,11 @@ class RelatedPost (Post, metaclass = RelatedPostBase):
     the field "related".
 
     It is possible to map attributes of the Post to the ones of the Related
-    Object. It is also possible to automatically update post's thread based
-    on the Related Object's parent if it is required.
+    Object. It is also possible to automatically update Post's thread based
+    on the Related Object's parent if it is required (but not Related Object's
+    parent based on Post's thread).
 
-    Mapping can ensure that the Related Object will be updated when mapped
+    Bindings can ensure that the Related Object will be updated when mapped
     fields of the Post are updated.
 
     To configure the Related Post, you just need to create set attributes of
@@ -165,7 +178,7 @@ class RelatedPost (Post, metaclass = RelatedPostBase):
     class MyModelPost(RelatedPost):
         class Relation:
             model = MyModel
-            mapping = {
+            bindings = {
                 'thread': 'parent_field_name',
                 'title': 'name'
             }
@@ -181,77 +194,99 @@ class RelatedPost (Post, metaclass = RelatedPostBase):
         Relation descriptor used to generate and manage the related object.
 
         * model: model of the related object
-        * mapping: values that are bound between the post and the related
+        * bindings: values that are bound between the post and the related
             object. When the post is saved, these fields are updated on it.
             It is a dict of { post_attr: rel_attr }
 
             If there is a post_attr "thread", the corresponding rel_attr is used
             to update the post thread to the correct Post model (in order to
             establish a parent-child relation between two models)
+
+            Note: bound values can be any value, not only Django field.
+        * post_to_rel: auto update related object when post is updated
+        * rel_to_post: auto update the post when related object is updated
         * thread_model: generated by the metaclass, points to the RelatedPost
-            model generated for the mapping.thread object.
+            model generated for the bindings.thread object.
+
+        Be careful with post_to_rel!
+        * There is no check of permissions when related object is synchronised
+            from the post, so be careful when enabling post_to_rel.
+        * In post_to_rel synchronisation, if the parent thread is not a
+            (sub-)class thread_model, the related parent is set to None
         """
         model = None
-        mapping = None          # values to map { post_attr: rel_attr }
+        bindings = None          # values to map { post_attr: rel_attr }
+        post_to_rel = False
+        rel_to_post = True
         thread_model = None
 
-    def get_attribute (self, attr):
-        attr = self._relation.mappings.get(attr)
-        return self.related.__dict__[attr] if attr else None
+    def get_rel_attr(self, attr):
+        attr = self._relation.bindings.get(attr)
+        return getattr(self.related, attr) if attr else None
 
-    def update_thread_mapping (self, save = True):
+    def set_rel_attr(self, attr, value)
+        if attr not in self._relation.bindings:
+            raise AttributeError('attribute {} is not bound'.format(attr))
+        attr = self._relation.bindings.get(attr)
+        setattr(self.related, attr, value)
+
+    def post_to_rel(self, save = True):
         """
-        Update the parent object designed by Relation.mapping.thread if the
-        type matches to the one related of the current instance's thread.
-
-        If there is no thread assigned to self, set it to the parent of the
-        related object.
+        Change related object using post bound values. Save the related
+        object if save = True.
+        Note: does not check if Relation.post_to_rel is True
         """
-        relation = self._relation
-        thread_model = relation.thread_model
-        if not thread_model:
+        rel = self._relation
+        if not rel.bindings:
             return
 
-        # self.related.parent -> self.thread
-        rel_parent = relation.mapping.get('thread')
-        if not self.thread:
-            rel_parent = getattr(self.related, rel_parent)
-            thread = thread_model.objects.filter(related = rel_parent)
-            if thread.count():
-                self.thread = thread[0]
-                if save:
-                    self.save()
+        for attr, rel_attr in rel.bindings.items()
+            if attr == 'thread':
+                continue
+            value = getattr(self, attr) if hasattr(self, attr) else None
+            setattr(self.related, rel_attr, value)
+
+        if self.thread_model:
+            thread = self.thread if not issubclass(thread, rel.thread_model) \
+                        else None
+            self.set_rel_attr('thread', thread.related)
+
+        if save:
+            self.related.save()
+
+    def rel_to_post(self, save = True):
+        """
+        Change the post using the related object bound values. Save the
+        post if save = True.
+        Note: does not check if Relation.post_to_rel is True
+        """
+        rel = self._relation
+        if rel.bindings:
             return
 
-        # self.thread -> self.related.parent
-        if thread_model is not self.thread_type.model_class():
-            return
+        for attr, rel_attr in rel.bindings.items()
+            if attr == 'thread':
+                continue
+            self.set_rel_attr
+            value = getattr(self.related, attr) \
+                    if hasattr(self.related, attr) else None
+            setattr(self, attr, value)
 
-        setattr(self.related, rel_parent, self.thread.related)
+        if self.thread_model:
+            thread = self.get_rel_attr('thread')
+            thread = rel.thread_model.objects.filter(related = thread) \
+                        if thread else None
+            thread = thread[0] if thread else None
+            self.thread = thread
+
         if save:
             self.save()
 
-    def update_mapping (self):
-        relation = self._relation
-        mapping = relation.mapping
-        if not mapping:
-            return
-
-        related = self.related
-        related.__dict__.update({
-            rel_attr: self.__dict__[attr]
-            for attr, rel_attr in mapping.items()
-            if attr is not 'thread' and attr in self.__dict__
-        })
-
-        self.update_thread_mapping(save = False)
-        related.save()
-
     def save (self, *args, **kwargs):
         if not self.title and self.related:
-            self.title = self.get_attribute('title')
-
-        self.update_mapping()
+            self.title = self.get_rel_attr('title')
+        if self._relation.post_to_rel:
+            self.post_to_rel(False)
         super().save(*args, **kwargs)
 
 

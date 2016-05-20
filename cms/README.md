@@ -34,7 +34,7 @@ parent, and give informations for bindings and so on. This is as simple as:
 class MyModelPost(RelatedPost):
     class Relation:
         model = MyModel
-        mapping = {
+        bindings = {
             'thread': 'parent_field_name',
             'title': 'name'
         }
@@ -51,7 +51,7 @@ Routes are registered to a router (FIXME: it might be possible that we remove
 this later)
 
 
-## Section
+## Sections
 Sections are used to render part of a publication, for example to render a
 playlist related to the diffusion of a program.
 

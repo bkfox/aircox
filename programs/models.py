@@ -690,9 +690,9 @@ class Diffusion (models.Model):
         super().save(*args, **kwargs)
 
     def __str__ (self):
-        return '#' + str(self.pk) + ' ' + self.program.name + ', ' + \
-                self.date.strftime('%Y-%m-%d %H:%M') +\
-                '' # FIXME str(self.type_display)
+        return '{self.program.name} {date} #{self.pk}'.format(
+            self=self, date=self.date.strftime('%Y-%m-%d %H:%M')
+        )
 
     class Meta:
         verbose_name = _('Diffusion')
