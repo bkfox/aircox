@@ -1,4 +1,4 @@
-![](/data/logo.png =400px)
+![](/data/logo.png =400x)
 
 Platform to manage a radio, schedules, website, and so on. We use the power of Django and Liquidsoap.
 
