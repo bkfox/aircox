@@ -1,5 +1,6 @@
-# Aircox
-Platform to manage a radio. We use the power of Django
+![](/data/logo.png)
+
+Platform to manage a radio, schedules, website, and so on. We use the power of Django and Liquidsoap.
 
 ## Current features
 * **streams**: multiple random music streams when no program is played. We also can specify a time range and frequency;

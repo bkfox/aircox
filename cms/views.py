@@ -307,6 +307,8 @@ class Sections:
         """
         @property
         def content (self):
+            if not self.object.image:
+                return ''
             return '<img src="{}" class="post_image">'.format(
                         self.object.image.url
                     )
