@@ -18,6 +18,7 @@ class Post (models.Model):
     Base model that can be used as is if wanted. Represent a generic
     publication on the website.
     """
+    # metadata
     thread_type = models.ForeignKey(
         ContentType,
         on_delete=models.SET_NULL,
@@ -28,6 +29,16 @@ class Post (models.Model):
     )
     thread = GenericForeignKey('thread_type', 'thread_pk')
 
+    published = models.BooleanField(
+        verbose_name = _('public'),
+        default = True
+    )
+    allow_comments = models.BooleanField(
+        verbose_name = _('allow comments'),
+        default = True,
+    )
+
+    # content
     author = models.ForeignKey(
         User,
         verbose_name = _('author'),
@@ -37,11 +48,6 @@ class Post (models.Model):
         _('date'),
         default = timezone.datetime.now
     )
-    published = models.BooleanField(
-        verbose_name = _('public'),
-        default = True
-    )
-
     title = models.CharField (
         _('title'),
         max_length = 128,
@@ -57,6 +63,7 @@ class Post (models.Model):
         _('tags'),
         blank = True,
     )
+
 
     def detail_url (self):
         return reverse(self._meta.verbose_name.lower() + '_detail',
@@ -314,5 +321,35 @@ class RelatedPost (Post, metaclass = RelatedPostBase):
         if self._relation.post_to_rel:
             self.post_to_rel(save = True)
         super().save(*args, **kwargs)
+
+
+class Comment(models.Model):
+    thread_type = models.ForeignKey(
+        ContentType,
+        on_delete=models.SET_NULL,
+        blank = True, null = True
+    )
+    thread_pk = models.PositiveIntegerField(
+        blank = True, null = True
+    )
+    thread = GenericForeignKey('thread_type', 'thread_pk')
+
+    author = models.TextField(
+        verbose_name = _('author'),
+        blank = True, null = True,
+    )
+    email = models.EmailField(
+        verbose_name = _('email'),
+        blank = True, null = True,
+    )
+    date = models.DateTimeField(
+        _('date'),
+        default = timezone.datetime.now
+    )
+    content = models.TextField (
+        _('description'),
+        blank = True, null = True
+    )
+
 
 
