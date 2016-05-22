@@ -91,7 +91,7 @@ class DiffusionAdmin (admin.ModelAdmin):
         return ', '.join(sounds) if sounds else ''
 
     def conflicts (self, obj):
-        if obj.type == Diffusion.Type['unconfirmed']:
+        if obj.type == Diffusion.Type.unconfirmed:
             return ', '.join([ str(d) for d in obj.get_conflicts()])
         return ''
 
@@ -115,9 +115,9 @@ class DiffusionAdmin (admin.ModelAdmin):
         qs = super(DiffusionAdmin, self).get_queryset(request)
         if '_changelist_filters' in request.GET or \
             'type__exact' in request.GET and \
-                str(Diffusion.Type['unconfirmed']) in request.GET['type__exact']:
+                str(Diffusion.Type.unconfirmed) in request.GET['type__exact']:
             return qs
-        return qs.exclude(type = Diffusion.Type['unconfirmed'])
+        return qs.exclude(type = Diffusion.Type.unconfirmed)
 
 
 @admin.register(Log)

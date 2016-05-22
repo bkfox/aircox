@@ -97,7 +97,9 @@ class Monitor:
         args = {'start__gt': prev_diff.start } if prev_diff else {}
         next_diff = programs.Diffusion \
                         .get(controller.station, now, now = True,
-                             sounds__isnull = False, **args) \
+                             type = programs.Diffusion.Type.normal,
+                             sounds__isnull = False,
+                             **args) \
                         .prefetch_related('sounds')
         if next_diff:
             next_diff = next_diff[0]

@@ -1,6 +1,7 @@
 import os
 import shutil
 import logging
+from enum import Enum, IntEnum
 
 from django.db import models
 from django.template.defaultfilters import slugify
@@ -19,7 +20,7 @@ import aircox.programs.settings as settings
 logger = logging.getLogger('aircox.core')
 
 
-def date_or_default (date, date_only = False):
+def date_or_default(date, date_only = False):
     """
     Return date or default value (now) if not defined, and remove time info
     if date_only is True
@@ -32,20 +33,20 @@ def date_or_default (date, date_only = False):
     return date
 
 
-class Nameable (models.Model):
+class Nameable(models.Model):
     name = models.CharField (
         _('name'),
         max_length = 128,
     )
 
     @property
-    def slug (self):
+    def slug(self):
         """
         Slug based on the name. We replace '-' by '_'
         """
         return slugify(self.name).replace('-', '_')
 
-    def __str__ (self):
+    def __str__(self):
         #if self.pk:
         #    return '#{} {}'.format(self.pk, self.name)
         return '{}'.format(self.name)
@@ -54,7 +55,7 @@ class Nameable (models.Model):
         abstract = True
 
 
-class Track (Nameable):
+class Track(Nameable):
     """
     Track of a playlist of a diffusion. The position can either be expressed
     as the position in the playlist or as the moment in seconds it started.
@@ -87,7 +88,7 @@ class Track (Nameable):
         verbose_name_plural = _('Tracks')
 
 
-class Sound (Nameable):
+class Sound(Nameable):
     """
     A Sound is the representation of a sound file that can be either an excerpt
     or a complete archive of the related diffusion.
@@ -95,17 +96,14 @@ class Sound (Nameable):
     The podcasting and public access permissions of a Sound are managed through
     the related program info.
     """
-    Type = {
-        'other': 0x00,
-        'archive': 0x01,
-        'excerpt': 0x02,
-    }
-    for key, value in Type.items():
-        ugettext_lazy(key)
+    class Type(IntEnum):
+        other = 0x00,
+        archive = 0x01,
+        excerpt = 0x02,
 
     type = models.SmallIntegerField(
         verbose_name = _('type'),
-        choices = [ (y, x) for x,y in Type.items() ],
+        choices = [ (y, _(x)) for x,y in Type.__members__.items() ],
         blank = True, null = True
     )
     path = models.FilePathField(
@@ -148,7 +146,7 @@ class Sound (Nameable):
         help_text = _('sound\'s is accessible through the website')
     )
 
-    def get_mtime (self):
+    def get_mtime(self):
         """
         Get the last modification date from file
         """
@@ -158,13 +156,13 @@ class Sound (Nameable):
         mtime = mtime.replace(microsecond = 0)
         return tz.make_aware(mtime, tz.get_current_timezone())
 
-    def file_exists (self):
+    def file_exists(self):
         """
         Return true if the file still exists
         """
         return os.path.exists(self.path)
 
-    def check_on_file (self):
+    def check_on_file(self):
         """
         Check sound file info again'st self, and update informations if
         needed (do not save). Return True if there was changes.
@@ -188,7 +186,7 @@ class Sound (Nameable):
             return True
         return old_removed != self.removed
 
-    def save (self, check = True, *args, **kwargs):
+    def save(self, check = True, *args, **kwargs):
         if check:
             self.check_on_file()
 
@@ -198,7 +196,7 @@ class Sound (Nameable):
             self.name = self.name.replace('_', ' ')
         super().save(*args, **kwargs)
 
-    def __str__ (self):
+    def __str__(self):
         return '/'.join(self.path.split('/')[-3:])
 
     class Meta:
@@ -206,7 +204,7 @@ class Sound (Nameable):
         verbose_name_plural = _('Sounds')
 
 
-class Stream (models.Model):
+class Stream(models.Model):
     """
     When there are no program scheduled, it is possible to play sounds
     in order to avoid blanks. A Stream is a Program that plays this role,
@@ -238,7 +236,7 @@ class Stream (models.Model):
     )
 
 
-class Schedule (models.Model):
+class Schedule(models.Model):
     """
     A Schedule defines time slots of programs' diffusions. It can be an initial
     run or a rerun (in such case it is linked to the related schedule).
@@ -282,7 +280,7 @@ class Schedule (models.Model):
         help_text = 'this schedule is a rerun of this one',
     )
 
-    def match (self, date = None, check_time = True):
+    def match(self, date = None, check_time = True):
         """
         Return True if the given datetime matches the schedule
         """
@@ -292,7 +290,7 @@ class Schedule (models.Model):
             return self.date.time() == date.time() if check_time else True
         return False
 
-    def match_week (self, date = None):
+    def match_week(self, date = None):
         """
         Return True if the given week number matches the schedule, False
         otherwise.
@@ -313,13 +311,13 @@ class Schedule (models.Model):
             return self.frequency == 0b1111
         return (self.frequency & (0b0001 << week) > 0)
 
-    def normalize (self, date):
+    def normalize(self, date):
         """
         Set the time of a datetime to the schedule's one
         """
         return date.replace(hour = self.date.hour, minute = self.date.minute)
 
-    def dates_of_month (self, date = None):
+    def dates_of_month(self, date = None):
         """
         Return a list with all matching dates of date.month (=today)
         """
@@ -361,7 +359,7 @@ class Schedule (models.Model):
                 date += tz.timedelta(days = 7)
         return [self.normalize(date) for date in dates]
 
-    def diffusions_of_month (self, date, exclude_saved = False):
+    def diffusions_of_month(self, date, exclude_saved = False):
         """
         Return a list of Diffusion instances, from month of the given date, that
         can be not in the database.
@@ -394,19 +392,19 @@ class Schedule (models.Model):
                               else None
             diffusions.append(Diffusion(
                                  program = self.program,
-                                 type = Diffusion.Type['unconfirmed'],
+                                 type = Diffusion.Type.unconfirmed,
                                  initial = first_diffusion if self.initial else None,
                                  start = date,
                                  end = date + duration,
                              ))
         return diffusions
 
-    def __str__ (self):
+    def __str__(self):
         return ' | '.join([ '#' + str(self.id), self.program.name,
                             self.get_frequency_display(),
                             self.date.strftime('%a %H:%M') ])
 
-    def save (self, *args, **kwargs):
+    def save(self, *args, **kwargs):
         if self.initial:
             self.program = self.initial.program
             self.duration = self.initial.duration
@@ -418,7 +416,7 @@ class Schedule (models.Model):
         verbose_name_plural = _('Schedules')
 
 
-class Station (Nameable):
+class Station(Nameable):
     """
     A Station regroup one or more programs (stream and normal), and is the top
     element used to generate streams outputs and configuration.
@@ -444,7 +442,7 @@ class Station (Nameable):
     )
 
 
-class Program (Nameable):
+class Program(Nameable):
     """
     A Program can either be a Streamed or a Scheduled program.
 
@@ -473,14 +471,14 @@ class Program (Nameable):
     )
 
     @property
-    def path (self):
+    def path(self):
         """
         Return the path to the programs directory
         """
         return os.path.join(settings.AIRCOX_PROGRAMS_DIR,
                             self.slug + '_' + str(self.id) )
 
-    def ensure_dir (self, subdir = None):
+    def ensure_dir(self, subdir = None):
         """
         Make sur the program's dir exists (and optionally subdir). Return True
         if the dir (or subdir) exists.
@@ -490,7 +488,7 @@ class Program (Nameable):
         os.makedirs(path, exist_ok = True)
         return os.path.exists(path)
 
-    def find_schedule (self, date):
+    def find_schedule(self, date):
         """
         Return the first schedule that matches a given date.
         """
@@ -499,12 +497,12 @@ class Program (Nameable):
             if schedule.match(date, check_time = False):
                 return schedule
 
-    def __init__ (self, *kargs, **kwargs):
+    def __init__(self, *kargs, **kwargs):
         super().__init__(*kargs, **kwargs)
         if self.name:
             self.__original_path = self.path
 
-    def save (self, *kargs, **kwargs):
+    def save(self, *kargs, **kwargs):
         super().save(*kargs, **kwargs)
         if hasattr(self, '__original_path') and \
                 self.__original_path != self.path and \
@@ -520,7 +518,7 @@ class Program (Nameable):
                 sound.save()
 
     @classmethod
-    def get_from_path (cl, path):
+    def get_from_path(cl, path):
         """
         Return a Program from the given path. We assume the path has been
         given in a previous time by this model (Program.path getter).
@@ -537,7 +535,7 @@ class Program (Nameable):
         return qs[0] if qs else None
 
 
-class Diffusion (models.Model):
+class Diffusion(models.Model):
     """
     A Diffusion is an occurrence of a Program that is scheduled on the
     station's timetable. It can be a rerun of a previous diffusion. In such
@@ -555,13 +553,10 @@ class Diffusion (models.Model):
     - cancel: the diffusion has been canceled
     - stop: the diffusion has been manually stopped
     """
-    Type = {
-        'normal':       0x00,   # diffusion is planified
-        'unconfirmed':  0x01,   # scheduled by the generator but not confirmed for diffusion
-        'cancel':       0x02,   # diffusion canceled
-    }
-    for key, value in Type.items():
-        ugettext_lazy(key)
+    class Type(IntEnum):
+        normal = 0x00
+        unconfirmed = 0x01
+        canceled = 0x02
 
     # common
     program = models.ForeignKey (
@@ -576,7 +571,7 @@ class Diffusion (models.Model):
     # specific
     type = models.SmallIntegerField(
         verbose_name = _('type'),
-        choices = [ (y, x) for x,y in Type.items() ],
+        choices = [ (y, _(x)) for x,y in Type.__members__.items() ],
     )
     initial = models.ForeignKey (
         'self',
@@ -588,11 +583,11 @@ class Diffusion (models.Model):
     end = models.DateTimeField( _('end of the diffusion') )
 
     @property
-    def duration (self):
+    def duration(self):
         return self.end - self.start
 
     @property
-    def date (self):
+    def date(self):
         return self.start
 
     @property
@@ -604,35 +599,38 @@ class Diffusion (models.Model):
         playlist.sort()
         return playlist
 
-    def archives_duration (self):
+    def archives_duration(self):
         """
         Get total duration of the archives. May differ from the schedule
         duration.
         """
         sounds = self.initial.sounds if self.initial else self.sounds
         r = [ sound.duration
-                for sound in sounds.filter(type = Sound.Type['archive'])
+                for sound in sounds.filter(type = Sound.Type.archive)
                 if sound.duration ]
         return utils.time_sum(r)
 
-    def get_archives (self):
+    def get_archives(self):
         """
         Return an ordered list of archives sounds for the given episode.
         """
         sounds = self.initial.sounds if self.initial else self.sounds
         r = [ sound for sound in sounds.all().order_by('path')
-              if sound.type == Sound.Type['archive'] ]
+              if sound.type == Sound.Type.archive ]
         return r
 
     @classmethod
-    def get (cl, station = None, date = None,
+    def get(cl, station = None, date = None,
              now = False, next = False, prev = False,
+             queryset = None,
              **filter_args):
         """
         Return a queryset of diffusions, depending on value of now/next/prev
         - now: that have date in their start-end range or start after
         - next: that start after date
         - prev: that end before date
+
+        If queryset is not given, use self.objects.all
 
         Diffusions are ordered by +start for now and next; -start for prev
         """
@@ -669,7 +667,7 @@ class Diffusion (models.Model):
         """
         return self.start < date_or_default(date) < self.end
 
-    def get_conflicts (self):
+    def get_conflicts(self):
         """
         Return a list of conflictual diffusions, based on the scheduled duration.
         """
@@ -681,7 +679,7 @@ class Diffusion (models.Model):
         )
         return r
 
-    def save (self, *args, **kwargs):
+    def save(self, *args, **kwargs):
         if self.initial:
             # force link to the top initial diffusion
             if self.initial.initial:
@@ -689,7 +687,7 @@ class Diffusion (models.Model):
             self.program = self.initial.program
         super().save(*args, **kwargs)
 
-    def __str__ (self):
+    def __str__(self):
         return '{self.program.name} {date} #{self.pk}'.format(
             self=self, date=self.date.strftime('%Y-%m-%d %H:%M')
         )
@@ -702,7 +700,7 @@ class Diffusion (models.Model):
             ('programming', _('edit the diffusion\'s planification')),
         )
 
-class Log (models.Model):
+class Log(models.Model):
     """
     Log a played sound start and stop, or a single message
     """
@@ -733,14 +731,14 @@ class Log (models.Model):
 
 
     @classmethod
-    def get_for_related_model (cl, model):
+    def get_for_related_model(cl, model):
         """
         Return a queryset that filter related_type to the given one.
         """
         return cl.objects.filter(related_type__pk =
                                     ContentType.objects.get_for_model(model).id)
 
-    def print (self):
+    def print(self):
         logger.info('log #%s: %s%s',
             str(self),
             self.comment or '',
@@ -748,7 +746,7 @@ class Log (models.Model):
                 if self.related_object else ''
         )
 
-    def __str__ (self):
+    def __str__(self):
         return '#{} ({}, {})'.format(
                 self.id, self.date.strftime('%Y-%m-%d %H:%M'), self.source
         )

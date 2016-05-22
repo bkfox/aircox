@@ -3,65 +3,48 @@ from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
 from django.utils.translation import ugettext as _, ugettext_lazy
 
-from website.models import *
-from website.views import *
-
-class Router:
-    registry = []
-
-    def register (self, route):
-        if not route in self.registry:
-            self.registry.append(route)
-
-    def register_set (self, view_set):
-        for url in view_set.urls:
-            self.register(url)
-
-    def unregister (self, route):
-        self.registry.remove(route)
-
-    def get_urlpatterns (self):
-        return [ url for url in self.registry ]
-
 
 class Route:
     """
     Base class for routing. Given a model, we generate url specific for each
-    route type. The generated url takes this form:
-        model_name + '/' + route_name + '/' + '/'.join(route_url_args)
+    type of route.
 
-    Where model_name by default is the given model's verbose_name (uses plural if
-    Route is for a list).
+    The generated url takes this form:
+        name + '/' + route_name + '/' + '/'.join(route_url_args)
 
-    The given view is considered as a django class view, and has view_
+    And their name (to use for reverse:
+        name + '_' + route_name
+
+    By default name is the verbose name of the model. It is always in
+    singular form.
     """
     name = None         # route name
     url_args = []       # arguments passed from the url [ (name : regex),... ]
 
     @classmethod
-    def get_queryset (cl, website, model, request, **kwargs):
+    def get_queryset(cl, website, model, request, **kwargs):
         """
         Called by the view to get the queryset when it is needed
         """
         pass
 
     @classmethod
-    def get_object (cl, website, model, request, **kwargs):
+    def get_object(cl, website, model, request, **kwargs):
         """
         Called by the view to get the object when it is needed
         """
         pass
 
     @classmethod
-    def get_title (cl, model, request, **kwargs):
+    def get_title(cl, model, request, **kwargs):
         return ''
 
     @classmethod
-    def get_view_name (cl, name):
+    def get_view_name(cl, name):
         return name + '_' + cl.name
 
     @classmethod
-    def as_url (cl, name, model, view, view_kwargs = None):
+    def as_url(cl, name, view, view_kwargs = None):
         pattern = '^{}/{}'.format(name, cl.name)
         if cl.url_args:
             url_args = '/'.join([
@@ -84,7 +67,7 @@ class Route:
                    name = cl.get_view_name(name))
 
 
-class DetailRoute (Route):
+class DetailRoute(Route):
     name = 'detail'
     url_args = [
         ('pk', '[0-9]+'),
@@ -92,25 +75,25 @@ class DetailRoute (Route):
     ]
 
     @classmethod
-    def get_object (cl, website, model, request, pk, **kwargs):
+    def get_object(cl, website, model, request, pk, **kwargs):
         return model.objects.get(pk = int(pk))
 
 
-class AllRoute (Route):
+class AllRoute(Route):
     name = 'all'
 
     @classmethod
-    def get_queryset (cl, website, model, request, **kwargs):
+    def get_queryset(cl, website, model, request, **kwargs):
         return model.objects.all()
 
     @classmethod
-    def get_title (cl, model, request, **kwargs):
+    def get_title(cl, model, request, **kwargs):
         return _('All %(model)s') % {
             'model': model._meta.verbose_name_plural
         }
 
 
-class ThreadRoute (Route):
+class ThreadRoute(Route):
     """
     Select posts using by their assigned thread.
 
@@ -125,7 +108,7 @@ class ThreadRoute (Route):
     ]
 
     @classmethod
-    def get_queryset (cl, website, model, request, thread_model, pk, **kwargs):
+    def get_queryset(cl, website, model, request, thread_model, pk, **kwargs):
         if type(thread_model) is str:
             thread_model = website.registry.get(thread_model)
 
@@ -139,7 +122,7 @@ class ThreadRoute (Route):
         )
 
 
-class DateRoute (Route):
+class DateRoute(Route):
     name = 'date'
     url_args = [
         ('year', '[0-9]{4}'),
@@ -148,7 +131,7 @@ class DateRoute (Route):
     ]
 
     @classmethod
-    def get_queryset (cl, website, model, request, year, month, day, **kwargs):
+    def get_queryset(cl, website, model, request, year, month, day, **kwargs):
         return model.objects.filter(
             date__year = int(year),
             date__month = int(month),
@@ -156,11 +139,11 @@ class DateRoute (Route):
         )
 
 
-class SearchRoute (Route):
+class SearchRoute(Route):
     name = 'search'
 
     @classmethod
-    def get_queryset (cl, website, model, request, q, **kwargs):
+    def get_queryset(cl, website, model, request, q, **kwargs):
         qs = model.objects
         for search_field in model.search_fields or []:
             r = model.objects.filter(**{ search_field + '__icontains': q })

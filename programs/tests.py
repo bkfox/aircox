@@ -10,7 +10,7 @@ class Programs (TestCase):
     def setUp (self):
         stream = Stream.objects.get_or_create(
             name = 'diffusions',
-            defaults = { 'type': Stream.Type['schedule'] }
+            defaults = { 'type': Stream.Type.schedule }
         )[0]
         Program.objects.create(name = 'source', stream = stream)
         Program.objects.create(name = 'microouvert', stream = stream)

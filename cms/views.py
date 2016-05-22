@@ -20,7 +20,7 @@ class PostBaseView:
     embed = False   # page is embed (if True, only post content is printed
     classes = ''    # extra classes for the content
 
-    def get_base_context (self, **kwargs):
+    def get_base_context(self, **kwargs):
         """
         Return a context with all attributes of this classe plus 'view' set
         to self.
@@ -44,7 +44,7 @@ class PostBaseView:
         return context
 
 
-class PostListView (PostBaseView, ListView):
+class PostListView(PostBaseView, ListView):
     """
     List view for posts and children
     """
@@ -59,11 +59,11 @@ class PostListView (PostBaseView, ListView):
         page = 1        # page number
         q = None        # query search
 
-        def __init__ (self, query):
+        def __init__(self, query):
             if query:
                 self.update(query)
 
-        def update (self, query):
+        def update(self, query):
             my_class = self.__class__
             if type(query) is my_class:
                 self.__dict__.update(query.__dict__)
@@ -80,15 +80,15 @@ class PostListView (PostBaseView, ListView):
     fields = [ 'date', 'time', 'image', 'title', 'content' ]
     icon_size = '64x64'
 
-    def __init__ (self, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.query = PostListView.Query(self.query)
 
-    def dispatch (self, request, *args, **kwargs):
+    def dispatch(self, request, *args, **kwargs):
         self.route = self.kwargs.get('route') or self.route
         return super().dispatch(request, *args, **kwargs)
 
-    def get_queryset (self):
+    def get_queryset(self):
         if self.route:
             qs = self.route.get_queryset(self.website, self.model, self.request,
                                          **self.kwargs)
@@ -116,7 +116,7 @@ class PostListView (PostBaseView, ListView):
 
         return qs
 
-    def get_context_data (self, **kwargs):
+    def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context.update(self.get_base_context(**kwargs))
         context.update({
@@ -124,7 +124,7 @@ class PostListView (PostBaseView, ListView):
         })
         return context
 
-    def get_title (self):
+    def get_title(self):
         if self.title:
             return self.title
 
@@ -132,14 +132,14 @@ class PostListView (PostBaseView, ListView):
                                                     **self.kwargs)
         return title
 
-    def get_url (self):
+    def get_url(self):
         if self.route:
             return utils.get_urls(self.website, self.route,
                                   self.model, self.kwargs)
         return ''
 
 
-class PostDetailView (DetailView, PostBaseView):
+class PostDetailView(DetailView, PostBaseView):
     """
     Detail view for posts and children
     """
@@ -147,11 +147,11 @@ class PostDetailView (DetailView, PostBaseView):
 
     sections = []
 
-    def __init__ (self, sections = None, *args, **kwargs):
+    def __init__(self, sections = None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.sections = sections or []
 
-    def get_queryset (self):
+    def get_queryset(self):
         if self.request.GET.get('embed'):
             self.embed = True
 
@@ -159,14 +159,14 @@ class PostDetailView (DetailView, PostBaseView):
             return super().get_queryset().filter(published = True)
         return []
 
-    def get_object (self, **kwargs):
+    def get_object(self, **kwargs):
         if self.model:
             object = super().get_object(**kwargs)
             if object.published:
                 return object
         return None
 
-    def get_context_data (self, **kwargs):
+    def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context.update(self.get_base_context())
         context.update({
@@ -178,7 +178,7 @@ class PostDetailView (DetailView, PostBaseView):
         return context
 
 
-class Menu (View):
+class Menu(View):
     template_name = 'aircox/cms/menu.html'
 
     name = ''
@@ -188,11 +188,11 @@ class Menu (View):
     position = ''   # top, left, bottom, right, header, footer, page_top, page_bottom
     sections = None
 
-    def __init__ (self, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.name = self.name or ('menu_' + self.position)
 
-    def get_context_data (self, **kwargs):
+    def get_context_data(self, **kwargs):
         return {
             'name': self.name,
             'tag': self.tag,
@@ -205,7 +205,7 @@ class Menu (View):
             ]
         }
 
-    def get (self, request, website, **kwargs):
+    def get(self, request, website, **kwargs):
         self.request = request
         self.website = website
         context = self.get_context_data(**kwargs)
@@ -213,7 +213,7 @@ class Menu (View):
 
 
 
-class BaseSection (View):
+class BaseSection(View):
     """
     Base class for sections. Sections are view that can be used in detail view
     in order to have extra content about a post, or in menus.
@@ -227,7 +227,7 @@ class BaseSection (View):
     visible = True  # if false renders an empty string
 
 
-    def get_context_data (self):
+    def get_context_data(self):
         return {
             'view': self,
             'tag': self.tag,
@@ -237,7 +237,7 @@ class BaseSection (View):
             'content': self.content,
         }
 
-    def get (self, request, website, **kwargs):
+    def get(self, request, website, **kwargs):
         self.request = request
         self.website = website
         self.kwargs = kwargs
@@ -249,7 +249,7 @@ class BaseSection (View):
         return ''
 
 
-class Section (BaseSection):
+class Section(BaseSection):
     """
     A Section that can be related to an object.
     """
@@ -260,7 +260,7 @@ class Section (BaseSection):
     header = ''
     footer = ''
 
-    def get_context_data (self):
+    def get_context_data(self):
         context = super().get_context_data()
         context.update({
             'title': self.title,
@@ -269,7 +269,7 @@ class Section (BaseSection):
         })
         return context
 
-    def get (self, request, object = None, **kwargs):
+    def get(self, request, object = None, **kwargs):
         self.object = object or self.object
         if self.object_required and not self.object:
             raise ValueError('object is required by this Section but not given')
@@ -277,43 +277,43 @@ class Section (BaseSection):
 
 
 class Sections:
-    class Image (BaseSection):
+    class Image(BaseSection):
         """
         Render an image with the given relative url.
         """
         url = None
 
         @property
-        def content (self):
+        def content(self):
             return '<img src="{}">'.format(
                         static(self.url),
                     )
 
-    class PostContent (Section):
+    class PostContent(Section):
         """
         Render the content of the Post (format the text a bit and escape HTML
         tags).
         """
         @property
-        def content (self):
+        def content(self):
             content = escape(self.object.content)
             content = re.sub(r'(^|\n\n)((\n?[^\n])+)', r'<p>\2</p>', content)
             content = re.sub(r'\n', r'<br>', content)
             return content
 
-    class PostImage (Section):
+    class PostImage(Section):
         """
         Render the image of the Post
         """
         @property
-        def content (self):
+        def content(self):
             if not self.object.image:
                 return ''
             return '<img src="{}" class="post_image">'.format(
                         self.object.image.url
                     )
 
-    class List (Section):
+    class List(Section):
         """
         Section to render list. The context item 'object_list' is used as list of
         items to render.
@@ -323,11 +323,13 @@ class Sections:
             title = None
             text = None
             url = None
+            css = None
 
-            def __init__ (self, icon, title = None, text = None, url = None):
+            def __init__(self, icon, title = None, text = None, url = None, css = None):
                 self.icon = icon
                 self.title = title
                 self.text = text
+                self.css = css
 
         hide_empty = False      # hides the section if the list is empty
         use_icons = True        # print icons
@@ -335,13 +337,13 @@ class Sections:
         icon_size = '32x32'     # icons size
         template_name = 'aircox/cms/section_list.html'
 
-        def get_object_list (self):
+        def get_object_list(self):
             return []
 
-        def get_context_data (self, **kwargs):
+        def get_context_data(self, **kwargs):
             object_list = self.get_object_list()
             self.visibility = True
-            if not object_list and hide_empty:
+            if not object_list and self.hide_empty:
                 self.visibility = False
 
             context = super().get_context_data(**kwargs)
@@ -353,14 +355,14 @@ class Sections:
             })
             return context
 
-    class Urls (List):
+    class Urls(List):
         """
         Render a list of urls of targets that are Posts
         """
         classes = 'section_urls'
         targets = None
 
-        def get_object_list (self):
+        def get_object_list(self):
             return [
                 List.Item(
                     target.image or None,
@@ -370,7 +372,7 @@ class Sections:
                 for target in self.targets
             ]
 
-    class Posts (PostBaseView, Section):
+    class Posts(PostBaseView, Section):
         """
         Render a list using PostListView's template.
         """
@@ -379,13 +381,13 @@ class Sections:
         icon_size = '64x64'
         fields = [ 'date', 'time', 'image', 'title', 'content' ]
 
-        def get_url (self):
+        def get_url(self):
             return ''
 
-        def get_object_list (self):
+        def get_object_list(self):
             return []
 
-        def render_list (self):
+        def render_list(self):
             self.embed = True
             context = self.get_base_context(**self.kwargs)
             context.update({
@@ -395,7 +397,7 @@ class Sections:
             })
             return render_to_string(PostListView.template_name, context)
 
-        def get_context_data (self, **kwargs):
+        def get_context_data(self, **kwargs):
             context = super().get_context_data(**kwargs)
             context['content'] = self.render_list()
             return context

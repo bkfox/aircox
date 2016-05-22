@@ -24,10 +24,10 @@ class Post (models.Model):
         on_delete=models.SET_NULL,
         blank = True, null = True
     )
-    thread_pk = models.PositiveIntegerField(
+    thread_id = models.PositiveIntegerField(
         blank = True, null = True
     )
-    thread = GenericForeignKey('thread_type', 'thread_pk')
+    thread = GenericForeignKey('thread_type', 'thread_id')
 
     published = models.BooleanField(
         verbose_name = _('public'),
@@ -64,9 +64,21 @@ class Post (models.Model):
         blank = True,
     )
 
+    @classmethod
+    def children_of(cl, thread, queryset = None):
+        """
+        Return children of the given thread of the cl's type. If queryset
+        is not given, use cl.objects as starting queryset.
+        """
+        if not queryset:
+            queryset = cl.objects
+        thread_type = ContentType.objects.get_for_model(thread)
+        qs = queryset.filter(thread_id = thread.pk,
+                              thread_type__pk = thread_type.id)
+        return qs
 
     def detail_url (self):
-        return reverse(self._meta.verbose_name.lower() + '_detail',
+        return reverse(self._website.name_of_model(self.__class__) + '_detail',
                        kwargs = { 'pk': self.pk,
                                   'slug': slugify(self.title) })
 
@@ -145,6 +157,7 @@ class RelatedPostBase (models.base.ModelBase):
 
     def __new__ (cl, name, bases, attrs):
         # TODO: allow proxy models and better inheritance
+        # TODO: check bindings
         if name == 'RelatedPost':
             return super().__new__(cl, name, bases, attrs)
 
@@ -267,18 +280,6 @@ class RelatedPost (Post, metaclass = RelatedPostBase):
             self.related.save()
 
 
-    @classmethod
-    def sync_from_rel(cl, rel, save = True):
-        """
-        Update a rel_to_post from a given rel object. Return -1 if there is no
-        related post to update
-        """
-        self = cl.objects.filter(related = rel)
-        if not self or not self.count():
-            return -1
-        self[0].rel_to_post(save)
-
-
     def rel_to_post(self, save = True):
         """
         Change the post using the related object bound values. Save the
@@ -286,25 +287,30 @@ class RelatedPost (Post, metaclass = RelatedPostBase):
         Note: does not check if Relation.post_to_rel is True
         """
         rel = self._relation
-        if rel.bindings:
+        if not rel.bindings:
             return
+
+        has_changed = False
+        def set_attr(attr, value):
+            if getattr(self, attr) != value:
+                has_changed = True
+                setattr(self, attr, value)
 
         for attr, rel_attr in rel.bindings.items():
             if attr == 'thread':
                 continue
             self.set_rel_attr
-            value = getattr(self.related, attr) \
-                    if hasattr(self.related, attr) else None
-            setattr(self, attr, value)
+            value = getattr(self.related, rel_attr)
+            set_attr(attr, value)
 
         if rel.thread_model:
             thread = self.get_rel_attr('thread')
             thread = rel.thread_model.objects.filter(related = thread) \
                         if thread else None
             thread = thread[0] if thread else None
-            self.thread = thread
+            set_attr('thread', thread)
 
-        if save:
+        if has_changed and save:
             self.save()
 
     def __init__ (self, *kargs, **kwargs):
@@ -329,10 +335,10 @@ class Comment(models.Model):
         on_delete=models.SET_NULL,
         blank = True, null = True
     )
-    thread_pk = models.PositiveIntegerField(
+    thread_id = models.PositiveIntegerField(
         blank = True, null = True
     )
-    thread = GenericForeignKey('thread_type', 'thread_pk')
+    thread = GenericForeignKey('thread_type', 'thread_id')
 
     author = models.TextField(
         verbose_name = _('author'),

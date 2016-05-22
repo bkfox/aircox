@@ -162,9 +162,9 @@ class MonitorHandler (PatternMatchingEventHandler):
         """
         self.subdir = subdir
         if self.subdir == settings.AIRCOX_SOUND_ARCHIVES_SUBDIR:
-            self.sound_kwargs = { 'type': Sound.Type['archive'] }
+            self.sound_kwargs = { 'type': Sound.Type.archive }
         else:
-            self.sound_kwargs = { 'type': Sound.Type['excerpt'] }
+            self.sound_kwargs = { 'type': Sound.Type.excerpt }
 
         patterns = ['*/{}/*{}'.format(self.subdir, ext)
                     for ext in settings.AIRCOX_SOUND_FILE_EXT ]
@@ -264,11 +264,11 @@ class Command (BaseCommand):
             logger.info('#%d %s', program.id, program.name)
             self.scan_for_program(
                 program, settings.AIRCOX_SOUND_ARCHIVES_SUBDIR,
-                type = Sound.Type['archive'],
+                type = Sound.Type.archive,
             )
             self.scan_for_program(
                 program, settings.AIRCOX_SOUND_EXCERPTS_SUBDIR,
-                type = Sound.Type['excerpt'],
+                type = Sound.Type.excerpt,
             )
 
     def scan_for_program (self, program, subdir, **sound_kwargs):

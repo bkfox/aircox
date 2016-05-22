@@ -46,15 +46,15 @@ class Actions:
                 continue
 
             if conflict.pk in saved_items and \
-                    conflict.type != Diffusion.Type['unconfirmed']:
-                conflict.type = Diffusion.Type['unconfirmed']
+                    conflict.type != Diffusion.Type.unconfirmed:
+                conflict.type = Diffusion.Type.unconfirmed
                 conflict.save()
 
         if not conflicts:
-            item.type = Diffusion.Type['normal']
+            item.type = Diffusion.Type.normal
             return 0
 
-        item.type = Diffusion.Type['unconfirmed']
+        item.type = Diffusion.Type.unconfirmed
         return len(conflicts)
 
     @classmethod
@@ -93,14 +93,14 @@ class Actions:
 
     @staticmethod
     def clean (date):
-        qs = Diffusion.objects.filter(type = Diffusion.Type['unconfirmed'],
+        qs = Diffusion.objects.filter(type = Diffusion.Type.unconfirmed,
                                       start__lt = date)
         logger.info('[clean] %d diffusions will be removed', qs.count())
         qs.delete()
 
     @staticmethod
     def check (date):
-        qs = Diffusion.objects.filter(type = Diffusion.Type['unconfirmed'],
+        qs = Diffusion.objects.filter(type = Diffusion.Type.unconfirmed,
                                       start__gt = date)
         items = []
         for diffusion in qs:

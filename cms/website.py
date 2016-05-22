@@ -35,6 +35,7 @@ class Website:
             raise ValueError('A model has yet been registered under "{}"'
                              .format(name))
         self.registry[name] = model
+        model._website = self
         return name
 
     def register_detail (self, name, model, view = views.PostDetailView,
@@ -48,7 +49,7 @@ class Website:
             model = model,
             **view_kwargs,
         )
-        self.urls.append(routes.DetailRoute.as_url(name, model, view))
+        self.urls.append(routes.DetailRoute.as_url(name, view))
         self.registry[name] = model
 
     def register_list (self, name, model, view = views.PostListView,
@@ -62,7 +63,7 @@ class Website:
             model = model,
             **view_kwargs
         )
-        self.urls += [ route.as_url(name, model, view) for route in routes ]
+        self.urls += [ route.as_url(name, view) for route in routes ]
         self.registry[name] = model
 
     def register (self, name, model, sections = None, routes = None,

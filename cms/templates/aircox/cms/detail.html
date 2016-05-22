@@ -1,14 +1,31 @@
 {% extends embed|yesno:"aircox/cms/base_content.html,aircox/cms/base_site.html" %}
+{% load aircox_cms %}
 
 {% block title %}
 {{ object.title }}
 {% endblock %}
 
 {% block pre_title %}
+<div class="pre_title">
+{% if object.thread %}
+<div class="threads">
+    {{ object|threads:' > '|safe }}
+</div>
+{% endif %}
+
 <time datetime="{{ object.date }}">
     {{ object.date|date:'l d F Y' }},
     {{ object.date|time:'H\hi' }}
 </time>
+
+{% if object.tags %}
+{# TODO: url to the tags #}
+<div class="tags">
+    {{ object.tags.all|join:', ' }}
+</div>
+{% endif %}
+
+</div>
 {% endblock %}
 
 {% block content %}
