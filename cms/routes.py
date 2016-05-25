@@ -1,3 +1,4 @@
+from django.db import models
 from django.conf.urls import url
 from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
@@ -118,7 +119,7 @@ class ThreadRoute(Route):
         thread_model = ContentType.objects.get_for_model(thread_model)
         return model.objects.filter(
             thread_type = thread_model,
-            thread_pk = int(pk)
+            thread_id = int(pk)
         )
 
 
@@ -143,15 +144,16 @@ class SearchRoute(Route):
     name = 'search'
 
     @classmethod
-    def get_queryset(cl, website, model, request, q, **kwargs):
-        qs = model.objects
+    def get_queryset(cl, website, model, request, **kwargs):
+        q = request.GET.get('q') or ''
+        qs = None
+
         for search_field in model.search_fields or []:
-            r = model.objects.filter(**{ search_field + '__icontains': q })
+            r = models.Q(**{ search_field + '__icontains': q })
             if qs: qs = qs | r
             else: qs = r
 
-        qs.distinct()
-        return qs
+        return model.objects.filter(qs).distinct()
 
 ## TODO: by tag
 

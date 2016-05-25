@@ -1,4 +1,4 @@
-{% extends embed|yesno:"aircox/cms/base_content.html,aircox/cms/base_site.html" %}
+{% extends "aircox/cms/website.html" %}
 {% load aircox_cms %}
 
 {% block title %}
@@ -29,8 +29,6 @@
 {% endblock %}
 
 {% block content %}
-{% for section in sections %}
-{{ section|safe }}
-{% endfor %}
+{{ content }}
 {% endblock %}
 

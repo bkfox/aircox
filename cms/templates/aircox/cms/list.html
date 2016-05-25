@@ -1,4 +1,4 @@
-{% extends embed|yesno:"aircox/cms/base_content.html,aircox/cms/base_site.html" %}
+{% extends "aircox/cms/website.html" %}
 
 {% load i18n %}
 {% load thumbnail %}
@@ -23,7 +23,7 @@
         </time>
         {% endif %}
 
-        {% if 'image' in view.fields %}
+        {% if 'image' in view.fields and post.image %}
         <img src="{% thumbnail post.image view.icon_size crop %}" class="post_image">
         {% endif %}
 

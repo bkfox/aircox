@@ -1,3 +1,4 @@
+{% if not embed %}
 {% load staticfiles %}
 
 <html>
@@ -32,6 +33,7 @@
                 {% endif %}
 
                 <main>
+{% endif %}
                     {% block pre_title %}
                     {% endblock %}
                     <h1>
@@ -45,6 +47,7 @@
                         {% block content %}
                         {% endblock %}
                     </div>
+{% if not embed %}
                 </main>
 
                 {% if menus.right %}
@@ -68,4 +71,5 @@
         {% endif %}
     </body>
 </html>
+{% endif %}
 

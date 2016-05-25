@@ -47,7 +47,7 @@ class Website:
         view = view.as_view(
             website = self,
             model = model,
-            **view_kwargs,
+            **view_kwargs
         )
         self.urls.append(routes.DetailRoute.as_url(name, view))
         self.registry[name] = model

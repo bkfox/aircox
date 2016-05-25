@@ -1,9 +1,0 @@
-
-<{{ tag }} class="section {{ classes }}"
-    {% for key, value in attrs.items %}{{ key }} = "{{ value|addslashes }}"
-    {% endfor %} >
-{% block content %}
-{{ content|safe }}
-{% endblock %}
-</{{ tag }}>
-

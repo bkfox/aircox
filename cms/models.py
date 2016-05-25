@@ -12,6 +12,36 @@ from django.dispatch import receiver
 
 from taggit.managers import TaggableManager
 
+from aircox.cms import routes
+
+
+class ProxyPost:
+    """
+    Class used to simulate a Post model when it is required to render an
+    item linked to a Post but that is not that itself. This is to ensure
+    the right attributes are set.
+    """
+    detail_url = None
+    date = None
+    image = None
+    title = None
+    content = None
+
+    def __init__(self, post = None, **kwargs):
+        if post:
+            self.update_empty(post)
+        self.__dict__.update(**kwargs)
+
+    def update_empty(self, thread):
+        """
+        Update empty fields using thread object
+        """
+        for i in ('date', 'image', 'title', 'content'):
+            if not getattr(self, i):
+                setattr(self, i, getattr(thread, i))
+        if not self.detail_url:
+            self.detail_url = thread.detail_url()
+
 
 class Post (models.Model):
     """
@@ -64,6 +94,14 @@ class Post (models.Model):
         blank = True,
     )
 
+    search_fields = [ 'title', 'content' ]
+
+    def get_proxy(self):
+        """
+        Return a ProxyPost instance using this post
+        """
+        return ProxyPost(self)
+
     @classmethod
     def children_of(cl, thread, queryset = None):
         """
@@ -77,10 +115,15 @@ class Post (models.Model):
                               thread_type__pk = thread_type.id)
         return qs
 
-    def detail_url (self):
-        return reverse(self._website.name_of_model(self.__class__) + '_detail',
-                       kwargs = { 'pk': self.pk,
-                                  'slug': slugify(self.title) })
+    def detail_url(self):
+        return self.route_url(routes.DetailRoute,
+                              { 'pk': self.pk, 'slug': slugify(self.title) })
+
+    @classmethod
+    def route_url(cl, route, kwargs = None):
+        name = cl._website.name_of_model(cl)
+        name = route.get_view_name(name)
+        return reverse(name, kwargs = kwargs)
 
     class Meta:
         abstract = True
@@ -170,6 +213,7 @@ class RelatedPostBase (models.base.ModelBase):
         }.items() if not attrs.get(x) })
 
         model = super().__new__(cl, name, bases, attrs)
+        print(model, model.related)
         cl.register(rel.model, model)
 
         # name clashes
@@ -317,7 +361,7 @@ class RelatedPost (Post, metaclass = RelatedPostBase):
         super().__init__(*kargs, **kwargs)
         # we use this method for sync, in order to avoid intrusive code on other
         # applications, e.g. using signals.
-        if self._relation.rel_to_post:
+        if self.pk and self._relation.rel_to_post:
             self.rel_to_post(save = False)
 
     def save (self, *args, **kwargs):
