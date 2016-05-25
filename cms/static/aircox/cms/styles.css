@@ -1,3 +1,4 @@
+/** main layout **/
 body {
     padding: 0;
     margin: 0;
@@ -25,6 +26,7 @@ body {
 }
 
 
+/** detail and list content **/
 main .section {
 /*    width: calc(50% - 2em);
     display: inline-block; */
@@ -47,5 +49,38 @@ main .section {
 .post_item {
     display: block;
 }
+
+
+/** comments **/
+.comment-form label {
+    display: none;
+}
+
+.comment-form input:not([type=checkbox]),
+.comment-form textarea {
+    display: inline-block;
+    width: calc(100% - 5em);
+    max-height: 6em;
+    margin: 0.2em 0em;
+}
+
+.comment-form input[type=checkbox],
+.comment-form button[type=submit] {
+    max-width: 4em;
+    vertical-align:bottom;
+    margin: 0.2em 0em;
+    text-align: center;
+}
+
+.comment-form .extra {
+    display: none;
+}
+
+.comment-form input[type="checkbox"]:checked + .extra {
+    display: block;
+}
+
+
+
 
 

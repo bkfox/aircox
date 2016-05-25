@@ -10,21 +10,21 @@
 {% endif %}
 
 {% if header %}
-<header class="section_header">
+<header>
     {% block section_header %}
     {{ header }}
     {% endblock %}
 </header>
 {% endif %}
 
-<div class="section_content">
+<div class="content">
     {% block section_content %}
     {{ content|safe }}
     {% endblock %}
 </div>
 
 {% if footer %}
-<footer class="section_footer">
+<footer>
     {% block section_footer %}
     {{ footer }}
     {% endblock %}

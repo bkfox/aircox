@@ -103,7 +103,7 @@ class Sound(Nameable):
 
     type = models.SmallIntegerField(
         verbose_name = _('type'),
-        choices = [ (y, _(x)) for x,y in Type.__members__.items() ],
+        choices = [ (int(y), _(x)) for x,y in Type.__members__.items() ],
         blank = True, null = True
     )
     path = models.FilePathField(
@@ -571,7 +571,7 @@ class Diffusion(models.Model):
     # specific
     type = models.SmallIntegerField(
         verbose_name = _('type'),
-        choices = [ (y, _(x)) for x,y in Type.__members__.items() ],
+        choices = [ (int(y), _(x)) for x,y in Type.__members__.items() ],
     )
     initial = models.ForeignKey (
         'self',

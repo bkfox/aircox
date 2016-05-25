@@ -3,7 +3,9 @@ from django.template.loader import render_to_string
 from django.views.generic import ListView, DetailView
 from django.views.generic.base import View
 from django.utils.translation import ugettext as _, ugettext_lazy
+from django.http import Http404
 
+from django.views.decorators.http import require_http_methods
 
 class PostBaseView:
     website = None  # corresponding website
@@ -24,7 +26,7 @@ class PostBaseView:
 
         if not self.embed:
             context['menus'] = {
-                k: v.get(self.request, website = self.website, **kwargs)
+                k: v.get(self.request, object = self.object, **kwargs)
                 for k, v in {
                     k: self.website.get_menu(k)
                     for k in self.website.menu_layouts
@@ -48,7 +50,7 @@ class PostListView(PostBaseView, ListView):
     """
     template_name = 'aircox/cms/list.html'
     allow_empty = True
-    paginate_by = 50
+    paginate_by = 25
     model = None
 
     route = None
@@ -111,6 +113,9 @@ class PostListView(PostBaseView, ListView):
         return ''
 
 
+from honeypot.decorators import verify_honeypot_value
+from aircox.cms.forms import CommentForm
+
 class PostDetailView(DetailView, PostBaseView):
     """
     Detail view for posts and children
@@ -124,7 +129,7 @@ class PostDetailView(DetailView, PostBaseView):
 
     def __init__(self, sections = None, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.sections = Sections(sections = sections)
+        self.sections = sections or []
 
     def get_queryset(self):
         if self.request.GET.get('embed'):
@@ -143,44 +148,42 @@ class PostDetailView(DetailView, PostBaseView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context.update(self.get_base_context())
-        context['content'] = self.sections.get(request, object = self.object,
-                                               **kwargs)
+
+        kwargs['object'] = self.object
+        context['content'] = ''.join([
+            section.get(request = self.request, **kwargs)
+            for section in self.sections
+        ])
         return context
 
+    def post(self, request, *args, **kwargs):
+        """
+        Handle new comments
+        """
+        self.object = self.get_object()
+        if not self.object:
+            raise Http404()
 
-class Sections(View):
+        comment_form = CommentForm(request.POST)
+        if not comment_form.is_valid() or verify_honeypot_value(request, 'hp_website'):
+            raise Http404()
+        comment = comment_form.save(commit=False)
+        comment.thread = self.object
+        comment.save()
+
+        return self.get(request, *args, **kwargs)
+
+
+
+class Menu(View):
     template_name = 'aircox/cms/content_object.html'
-    tag = 'div'
+    tag = 'nav'
     classes = ''
     attrs = ''
-    sections = None
-
-    def __init__ (self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.classes += ' sections'
-
-    def get_context_data(self, request, object = None, **kwargs):
-        return {
-            'tag': self.tag,
-            'classes': self.classes,
-            'attrs': self.attrs,
-            'content': ''.join([
-                section.get(request, object = object, **kwargs)
-                    for section in self.sections or []
-            ])
-        }
-
-    def get(self, request, object = None, **kwargs):
-        self.request = request
-        context = self.get_context_data(request, object, **kwargs)
-        return render_to_string(self.template_name, context)
-
-
-class Menu(Sections):
     name = ''
-    tag = 'nav'
     enabled = True
     position = ''   # top, left, bottom, right, header, footer, page_top, page_bottom
+    sections = None
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -190,5 +193,24 @@ class Menu(Sections):
         if self.name:
             self.attrs['name'] = self.name
             self.attrs['id'] = self.name
+
+    def get_context_data(self, request, object = None, **kwargs):
+        kwargs['object'] = object
+
+        return {
+            'tag': self.tag,
+            'classes': self.classes,
+            'attrs': self.attrs,
+            'content': ''.join([
+                section.get(request, **kwargs)
+                for section in self.sections
+            ])
+        }
+
+    def get(self, request, object = None, **kwargs):
+        self.request = request
+        context = self.get_context_data(request, object, **kwargs)
+        return render_to_string(self.template_name, context)
+
 
 

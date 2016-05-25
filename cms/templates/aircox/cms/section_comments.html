@@ -1,0 +1,49 @@
+{% extends "aircox/cms/section.html" %}
+
+{% load i18n %}
+{% load honeypot %}
+
+{% block section_content %}
+{{ form.non_field_errors }}
+<form action="" method="POST" class="comment-form">
+{% csrf_token %}
+{% render_honeypot_field "hp_website" %}
+<div>
+    {{ form.author.errors }}
+    {{ form.author }}
+    <input type="checkbox" value="1">
+    <div class="extra">
+        {{ form.email.errors }}
+        {{ form.email }}
+        {{ form.url.errors }}
+        {{ form.url }}
+    </div>
+</div>
+<div>
+    {{ form.content.errors }}
+    {{ form.content }}
+    <button type="submit">{% trans "Post!" %}</button>
+</div>
+</form>
+<ul style="padding:0; margin:0">
+    {% for item in object_list %}
+    <li id="comment-{{ item.id }}" class="{{item.css}}">
+        {{ item.content }}
+
+        <div class="info">
+            <a href="{% if item.url %}{{ item.url }}{% else %}#{% endif %}">{{ item.author }}</a>
+
+            <time datetime="{{ item.date }}">
+                {{ item.date|date:'l d F Y' }},
+                {{ item.date|time:'H\hi' }}
+            </time>
+
+            <a href="#comment-{{ item.id }}">#{{ item.id }}</a>
+        </div>
+    </li>
+    {% endfor %}
+</ul>
+
+{% endblock %}
+
+

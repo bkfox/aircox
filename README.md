@@ -23,7 +23,8 @@ Later we would provide a package, but now we have other priorities.
 ### settings.py
 * There must be `BASE_DIR` or `PROJECT_ROOT` defined in order to make liquidsoap working (that must call manage.py using an absolute path).
 * INSTALLED_APPS:
-    - dependencies: `'taggit'`, `'easy_thumbnails'`
+    - dependencies: `'taggit'` (*programs* and *cms* applications),
+                    `'easy_thumbnails'` (*cms*), `'honeypot'` (*cms*)
     - optional dependencies (in order to make users' life easier): `'autocomplete_light'`, `'suit'`
     - aircox: `'aircox.programs'`, `'aircox.liquidsoap'`, `'aircox.cms'`
 

@@ -7,7 +7,8 @@ from django.utils.text import slugify
 from django.utils.translation import ugettext as _, ugettext_lazy
 from django.core.urlresolvers import reverse
 
-from django.db.models.signals import post_init, post_save, post_delete
+
+from django.db.models.signals import Signal, post_save
 from django.dispatch import receiver
 
 from taggit.managers import TaggableManager
@@ -41,6 +42,43 @@ class ProxyPost:
                 setattr(self, i, getattr(thread, i))
         if not self.detail_url:
             self.detail_url = thread.detail_url()
+
+
+class Comment(models.Model):
+    thread_type = models.ForeignKey(
+        ContentType,
+        on_delete=models.SET_NULL,
+        blank = True, null = True
+    )
+    thread_id = models.PositiveIntegerField(
+        blank = True, null = True
+    )
+    thread = GenericForeignKey('thread_type', 'thread_id')
+
+    published = models.BooleanField(
+        verbose_name = _('public'),
+        default = False
+    )
+
+    author = models.CharField(
+        verbose_name = _('author'),
+        max_length = 32,
+    )
+    email = models.EmailField(
+        verbose_name = _('email'),
+        blank = True, null = True,
+    )
+    url = models.URLField(
+        verbose_name = _('website'),
+        blank = True, null = True,
+    )
+    date = models.DateTimeField(
+        _('date'),
+        default = timezone.datetime.now
+    )
+    content = models.TextField (
+        _('comment'),
+    )
 
 
 class Post (models.Model):
@@ -84,7 +122,7 @@ class Post (models.Model):
     )
     content = models.TextField (
         _('description'),
-        blank = True, null = True
+        default = '',
     )
     image = models.ImageField(
         blank = True, null = True
@@ -96,7 +134,7 @@ class Post (models.Model):
 
     search_fields = [ 'title', 'content' ]
 
-    def get_proxy(self):
+    def as_proxy(self):
         """
         Return a ProxyPost instance using this post
         """
@@ -111,13 +149,35 @@ class Post (models.Model):
         if not queryset:
             queryset = cl.objects
         thread_type = ContentType.objects.get_for_model(thread)
-        qs = queryset.filter(thread_id = thread.pk,
-                              thread_type__pk = thread_type.id)
+        qs = queryset.filter(
+            thread_id = thread.pk,
+            thread_type__pk = thread_type.id
+        )
+        return qs
+
+    def get_comments(self):
+        """
+        Return comments pointing to this post
+        """
+        type = ContentType.objects.get_for_model(self)
+        qs = Comment.objects.filter(
+            thread_id = self.pk,
+            thread_type__pk = type.pk
+        )
         return qs
 
     def detail_url(self):
         return self.route_url(routes.DetailRoute,
                               { 'pk': self.pk, 'slug': slugify(self.title) })
+
+
+    def get_object_list(self, request, object, **kwargs):
+        type = ContentType.objects.get_for_model(object)
+        qs = Comment.objects.filter(
+            thread_id = object.pk,
+            thread_type__pk = type.pk
+        )
+        return qs
 
     @classmethod
     def route_url(cl, route, kwargs = None):
@@ -198,6 +258,24 @@ class RelatedPostBase (models.base.ModelBase):
 
         return rel
 
+    @classmethod
+    def make_auto_create(cl, model):
+        if not model._relation.rel_to_post:
+            return
+
+        def handler(sender, instance, created, *args, **kwargs):
+            rel = model._relation
+            post = model.objects.filter(related = instance)
+            if post.count():
+                post = post[0]
+            elif rel.auto_create:
+                post = model(related = instance)
+            else:
+                return
+            post.rel_to_post()
+            post.save(avoid_sync = True)
+        post_save.connect(handler, model._relation.model, False)
+
     def __new__ (cl, name, bases, attrs):
         # TODO: allow proxy models and better inheritance
         # TODO: check bindings
@@ -213,8 +291,10 @@ class RelatedPostBase (models.base.ModelBase):
         }.items() if not attrs.get(x) })
 
         model = super().__new__(cl, name, bases, attrs)
-        print(model, model.related)
         cl.register(rel.model, model)
+
+        # auto create and/or update
+        cl.make_auto_create(model)
 
         # name clashes
         name = rel.model._meta.object_name
@@ -275,6 +355,9 @@ class RelatedPost (Post, metaclass = RelatedPostBase):
             model generated for the bindings.thread object.
         * field_args: dict of arguments to pass to the ForeignKey constructor,
             such as: ForeignKey(related_model, **field_args)
+        * auto_create: automatically create a RelatedPost for each new item of
+            the related object and init it with bounded values. Use signals
+            '', ''.
 
         Be careful with post_to_rel!
         * There is no check of permissions when related object is synchronised
@@ -288,6 +371,7 @@ class RelatedPost (Post, metaclass = RelatedPostBase):
         rel_to_post = False
         thread_model = None
         field_args = None
+        auto_create = False
 
     def get_rel_attr(self, attr):
         attr = self._relation.bindings.get(attr)
@@ -306,7 +390,7 @@ class RelatedPost (Post, metaclass = RelatedPostBase):
         Note: does not check if Relation.post_to_rel is True
         """
         rel = self._relation
-        if not rel.bindings:
+        if not self.related or not rel.bindings:
             return
 
         for attr, rel_attr in rel.bindings.items():
@@ -331,7 +415,7 @@ class RelatedPost (Post, metaclass = RelatedPostBase):
         Note: does not check if Relation.post_to_rel is True
         """
         rel = self._relation
-        if not rel.bindings:
+        if not self.related or not rel.bindings:
             return
 
         has_changed = False
@@ -362,44 +446,16 @@ class RelatedPost (Post, metaclass = RelatedPostBase):
         # we use this method for sync, in order to avoid intrusive code on other
         # applications, e.g. using signals.
         if self.pk and self._relation.rel_to_post:
-            self.rel_to_post(save = False)
+            self.rel_to_post(False)
 
-    def save (self, *args, **kwargs):
-        # TODO handle when related change
-        if not self.title and self.related:
-            self.title = self.get_rel_attr('title')
-        if self._relation.post_to_rel:
-            self.post_to_rel(save = True)
+    def save (self, avoid_sync = False, *args, **kwargs):
+        """
+        If avoid_relation, do not synchronise the post/related object.
+        """
+        if not avoid_sync:
+            if not self.pk and self._relation.rel_to_post:
+                self.rel_to_post(False)
+            if self._relation.post_to_rel:
+                self.post_to_rel(True)
         super().save(*args, **kwargs)
-
-
-class Comment(models.Model):
-    thread_type = models.ForeignKey(
-        ContentType,
-        on_delete=models.SET_NULL,
-        blank = True, null = True
-    )
-    thread_id = models.PositiveIntegerField(
-        blank = True, null = True
-    )
-    thread = GenericForeignKey('thread_type', 'thread_id')
-
-    author = models.TextField(
-        verbose_name = _('author'),
-        blank = True, null = True,
-    )
-    email = models.EmailField(
-        verbose_name = _('email'),
-        blank = True, null = True,
-    )
-    date = models.DateTimeField(
-        _('date'),
-        default = timezone.datetime.now
-    )
-    content = models.TextField (
-        _('description'),
-        blank = True, null = True
-    )
-
-
 
