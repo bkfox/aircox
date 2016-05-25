@@ -639,8 +639,11 @@ class Diffusion(models.Model):
         if station:
             filter_args['program__station'] = station
 
+        if queryset is None:
+            queryset = cl.objects
+
         if now:
-            return cl.objects.filter(
+            return queryset.filter(
                 models.Q(start__lte = date,
                          end__gte = date) |
                 models.Q(start__gte = date),
@@ -648,17 +651,16 @@ class Diffusion(models.Model):
             ).order_by('start')
 
         if next:
-            return cl.objects.filter(
+            return queryset.filter(
                 start__gte = date,
                 **filter_args
             ).order_by('start')
 
         if prev:
-            return cl.objects.filter(
+            return queryset.filter(
                 end__lte = date,
                 **filter_args
             ).order_by('-start')
-
 
     def is_date_in_my_range(self, date):
         """
@@ -672,10 +674,10 @@ class Diffusion(models.Model):
         Return a list of conflictual diffusions, based on the scheduled duration.
         """
         r = Diffusion.objects.filter(
-            models.Q(start__lte = self.start,
-                     end__gte = self.start) |
-            models.Q(start__gte = self.start,
-                     start__lte = self.end)
+            models.Q(start__lt = self.start,
+                     end__gt = self.start) |
+            models.Q(start__gt = self.start,
+                     start__lt = self.end)
         )
         return r
 

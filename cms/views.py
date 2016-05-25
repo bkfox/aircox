@@ -32,7 +32,6 @@ class PostBaseView:
                     for k in self.website.menu_layouts
                 }.items() if v
             }
-
         context['view'] = self
         return context
 

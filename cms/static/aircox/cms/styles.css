@@ -52,31 +52,31 @@ main .section {
 
 
 /** comments **/
-.comment-form label {
+.comment_form label {
     display: none;
 }
 
-.comment-form input:not([type=checkbox]),
-.comment-form textarea {
+.comment_form input:not([type=checkbox]),
+.comment_form textarea {
     display: inline-block;
     width: calc(100% - 5em);
     max-height: 6em;
     margin: 0.2em 0em;
 }
 
-.comment-form input[type=checkbox],
-.comment-form button[type=submit] {
+.comment_form input[type=checkbox],
+.comment_form button[type=submit] {
     max-width: 4em;
     vertical-align:bottom;
     margin: 0.2em 0em;
     text-align: center;
 }
 
-.comment-form .extra {
+.comment_form .extra {
     display: none;
 }
 
-.comment-form input[type="checkbox"]:checked + .extra {
+.comment_form input[type="checkbox"]:checked + .extra {
     display: block;
 }
 

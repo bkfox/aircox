@@ -113,8 +113,8 @@ class DiffusionAdmin (admin.ModelAdmin):
 
     def get_queryset(self, request):
         qs = super(DiffusionAdmin, self).get_queryset(request)
-        if '_changelist_filters' in request.GET or \
-            'type__exact' in request.GET and \
+        if ('_changelist_filters' in request.GET or \
+            'type__exact' in request.GET) and \
                 str(Diffusion.Type.unconfirmed) in request.GET['type__exact']:
             return qs
         return qs.exclude(type = Diffusion.Type.unconfirmed)
