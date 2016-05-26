@@ -1,8 +1,0 @@
-
-<{{ tag }} class="{{ classes }}"
-    {% for k, v in attrs.items %}{{ k }} = "{{ v|addslashes }}" {% endfor %} >
-    {% block content %}
-    {{ content|safe }}
-    {% endblock %}
-</{{ tag }}>
-

@@ -1,53 +1,78 @@
-{% extends "aircox/cms/website.html" %}
+{% extends base_template %}
 
 {% load i18n %}
 {% load thumbnail %}
 
+
 {% block content %}
-<div class="post_list {{ classes }} {% if embed %}embed{% endif %}">
-{% for post in object_list %}
-    <a class="post_item"
-       href="{{ post.detail_url }}">
-        {% if 'date' in view.fields or 'time' in view.fields %}
-        <time datetime="{{ post.date }}" class="post_datetime">
-            {% if 'date' in view.fields %}
-            <span class="post_date">
-                {{ post.date|date:'D. d F' }}
+<ul>
+{% for item in object_list %}
+    <li {% if item.css_class %}class="{{ item.css_class }}"{% endif %}
+        {% for k, v in item.attrs.items %}
+        {{ k }} = "{{ v|addslashes }}"
+        {% endfor %} >
+    {% if item.detail_url %}
+        <a href="{{ item.detail_url }}">
+    {% endif %}
+
+    {% if 'date' in list.fields or 'time' in list.fields or 'author' in list.fields %}
+    <div class="meta">
+        {% if item.date and 'date' in list.fields or 'time' in list.fields %}
+        <time datetime="{{ item.date }}">
+            {% if 'date' in list.fields %}
+            <span class="date">
+                {{ item.date|date:'D. d F' }}
             </span>
             {% endif %}
-            {% if 'time' in view.fields %}
-            <span class="post_time">
-                {{ post.date|date:'H:i' }}
+            {% if 'time' in list.fields %}
+            <span class="time">
+                {{ item.date|date:'H:i' }}
             </span>
             {% endif %}
         </time>
         {% endif %}
-
-        {% if 'image' in view.fields and post.image %}
-        <img src="{% thumbnail post.image view.icon_size crop %}" class="post_image">
+        {% if item.author and 'author' in list.fields %}
+        <span class="author">
+            {{ item.author }}
+        </span>
         {% endif %}
+    </div>
+    {% endif %}
 
-        {% if 'title' in view.fields %}
-        <h3 class="post_title">{{ post.title }}</h3>
-        {% endif %}
+    {% if 'image' in list.fields and item.image %}
+    <img src="{% thumbnail item.image list.image_size crop %}">
+    {% endif %}
 
-        {% if 'content' in view.fields %}
-        <div class="post_content">
-        {{ post.content|safe|striptags|truncatechars:"64" }}
-        </div>
+    {% if 'title' in list.fields %}
+    <h2 class="title">{{ item.title }}</h2>
+    {% endif %}
+
+    {% if 'content' in list.fields %}
+    <div class="content">
+        {% if list.truncate %}
+        {{ item.content|striptags|truncatewords:list.truncate }}
+        {% else %}
+        {{ item.content|striptags }}
         {% endif %}
+    </div>
+    {% endif %}
+
+    {% if item.detail_url %}
     </a>
-{% endfor %}
+    {% endif %}
+{% empty %}
+<div class="message empty">
+{{ list.message_empty }}
 </div>
+{% endfor %}
+</ul>
 
+{% if page_obj or list.url %}
 <nav>
-    {% if embed %}
-        {% with view.get_url as list_url %}
-        {% if list_url %}
-        <a href="{{list_url}}" title="More elements">&#8690;</a>
-        {% endif %}
-        {% endwith %}
+    {% if not page_obj or embed %}
+        <a href="{{list.url}}" title={% trans "More elements" %}>&#8690;</a>
     {% else %}
+        {# FIXME: page numbers #}
         {% if page_obj.has_previous %}
             <a href="?page={{ page_obj.previous_page_number }}">previous</a>
         {% endif %}
@@ -61,5 +86,6 @@
         {% endif %}
     {% endif %}
 </nav>
+{% endif %}
 {% endblock %}
 

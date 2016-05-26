@@ -5,7 +5,10 @@ from django.views.generic.base import View
 from django.utils.translation import ugettext as _, ugettext_lazy
 from django.http import Http404
 
-from django.views.decorators.http import require_http_methods
+from honeypot.decorators import verify_honeypot_value
+
+from aircox.cms.forms import CommentForm
+
 
 class PostBaseView:
     website = None  # corresponding website
@@ -25,8 +28,9 @@ class PostBaseView:
         }
 
         if not self.embed:
+            object = self.object if hasattr(self, 'object') else None
             context['menus'] = {
-                k: v.get(self.request, object = self.object, **kwargs)
+                k: v.get(self.request, object = object, **kwargs)
                 for k, v in {
                     k: self.website.get_menu(k)
                     for k in self.website.menu_layouts
@@ -53,8 +57,7 @@ class PostListView(PostBaseView, ListView):
     model = None
 
     route = None
-    fields = [ 'date', 'time', 'image', 'title', 'content' ]
-    icon_size = '64x64'
+    list = None
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -93,27 +96,27 @@ class PostListView(PostBaseView, ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context.update(self.get_base_context(**kwargs))
-        context.update({
-            'title': self.get_title(),
-        })
+
+        title = self.title if self.title else \
+                self.route and self.route.get_title(self.model, self.request,
+                                                    **self.kwargs)
+        context['title'] = title
+        context['base_template'] = 'aircox/cms/website.html'
+
+        if not self.list:
+            import aircox.cms.sections as sections
+            self.list = sections.List(
+                truncate = 64,
+                fields = [ 'date', 'time', 'image', 'title', 'content' ],
+            )
+
+        context['list'] = self.list
+        # FIXME: list.url = if self.route: self.model(self.route, self.kwargs) else ''
         return context
 
-    def get_title(self):
-        if self.title:
-            return self.title
-
-        title = self.route and self.route.get_title(self.model, self.request,
-                                                    **self.kwargs)
-        return title
-
     def get_url(self):
-        if self.route:
-            return self.model(self.route, self.kwargs)
         return ''
 
-
-from honeypot.decorators import verify_honeypot_value
-from aircox.cms.forms import CommentForm
 
 class PostDetailView(DetailView, PostBaseView):
     """
@@ -173,9 +176,8 @@ class PostDetailView(DetailView, PostBaseView):
         return self.get(request, *args, **kwargs)
 
 
-
 class Menu(View):
-    template_name = 'aircox/cms/content_object.html'
+    template_name = 'aircox/cms/section.html'
     tag = 'nav'
     classes = ''
     attrs = ''
@@ -210,6 +212,5 @@ class Menu(View):
         self.request = request
         context = self.get_context_data(request, object, **kwargs)
         return render_to_string(self.template_name, context)
-
 
 

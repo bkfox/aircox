@@ -1,34 +1,35 @@
-{% extends "aircox/cms/content_object.html" %}
 
-{% block content %}
+<{{ tag }} class="{{ css_class }}"
+    {% for k, v in list.attrs.items %}
+    {{ k }} = "{{ v|addslashes }}"
+    {% endfor %} >
+
+{% block title %}
 {% if title %}
 <h1>
-    {% block section_title %}
     {{ title }}
-    {% endblock %}
 </h1>
 {% endif %}
+{% endblock %}
 
+{% block header %}
 {% if header %}
 <header>
-    {% block section_header %}
     {{ header }}
-    {% endblock %}
 </header>
 {% endif %}
+{% endblock %}
 
-<div class="content">
-    {% block section_content %}
-    {{ content|safe }}
-    {% endblock %}
-</div>
+{% block content %}
+{{ content|safe }}
+{% endblock %}
 
+{% block footer %}
 {% if footer %}
 <footer>
-    {% block section_footer %}
     {{ footer }}
-    {% endblock %}
 </footer>
 {% endif %}
 {% endblock %}
+</{{ tag }}>
 

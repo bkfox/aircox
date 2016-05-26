@@ -74,7 +74,6 @@ class Actions:
             if manual:
                 Diffusion.objects.bulk_create(items)
             else:
-                print('items: ', len(items))
                 for item in items:
                     count[1] += cl.__check_conflicts(item, saved_items)
                     if hasattr(item, 'do_not_save'):

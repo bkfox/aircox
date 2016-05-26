@@ -170,7 +170,6 @@ class Post (models.Model):
         return self.route_url(routes.DetailRoute,
                               { 'pk': self.pk, 'slug': slugify(self.title) })
 
-
     def get_object_list(self, request, object, **kwargs):
         type = ContentType.objects.get_for_model(object)
         qs = Comment.objects.filter(
