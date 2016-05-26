@@ -2,24 +2,40 @@ import aircox.cms.routes as routes
 import aircox.cms.views as views
 
 class Website:
+    """
+    Describe a website and all its settings that are used for its rendering.
+    """
+    # metadata
     name = ''
     domain = ''
-    description = 'An aircox website'   # public description (used in meta info)
-    tags = 'aircox,radio,music'         # public keywords (used in meta info)
+    description = 'An aircox website'
+    tags = 'aircox,radio,music'
 
-    styles = ''                         # relative url to stylesheet file
-    menus = None                        # list of menus
-    menu_layouts = ['top', 'left',      # available positions
-                    'right', 'bottom',
-                    'header', 'footer']
-    router = None
+    # rendering
+    styles = ''
+    menus = None
+
+    # user interaction
+    allow_comments = True
+    auto_publish_comments = False
+
+    # components
     urls = []
     registry = {}
 
-    def __init__ (self, **kwargs):
+    def __init__ (self, menus = None, **kwargs):
+        """
+        * menus: a list of menus to add to the website
+        """
         self.registry = {}
         self.urls = []
+        self.menus = {}
         self.__dict__.update(kwargs)
+
+        if menus:
+            for menu in menus:
+                self.set_menu(menu)
+
 
     def name_of_model (self, model):
         for name, _model in self.registry.items():
@@ -67,6 +83,8 @@ class Website:
         self.registry[name] = model
 
     def register (self, name, model, sections = None, routes = None,
+                  list_view = views.PostListView,
+                  detail_view = views.PostDetailView,
                   list_kwargs = {}, detail_kwargs = {}):
         """
         Register a detail and list view for a given model, using
@@ -86,22 +104,20 @@ class Website:
                 **list_kwargs
             )
 
+    def set_menu (self, menu):
+        """
+        Set a menu, and remove any previous menu at the same position
+        """
+        if menu.position in ('footer','header'):
+            menu.tag = menu.position
+        elif menu.position in ('left', 'right'):
+            menu.tag = 'side'
+        self.menus[menu.position] = menu
+
     def get_menu (self, position):
         """
         Get an enabled menu by its position
         """
-        for menu in self.menus:
-            if menu.enabled and menu.position == position:
-                self.check_menu_tag(menu)
-                return menu
-
-    def check_menu_tag (self, menu):
-        """
-        Update menu tag if it is a footer or a header
-        """
-        if menu.position in ('footer','header'):
-            menu.tag = menu.position
-        if menu.position in ('left', 'right'):
-            menu.tag = 'side'
+        return self.menus.get(position)
 
 

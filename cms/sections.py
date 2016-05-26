@@ -6,6 +6,7 @@ import re
 from django.templatetags.static import static
 from django.template.loader import render_to_string
 from django.views.generic.base import View
+from django.contrib import messages
 from django.utils.html import escape
 from django.utils.translation import ugettext as _, ugettext_lazy
 
@@ -214,15 +215,17 @@ class List(Section):
 
 class Comments(List):
     """
-    Section used to render comment form and comments list. It only render
-    the form if the comments are enabled on the target object.
-
-    It does not handle comment posts, this is directly done at the
-    level of the detail view.
+    Section used to render comment form and comments list. It renders the
+    form and comments, and save them.
     """
     css_class="comments"
     truncate = 0
     fields = [ 'date', 'time', 'author', 'content' ]
+
+    success_message = ( _('Your message is awaiting for approval'),
+                        _('Your message has been published') )
+    error_message = _('There was an error while saving your post. '
+                      'Please check errors below')
 
     def get_object_list(self):
         qs = self.object.get_comments().filter(published=True). \
@@ -232,16 +235,37 @@ class Comments(List):
                  for comment in qs ]
 
     def get_context_data(self):
-        context = super().get_context_data()
         post = self.object
+        if hasattr(post, 'allow_comments') and post.allow_comments:
+            comment_form = (self.comment_form or CommentForm())
+        else:
+            comment_form = None
+
+        context = super().get_context_data()
         context.update({
             'base_template': 'aircox/cms/comments.html',
-            'comment_form': CommentForm() \
-                if hasattr(post, 'allow_comments') and post.allow_comments \
-                else None
+            'comment_form': comment_form,
         })
+
+        self.comment_form = None
         return context
 
+    def post(self, view, request, object):
+        """
+        Forward data to this view
+        """
+        comment_form = CommentForm(request.POST)
+        if comment_form.is_valid():
+            comment = comment_form.save(commit=False)
+            comment.thread = self.object
+            comment.published = view.website.auto_publish_comments
+            comment.save()
+
+            messages.success(request, self.success_message[comment.published],
+                             fail_silently=True)
+        else:
+            messages.error(request, self.error_message, fail_silently=True)
+        self.comment_form = comment_form
 
 class Menu(Section):
     template_name = 'aircox/cms/section.html'
@@ -249,7 +273,6 @@ class Menu(Section):
     classes = ''
     attrs = ''
     name = ''
-    enabled = True
     position = ''   # top, left, bottom, right, header, footer, page_top, page_bottom
     sections = None
 

@@ -3,11 +3,10 @@ from django.template.loader import render_to_string
 from django.views.generic import ListView, DetailView
 from django.views.generic.base import View
 from django.utils.translation import ugettext as _, ugettext_lazy
+from django.contrib import messages
 from django.http import Http404
 
-from honeypot.decorators import verify_honeypot_value
-
-from aircox.cms.forms import CommentForm
+import aircox.cms.sections as sections
 
 
 class PostBaseView:
@@ -31,10 +30,7 @@ class PostBaseView:
             object = self.object if hasattr(self, 'object') else None
             context['menus'] = {
                 k: v.get(self.request, object = object, **kwargs)
-                for k, v in {
-                    k: self.website.get_menu(k)
-                    for k in self.website.menu_layouts
-                }.items() if v
+                for k, v in self.website.menus.items()
             }
         context['view'] = self
         return context
@@ -128,6 +124,7 @@ class PostDetailView(DetailView, PostBaseView):
     template_name = 'aircox/cms/detail.html'
 
     sections = []
+    comments = None
 
     def __init__(self, sections = None, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -162,17 +159,13 @@ class PostDetailView(DetailView, PostBaseView):
         """
         Handle new comments
         """
+        if not self.comments:
+            for section in self.sections:
+                if issubclass(type(section), sections.Comments):
+                    self.comments = section
+
         self.object = self.get_object()
-        if not self.object:
-            raise Http404()
-
-        comment_form = CommentForm(request.POST)
-        if not comment_form.is_valid() or verify_honeypot_value(request, 'hp_website'):
-            raise Http404()
-        comment = comment_form.save(commit=False)
-        comment.thread = self.object
-        comment.save()
-
+        self.comments.post(self, request, object)
         return self.get(request, *args, **kwargs)
 
 

@@ -16,34 +16,6 @@ from taggit.managers import TaggableManager
 from aircox.cms import routes
 
 
-class ProxyPost:
-    """
-    Class used to simulate a Post model when it is required to render an
-    item linked to a Post but that is not that itself. This is to ensure
-    the right attributes are set.
-    """
-    detail_url = None
-    date = None
-    image = None
-    title = None
-    content = None
-
-    def __init__(self, post = None, **kwargs):
-        if post:
-            self.update_empty(post)
-        self.__dict__.update(**kwargs)
-
-    def update_empty(self, thread):
-        """
-        Update empty fields using thread object
-        """
-        for i in ('date', 'image', 'title', 'content'):
-            if not getattr(self, i):
-                setattr(self, i, getattr(thread, i))
-        if not self.detail_url:
-            self.detail_url = thread.detail_url()
-
-
 class Comment(models.Model):
     thread_type = models.ForeignKey(
         ContentType,
@@ -133,12 +105,6 @@ class Post (models.Model):
     )
 
     search_fields = [ 'title', 'content' ]
-
-    def as_proxy(self):
-        """
-        Return a ProxyPost instance using this post
-        """
-        return ProxyPost(self)
 
     @classmethod
     def children_of(cl, thread, queryset = None):
