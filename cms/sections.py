@@ -29,6 +29,7 @@ class Section(View):
     Attributes:
     * template_name: template to use for rendering
     * tag: container's tags
+    * name: set name/id of the section container
     * css_class: css classes of the container
     * attr: HTML attributes of the container
     * hide_empty: if true, section is not rendered when content is empty
@@ -41,12 +42,13 @@ class Section(View):
     * object: (can be persistent) related object
 
     """
-    template_name = 'aircox/cms/content_object.html'
+    template_name = 'aircox/cms/section.html'
 
     tag = 'div'
+    name = ''
     css_class = ''
-    attrs = ''
-    hide_empty = False
+    attrs = None
+    # hide_empty = False
     title = ''
     header = ''
     footer = ''
@@ -54,7 +56,12 @@ class Section(View):
 
     def __init__ (self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.css_class += ' section'
+        self.css_class = 'section' if not self.css_class else ' section'
+        if not self.attrs:
+            self.attrs = {}
+        if self.name:
+            self.attrs['name'] = self.name
+            self.attrs['id'] = self.name
 
     def get_content(self):
         return ''
@@ -75,13 +82,10 @@ class Section(View):
     def get(self, request, object=None, **kwargs):
         if not self.object:
             self.object = object
-
         self.request = request
         self.kwargs = kwargs
 
         context = self.get_context_data()
-        # if not context['content'] and self.hide_empty:
-        #    return ''
         return render_to_string(self.template_name, context, request=request)
 
 
@@ -237,4 +241,35 @@ class Comments(List):
                 else None
         })
         return context
+
+
+class Menu(Section):
+    template_name = 'aircox/cms/section.html'
+    tag = 'nav'
+    classes = ''
+    attrs = ''
+    name = ''
+    enabled = True
+    position = ''   # top, left, bottom, right, header, footer, page_top, page_bottom
+    sections = None
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.css_class += ' menu menu_{}'.format(self.name or self.position)
+        if not self.attrs:
+            self.attrs = {}
+
+    def get_context_data(self):
+        return {
+            'tag': self.tag,
+            'css_class': self.css_class,
+            'attrs': self.attrs,
+            'content': ''.join([
+                section.get(request=self.request, object=self.object)
+                for section in self.sections
+            ])
+        }
+
+
+
 
