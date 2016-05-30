@@ -49,7 +49,7 @@ class PostListView(PostBaseView, ListView):
     """
     template_name = 'aircox/cms/list.html'
     allow_empty = True
-    paginate_by = 25
+    paginate_by = 3
     model = None
 
     route = None
@@ -102,7 +102,7 @@ class PostListView(PostBaseView, ListView):
         if not self.list:
             import aircox.cms.sections as sections
             self.list = sections.List(
-                truncate = 64,
+                truncate = 32,
                 fields = [ 'date', 'time', 'image', 'title', 'content' ],
             )
 

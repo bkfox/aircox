@@ -7,10 +7,10 @@ from django.utils.text import slugify
 from django.utils.translation import ugettext as _, ugettext_lazy
 from django.core.urlresolvers import reverse
 
-
 from django.db.models.signals import Signal, post_save
 from django.dispatch import receiver
 
+import bleach
 from taggit.managers import TaggableManager
 
 from aircox.cms import routes
@@ -51,6 +51,19 @@ class Comment(models.Model):
     content = models.TextField (
         _('comment'),
     )
+
+    def make_safe(self):
+        self.author = bleach.clean(self.author, tags=[])
+        if self.email:
+            self.email = bleach.clean(self.email, tags=[])
+        if self.url:
+            self.url = bleach.clean(self.url, tags=[])
+        self.content = bleach.clean(
+            self.content,
+            tags=settings.AIRCOX_CMS_BLEACH_COMMENT_TAGS,
+            attributes=settings.AIRCOX_CMS_BLEACH_COMMENT_ATTRS
+        )
+
 
 
 class Post (models.Model):
@@ -149,6 +162,19 @@ class Post (models.Model):
         name = cl._website.name_of_model(cl)
         name = route.get_view_name(name)
         return reverse(name, kwargs = kwargs)
+
+    def make_safe(self):
+        self.title = bleach.clean(
+            self.title,
+            tags=settings.AIRCOX_CMS_BLEACH_TITLE_TAGS,
+            attributes=settings.AIRCOX_CMS_BLEACH_TITLE_ATTRS
+        )
+        self.content = bleach.clean(
+            self.content,
+            tags=settings.AIRCOX_CMS_BLEACH_CONTENT_TAGS,
+            attributes=settings.AIRCOX_CMS_BLEACH_CONTENT_ATTRS
+        )
+        self.tags = [ bleach.clean(tag, tags=[]) for tag in self.tags.all() ]
 
     class Meta:
         abstract = True

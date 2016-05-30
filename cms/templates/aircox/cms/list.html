@@ -3,6 +3,8 @@
 {% load i18n %}
 {% load thumbnail %}
 
+{% load aircox_cms %}
+
 
 {% block content %}
 <ul>
@@ -72,18 +74,39 @@
     {% if not page_obj or embed %}
         <a href="{{list.url}}" title={% trans "More elements" %}>&#8690;</a>
     {% else %}
-        {# FIXME: page numbers #}
-        {% if page_obj.has_previous %}
-            <a href="?page={{ page_obj.previous_page_number }}">previous</a>
-        {% endif %}
+        {% with page_obj.paginator.num_pages as num_pages %}
+            {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}">previous</a>
+            {% endif %}
 
-        <span class="current">
-            {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
-        </span>
+            {% if page_obj.number > 3 %}
+                <a href="?page=1">1</a>
+                {% if page_obj.number > 4 %}
+                &#8230;
+                {% endif %}
+            {% endif %}
 
-        {% if page_obj.has_next %}
-            <a href="?page={{ page_obj.next_page_number }}">next</a>
-        {% endif %}
+            {% for i in page_obj.number|around:2 %}
+                {% if i == page_obj.number %}
+                    {{ page_obj.number }}
+                {% elif i > 0 and i <= num_pages %}
+                    <a href="?page={{ i }}">{{ i }}</a>
+                {% endif %}
+            {% endfor %}
+
+            {% with page_obj.number|add:"2" as max %}
+            {% if max < num_pages %}
+                {% if max|add:"1" < num_pages %}
+                &#8230;
+                {% endif %}
+                <a href="?page={{ num_pages }}">{{ num_pages }}</a>
+            {% endif %}
+            {% endwith %}
+
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}">next</a>
+            {% endif %}
+        {% endwith %}
     {% endif %}
 </nav>
 {% endif %}

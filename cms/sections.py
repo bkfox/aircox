@@ -57,7 +57,11 @@ class Section(View):
 
     def __init__ (self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.css_class = 'section' if not self.css_class else ' section'
+
+        self.css_class += 'section' if not self.css_class else ' section'
+        if type(self) != Section:
+            self.css_class += ' section_' + type(self).__name__.lower()
+
         if not self.attrs:
             self.attrs = {}
         if self.name:
@@ -186,7 +190,7 @@ class List(Section):
 
     fields = [ 'date', 'time', 'image', 'title', 'content' ]
     image_size = '64x64'
-    truncate = 64
+    truncate = 16
 
     def __init__ (self, items = None, *args, **kwargs):
         """
@@ -222,6 +226,7 @@ class Comments(List):
     truncate = 0
     fields = [ 'date', 'time', 'author', 'content' ]
 
+    comment_form = None
     success_message = ( _('Your message is awaiting for approval'),
                         _('Your message has been published') )
     error_message = _('There was an error while saving your post. '
@@ -254,6 +259,7 @@ class Comments(List):
         """
         Forward data to this view
         """
+        # TODO: comment satanize
         comment_form = CommentForm(request.POST)
         if comment_form.is_valid():
             comment = comment_form.save(commit=False)

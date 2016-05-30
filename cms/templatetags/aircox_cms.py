@@ -5,7 +5,7 @@ register = template.Library()
 
 
 @register.filter(name='threads')
-def threads (post, sep = '/'):
+def threads(post, sep = '/'):
     """
     print a list of all parents, from top to bottom
     """
@@ -19,5 +19,9 @@ def threads (post, sep = '/'):
         '<a href="{}">{}</a>'.format(post.detail_url(), post.title)
         for post in posts if post.published
     ])
+
+@register.filter(name='around')
+def around(page_num, n):
+    return range(page_num-n, page_num+n+1)
 
 
