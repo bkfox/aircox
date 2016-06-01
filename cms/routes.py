@@ -23,14 +23,14 @@ class Route:
     url_args = []       # arguments passed from the url [ (name : regex),... ]
 
     @classmethod
-    def get_queryset(cl, website, model, request, **kwargs):
+    def get_queryset(cl, model, request, **kwargs):
         """
         Called by the view to get the queryset when it is needed
         """
         pass
 
     @classmethod
-    def get_object(cl, website, model, request, **kwargs):
+    def get_object(cl, model, request, **kwargs):
         """
         Called by the view to get the object when it is needed
         """
@@ -76,7 +76,7 @@ class DetailRoute(Route):
     ]
 
     @classmethod
-    def get_object(cl, website, model, request, pk, **kwargs):
+    def get_object(cl, model, request, pk, **kwargs):
         return model.objects.get(pk = int(pk))
 
 
@@ -84,7 +84,7 @@ class AllRoute(Route):
     name = 'all'
 
     @classmethod
-    def get_queryset(cl, website, model, request, **kwargs):
+    def get_queryset(cl, model, request, **kwargs):
         return model.objects.all()
 
     @classmethod
@@ -108,19 +108,30 @@ class ThreadRoute(Route):
         ('pk', '[0-9]+'),
     ]
 
+
     @classmethod
-    def get_queryset(cl, website, model, request, thread_model, pk, **kwargs):
+    def get_thread(cl, model, thread_model, pk=None):
+        """
+        Return a model if not pk, otherwise the model element of given id
+        """
         if type(thread_model) is str:
-            thread_model = website.registry.get(thread_model)
+            thread_model = model._website.registry.get(thread_model)
+        if not thread_model or not pk:
+            return thread_model
+        return thread_model.objects.get(pk=pk)
 
-        if not thread_model:
-            return
 
-        thread_model = ContentType.objects.get_for_model(thread_model)
-        return model.objects.filter(
-            thread_type = thread_model,
-            thread_id = int(pk)
-        )
+    @classmethod
+    def get_queryset(cl, model, request, thread_model, pk, **kwargs):
+        thread = cl.get_thread(model, thread_model, pk)
+        return model.get_with_thread(thread_model = thread, thread_id = pk)
+
+    @classmethod
+    def get_title(cl, model, request, thread_model, pk, **kwargs):
+        return _('%(name)s: %(model)s') % {
+            'model': model._meta.verbose_name_plural,
+            'name': cl.get_thread(model, thread_model, pk).title,
+        }
 
 
 class DateRoute(Route):
@@ -132,22 +143,32 @@ class DateRoute(Route):
     ]
 
     @classmethod
-    def get_queryset(cl, website, model, request, year, month, day, **kwargs):
+    def get_queryset(cl, model, request, year, month, day, **kwargs):
         return model.objects.filter(
             date__year = int(year),
             date__month = int(month),
             date__day = int(day),
         )
 
+    @classmethod
+    def get_title(cl, model, request, year, month, day, **kwargs):
+        return _('%(model)s of %(year)/%(month)/%(day)') % {
+            'model': model._meta.verbose_name_plural,
+            'year': year,
+            'month': month,
+            'day': day
+        }
+
 
 class SearchRoute(Route):
     name = 'search'
 
     @classmethod
-    def get_queryset(cl, website, model, request, **kwargs):
+    def get_queryset(cl, model, request, **kwargs):
         q = request.GET.get('q') or ''
         qs = None
 
+        ## TODO: by tag
         for search_field in model.search_fields or []:
             r = models.Q(**{ search_field + '__icontains': q })
             if qs: qs = qs | r
@@ -155,5 +176,10 @@ class SearchRoute(Route):
 
         return model.objects.filter(qs).distinct()
 
-## TODO: by tag
+    @classmethod
+    def get_title(cl, model, request, **kwargs):
+        return _('Search "%(search)s" in %(model)s') % {
+            'model': model._meta.verbose_name_plural,
+            'search': request.GET.get('q') or '',
+        }
 

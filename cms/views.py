@@ -49,7 +49,7 @@ class PostListView(PostBaseView, ListView):
     """
     template_name = 'aircox/cms/list.html'
     allow_empty = True
-    paginate_by = 3
+    paginate_by = 25
     model = None
 
     route = None
@@ -64,10 +64,12 @@ class PostListView(PostBaseView, ListView):
 
     def get_queryset(self):
         if self.route:
-            qs = self.route.get_queryset(self.website, self.model, self.request,
+            qs = self.route.get_queryset(self.model, self.request,
                                          **self.kwargs)
         else:
             qs = self.queryset or self.model.objects.all()
+
+        qs = qs.filter(published = True)
 
         query = self.request.GET
         if query.get('exclude'):
@@ -93,11 +95,16 @@ class PostListView(PostBaseView, ListView):
         context = super().get_context_data(**kwargs)
         context.update(self.get_base_context(**kwargs))
 
-        title = self.title if self.title else \
-                self.route and self.route.get_title(self.model, self.request,
-                                                    **self.kwargs)
+        if self.title:
+            title = self.title
+        else:
+            title = self.route and \
+                    self.route.get_title(self.model, self.request,
+                                         **self.kwargs)
+
         context['title'] = title
         context['base_template'] = 'aircox/cms/website.html'
+        context['css_class'] = 'list'
 
         if not self.list:
             import aircox.cms.sections as sections
@@ -153,6 +160,7 @@ class PostDetailView(DetailView, PostBaseView):
             section.get(request = self.request, **kwargs)
             for section in self.sections
         ])
+        context['css_class'] = 'detail'
         return context
 
     def post(self, request, *args, **kwargs):
@@ -165,7 +173,7 @@ class PostDetailView(DetailView, PostBaseView):
                     self.comments = section
 
         self.object = self.get_object()
-        self.comments.post(self, request, object)
+        self.comments.post(self, request, self.object)
         return self.get(request, *args, **kwargs)
 
 

@@ -17,7 +17,6 @@
         <a href="{{ item.detail_url }}">
     {% endif %}
 
-    {% if 'date' in list.fields or 'time' in list.fields or 'author' in list.fields %}
     <div class="meta">
         {% if item.date and 'date' in list.fields or 'time' in list.fields %}
         <time datetime="{{ item.date }}">
@@ -38,26 +37,33 @@
             {{ item.author }}
         </span>
         {% endif %}
+
+        {% if item.info and 'info' in list.fields %}
+        <span class="info">
+            {{ item.info }}
+        </span>
+        {% endif %}
     </div>
-    {% endif %}
 
     {% if 'image' in list.fields and item.image %}
     <img src="{% thumbnail item.image list.image_size crop %}">
     {% endif %}
 
-    {% if 'title' in list.fields %}
-    <h2 class="title">{{ item.title }}</h2>
-    {% endif %}
-
-    {% if 'content' in list.fields %}
     <div class="content">
-        {% if list.truncate %}
-        {{ item.content|striptags|truncatewords:list.truncate }}
-        {% else %}
-        {{ item.content|striptags }}
+        {% if 'title' in list.fields and item.title %}
+        <h2 class="title">{{ item.title }}</h2>
+        {% endif %}
+
+        {% if 'content' in list.fields and item.content %}
+        <div class="text">
+            {% if list.truncate %}
+            {{ item.content|striptags|truncatewords:list.truncate }}
+            {% else %}
+            {{ item.content|striptags }}
+            {% endif %}
+        </div>
         {% endif %}
     </div>
-    {% endif %}
 
     {% if item.detail_url %}
     </a>
@@ -72,8 +78,9 @@
 {% if page_obj or list.url %}
 <nav>
     {% if not page_obj or embed %}
-        <a href="{{list.url}}" title={% trans "More elements" %}>&#8690;</a>
-    {% else %}
+    {% comment %}link to show more elements of the list{% endcomment %}
+    <a href="{{list.url}}">{% trans "&#8226;&#8226;&#8226;" %}</a>
+    {% elif page_obj.paginator.num_pages > 1 %}
         {% with page_obj.paginator.num_pages as num_pages %}
             {% if page_obj.has_previous %}
                 <a href="?page={{ page_obj.previous_page_number }}">previous</a>

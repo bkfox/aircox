@@ -39,8 +39,7 @@ class Section(View):
     * header: header of the section
     * footer: footer of the section
 
-    * object_required: if true and not object has been given, gets angry
-    * object: (can be persistent) related object
+    * force_object: (can be persistent) related object
 
     """
     template_name = 'aircox/cms/section.html'
@@ -54,6 +53,7 @@ class Section(View):
     header = ''
     footer = ''
     object = None
+    force_object = None
 
     def __init__ (self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -85,8 +85,7 @@ class Section(View):
         }
 
     def get(self, request, object=None, **kwargs):
-        if not self.object:
-            self.object = object
+        self.object = self.force_object or object
         self.request = request
         self.kwargs = kwargs
 
@@ -146,6 +145,7 @@ class ListItem:
     author = None
     date = None
     image = None
+    info = None
     detail_url = None
 
     css_class = None
@@ -153,10 +153,10 @@ class ListItem:
 
     def __init__ (self, post = None, **kwargs):
         if post:
-            self.update_from(post)
+            self.update(post)
         self.__dict__.update(**kwargs)
 
-    def update_from(self, post):
+    def update(self, post):
         """
         Update empty fields using the given post
         """
@@ -177,7 +177,6 @@ class List(Section):
     * object_list: force an object list to be used
     * url: url to the list in full page
     * message_empty: message to print when list is empty (if not hiding)
-
     * fields: fields of the items to render
     * image_size: size of the images
     * truncate: number of words to keep in content (0 = full content)
@@ -188,7 +187,7 @@ class List(Section):
     url = None
     message_empty = _('nothing')
 
-    fields = [ 'date', 'time', 'image', 'title', 'content' ]
+    fields = [ 'date', 'time', 'image', 'title', 'content', 'info' ]
     image_size = '64x64'
     truncate = 16
 
@@ -222,7 +221,9 @@ class Comments(List):
     Section used to render comment form and comments list. It renders the
     form and comments, and save them.
     """
-    css_class="comments"
+    title=_('Comments')
+    css_class='comments'
+    paginate_by = 0
     truncate = 0
     fields = [ 'date', 'time', 'author', 'content' ]
 
@@ -259,11 +260,10 @@ class Comments(List):
         """
         Forward data to this view
         """
-        # TODO: comment satanize
         comment_form = CommentForm(request.POST)
         if comment_form.is_valid():
             comment = comment_form.save(commit=False)
-            comment.thread = self.object
+            comment.thread = object
             comment.published = view.website.auto_publish_comments
             comment.save()
 

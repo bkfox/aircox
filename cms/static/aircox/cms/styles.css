@@ -4,7 +4,6 @@ body {
     margin: 0;
 }
 
-
 .page {
     display: flex;
 }
@@ -52,34 +51,33 @@ main .section {
 
 
 /** comments **/
-.comment_form label {
-    display: none;
-}
-
-.comment_form input:not([type=checkbox]),
-.comment_form textarea {
+.comments form input:not([type=checkbox]),
+.comments form textarea {
     display: inline-block;
-    width: calc(100% - 5em);
+    width: 100%;
     max-height: 6em;
     margin: 0.2em 0em;
+    padding: 0.2em;
 }
 
-.comment_form input[type=checkbox],
-.comment_form button[type=submit] {
-    max-width: 4em;
+.comments form input[type=checkbox],
+.comments form button[type=submit] {
     vertical-align:bottom;
     margin: 0.2em 0em;
     text-align: center;
 }
 
-.comment_form .extra {
+.comments form button[type=submit] {
+    float: right;
+}
+
+.comments form #show_more:not(:checked) ~ .extra {
     display: none;
 }
 
-.comment_form input[type="checkbox"]:checked + .extra {
-    display: block;
+.comments label[for="show_more"] {
+    font-size: 0.8em;
 }
-
 
 
 

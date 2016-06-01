@@ -32,7 +32,10 @@
                     {{ menus.left|safe }}
                 {% endif %}
 
-                <main>
+                <main {% if css_class %} class="{{ css_class }}" {% endif %}
+                    {% for k, v in attrs.items %}
+                    {{ k }} = "{{ v|addslashes }}"
+                    {% endfor %} >
 {% endif %}
                     {% if messages %}
                     <ul class="messages">

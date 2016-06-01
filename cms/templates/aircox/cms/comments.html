@@ -7,18 +7,22 @@
 {% if comment_form %}
 {% with comment_form as form %}
 {{ form.non_field_errors }}
-<form action="" method="POST" class="comment_form">
+<form action="" method="POST">
 {% csrf_token %}
 {% render_honeypot_field "hp_website" %}
 <div>
     {{ form.author.errors }}
     {{ form.author }}
-    <input type="checkbox" value="1">
-    <div class="extra">
-        {{ form.email.errors }}
-        {{ form.email }}
-        {{ form.url.errors }}
-        {{ form.url }}
+    <div>
+        <input type="checkbox" value="1" id="show_more">
+        <label for="show_more">{% trans "show more options" %}</label>
+        <div class="extra">
+            {{ form.email.errors }}
+            {{ form.email }}
+            {{ form.url.errors }}
+            {{ form.url }}
+        </div>
+
     </div>
 </div>
 <div>

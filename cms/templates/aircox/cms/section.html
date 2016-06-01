@@ -1,5 +1,5 @@
 
-<{{ tag }} class="{{ css_class }}"
+<{{ tag }} {% if css_class %} class="{{ css_class }}" {% endif %}
     {% for k, v in attrs.items %}
     {{ k }} = "{{ v|addslashes }}"
     {% endfor %} >
@@ -15,7 +15,7 @@
 {% block header %}
 {% if header %}
 <header>
-    {{ header }}
+    {{ header|safe }}
 </header>
 {% endif %}
 {% endblock %}
@@ -27,7 +27,7 @@
 {% block footer %}
 {% if footer %}
 <footer>
-    {{ footer }}
+    {{ footer|safe }}
 </footer>
 {% endif %}
 {% endblock %}

@@ -14,6 +14,7 @@ import bleach
 from taggit.managers import TaggableManager
 
 from aircox.cms import routes
+from aircox.cms import settings
 
 
 class Comment(models.Model):
@@ -64,6 +65,10 @@ class Comment(models.Model):
             attributes=settings.AIRCOX_CMS_BLEACH_COMMENT_ATTRS
         )
 
+    def save(self, make_safe = True, *args, **kwargs):
+        if make_safe:
+            self.make_safe()
+        return super().save(*args, **kwargs)
 
 
 class Post (models.Model):
@@ -120,19 +125,23 @@ class Post (models.Model):
     search_fields = [ 'title', 'content' ]
 
     @classmethod
-    def children_of(cl, thread, queryset = None):
+    def get_with_thread(cl, thread = None, queryset = None,
+                        thread_model = None, thread_id = None):
         """
-        Return children of the given thread of the cl's type. If queryset
-        is not given, use cl.objects as starting queryset.
+        Return posts of the cl's type that are children of the given thread.
         """
         if not queryset:
             queryset = cl.objects
-        thread_type = ContentType.objects.get_for_model(thread)
-        qs = queryset.filter(
-            thread_id = thread.pk,
-            thread_type__pk = thread_type.id
+
+        if thread:
+            thread_model = type(thread)
+            thread_id = thread.id
+
+        thread_model = ContentType.objects.get_for_model(thread_model)
+        return queryset.filter(
+            thread_id = thread_id,
+            thread_type__pk = thread_model.id
         )
-        return qs
 
     def get_comments(self):
         """
@@ -175,6 +184,11 @@ class Post (models.Model):
             attributes=settings.AIRCOX_CMS_BLEACH_CONTENT_ATTRS
         )
         self.tags = [ bleach.clean(tag, tags=[]) for tag in self.tags.all() ]
+
+    def save(self, make_safe = True, *args, **kwargs):
+        if make_safe:
+            self.make_safe()
+        return super().save(*args, **kwargs)
 
     class Meta:
         abstract = True

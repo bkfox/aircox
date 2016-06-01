@@ -79,3 +79,15 @@ website, using instance of the Website class:
 4. Change templates and css styles if needed.
 
 
+# Generated content
+## CSS
+* **.meta**: metadata of any item (author, date, info, tags...)
+* **.info**: used to render extra information, usually in lists
+
+The following classes are used for sections (on the section container) and page-wide views (on the <main> tag):
+* **.section**: associated to all sections
+* **.section_*class***: associated to all section, where name is the name of the classe used to generate the section;
+* **.list**: for lists (sections and general list)
+* **.detail**: for the detail page view
+
+
