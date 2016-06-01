@@ -75,6 +75,7 @@
 {% endfor %}
 </ul>
 
+{% if object_list %}
 {% if page_obj or list.url %}
 <nav>
     {% if not page_obj or embed %}
@@ -116,6 +117,7 @@
         {% endwith %}
     {% endif %}
 </nav>
+{% endif %}
 {% endif %}
 {% endblock %}
 

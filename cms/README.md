@@ -14,6 +14,11 @@ Simple CMS generator used in Aircox. Main features includes:
 We aims here to automatize most common tasks and to ease website
 configuration.
 
+# Dependencies
+* ```django-taggit```: publications tags
+
+Note: this application can be used outside Aircox if needed.
+
 # Architecture
 A **Website** holds all required informations to run the server instance. It
 is used to register all kind of posts, routes to the views, menus, etc.
