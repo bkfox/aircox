@@ -8,9 +8,9 @@ We define here different models and sections that can be used to construct
 a website in a fast and simple manner.
 
 # Dependencies
-* ```django-suit```: admin interface;
-* ```django-autocomplete-light```: autocompletion in the admin interface;
-* ```aircox.cms```, ```aircox.programs```
+* `django-suit`: admin interface;
+* `django-autocomplete-light`: autocompletion in the admin interface;
+* `aircox.cms`, `aircox.programs`
 
 # Features
 ## Models

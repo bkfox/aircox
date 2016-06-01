@@ -15,9 +15,11 @@ We aims here to automatize most common tasks and to ease website
 configuration.
 
 # Dependencies
-* ```django-taggit```: publications tags
+* `django-taggit`: publications' tags;
+* `easy_thumbnails`: publications' images and previews;
+* `django-honeypot`: comments anti-spam
 
-Note: this application can be used outside Aircox if needed.
+Note: this application can be used outside aircox if needed.
 
 # Architecture
 A **Website** holds all required informations to run the server instance. It

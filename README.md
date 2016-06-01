@@ -11,9 +11,10 @@ Platform to manage a radio, schedules, website, and so on. We use the power of D
 * **log**: keep a trace of every played/loaded sounds on the stream generator.
 
 ## Applications
-* **programs**: managing stations, programs, schedules and diffusions. This is the core application, that handle most of the work.
-* **cms**: [optional] cms manager with reusable tools (can be used in another website application).
-* **liquidsoap**: [optional] generate configuration and controls over liquidsoap. We use one instance of liquidsoap per station.
+* **programs**: managing stations, programs, schedules and diffusions. This is the core application, that handle most of the work;
+* **liquidsoap**: generate configuration and controls over liquidsoap. We use one instance of liquidsoap per station;
+* **cms**: cms manager with reusable tools (can be used in another website application);
+* **website**: set of common models, sections, and other items ready to be used for a website;
 
 ## Installation
 For now, we provide only applications availables under the aircox directory. Create a django project, and add the aircox applications directory.
@@ -26,7 +27,7 @@ Later we would provide a package, but now we have other priorities.
     - dependencies: `'taggit'` (*programs* and *cms* applications),
                     `'easy_thumbnails'` (*cms*), `'honeypot'` (*cms*)
     - optional dependencies (in order to make users' life easier): `'autocomplete_light'`, `'suit'`
-    - aircox: `'aircox.programs'`, `'aircox.liquidsoap'`, `'aircox.cms'`
+    - aircox: `'aircox.programs'`, `'aircox.liquidsoap'`, `'aircox.cms'`, `'aircox.website'`
 
 ### urls.py
 * dependencies:
