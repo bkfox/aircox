@@ -18,12 +18,13 @@ class Website:
     # user interaction
     allow_comments = True
     auto_publish_comments = False
+    comments_routes = True
 
     # components
     urls = []
     registry = {}
 
-    def __init__ (self, menus = None, **kwargs):
+    def __init__(self, menus = None, **kwargs):
         """
         * menus: a list of menus to add to the website
         """
@@ -36,13 +37,34 @@ class Website:
             for menu in menus:
                 self.set_menu(menu)
 
+        if self.comments_routes:
+            self.register_comments_routes()
 
-    def name_of_model (self, model):
+
+    def name_of_model(self, model):
         for name, _model in self.registry.items():
             if model is _model:
                 return name
 
-    def register_model (self, name, model):
+    def register_comments_routes(self):
+        """
+        Register routes for comments, for the moment, only:
+        * ThreadRoute
+        """
+        import aircox.cms.models as models
+        import aircox.cms.sections as sections
+
+        self.register_list(
+            'comment', models.Comment,
+            routes = [routes.ThreadRoute],
+            css_class = 'comments',
+            list = sections.Comments(
+                truncate = 30,
+                fields = ['content','author','date','time'],
+            )
+        )
+
+    def register_model(self, name, model):
         """
         Register a model and return the name under which it is registered.
         Raise a ValueError if another model is yet associated under this name.
@@ -54,7 +76,7 @@ class Website:
         model._website = self
         return name
 
-    def register_detail (self, name, model, view = views.PostDetailView,
+    def register_detail(self, name, model, view = views.PostDetailView,
                          **view_kwargs):
         """
         Register a model and the detail view
@@ -68,7 +90,7 @@ class Website:
         self.urls.append(routes.DetailRoute.as_url(name, view))
         self.registry[name] = model
 
-    def register_list (self, name, model, view = views.PostListView,
+    def register_list(self, name, model, view = views.PostListView,
                        routes = [], **view_kwargs):
         """
         Register a model and the given list view using the given routes
@@ -82,7 +104,7 @@ class Website:
         self.urls += [ route.as_url(name, view) for route in routes ]
         self.registry[name] = model
 
-    def register (self, name, model, sections = None, routes = None,
+    def register(self, name, model, sections = None, routes = None,
                   list_view = views.PostListView,
                   detail_view = views.PostDetailView,
                   list_kwargs = {}, detail_kwargs = {}):
@@ -104,7 +126,7 @@ class Website:
                 **list_kwargs
             )
 
-    def set_menu (self, menu):
+    def set_menu(self, menu):
         """
         Set a menu, and remove any previous menu at the same position
         """
@@ -114,7 +136,7 @@ class Website:
             menu.tag = 'side'
         self.menus[menu.position] = menu
 
-    def get_menu (self, position):
+    def get_menu(self, position):
         """
         Get an enabled menu by its position
         """

@@ -44,19 +44,25 @@ class PostListView(PostBaseView, ListView):
     * embed: view is embedded, render only the list
     * exclude: exclude item of the given id
     * order: 'desc' or 'asc'
-    * fields: fields to render
     * page: page number
     """
     template_name = 'aircox/cms/list.html'
     allow_empty = True
-    paginate_by = 25
+    paginate_by = 30
     model = None
 
     route = None
     list = None
+    css_class = None
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        if not self.list:
+            self.list = sections.List(
+                truncate = 32,
+                fields = [ 'date', 'time', 'image', 'title', 'content' ],
+            )
 
     def dispatch(self, request, *args, **kwargs):
         self.route = self.kwargs.get('route') or self.route
@@ -104,15 +110,8 @@ class PostListView(PostBaseView, ListView):
 
         context['title'] = title
         context['base_template'] = 'aircox/cms/website.html'
-        context['css_class'] = 'list'
-
-        if not self.list:
-            import aircox.cms.sections as sections
-            self.list = sections.List(
-                truncate = 32,
-                fields = [ 'date', 'time', 'image', 'title', 'content' ],
-            )
-
+        context['css_class'] = 'list' if not self.css_class else \
+                               'list ' + self.css_class
         context['list'] = self.list
         # FIXME: list.url = if self.route: self.model(self.route, self.kwargs) else ''
         return context

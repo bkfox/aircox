@@ -24,6 +24,8 @@ class Section(View):
     to Section configuration/rendering. However, some data are considered
     as temporary, and are reset at each rendering, using given arguments.
 
+    When get_context_data returns None, returns an empty string
+
     ! Important Note: values given for rendering are considered as safe
     HTML in templates.
 
@@ -90,6 +92,8 @@ class Section(View):
         self.kwargs = kwargs
 
         context = self.get_context_data()
+        if not context:
+            return ''
         return render_to_string(self.template_name, context, request=request)
 
 
@@ -207,11 +211,15 @@ class List(Section):
         return self.object_list
 
     def get_context_data(self):
+        object_list = self.object_list or self.get_object_list()
+        if not object_list and not self.message_empty:
+            return
+
         context = super().get_context_data()
         context.update({
             'base_template': 'aircox/cms/section.html',
             'list': self,
-            'object_list': self.object_list or self.get_object_list(),
+            'object_list': object_list,
         })
         return context
 
@@ -223,9 +231,9 @@ class Comments(List):
     """
     title=_('Comments')
     css_class='comments'
-    paginate_by = 0
     truncate = 0
     fields = [ 'date', 'time', 'author', 'content' ]
+    message_empty = _('no comment yet')
 
     comment_form = None
     success_message = ( _('Your message is awaiting for approval'),
@@ -239,6 +247,19 @@ class Comments(List):
         return [ ListItem(post=comment, css_class="comment",
                           attrs={ 'id': comment.id })
                  for comment in qs ]
+
+    @property
+    def url(self):
+        import aircox.cms.models as models
+        import aircox.cms.routes as routes
+        if self.object:
+            return models.Comment.route_url(routes.ThreadRoute, {
+                'pk': self.object.id,
+                'thread_model': self.object._website.name_of_model(
+                    self.object.__class__
+                ),
+            })
+        return ''
 
     def get_context_data(self):
         post = self.object

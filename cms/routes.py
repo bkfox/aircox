@@ -108,7 +108,6 @@ class ThreadRoute(Route):
         ('pk', '[0-9]+'),
     ]
 
-
     @classmethod
     def get_thread(cl, model, thread_model, pk=None):
         """
@@ -182,4 +181,5 @@ class SearchRoute(Route):
             'model': model._meta.verbose_name_plural,
             'search': request.GET.get('q') or '',
         }
+
 

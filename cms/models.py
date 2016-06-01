@@ -17,7 +17,33 @@ from aircox.cms import routes
 from aircox.cms import settings
 
 
-class Comment(models.Model):
+class Routable:
+    @classmethod
+    def get_with_thread(cl, thread = None, queryset = None,
+                        thread_model = None, thread_id = None):
+        """
+        Return posts of the cl's type that are children of the given thread.
+        """
+        if not queryset:
+            queryset = cl.objects
+
+        if thread:
+            thread_model = type(thread)
+            thread_id = thread.id
+
+        thread_model = ContentType.objects.get_for_model(thread_model)
+        return queryset.filter(
+            thread_id = thread_id,
+            thread_type__pk = thread_model.id
+        )
+
+    @classmethod
+    def route_url(cl, route, kwargs = None):
+        name = cl._website.name_of_model(cl)
+        name = route.get_view_name(name)
+        return reverse(name, kwargs = kwargs)
+
+class Comment(models.Model, Routable):
     thread_type = models.ForeignKey(
         ContentType,
         on_delete=models.SET_NULL,
@@ -71,7 +97,7 @@ class Comment(models.Model):
         return super().save(*args, **kwargs)
 
 
-class Post (models.Model):
+class Post (models.Model, Routable):
     """
     Base model that can be used as is if wanted. Represent a generic
     publication on the website.
@@ -115,33 +141,14 @@ class Post (models.Model):
         default = '',
     )
     image = models.ImageField(
-        blank = True, null = True
+        blank = True, null = True,
     )
     tags = TaggableManager(
-        _('tags'),
+        verbose_name = _('tags'),
         blank = True,
     )
 
     search_fields = [ 'title', 'content' ]
-
-    @classmethod
-    def get_with_thread(cl, thread = None, queryset = None,
-                        thread_model = None, thread_id = None):
-        """
-        Return posts of the cl's type that are children of the given thread.
-        """
-        if not queryset:
-            queryset = cl.objects
-
-        if thread:
-            thread_model = type(thread)
-            thread_id = thread.id
-
-        thread_model = ContentType.objects.get_for_model(thread_model)
-        return queryset.filter(
-            thread_id = thread_id,
-            thread_type__pk = thread_model.id
-        )
 
     def get_comments(self):
         """
@@ -166,12 +173,6 @@ class Post (models.Model):
         )
         return qs
 
-    @classmethod
-    def route_url(cl, route, kwargs = None):
-        name = cl._website.name_of_model(cl)
-        name = route.get_view_name(name)
-        return reverse(name, kwargs = kwargs)
-
     def make_safe(self):
         self.title = bleach.clean(
             self.title,
@@ -183,11 +184,18 @@ class Post (models.Model):
             tags=settings.AIRCOX_CMS_BLEACH_CONTENT_TAGS,
             attributes=settings.AIRCOX_CMS_BLEACH_CONTENT_ATTRS
         )
-        self.tags = [ bleach.clean(tag, tags=[]) for tag in self.tags.all() ]
+        if self.pk:
+            self.tags.set(*[
+                bleach.clean(tag, tags=[])
+                for tag in self.tags.all()
+            ])
 
     def save(self, make_safe = True, *args, **kwargs):
         if make_safe:
             self.make_safe()
+        if self.date and self.date.tzinfo is None or \
+                self.date.tzinfo.utcoffset(self.date) is None:
+            timezone.make_aware(self.date)
         return super().save(*args, **kwargs)
 
     class Meta:
@@ -353,6 +361,9 @@ class RelatedPost (Post, metaclass = RelatedPostBase):
             to update the post thread to the correct Post model (in order to
             establish a parent-child relation between two models)
 
+            When a callable is set as bound value, it will be called to retrieve
+            the value, as: callable_func(post, related)
+
             Note: bound values can be any value, not only Django field.
         * post_to_rel: auto update related object when post is updated
         * rel_to_post: auto update the post when related object is updated
@@ -380,6 +391,8 @@ class RelatedPost (Post, metaclass = RelatedPostBase):
 
     def get_rel_attr(self, attr):
         attr = self._relation.bindings.get(attr)
+        if callable(attr):
+            return attr(self, self.related)
         return getattr(self.related, attr) if attr else None
 
     def set_rel_attr(self, attr, value):
@@ -432,8 +445,8 @@ class RelatedPost (Post, metaclass = RelatedPostBase):
         for attr, rel_attr in rel.bindings.items():
             if attr == 'thread':
                 continue
-            self.set_rel_attr
-            value = getattr(self.related, rel_attr)
+            value = rel_attr(self, self.related) if callable(rel_attr) else \
+                    getattr(self.related, rel_attr)
             set_attr(attr, value)
 
         if rel.thread_model:
@@ -453,14 +466,16 @@ class RelatedPost (Post, metaclass = RelatedPostBase):
         if self.pk and self._relation.rel_to_post:
             self.rel_to_post(False)
 
-    def save (self, avoid_sync = False, *args, **kwargs):
+    def save (self, avoid_sync = False, save = True, *args, **kwargs):
         """
-        If avoid_relation, do not synchronise the post/related object.
+        * avoid_sync: do not synchronise the post/related object;
+        * save: if False, does not call parent save functions
         """
         if not avoid_sync:
             if not self.pk and self._relation.rel_to_post:
                 self.rel_to_post(False)
             if self._relation.post_to_rel:
                 self.post_to_rel(True)
-        super().save(*args, **kwargs)
+        if save:
+            super().save(*args, **kwargs)
 
