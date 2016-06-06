@@ -18,7 +18,8 @@ class PostBaseView:
 
     def add_css_class(self, css_class):
         if self.css_class:
-            self.css_class += ' ' + css_class
+            if css_class not in self.css_class:
+                self.css_class += ' ' + css_class
         else:
             self.css_class = css_class
 
@@ -47,6 +48,13 @@ class PostListView(PostBaseView, ListView):
     """
     List view for posts and children.
 
+    If list is given:
+    - use list's template and css_class
+    - use list's context as base context
+
+    Note that we never use list.get_object_list, but instead use
+    route.get_queryset or self.model.objects.all()
+
     Request.GET params:
     * embed: view is embedded, render only the list
     * exclude: exclude item of the given id
@@ -64,17 +72,15 @@ class PostListView(PostBaseView, ListView):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        if self.list:
+            self.template_name = self.list.template_name
+            self.css_class = self.list.css_class
         self.add_css_class('list')
-
-        if not self.list:
-            self.list = sections.List(
-                truncate = 32,
-                fields = [ 'date', 'time', 'image', 'title', 'content' ],
-            )
-        self.template_name = self.list.template_name
 
     def dispatch(self, request, *args, **kwargs):
         self.route = self.kwargs.get('route') or self.route
+        if request.GET.get('embed'):
+            self.embed = True
         return super().dispatch(request, *args, **kwargs)
 
     def get_queryset(self):
@@ -82,6 +88,7 @@ class PostListView(PostBaseView, ListView):
             qs = self.route.get_queryset(self.model, self.request,
                                          **self.kwargs)
         else:
+            # FIXME: should neven happen
             qs = self.queryset or self.model.objects.all()
 
         qs = qs.filter(published = True)
@@ -89,14 +96,10 @@ class PostListView(PostBaseView, ListView):
         query = self.request.GET
         if query.get('exclude'):
             qs = qs.exclude(id = int(query['exclude']))
-
-        if query.get('embed'):
-            self.embed = True
-
-        if query.get('order') == 'asc':
-            qs.order_by('date', 'id')
+        if query.get('order') == 'desc':
+            qs = qs.order_by('-date', '-id')
         else:
-            qs.order_by('-date', '-id')
+            qs = qs.order_by('date', 'id')
 
         if query.get('fields'):
             self.fields = [
@@ -106,7 +109,15 @@ class PostListView(PostBaseView, ListView):
         return qs
 
     def get_context_data(self, **kwargs):
-        context = self.list.get_context(request = self.request, **self.kwargs)
+        if self.list:
+            list = self.list
+        else:
+            list = sections.List(
+                truncate = 32,
+                fields = [ 'date', 'time', 'image', 'title', 'content' ],
+            )
+
+        context = list.get_context(request = self.request, **self.kwargs) or {}
         context.update(super().get_context_data(**kwargs))
         context.update(self.get_base_context(**kwargs))
 
@@ -120,9 +131,8 @@ class PostListView(PostBaseView, ListView):
         context.update({
             'title': title,
             'base_template': 'aircox/cms/website.html',
-            'css_class': self.css_class + ' ' + context.get('css_class')
-                         if self.css_class else context.get('css_class'),
-            'list': self.list,
+            'css_class': self.css_class,
+            'list': list,
         })
         # FIXME: list.url = if self.route: self.model(self.route, self.kwargs) else ''
         return context
@@ -199,11 +209,9 @@ class PageView(TemplateView, PostBaseView):
     template_name = 'aircox/cms/detail.html'
 
     sections = []
-    css_class = 'page'
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.add_css_class('page')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

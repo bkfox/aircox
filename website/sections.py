@@ -16,6 +16,7 @@ class Diffusions(sections.List):
     """
     next_count = 5
     prev_count = 5
+    order_by = '-start'
     show_schedule = False
 
     def __init__(self, *args, **kwargs):
@@ -32,6 +33,8 @@ class Diffusions(sections.List):
             qs = qs.filter(**filter_args).order_by('start')
 
         r = []
+        if not self.next_count and not self.prev_count:
+            return qs
         if self.next_count:
             r += list(programs.Diffusion.get(next=True, queryset = qs)
                         .order_by('-start')[:self.next_count])
@@ -118,9 +121,12 @@ class Schedule(Diffusions):
     Render a list of diffusions in the form of a schedule
     """
     template_name = 'aircox/website/schedule.html'
+    next_count = None
+    prev_count = None
     date = None
     days = 7
     nav_date_format = '%a. %d'
+    fields = [ 'time', 'image', 'title']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -144,11 +150,12 @@ class Schedule(Diffusions):
 
     def get_diffs(self):
         date = self.date_or_default()
-        return super().get_diffs(
+        diffs = super().get_diffs(
             start__year = date.year,
             start__month = date.month,
             start__day = date.day,
         )
+        return diffs
 
     def get_context_data(self, **kwargs):
         date = self.date_or_default()

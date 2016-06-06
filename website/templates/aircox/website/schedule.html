@@ -1,0 +1,47 @@
+{% extends 'aircox/cms/list.html' %}
+
+{% block header %}
+<header>
+<script>
+function update_schedule(event) {
+    var target = event.currentTarget;
+    var url = target.getAttribute('href');
+
+    var schedule = target;
+    while(schedule && schedule.className.indexOf('schedule'))
+        schedule = schedule.parentNode;
+    if(!schedule)
+        return false;
+
+    var xhr = new XMLHttpRequest();
+    xhr.onreadystatechange = function() {
+        if(xhr.readyState != 4 || xhr.status != 200 && xhr.status)
+            return;
+
+        var obj = document.createElement('div');
+        obj.innerHTML = xhr.responseText;
+        target.replaceChild(
+            obj.querySelector('.content'),
+            schedule.querySelector('.schedule .content')
+        )
+        target.replaceChild(
+            obj.querySelector('.schedule header'),
+            schedule.querySelector('.schedule header')
+        )
+        // target.querySelector('nav a').href = url
+    }
+
+    xhr.open('GET', url + '?embed=1', true);
+    xhr.send();
+    return false;
+}
+</script>
+{% for curr, url in dates_url %}
+<a href="{{ url }}" onclick="return update_schedule(event);" {% if curr == date %}
+    class="selected"{% endif %}>
+    {{ curr|date:'D. d' }}
+</a>
+{% endfor %}
+</header>
+{% endblock %}
+

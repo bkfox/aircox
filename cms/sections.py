@@ -59,7 +59,8 @@ class Section(View):
 
     def add_css_class(self, css_class):
         if self.css_class:
-            self.css_class += ' ' + css_class
+            if css_class not in self.css_class:
+                self.css_class += ' ' + css_class
         else:
             self.css_class = css_class
 
@@ -240,6 +241,7 @@ class Comments(List):
     Section used to render comment form and comments list. It renders the
     form and comments, and save them.
     """
+    template_name = 'aircox/cms/comments.html'
     title=_('Comments')
     css_class='comments'
     truncate = 0
@@ -253,6 +255,8 @@ class Comments(List):
                       'Please check errors below')
 
     def get_object_list(self):
+        if not self.object:
+            return
         qs = self.object.get_comments().filter(published=True). \
                          order_by('-date')
         return [ ListItem(post=comment, css_class="comment",
@@ -273,15 +277,14 @@ class Comments(List):
         return ''
 
     def get_context_data(self):
-        post = self.object
-        if hasattr(post, 'allow_comments') and post.allow_comments:
-            comment_form = (self.comment_form or CommentForm())
-        else:
-            comment_form = None
+        comment_form = None
+        if self.object:
+            post = self.object
+            if hasattr(post, 'allow_comments') and post.allow_comments:
+                comment_form = (self.comment_form or CommentForm())
 
         context = super().get_context_data()
         context.update({
-            'base_template': 'aircox/cms/comments.html',
             'comment_form': comment_form,
         })
 
