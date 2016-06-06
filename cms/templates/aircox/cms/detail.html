@@ -1,12 +1,8 @@
 {% extends "aircox/cms/website.html" %}
 {% load aircox_cms %}
 
-{% block title %}
-{{ object.title }}
-{% endblock %}
-
-{% block pre_title %}
-<div class="pre_title meta">
+{% block header %}
+<header>
     {% if object.thread %}
     <div class="threads">
         {{ object|threads:' > '|safe }}
@@ -24,7 +20,7 @@
         {{ object.tags.all|join:', ' }}
     </div>
     {% endif %}
-</div>
+</header>
 {% endblock %}
 
 {% block content %}

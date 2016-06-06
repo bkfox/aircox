@@ -14,7 +14,13 @@ class PostBaseView:
     title = ''      # title of the page
     embed = False   # page is embed (if True, only post content is printed
     attrs = ''      # attr for the HTML element of the content
-    css_classes = ''# css classes for the HTML element of the content
+    css_class = ''  # css classes for the HTML element of the content
+
+    def add_css_class(self, css_class):
+        if self.css_class:
+            self.css_class += ' ' + css_class
+        else:
+            self.css_class = css_class
 
     def get_base_context(self, **kwargs):
         """
@@ -58,12 +64,14 @@ class PostListView(PostBaseView, ListView):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.add_css_class('list')
 
         if not self.list:
             self.list = sections.List(
                 truncate = 32,
                 fields = [ 'date', 'time', 'image', 'title', 'content' ],
             )
+        self.template_name = self.list.template_name
 
     def dispatch(self, request, *args, **kwargs):
         self.route = self.kwargs.get('route') or self.route
@@ -95,11 +103,11 @@ class PostListView(PostBaseView, ListView):
                 field for field in query.get('fields')
                 if field in self.__class__.fields
             ]
-
         return qs
 
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
+        context = self.list.get_context(request = self.request, **self.kwargs)
+        context.update(super().get_context_data(**kwargs))
         context.update(self.get_base_context(**kwargs))
 
         if self.title:
@@ -110,11 +118,11 @@ class PostListView(PostBaseView, ListView):
                                          **self.kwargs)
 
         context.update({
-        'title': title,
-        'base_template': 'aircox/cms/website.html',
-        'css_class': 'list' if not self.css_class else \
-                     'list ' + self.css_class,
-        'list': self.list,
+            'title': title,
+            'base_template': 'aircox/cms/website.html',
+            'css_class': self.css_class + ' ' + context.get('css_class')
+                         if self.css_class else context.get('css_class'),
+            'list': self.list,
         })
         # FIXME: list.url = if self.route: self.model(self.route, self.kwargs) else ''
         return context
@@ -137,6 +145,7 @@ class PostDetailView(DetailView, PostBaseView):
 
     def __init__(self, sections = None, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.add_css_class('detail')
         self.sections = sections or []
 
     def get_queryset(self):
@@ -159,11 +168,12 @@ class PostDetailView(DetailView, PostBaseView):
 
         kwargs['object'] = self.object
         context.update({
+            'title': self.object.title,
             'content': ''.join([
                 section.get(request = self.request, **kwargs)
                 for section in self.sections
             ]),
-            'css_class': 'detail',
+            'css_class': self.css_class,
         })
         return context
 
@@ -192,10 +202,8 @@ class PageView(TemplateView, PostBaseView):
     css_class = 'page'
 
     def __init__(self, *args, **kwargs):
-        css_class = 'css_class' in kwargs and kwargs.pop('css_class')
-        if css_class:
-            self.css_class += ' ' + css_class
         super().__init__(*args, **kwargs)
+        self.add_css_class('page')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

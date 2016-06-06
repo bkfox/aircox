@@ -16,7 +16,7 @@
         <title>{{ website.name }} {% if title %}- {{ title }} {% endif %}</title>
     </head>
     <body>
-        {% block header %}
+        {% block page_header %}
             {% if menus.header %}
             {{ menus.header|safe }}
             {% endif %}
@@ -32,30 +32,35 @@
                     {{ menus.left|safe }}
                 {% endif %}
 
+                {% if messages %}
+                <ul class="messages">
+                    {% for message in messages %}
+                        <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>
+                        {{ message }}
+                        </li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+
                 <main {% if css_class %} class="{{ css_class }}" {% endif %}
                     {% for k, v in attrs.items %}
                     {{ k }} = "{{ v|addslashes }}"
                     {% endfor %} >
 {% endif %}
-                    {% if messages %}
-                    <ul class="messages">
-                        {% for message in messages %}
-                            <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>
-                            {{ message }}
-                            </li>
-                        {% endfor %}
-                    </ul>
+                    {% block title %}
+                    {% if title %}
+                        <h1>{{ title }}</h1>
                     {% endif %}
+                    {% endblock %}
 
-                    {% block pre_title %}
+                    {% block header %}
+                    {% if header %}
+                        <header>
+                        {{ header|safe }}
+                        </header>
+                    {% endif %}
                     {% endblock %}
-                    <h1>
-                        {% block title %}
-                        {{ title }}
-                        {% endblock %}
-                    </h1>
-                    {% block post_title %}
-                    {% endblock %}
+
                     <div class="content">
                         {% block content %}
                         {% endblock %}

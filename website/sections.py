@@ -115,80 +115,57 @@ class Playlist(sections.List):
 
 class Schedule(Diffusions):
     """
-    Schedule printing diffusions starting at the given date
-
-    * date: if set use this date instead of now;
-    * days: number of days to show;
-    * time_format: force format of the date in schedule header;
+    Render a list of diffusions in the form of a schedule
     """
+    template_name = 'aircox/website/schedule.html'
     date = None
     days = 7
-    time_format = '%a. %d'
+    nav_date_format = '%a. %d'
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.add_css_class('schedule')
+
+    @staticmethod
+    def get_week_dates(date):
+        first = date - tz.timedelta(days=date.weekday())
+        return [ first + tz.timedelta(days=i) for i in range(0, 7) ]
+
+    def date_or_default(self):
+        if self.date:
+            return self.date
+        elif 'year' in self.kwargs:
+            return tz.datetime(year = int(self.kwargs['year']),
+                               month = int(self.kwargs['month']),
+                               day = int(self.kwargs['day']),
+                               hour = 0, minute = 0, second = 0,
+                               microsecond = 0)
+        return tz.datetime.now()
 
     def get_diffs(self):
-        date = self.date or tz.datetime.now()
+        date = self.date_or_default()
         return super().get_diffs(
             start__year = date.year,
             start__month = date.month,
             start__day = date.day,
         )
 
-    @property
-    def header(self):
-        date = self.date or tz.datetime.now()
-        date.replace(hour = 0, minute = 0, second = 0, microsecond = 0)
-        curr = date - tz.timedelta(days=date.weekday())
-        last = curr + tz.timedelta(days=7)
+    def get_context_data(self, **kwargs):
+        date = self.date_or_default()
+        dates_url = [
+            (date, models.Diffusion.route_url(
+                routes.DateRoute,
+                year = date.year, month = date.month, day = date.day
+            ))
+            for date in self.get_week_dates(date)
+        ]
 
-        r = """
-        <script>function update_schedule(url, event) {
-            var target = event.currentTarget;
-
-            while(target && target.className.indexOf('section'))
-                target = target.parentNode;
-
-            if(!target)
-                return false;
-
-
-            var xhr = new XMLHttpRequest();
-            xhr.onreadystatechange = function() {
-                if(xhr.readyState != 4 || xhr.status != 200 && xhr.status)
-                    return;
-
-                var obj = document.createElement('div');
-                obj.innerHTML = xhr.responseText;
-                obj = obj.getElementsByTagName('ul');
-                console.log(obj)
-                if(!obj)
-                    return;
-
-                obj = obj[0];
-                target.replaceChild(obj, target.querySelector('ul'))
-                target.querySelector('nav a').href = url
-            }
-
-            xhr.open('GET', url + '?embed=1', true);
-            xhr.send();
-            return false;
-        }
-        </script>
-        """
-        while curr < last:
-            r += \
-                '<a href="{url}"{extra} '\
-                'onclick="return update_schedule(\'{url}\', event)">{title}</a>' \
-                .format(
-                    title = curr.strftime(self.time_format),
-                    extra = ' class="selected"' if curr == date else '',
-                    url = models.Diffusion.route_url(
-                        routes.DateRoute,
-                        year = curr.year, month = curr.month, day = curr.day,
-                    )
-                )
-            curr += tz.timedelta(days=1)
-        return r
-
+        context = super().get_context_data(**kwargs)
+        context.update({
+            'date': date,
+            'dates_url': dates_url,
+        })
+        return context
 
 
 #class DatesOfDiffusion(sections.List):

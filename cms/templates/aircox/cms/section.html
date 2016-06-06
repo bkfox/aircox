@@ -6,18 +6,14 @@
 
 {% block title %}
 {% if title %}
-<h1>
-    {{ title }}
-</h1>
+    <h1>{{ title }}</h1>
 {% endif %}
 {% endblock %}
 
 {% block header %}
-{% if header %}
 <header>
-    {{ header|safe }}
+{{ header|safe }}
 </header>
-{% endif %}
 {% endblock %}
 
 {% block content %}

@@ -57,12 +57,18 @@ class Section(View):
     object = None
     force_object = None
 
+    def add_css_class(self, css_class):
+        if self.css_class:
+            self.css_class += ' ' + css_class
+        else:
+            self.css_class = css_class
+
     def __init__ (self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.css_class += 'section' if not self.css_class else ' section'
+        self.add_css_class('section')
         if type(self) != Section:
-            self.css_class += ' section_' + type(self).__name__.lower()
+            self.add_css_class('section_' + type(self).__name__.lower())
 
         if not self.attrs:
             self.attrs = {}
@@ -86,12 +92,14 @@ class Section(View):
             'object': self.object,
         }
 
-    def get(self, request, object=None, **kwargs):
+    def get_context(self, request, object=None, **kwargs):
         self.object = self.force_object or object
         self.request = request
         self.kwargs = kwargs
+        return self.get_context_data()
 
-        context = self.get_context_data()
+    def get(self, request, object=None, **kwargs):
+        context = self.get_context(request, object, **kwargs)
         if not context:
             return ''
         return render_to_string(self.template_name, context, request=request)
@@ -201,7 +209,10 @@ class List(Section):
         of ListItem.
         """
         super().__init__(*args, **kwargs)
-        self.css_class += ' list'
+        self.add_css_class('list')
+        if type(self) != Section:
+            self.add_css_class('section_' + type(self).__name__.lower())
+
         if items:
             self.object_list = [
                 ListItem(item) for item in items
