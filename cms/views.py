@@ -72,10 +72,6 @@ class PostListView(PostBaseView, ListView):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if self.list:
-            self.template_name = self.list.template_name
-            self.css_class = self.list.css_class
-        self.add_css_class('list')
 
     def dispatch(self, request, *args, **kwargs):
         self.route = self.kwargs.get('route') or self.route
@@ -88,9 +84,7 @@ class PostListView(PostBaseView, ListView):
             qs = self.route.get_queryset(self.model, self.request,
                                          **self.kwargs)
         else:
-            # FIXME: should neven happen
             qs = self.queryset or self.model.objects.all()
-
         qs = qs.filter(published = True)
 
         query = self.request.GET
@@ -101,44 +95,46 @@ class PostListView(PostBaseView, ListView):
         else:
             qs = qs.order_by('date', 'id')
 
-        if query.get('fields'):
-            self.fields = [
-                field for field in query.get('fields')
-                if field in self.__class__.fields
-            ]
         return qs
 
-    def get_context_data(self, **kwargs):
-        if self.list:
-            list = self.list
+    def init_list(self):
+        if not self.list:
+           self.list = sections.List(
+               truncate = 32,
+               fields = ['date', 'time', 'image', 'title', 'content'],
+           )
         else:
-            list = sections.List(
-                truncate = 32,
-                fields = [ 'date', 'time', 'image', 'title', 'content' ],
-            )
+            self.list = self.list()
+            self.template_name = self.list.template_name
+            self.css_class = self.list.css_class
 
-        context = list.get_context(request = self.request, **self.kwargs) or {}
+        if self.request.GET.get('fields'):
+            self.list.fields = [
+                field for field in self.request.GET.getlist('fields')
+                if field in self.list.fields
+            ]
+
+    def get_context_data(self, **kwargs):
+        self.init_list()
+        self.add_css_class('list')
+
+        context = self.list.get_context_data(self.request, **self.kwargs) or {}
         context.update(super().get_context_data(**kwargs))
         context.update(self.get_base_context(**kwargs))
 
         if self.title:
             title = self.title
-        else:
-            title = self.route and \
-                    self.route.get_title(self.model, self.request,
+        elif self.route:
+            title = self.route.get_title(self.model, self.request,
                                          **self.kwargs)
 
         context.update({
             'title': title,
             'base_template': 'aircox/cms/website.html',
             'css_class': self.css_class,
-            'list': list,
+            'list': self.list,
         })
-        # FIXME: list.url = if self.route: self.model(self.route, self.kwargs) else ''
         return context
-
-    def get_url(self):
-        return ''
 
 
 class PostDetailView(DetailView, PostBaseView):
@@ -156,7 +152,7 @@ class PostDetailView(DetailView, PostBaseView):
     def __init__(self, sections = None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.add_css_class('detail')
-        self.sections = sections or []
+        self.sections = [ section() for section in (sections or []) ]
 
     def get_queryset(self):
         if self.request.GET.get('embed'):

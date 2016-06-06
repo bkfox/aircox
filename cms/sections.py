@@ -35,8 +35,6 @@ class Section(View):
     * name: set name/id of the section container
     * css_class: css classes of the container
     * attr: HTML attributes of the container
-    * hide_empty: if true, section is not rendered when content is empty
-
     * title: title of the section
     * header: header of the section
     * footer: footer of the section
@@ -50,12 +48,27 @@ class Section(View):
     name = ''
     css_class = ''
     attrs = None
-    # hide_empty = False
     title = ''
     header = ''
     footer = ''
-    object = None
     force_object = None
+
+    request = None
+    object = None
+    kwargs = None
+
+    @classmethod
+    def as_view (cl, *args, **kwargs):
+        """
+        Similar to View.as_view, but instead, wrap a constructor of the
+        given class that is used as is.
+        """
+        def func(**kwargs_):
+            if kwargs_:
+                kwargs.update(kwargs_)
+            instance = cl(*args, **kwargs)
+            return instance
+        return func
 
     def add_css_class(self, css_class):
         if self.css_class:
@@ -80,7 +93,11 @@ class Section(View):
     def get_content(self):
         return ''
 
-    def get_context_data(self):
+    def get_context_data(self, request = None, object = None, **kwargs):
+        if request: self.request = request
+        if object: self.object = object
+        if kwargs: self.kwargs = kwargs
+
         return {
             'view': self,
             'tag': self.tag,
@@ -93,14 +110,10 @@ class Section(View):
             'object': self.object,
         }
 
-    def get_context(self, request, object=None, **kwargs):
-        self.object = self.force_object or object
-        self.request = request
-        self.kwargs = kwargs
-        return self.get_context_data()
-
-    def get(self, request, object=None, **kwargs):
-        context = self.get_context(request, object, **kwargs)
+    def get(self, request, object=None, return_context=False, **kwargs):
+        context = self.get_context_data(request=request, object=object, **kwargs)
+        if return_context:
+            return context
         if not context:
             return ''
         return render_to_string(self.template_name, context, request=request)
@@ -131,9 +144,12 @@ class Content(Section):
     Attributes:
     * content: raw HTML code to render
     * rel_attr: name of the attribute of self.object to use
+    * re_image_attr: if true and there is an image on the current object,
+      render the object's image
     """
     content = None
     rel_attr = 'content'
+    rel_image_attr = 'image'
 
     def get_content(self):
         if self.content is None:
@@ -142,6 +158,10 @@ class Content(Section):
             content = escape(content)
             content = re.sub(r'(^|\n\n)((\n?[^\n])+)', r'<p>\2</p>', content)
             content = re.sub(r'\n', r'<br>', content)
+
+            if self.rel_image_attr and hasattr(self.object, self.rel_image_attr):
+                image = getattr(self.object, self.rel_image_attr)
+                content = '<img src="{}">'.format(image.url) + content
             return content
         return str(self.content)
 
@@ -222,12 +242,13 @@ class List(Section):
     def get_object_list(self):
         return self.object_list
 
-    def get_context_data(self):
+    def get_context_data(self, *args, **kwargs):
+        context = super().get_context_data(*args, **kwargs)
+
         object_list = self.object_list or self.get_object_list()
         if not object_list and not self.message_empty:
             return
 
-        context = super().get_context_data()
         context.update({
             'base_template': 'aircox/cms/section.html',
             'list': self,
@@ -276,14 +297,15 @@ class Comments(List):
             })
         return ''
 
-    def get_context_data(self):
+    def get_context_data(self, *args, **kwargs):
+        context = super().get_context_data(*args, **kwargs)
+
         comment_form = None
         if self.object:
             post = self.object
             if hasattr(post, 'allow_comments') and post.allow_comments:
                 comment_form = (self.comment_form or CommentForm())
 
-        context = super().get_context_data()
         context.update({
             'comment_form': comment_form,
         })
@@ -319,11 +341,15 @@ class Menu(Section):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.css_class += ' menu menu_{}'.format(self.name or self.position)
+        self.add_css_class('menu')
+        self.add_css_class('menu_' + str(self.name or self.position))
+        self.sections = [ section() if callable(section) else section
+                            for section in self.sections ]
         if not self.attrs:
             self.attrs = {}
 
-    def get_context_data(self):
+    def get_context_data(self, *args, **kwargs):
+        super().get_context_data(*args, **kwargs)
         return {
             'tag': self.tag,
             'css_class': self.css_class,

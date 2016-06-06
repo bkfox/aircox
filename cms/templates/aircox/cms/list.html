@@ -7,7 +7,7 @@
 
 
 {% block content %}
-<ul>
+<ul class="content">
 {% for item in object_list %}
     <li {% if item.css_class %}class="{{ item.css_class }}"{% endif %}
         {% for k, v in item.attrs.items %}
@@ -16,6 +16,25 @@
     {% if item.detail_url %}
         <a href="{{ item.detail_url }}">
     {% endif %}
+    {% if 'image' in list.fields and item.image %}
+    <img src="{% thumbnail item.image list.image_size crop %}">
+    {% endif %}
+
+    <div class="content">
+        {% if 'title' in list.fields and item.title %}
+        <h2 class="title">{{ item.title }}</h2>
+        {% endif %}
+
+        {% if 'content' in list.fields and item.content %}
+        <div class="text">
+            {% if list.truncate %}
+            {{ item.content|striptags|truncatewords:list.truncate }}
+            {% else %}
+            {{ item.content|striptags }}
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
 
     <div class="meta">
         {% if item.date and 'date' in list.fields or 'time' in list.fields %}
@@ -45,25 +64,6 @@
         {% endif %}
     </div>
 
-    {% if 'image' in list.fields and item.image %}
-    <img src="{% thumbnail item.image list.image_size crop %}">
-    {% endif %}
-
-    <div class="content">
-        {% if 'title' in list.fields and item.title %}
-        <h2 class="title">{{ item.title }}</h2>
-        {% endif %}
-
-        {% if 'content' in list.fields and item.content %}
-        <div class="text">
-            {% if list.truncate %}
-            {{ item.content|striptags|truncatewords:list.truncate }}
-            {% else %}
-            {{ item.content|striptags }}
-            {% endif %}
-        </div>
-        {% endif %}
-    </div>
 
     {% if item.detail_url %}
     </a>
@@ -75,8 +75,8 @@
 {% endfor %}
 </ul>
 
-{% if object_list %}
-{% if page_obj or list.url %}
+{% if object_list and not embed %}
+{% if list.url or page_obj %}
 <nav>
     {% if not page_obj or embed %}
     {% comment %}link to show more elements of the list{% endcomment %}

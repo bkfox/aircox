@@ -662,7 +662,7 @@ class Diffusion(models.Model):
                 **filter_args
             ).order_by('-start')
 
-    def is_date_in_my_range(self, date):
+    def is_date_in_my_range(self, date = None):
         """
         Return true if the given date is in the diffusion's start-end
         range.

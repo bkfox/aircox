@@ -14,8 +14,6 @@ class Diffusions(sections.List):
     Section that print diffusions. When rendering, if there is no post yet
     associated, use the programs' article.
     """
-    next_count = 5
-    prev_count = 5
     order_by = '-start'
     show_schedule = False
 
@@ -32,16 +30,16 @@ class Diffusions(sections.List):
         if filter_args:
             qs = qs.filter(**filter_args).order_by('start')
 
-        r = []
-        if not self.next_count and not self.prev_count:
-            return qs
-        if self.next_count:
-            r += list(programs.Diffusion.get(next=True, queryset = qs)
-                        .order_by('-start')[:self.next_count])
-        if self.prev_count:
-            r += list(programs.Diffusion.get(prev=True, queryset = qs)
-                        .order_by('-start')[:self.prev_count])
-        return r
+        return qs
+
+        #r = []
+        #if self.next_count:
+        #    r += list(programs.Diffusion.get(next=True, queryset = qs)
+        #                .order_by('-start')[:self.next_count])
+        #if self.prev_count:
+        #    r += list(programs.Diffusion.get(prev=True, queryset = qs)
+        #                .order_by('-start')[:self.prev_count])
+        #return r
 
     def get_object_list(self):
         diffs = self.get_diffs()
@@ -59,7 +57,7 @@ class Diffusions(sections.List):
 
             if diff.initial:
                 post.info = _('rerun of %(day)s') % {
-                    'day': diff.initial.date.strftime('%A %d/%m')
+                    'day': diff.initial.start.strftime('%A %d/%m')
                 }
 
             if self.object:
@@ -121,10 +119,7 @@ class Schedule(Diffusions):
     Render a list of diffusions in the form of a schedule
     """
     template_name = 'aircox/website/schedule.html'
-    next_count = None
-    prev_count = None
     date = None
-    days = 7
     nav_date_format = '%a. %d'
     fields = [ 'time', 'image', 'title']
 
@@ -134,13 +129,16 @@ class Schedule(Diffusions):
 
     @staticmethod
     def get_week_dates(date):
+        """
+        Return a list of dates of the week of the given date.
+        """
         first = date - tz.timedelta(days=date.weekday())
         return [ first + tz.timedelta(days=i) for i in range(0, 7) ]
 
     def date_or_default(self):
         if self.date:
             return self.date
-        elif 'year' in self.kwargs:
+        elif self.kwargs and 'year' in self.kwargs:
             return tz.datetime(year = int(self.kwargs['year']),
                                month = int(self.kwargs['month']),
                                day = int(self.kwargs['day']),
@@ -148,18 +146,21 @@ class Schedule(Diffusions):
                                microsecond = 0)
         return tz.datetime.now()
 
-    def get_diffs(self):
+    def get_object_list(self):
         date = self.date_or_default()
-        diffs = super().get_diffs(
-            start__year = date.year,
-            start__month = date.month,
-            start__day = date.day,
-        )
-        return diffs
+        qs = routes.DateRoute.get_queryset(
+            models.Diffusion, self.request,
+            year = date.year,
+            month = date.month,
+            day = date.day
+        ).order_by('date')
+        return qs
 
-    def get_context_data(self, **kwargs):
+    def get_context_data(self, *args, **kwargs):
+        context = super().get_context_data(*args, **kwargs)
+
         date = self.date_or_default()
-        dates_url = [
+        dates = [
             (date, models.Diffusion.route_url(
                 routes.DateRoute,
                 year = date.year, month = date.month, day = date.day
@@ -167,12 +168,32 @@ class Schedule(Diffusions):
             for date in self.get_week_dates(date)
         ]
 
-        context = super().get_context_data(**kwargs)
+        next_week = dates[-1][0] + tz.timedelta(days=1)
+        next_week = models.Diffusion.route_url(
+                routes.DateRoute,
+                year = next_week.year, month = next_week.month,
+                day = next_week.day
+        )
+
+        prev_week = dates[0][0] - tz.timedelta(days=1)
+        prev_week = models.Diffusion.route_url(
+                routes.DateRoute,
+                year = prev_week.year, month = prev_week.month,
+                day = prev_week.day
+        )
+
         context.update({
             'date': date,
-            'dates_url': dates_url,
+            'dates': dates,
+            'next_week': next_week,
+            'prev_week': prev_week,
         })
         return context
+
+    @property
+    def url(self):
+        return None
+
 
 
 #class DatesOfDiffusion(sections.List):

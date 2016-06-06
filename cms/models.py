@@ -103,6 +103,9 @@ class Post (models.Model, Routable):
     """
     Base model that can be used as is if wanted. Represent a generic
     publication on the website.
+
+    You can declare an extra property "info" that can be used to append
+    info in lists rendering.
     """
     # metadata
     thread_type = models.ForeignKey(

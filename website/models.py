@@ -50,3 +50,10 @@ class Diffusion (RelatedPost):
             if not self.tags and self.pk:
                 self.tags = self.thread.tags
 
+    @property
+    def info(self):
+        if not self.related or not self.related.initial:
+            return
+        return _('rerun of %(day)s') % {
+            'day': self.related.initial.start.strftime('%A %d/%m')
+        }
