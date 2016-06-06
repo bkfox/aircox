@@ -6,7 +6,7 @@ import aircox.cms.models as cms
 import aircox.cms.routes as routes
 import aircox.cms.sections as sections
 
-import website.models as models
+import aircox.website.models as models
 
 
 class Diffusions(sections.List):
@@ -22,12 +22,14 @@ class Diffusions(sections.List):
         super().__init__(*args, **kwargs)
         self.__dict__.update(kwargs)
 
-    def get_diffs(self):
+    def get_diffs(self, **filter_args):
         qs = programs.Diffusion.objects.filter(
             type = programs.Diffusion.Type.normal
         )
         if self.object:
             qs = qs.filter(program = self.object.related)
+        if filter_args:
+            qs = qs.filter(**filter_args).order_by('start')
 
         r = []
         if self.next_count:
@@ -70,17 +72,16 @@ class Diffusions(sections.List):
     @property
     def url(self):
         if self.object:
-            return models.Diffusion.route_url(routes.ThreadRoute, {
-                'pk': self.object.id,
-                'thread_model': 'program',
-            })
+            return models.Diffusion.route_url(routes.ThreadRoute,
+                pk = self.object.id,
+                thread_model = 'program',
+            )
         return models.Diffusion.route_url(routes.AllRoute)
 
     @property
     def header(self):
         if not self.show_schedule:
             return None
-
 
         def str_sched(sched):
             info = ' <span class="info">(' + _('rerun of %(day)s') % {
@@ -110,6 +111,84 @@ class Playlist(sections.List):
                      .order_by('position')
         return [ sections.ListItem(title=track.title, content=track.artist)
                     for track in tracks ]
+
+
+class Schedule(Diffusions):
+    """
+    Schedule printing diffusions starting at the given date
+
+    * date: if set use this date instead of now;
+    * days: number of days to show;
+    * time_format: force format of the date in schedule header;
+    """
+    date = None
+    days = 7
+    time_format = '%a. %d'
+
+    def get_diffs(self):
+        date = self.date or tz.datetime.now()
+        return super().get_diffs(
+            start__year = date.year,
+            start__month = date.month,
+            start__day = date.day,
+        )
+
+    @property
+    def header(self):
+        date = self.date or tz.datetime.now()
+        date.replace(hour = 0, minute = 0, second = 0, microsecond = 0)
+        curr = date - tz.timedelta(days=date.weekday())
+        last = curr + tz.timedelta(days=7)
+
+        r = """
+        <script>function update_schedule(url, event) {
+            var target = event.currentTarget;
+
+            while(target && target.className.indexOf('section'))
+                target = target.parentNode;
+
+            if(!target)
+                return false;
+
+
+            var xhr = new XMLHttpRequest();
+            xhr.onreadystatechange = function() {
+                if(xhr.readyState != 4 || xhr.status != 200 && xhr.status)
+                    return;
+
+                var obj = document.createElement('div');
+                obj.innerHTML = xhr.responseText;
+                obj = obj.getElementsByTagName('ul');
+                console.log(obj)
+                if(!obj)
+                    return;
+
+                obj = obj[0];
+                target.replaceChild(obj, target.querySelector('ul'))
+                target.querySelector('nav a').href = url
+            }
+
+            xhr.open('GET', url + '?embed=1', true);
+            xhr.send();
+            return false;
+        }
+        </script>
+        """
+        while curr < last:
+            r += \
+                '<a href="{url}"{extra} '\
+                'onclick="return update_schedule(\'{url}\', event)">{title}</a>' \
+                .format(
+                    title = curr.strftime(self.time_format),
+                    extra = ' class="selected"' if curr == date else '',
+                    url = models.Diffusion.route_url(
+                        routes.DateRoute,
+                        year = curr.year, month = curr.month, day = curr.day,
+                    )
+                )
+            curr += tz.timedelta(days=1)
+        return r
+
 
 
 #class DatesOfDiffusion(sections.List):

@@ -38,10 +38,12 @@ class Routable:
         )
 
     @classmethod
-    def route_url(cl, route, kwargs = None):
+    def route_url(cl, route, **kwargs):
         name = cl._website.name_of_model(cl)
         name = route.get_view_name(name)
-        return reverse(name, kwargs = kwargs)
+        r = reverse(name, kwargs = kwargs)
+        return r
+
 
 class Comment(models.Model, Routable):
     thread_type = models.ForeignKey(
@@ -162,8 +164,10 @@ class Post (models.Model, Routable):
         return qs
 
     def detail_url(self):
-        return self.route_url(routes.DetailRoute,
-                              { 'pk': self.pk, 'slug': slugify(self.title) })
+        return self.route_url(
+            routes.DetailRoute,
+            pk = self.pk, slug = slugify(self.title)
+        )
 
     def get_object_list(self, request, object, **kwargs):
         type = ContentType.objects.get_for_model(object)

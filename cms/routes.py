@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils import timezone as tz
 from django.conf.urls import url
 from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
@@ -137,8 +138,8 @@ class DateRoute(Route):
     name = 'date'
     url_args = [
         ('year', '[0-9]{4}'),
-        ('month', '[0-9]{2}'),
-        ('day', '[0-9]{1,2}'),
+        ('month', '[0-1]?[0-9]'),
+        ('day', '[0-3]?[0-9]'),
     ]
 
     @classmethod
@@ -151,11 +152,10 @@ class DateRoute(Route):
 
     @classmethod
     def get_title(cl, model, request, year, month, day, **kwargs):
-        return _('%(model)s of %(year)/%(month)/%(day)') % {
+        date = tz.datetime(year = int(year), month = int(month), day = int(day))
+        return _('%(model)s of %(date)s') % {
             'model': model._meta.verbose_name_plural,
-            'year': year,
-            'month': month,
-            'day': day
+            'date': date.strftime('%A %d %B %Y'),
         }
 
 

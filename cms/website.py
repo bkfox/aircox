@@ -1,3 +1,6 @@
+from django.utils.text import slugify
+from django.conf.urls import url
+
 import aircox.cms.routes as routes
 import aircox.cms.views as views
 
@@ -103,6 +106,22 @@ class Website:
         )
         self.urls += [ route.as_url(name, view) for route in routes ]
         self.registry[name] = model
+
+    def register_page(self, name, view = views.PageView, path = None,
+                      **view_kwargs):
+        """
+        Register a page that is accessible to the given path. If path is None,
+        use a slug of the name.
+        """
+        view = view.as_view(
+            website = self,
+            **view_kwargs
+        )
+        self.urls.append(url(
+            slugify(name) if path is None else path,
+            view = view,
+            name = name,
+        ))
 
     def register(self, name, model, sections = None, routes = None,
                   list_view = views.PostListView,

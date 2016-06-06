@@ -1,7 +1,7 @@
 from django.templatetags.static import static
 from django.template.loader import render_to_string
 from django.views.generic import ListView, DetailView
-from django.views.generic.base import View
+from django.views.generic.base import View, TemplateView
 from django.utils.translation import ugettext as _, ugettext_lazy
 from django.contrib import messages
 from django.http import Http404
@@ -13,7 +13,8 @@ class PostBaseView:
     website = None  # corresponding website
     title = ''      # title of the page
     embed = False   # page is embed (if True, only post content is printed
-    classes = ''    # extra classes for the content
+    attrs = ''      # attr for the HTML element of the content
+    css_classes = ''# css classes for the HTML element of the content
 
     def get_base_context(self, **kwargs):
         """
@@ -108,11 +109,13 @@ class PostListView(PostBaseView, ListView):
                     self.route.get_title(self.model, self.request,
                                          **self.kwargs)
 
-        context['title'] = title
-        context['base_template'] = 'aircox/cms/website.html'
-        context['css_class'] = 'list' if not self.css_class else \
-                               'list ' + self.css_class
-        context['list'] = self.list
+        context.update({
+        'title': title,
+        'base_template': 'aircox/cms/website.html',
+        'css_class': 'list' if not self.css_class else \
+                     'list ' + self.css_class,
+        'list': self.list,
+        })
         # FIXME: list.url = if self.route: self.model(self.route, self.kwargs) else ''
         return context
 
@@ -155,11 +158,13 @@ class PostDetailView(DetailView, PostBaseView):
         context.update(self.get_base_context())
 
         kwargs['object'] = self.object
-        context['content'] = ''.join([
-            section.get(request = self.request, **kwargs)
-            for section in self.sections
-        ])
-        context['css_class'] = 'detail'
+        context.update({
+            'content': ''.join([
+                section.get(request = self.request, **kwargs)
+                for section in self.sections
+            ]),
+            'css_class': 'detail',
+        })
         return context
 
     def post(self, request, *args, **kwargs):
@@ -174,5 +179,36 @@ class PostDetailView(DetailView, PostBaseView):
         self.object = self.get_object()
         self.comments.post(self, request, self.object)
         return self.get(request, *args, **kwargs)
+
+
+class PageView(TemplateView, PostBaseView):
+    """
+    A simple page view. Used to render pages that have arbitrary content
+    without linked post object.
+    """
+    template_name = 'aircox/cms/detail.html'
+
+    sections = []
+    css_class = 'page'
+
+    def __init__(self, *args, **kwargs):
+        css_class = 'css_class' in kwargs and kwargs.pop('css_class')
+        if css_class:
+            self.css_class += ' ' + css_class
+        super().__init__(*args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(self.get_base_context())
+
+        context.update({
+            'title': self.title,
+            'content': ''.join([
+                section.get(request = self.request, **kwargs)
+                for section in self.sections
+            ]),
+        })
+        return context
+
 
 
