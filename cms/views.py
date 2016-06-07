@@ -10,13 +10,27 @@ import aircox.cms.sections as sections
 
 
 class PostBaseView:
-    website = None  # corresponding website
-    title = ''      # title of the page
-    embed = False   # page is embed (if True, only post content is printed
+    """
+    Base class for views.
+
+    # Request GET params:
+    * embed: view is embedded, render only the content of the view
+    """
+    website = None
+    """website that uses the view"""
+    menus = None
+    """menus used to render the view page"""
+    title = ''
+    """title of the page (used in <title> tags and page <h1>)"""
     attrs = ''      # attr for the HTML element of the content
+    """attributes to set in the HTML element containing the view"""
     css_class = ''  # css classes for the HTML element of the content
+    """css classes used for the HTML element containing the view"""
 
     def add_css_class(self, css_class):
+        """
+        Add the given class to the current class list if not yet present.
+        """
         if self.css_class:
             if css_class not in self.css_class:
                 self.css_class += ' ' + css_class
@@ -29,17 +43,21 @@ class PostBaseView:
         to self.
         """
         context = {
-            k: getattr(self, k)
-            for k, v in PostBaseView.__dict__.items()
-                if not k.startswith('__')
+            key: getattr(self, key)
+            for key in PostBaseView.__dict__.keys()
+                if not key.startswith('__')
         }
 
-        if not self.embed:
+        if 'embed' not in self.request.GET:
             object = self.object if hasattr(self, 'object') else None
-            context['menus'] = {
-                k: v.get(self.request, object = object, **kwargs)
-                for k, v in self.website.menus.items()
-            }
+            if self.menus:
+                context['menus'] = {
+                    k: v.render(self.request, object = object, **kwargs)
+                    for k, v in self.menus.items()
+                }
+            context['embed'] = False
+        else:
+            context['embed'] = True
         context['view'] = self
         return context
 
@@ -56,7 +74,6 @@ class PostListView(PostBaseView, ListView):
     route.get_queryset or self.model.objects.all()
 
     Request.GET params:
-    * embed: view is embedded, render only the list
     * exclude: exclude item of the given id
     * order: 'desc' or 'asc'
     * page: page number
@@ -67,16 +84,16 @@ class PostListView(PostBaseView, ListView):
     model = None
 
     route = None
+    """route used to render this list"""
     list = None
-    css_class = None
+    """list section to use to render the list and get base context.
+    By default it is sections.List"""
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
     def dispatch(self, request, *args, **kwargs):
         self.route = self.kwargs.get('route') or self.route
-        if request.GET.get('embed'):
-            self.embed = True
         return super().dispatch(request, *args, **kwargs)
 
     def get_queryset(self):
@@ -140,9 +157,6 @@ class PostListView(PostBaseView, ListView):
 class PostDetailView(DetailView, PostBaseView):
     """
     Detail view for posts and children
-
-    Request.GET params:
-    * embed: view is embedded, only render the content
     """
     template_name = 'aircox/cms/detail.html'
 
@@ -155,8 +169,6 @@ class PostDetailView(DetailView, PostBaseView):
         self.sections = [ section() for section in (sections or []) ]
 
     def get_queryset(self):
-        if self.request.GET.get('embed'):
-            self.embed = True
         if self.model:
             return super().get_queryset().filter(published = True)
         return []
@@ -174,9 +186,9 @@ class PostDetailView(DetailView, PostBaseView):
 
         kwargs['object'] = self.object
         context.update({
-            'title': self.object.title,
+            'title': self.title or self.object.title,
             'content': ''.join([
-                section.get(request = self.request, **kwargs)
+                section.render(request = self.request, **kwargs)
                 for section in self.sections
             ]),
             'css_class': self.css_class,
@@ -208,17 +220,14 @@ class PageView(TemplateView, PostBaseView):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.sections = sections.Sections(self.sections)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context.update(self.get_base_context())
-
         context.update({
             'title': self.title,
-            'content': ''.join([
-                section.get(request = self.request, **kwargs)
-                for section in self.sections
-            ]),
+            'content': self.sections.render(request=self.request,**kwargs)
         })
         return context
 

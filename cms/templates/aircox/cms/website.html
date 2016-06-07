@@ -13,7 +13,7 @@
         {% if website.styles %}
         <link rel="stylesheet" href="{% static website.styles %}" type="text/css">
         {% endif %}
-        <title>{{ website.name }} {% if title %}- {{ title }} {% endif %}</title>
+        <title>{% if title %}{{ title }} - {% endif %}{{ website.name }}</title>
     </head>
     <body>
         {% block page_header %}
@@ -65,6 +65,15 @@
                         {% block content %}
                         {% endblock %}
                     </div>
+
+                    {% block footer %}
+                    {% if footer %}
+                    <footer>
+                        {{ footer|safe }}
+                    </footer>
+                    {% endif %}
+                    {% endblock %}
+
 {% if not embed %}
                 </main>
 
@@ -78,7 +87,7 @@
             {% endif %}
         </div>
 
-        {% block footer %}
+        {% block page_footer %}
             {% if menus.footer %}
             {{ menus.footer|safe }}
             {% endif %}

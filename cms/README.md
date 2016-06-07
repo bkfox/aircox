@@ -26,8 +26,8 @@ A **Website** holds all required informations to run the server instance. It
 is used to register all kind of posts, routes to the views, menus, etc.
 
 Basically, for each type of publication, the user declare the corresponding
-model, the routes, the sections used for rendering, and register them using
-website.register.
+model, the routes, the views used to render it, using `website.register`.
+
 
 ## Posts
 **Post** is the base model for a publication. **Article** is the provided model
@@ -50,7 +50,6 @@ class MyModelPost(RelatedPost):
 Note: it is possible to assign a function as a bounded value; in such case, the
 function will be called using arguments **(post, related_object)**.
 
-
 ## Routes
 Routes are used to generate the URLs of the website. We provide some of the
 common routes: for the detail view of course, but also to select all posts or
@@ -60,7 +59,6 @@ It is of course possible to create your own routes.
 
 Routes are registered to a router (FIXME: it might be possible that we remove
 this later)
-
 
 ## Sections
 Sections are used to render part of a publication, for example to render a
@@ -75,7 +73,6 @@ files (e.g. one for each type of publication), we prefer to declare these
 sections and configure them. This reduce the work, keep design coherent,
 and reduce the risk of bugs and so on.
 
-
 ## Website
 This class is used to create the website itself and regroup all the needed
 informations to make it beautiful. There are different steps to create the
@@ -89,9 +86,52 @@ website, using instance of the Website class:
 3. Register website's URLs to Django.
 4. Change templates and css styles if needed.
 
+It also offers various facilities, such as comments view registering.
 
-# Generated content
-## CSS
+
+# Rendering
+## Views
+They are three kind of views, among which two are used to render related content (`PostListView`, `PostDetailView`), and one is used to set arbitrary content at given url pattern (`PageView`).
+
+The `PostDetailView` and `PageView` use a list of sections to render their content. While `PostDetailView` is related to a model instance, `PageView` just render its sections.
+
+`PostListView` uses the route that have been matched in order to render the list. Internally, it uses `sections.List` to render the list, if no section is given by the user. The context used to render the page is initialized using the list's rendering context.
+
+## Sections
+A Section behave similar to a view with few differences:
+* it renders its content to a string, using the function `render`;
+* the method `as_view` return an instance of the section rather than a function, in order to keep possible to access section's data;
+
+## Menus
+`Menu` is a section containing others sections, and are used to render the website's menus. By default they are the ones of the parent website, but it is also possible to change the menus per view.
+
+It is possible to render only the content of a view without any menu, by adding the parameter `embed` in the request's url. This has been done in order to allow XMLHttpRequests proper.
+
+## Lists
+Lists in `PostListView` and as a section in another view always uses the **list.html** template. It extends another template, that is configurable using `base_template` template argument; this has been used to render the list either in a section or as a page.
+
+It is also possible to specify a list of fields that are rendered in the list, at the list initialisation or using request parameter `fields` (in this case it must be a subset of the list.fields).
+
+
+# Rendered content
+## Templates
+There are two base template that are extended by the others:
+* **section.html**: used to render a single section;
+* **website.html**: website page layout;
+
+These both define the following blocks, with their related container (declared *inside* the block):
+* *title*: the optional title in a `<h1>` tag;
+* *header*: the optional header in a `<header>` tag;
+* *content*: the content itself; for *section* there is not related container, for *website* container is declared *outside* as an element of class `.content`;
+* *footer*: the footer in a `<footer>` tag;
+
+The other templates Aircox.cms uses are:
+* **details.html**: used to render post details (extends *website.html*);
+* **list.html**: used to render lists, extends the given template `base_template` (*section.html* or *website.html*);
+* **comments.html**: used to render comments including a form (*list.html*)
+
+
+# CSS classes
 * **.meta**: metadata of any item (author, date, info, tags...)
 * **.info**: used to render extra information, usually in lists
 

@@ -39,7 +39,7 @@ class Diffusion (RelatedPost):
         super().__init__(*args, **kwargs)
         if self.thread:
             if not self.title:
-                self.title = _('{name} on {first_diff}').format(
+                self.title = _('{name} // {first_diff}').format(
                     self.related.program.name,
                     self.related.start.strftime('%A %d %B')
                 )

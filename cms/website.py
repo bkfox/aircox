@@ -3,29 +3,39 @@ from django.conf.urls import url
 
 import aircox.cms.routes as routes
 import aircox.cms.views as views
+import aircox.cms.models as models
+import aircox.cms.sections as sections
+
 
 class Website:
     """
     Describe a website and all its settings that are used for its rendering.
     """
-    # metadata
+    ## metadata
     name = ''
     domain = ''
     description = 'An aircox website'
     tags = 'aircox,radio,music'
 
-    # rendering
+    ## rendering
     styles = ''
+    """extra css style file"""
     menus = None
+    """dict of default menus used to render website pages"""
 
-    # user interaction
+    ## user interaction
     allow_comments = True
+    """allow comments on the website"""
     auto_publish_comments = False
+    """publish comment without human approval"""
     comments_routes = True
+    """register list routes for the Comment model"""
 
-    # components
+    ## components
     urls = []
+    """list of urls generated thourgh registrations"""
     registry = {}
+    """dict of registered models by their name"""
 
     def __init__(self, menus = None, **kwargs):
         """
@@ -45,18 +55,18 @@ class Website:
 
 
     def name_of_model(self, model):
+        """
+        Return the registered name for a given model if found.
+        """
         for name, _model in self.registry.items():
             if model is _model:
                 return name
 
     def register_comments_routes(self):
         """
-        Register routes for comments, for the moment, only:
-        * ThreadRoute
+        Register routes for comments, for the moment, only
+        ThreadRoute
         """
-        import aircox.cms.models as models
-        import aircox.cms.sections as sections
-
         self.register_list(
             'comment', models.Comment,
             routes = [routes.ThreadRoute],
@@ -72,7 +82,9 @@ class Website:
         Register a model and return the name under which it is registered.
         Raise a ValueError if another model is yet associated under this name.
         """
-        if name in self.registry and self.registry[name] is not model:
+        if name in self.registry:
+            if self.registry[name] is model:
+                return name
             raise ValueError('A model has yet been registered under "{}"'
                              .format(name))
         self.registry[name] = model
@@ -85,11 +97,15 @@ class Website:
         Register a model and the detail view
         """
         name = self.register_model(name, model)
+        if not view_kwargs.get('menus'):
+            view_kwargs['menus'] = self.menus
+
         view = view.as_view(
             website = self,
             model = model,
             **view_kwargs
         )
+
         self.urls.append(routes.DetailRoute.as_url(name, view))
         self.registry[name] = model
 
@@ -99,11 +115,15 @@ class Website:
         Register a model and the given list view using the given routes
         """
         name = self.register_model(name, model)
+        if not 'menus' in view_kwargs:
+            view_kwargs['menus'] = self.menus
+
         view = view.as_view(
             website = self,
             model = model,
             **view_kwargs
         )
+
         self.urls += [ route.as_url(name, view) for route in routes ]
         self.registry[name] = model
 
@@ -113,6 +133,9 @@ class Website:
         Register a page that is accessible to the given path. If path is None,
         use a slug of the name.
         """
+        if not 'menus' in view_kwargs:
+            view_kwargs['menus'] = self.menus
+
         view = view.as_view(
             website = self,
             **view_kwargs

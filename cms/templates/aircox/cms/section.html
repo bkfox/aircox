@@ -11,9 +11,11 @@
 {% endblock %}
 
 {% block header %}
+{% if header %}
 <header>
 {{ header|safe }}
 </header>
+{% endif %}
 {% endblock %}
 
 {% block content %}

@@ -15,7 +15,44 @@ from honeypot.decorators import check_honeypot
 from aircox.cms.forms import CommentForm
 
 
-class Section(View):
+class Viewable:
+    """
+    Describe a view that is still usable as a class after as_view() has
+    been called.
+    """
+    @classmethod
+    def as_view (cl, *args, **kwargs):
+        """
+        Similar to View.as_view, but instead, wrap a constructor of the
+        given class that is used as is.
+        """
+        def func(**kwargs_):
+            if kwargs_:
+                kwargs.update(kwargs_)
+            instance = cl(*args, **kwargs)
+            return instance
+        return func
+
+
+class Sections(Viewable, list):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        for i, section in enumerate(self):
+            if callable(section) or type(section) == type:
+                self[i] = section()
+
+    def render(self, *args, **kwargs):
+        return ''.join([
+            section.render(*args, **kwargs)
+            for section in self
+        ])
+
+    def filter(self, predicate):
+        return [ section for section in self if predicate(section) ]
+
+
+class Section(Viewable, View):
     """
     On the contrary to Django's views, we create an instance of the view
     only once, when the server is run.
@@ -57,19 +94,6 @@ class Section(View):
     object = None
     kwargs = None
 
-    @classmethod
-    def as_view (cl, *args, **kwargs):
-        """
-        Similar to View.as_view, but instead, wrap a constructor of the
-        given class that is used as is.
-        """
-        def func(**kwargs_):
-            if kwargs_:
-                kwargs.update(kwargs_)
-            instance = cl(*args, **kwargs)
-            return instance
-        return func
-
     def add_css_class(self, css_class):
         if self.css_class:
             if css_class not in self.css_class:
@@ -110,9 +134,9 @@ class Section(View):
             'object': self.object,
         }
 
-    def get(self, request, object=None, return_context=False, **kwargs):
+    def render(self, request, object=None, context_only=False, **kwargs):
         context = self.get_context_data(request=request, object=object, **kwargs)
-        if return_context:
+        if context_only:
             return context
         if not context:
             return ''
@@ -153,7 +177,6 @@ class Content(Section):
 
     def get_content(self):
         if self.content is None:
-            # FIXME: markdown?
             content = getattr(self.object, self.rel_attr)
             content = escape(content)
             content = re.sub(r'(^|\n\n)((\n?[^\n])+)', r'<p>\2</p>', content)
@@ -161,7 +184,8 @@ class Content(Section):
 
             if self.rel_image_attr and hasattr(self.object, self.rel_image_attr):
                 image = getattr(self.object, self.rel_image_attr)
-                content = '<img src="{}">'.format(image.url) + content
+                if image:
+                    content = '<img src="{}">'.format(image.url) + content
             return content
         return str(self.content)
 
@@ -330,12 +354,9 @@ class Comments(List):
             messages.error(request, self.error_message, fail_silently=True)
         self.comment_form = comment_form
 
+
 class Menu(Section):
-    template_name = 'aircox/cms/section.html'
     tag = 'nav'
-    classes = ''
-    attrs = ''
-    name = ''
     position = ''   # top, left, bottom, right, header, footer, page_top, page_bottom
     sections = None
 
@@ -343,8 +364,8 @@ class Menu(Section):
         super().__init__(*args, **kwargs)
         self.add_css_class('menu')
         self.add_css_class('menu_' + str(self.name or self.position))
-        self.sections = [ section() if callable(section) else section
-                            for section in self.sections ]
+        self.sections = Sections(self.sections)
+
         if not self.attrs:
             self.attrs = {}
 
@@ -354,10 +375,7 @@ class Menu(Section):
             'tag': self.tag,
             'css_class': self.css_class,
             'attrs': self.attrs,
-            'content': ''.join([
-                section.get(request=self.request, object=self.object)
-                for section in self.sections
-            ])
+            'content': self.sections.render(*args, **kwargs)
         }
 
 
