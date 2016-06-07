@@ -32,7 +32,7 @@ class PostBaseView:
         Add the given class to the current class list if not yet present.
         """
         if self.css_class:
-            if css_class not in self.css_class:
+            if css_class not in self.css_class.split(' '):
                 self.css_class += ' ' + css_class
         else:
             self.css_class = css_class

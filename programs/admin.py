@@ -132,7 +132,7 @@ class DiffusionAdmin(admin.ModelAdmin):
         We want rerun to redirect to the given object.
         """
         obj = super().get_object(*args, **kwargs)
-        if obj.initial:
+        if obj and obj.initial:
             obj = obj.initial
         return obj
 

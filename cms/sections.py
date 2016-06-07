@@ -96,7 +96,7 @@ class Section(Viewable, View):
 
     def add_css_class(self, css_class):
         if self.css_class:
-            if css_class not in self.css_class:
+            if css_class not in self.css_class.split(' '):
                 self.css_class += ' ' + css_class
         else:
             self.css_class = css_class
@@ -255,8 +255,6 @@ class List(Section):
         """
         super().__init__(*args, **kwargs)
         self.add_css_class('list')
-        if type(self) != Section:
-            self.add_css_class('section_' + type(self).__name__.lower())
 
         if items:
             self.object_list = [

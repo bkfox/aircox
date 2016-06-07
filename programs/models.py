@@ -78,6 +78,7 @@ class Track(Nameable):
     )
     tags = TaggableManager(
         verbose_name=_('tags'),
+        blank=True,
     )
 
     def __str__(self):

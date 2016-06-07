@@ -110,7 +110,7 @@ class Playlist(sections.List):
         tracks = programs.Track.objects \
                      .filter(diffusion = self.object.related) \
                      .order_by('position')
-        return [ sections.ListItem(title=track.title, content=track.artist)
+        return [ sections.ListItem(title=track.name, content=track.artist)
                     for track in tracks ]
 
 
