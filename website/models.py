@@ -33,7 +33,9 @@ class Diffusion (RelatedPost):
             }
         }
         rel_to_post = True
-        auto_create = True
+
+        def auto_create(object):
+            return not object.initial
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

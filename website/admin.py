@@ -7,19 +7,17 @@ import aircox.website.models as models
 import aircox.website.forms as forms
 
 
-class TrackInline (SortableTabularInline):
+class TrackInline(SortableTabularInline):
     fields = ['artist', 'name', 'tags', 'position']
     form = forms.TrackForm
     model = programs.Track
     sortable = 'position'
     extra = 10
 
-
-class DiffusionPostAdmin(cms.RelatedPostAdmin):
-    inlines = [TrackInline]
-
-
 admin.site.register(models.Program, cms.RelatedPostAdmin)
-admin.site.register(models.Diffusion, DiffusionPostAdmin)
+admin.site.register(models.Diffusion, cms.RelatedPostAdmin)
+
+cms.inject_inline(programs.Diffusion, TrackInline, True)
+cms.inject_related_inline(models.Diffusion, True)
 
 
