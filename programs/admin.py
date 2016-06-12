@@ -24,6 +24,8 @@ class StreamInline(admin.TabularInline):
     model = Stream
     extra = 1
 
+class SoundDiffInline(admin.TabularInline):
+    model = Diffusion.sounds.through
 
 # from suit.admin import SortableTabularInline, SortableModelAdmin
 #class TrackInline(SortableTabularInline):
@@ -45,11 +47,11 @@ class NameableAdmin(admin.ModelAdmin):
 @admin.register(Sound)
 class SoundAdmin(NameableAdmin):
     fields = None
-    list_display = ['id', 'name', 'duration', 'type', 'mtime', 'good_quality', 'removed', 'public']
+    list_display = ['id', 'name', 'duration', 'type', 'mtime', 'good_quality', 'removed']
     fieldsets = [
         (None, { 'fields': NameableAdmin.fields + ['path', 'type'] } ),
         (None, { 'fields': ['embed', 'duration', 'mtime'] }),
-        (None, { 'fields': ['removed', 'good_quality', 'public' ] } )
+        (None, { 'fields': ['removed', 'good_quality' ] } )
     ]
     readonly_fields = ('path', 'duration',)
 
@@ -58,10 +60,6 @@ class SoundAdmin(NameableAdmin):
 class StreamAdmin(admin.ModelAdmin):
     list_display = ('id', 'program', 'delay', 'begin', 'end')
 
-
-@admin.register(Station)
-class StationAdmin(NameableAdmin):
-    fields = NameableAdmin.fields + [ 'active', 'public', 'fallback' ]
 
 @admin.register(Program)
 class ProgramAdmin(NameableAdmin):
@@ -113,8 +111,9 @@ class DiffusionAdmin(admin.ModelAdmin):
     list_editable = ('type',)
     ordering = ('-start', 'id')
 
-    fields = ['type', 'start', 'end', 'initial', 'program', 'sounds']
-    inlines = [ DiffusionInline ]
+    fields = ['type', 'start', 'end', 'initial', 'program']
+    inlines = [ DiffusionInline, SoundDiffInline ]
+    exclude = ('sounds',)
 
 
     def get_form(self, request, obj=None, **kwargs):

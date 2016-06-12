@@ -166,7 +166,10 @@ class Post (models.Model, Routable):
         )
         return qs
 
-    def detail_url(self):
+    def url(self):
+        """
+        Return an url to the post detail view.
+        """
         return self.route_url(
             routes.DetailRoute,
             pk = self.pk, slug = slugify(self.title)
@@ -207,24 +210,6 @@ class Post (models.Model, Routable):
 
     class Meta:
         abstract = True
-
-
-class Article (Post):
-    """
-    Represent an article or a static page on the website.
-    """
-    static_page = models.BooleanField(
-        _('static page'),
-        default = False,
-    )
-    focus = models.BooleanField(
-        _('article is focus'),
-        default = False,
-    )
-
-    class Meta:
-        verbose_name = _('Article')
-        verbose_name_plural = _('Articles')
 
 
 class RelatedPostBase (models.base.ModelBase):
@@ -356,6 +341,7 @@ class RelatedPost (Post, metaclass = RelatedPostBase):
     class Meta:
         abstract = True
 
+    # FIXME: declare a binding only for init
     class Relation:
         """
         Relation descriptor used to generate and manage the related object.

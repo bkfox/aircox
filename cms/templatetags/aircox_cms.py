@@ -16,7 +16,7 @@ def threads(post, sep = '/'):
             posts.insert(0, post)
 
     return sep.join([
-        '<a href="{}">{}</a>'.format(post.detail_url(), post.title)
+        '<a href="{}">{}</a>'.format(post.url(), post.title)
         for post in posts if post.published
     ])
 

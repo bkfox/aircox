@@ -50,6 +50,9 @@ class MyModelPost(RelatedPost):
 Note: it is possible to assign a function as a bounded value; in such case, the
 function will be called using arguments **(post, related_object)**.
 
+At rendering, the property *info* can be retrieved from the Post. It is however
+not a field.
+
 ## Routes
 Routes are used to generate the URLs of the website. We provide some of the
 common routes: for the detail view of course, but also to select all posts or

@@ -203,7 +203,7 @@ class ListItem:
     date = None
     image = None
     info = None
-    detail_url = None
+    url = None
 
     css_class = None
     attrs = None
@@ -222,8 +222,8 @@ class ListItem:
                 continue
             if hasattr(post, i) and not getattr(self, i):
                 setattr(self, i, getattr(post, i))
-        if not self.detail_url and hasattr(post, 'detail_url'):
-            self.detail_url = post.detail_url()
+        if not self.url and hasattr(post, 'url'):
+            self.url = post.url()
 
 
 class List(Section):
@@ -243,6 +243,7 @@ class List(Section):
     object_list = None
     url = None
     message_empty = _('nothing')
+    paginate_by = 4
 
     fields = [ 'date', 'time', 'image', 'title', 'content', 'info' ]
     image_size = '64x64'
@@ -264,19 +265,31 @@ class List(Section):
     def get_object_list(self):
         return self.object_list
 
-    def get_context_data(self, *args, **kwargs):
-        context = super().get_context_data(*args, **kwargs)
+    def get_context_data(self, request, object=None, *args, **kwargs):
+        if request: self.request = request
+        if object: self.object = object
+        if kwargs: self.kwargs = kwargs
 
         object_list = self.object_list or self.get_object_list()
         if not object_list and not self.message_empty:
             return
+        self.object_list = object_list
 
+        context = super().get_context_data(request, object, *args, **kwargs)
         context.update({
             'base_template': 'aircox/cms/section.html',
             'list': self,
-            'object_list': object_list,
+            'object_list': object_list[:self.paginate_by]
+                           if object_list and self.paginate_by else
+                           object_list,
         })
         return context
+
+    def need_url(self):
+        """
+        Return True if there should be a pagination url
+        """
+        return self.paginate_by and self.paginate_by < len(self.object_list)
 
 
 class Comments(List):

@@ -141,11 +141,6 @@ class Sound(Nameable):
         default = False,
         help_text = _('sound\'s quality is okay')
     )
-    public = models.BooleanField(
-        _('public'),
-        default = False,
-        help_text = _('sound\'s is accessible through the website')
-    )
 
     def get_mtime(self):
         """
@@ -417,32 +412,6 @@ class Schedule(models.Model):
         verbose_name_plural = _('Schedules')
 
 
-class Station(Nameable):
-    """
-    A Station regroup one or more programs (stream and normal), and is the top
-    element used to generate streams outputs and configuration.
-    """
-    active = models.BooleanField(
-        _('active'),
-        default = True,
-        help_text = _('this station is active')
-    )
-    public = models.BooleanField(
-        _('public'),
-        default = True,
-        help_text = _('information are available to the public'),
-    )
-    fallback = models.FilePathField(
-        _('fallback song'),
-        match = r'(' + '|'.join(settings.AIRCOX_SOUND_FILE_EXT) \
-                                    .replace('.', r'\.') + ')$',
-        recursive = True,
-        blank = True, null = True,
-        help_text = _('use this song file if there is a problem and nothing is '
-                      'played')
-    )
-
-
 class Program(Nameable):
     """
     A Program can either be a Streamed or a Scheduled program.
@@ -456,10 +425,6 @@ class Program(Nameable):
     Renaming a Program rename the corresponding directory to matches the new
     name if it does not exists.
     """
-    station = models.ForeignKey(
-        Station,
-        verbose_name = _('station')
-    )
     active = models.BooleanField(
         _('active'),
         default = True,
@@ -621,7 +586,7 @@ class Diffusion(models.Model):
         return r
 
     @classmethod
-    def get(cl, station = None, date = None,
+    def get(cl, date = None,
              now = False, next = False, prev = False,
              queryset = None,
              **filter_args):
@@ -637,9 +602,6 @@ class Diffusion(models.Model):
         """
         #FIXME: conflicts? ( + calling functions)
         date = date_or_default(date)
-        if station:
-            filter_args['program__station'] = station
-
         if queryset is None:
             queryset = cl.objects
 

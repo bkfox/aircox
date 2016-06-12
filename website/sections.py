@@ -9,6 +9,28 @@ import aircox.cms.sections as sections
 import aircox.website.models as models
 
 
+class Player(sections.Section):
+    """
+    Display a player that is cool.
+    """
+    template_name = 'aircox/website/player.html'
+    live_streams = []
+    """
+    A ListItem objects that display a list of available streams.
+    """
+    #default_sounds
+
+
+    def get_context_data(self, *args, **kwargs):
+        context = super().get_context_data(*args, **kwargs)
+
+        context.update({
+            'live_streams': self.live_streams
+        })
+        return context
+
+
+
 class Diffusions(sections.List):
     """
     Section that print diffusions. When rendering, if there is no post yet
@@ -19,14 +41,19 @@ class Diffusions(sections.List):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.__dict__.update(kwargs)
 
     def get_diffs(self, **filter_args):
         qs = programs.Diffusion.objects.filter(
             type = programs.Diffusion.Type.normal
         )
         if self.object:
-            qs = qs.filter(program = self.object.related)
+            object = self.object.related
+            if type(object) == programs.Program:
+                qs = qs.filter(program = object)
+            elif type(object) == programs.Diffusion:
+                if object.initial:
+                    object = object.initial
+                qs = qs.filter(initial = object) | qs.filter(pk = object.pk)
         if filter_args:
             qs = qs.filter(**filter_args).order_by('start')
 
@@ -72,6 +99,9 @@ class Diffusions(sections.List):
 
     @property
     def url(self):
+        if not self.need_url():
+            return
+
         if self.object:
             return models.Diffusion.route_url(routes.ThreadRoute,
                 pk = self.object.id,
@@ -112,6 +142,10 @@ class Playlist(sections.List):
                      .order_by('position')
         return [ sections.ListItem(title=track.name, content=track.artist)
                     for track in tracks ]
+
+
+class Sounds(sections.List):
+    pass
 
 
 class Schedule(Diffusions):

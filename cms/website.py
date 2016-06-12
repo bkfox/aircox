@@ -51,8 +51,7 @@ class Website:
                 self.set_menu(menu)
 
         if self.comments_routes:
-            self.register_comments_routes()
-
+            self.register_comments()
 
     def name_of_model(self, model):
         """
@@ -62,7 +61,7 @@ class Website:
             if model is _model:
                 return name
 
-    def register_comments_routes(self):
+    def register_comments(self):
         """
         Register routes for comments, for the moment, only
         ThreadRoute

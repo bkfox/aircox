@@ -91,7 +91,6 @@ def inject_inline(model, inline, prepend = False):
     registry[model].inlines = inlines
 
 
-admin.site.register(models.Article, PostAdmin)
 admin.site.register(models.Comment, CommentAdmin)
 
 

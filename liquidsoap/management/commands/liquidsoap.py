@@ -96,7 +96,7 @@ class Monitor:
         # - preload next diffusion's tracks
         args = {'start__gt': prev_diff.start } if prev_diff else {}
         next_diff = programs.Diffusion \
-                        .get(controller.station, now, now = True,
+                        .get(now, now = True,
                              type = programs.Diffusion.Type.normal,
                              sounds__isnull = False,
                              **args) \
@@ -194,30 +194,19 @@ class Command (BaseCommand):
             help='write configuration and playlist'
         )
 
-        group = parser.add_argument_group('selector')
         group.add_argument(
-            '-s', '--station', type=int, action='append',
-            help='select station(s) with this id'
-        )
-        group.add_argument(
-            '-a', '--all', action='store_true',
-            help='select all stations'
+            '-s', '--station', type=str,
+            default = 'aircox',
+            help='use this name as station name (default is "aircox")'
         )
 
     def handle (self, *args, **options):
-        # selector
-        stations = []
-        if options.get('all'):
-            stations = programs.Station.objects.filter(active = True)
-        elif options.get('station'):
-            stations = programs.Station.objects.filter(
-                id__in = options.get('station')
-            )
-
         run = options.get('run')
         monitor = options.get('on_air') or options.get('monitor')
-        self.controllers = [ utils.Controller(station, connector = monitor)
-                                for station in stations ]
+        self.controller = utils.Controller(
+            station = options.get('station'),
+            connector = monitor
+        )
 
         # actions
         if options.get('write') or run:

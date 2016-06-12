@@ -14,7 +14,7 @@ class TrackInline(SortableTabularInline):
     sortable = 'position'
     extra = 10
 
-
+admin.site.register(models.Article, cms.PostAdmin)
 admin.site.register(models.Program, cms.RelatedPostAdmin)
 admin.site.register(models.Diffusion, cms.RelatedPostAdmin)
 

@@ -13,8 +13,8 @@
         {% for k, v in item.attrs.items %}
         {{ k }} = "{{ v|addslashes }}"
         {% endfor %} >
-    {% if item.detail_url %}
-        <a href="{{ item.detail_url }}">
+    {% if item.url %}
+        <a href="{{ item.url }}">
     {% endif %}
     {% if 'image' in list.fields and item.image %}
     <img src="{% thumbnail item.image list.image_size crop %}">
@@ -65,7 +65,7 @@
     </div>
 
 
-    {% if item.detail_url %}
+    {% if item.url %}
     </a>
     {% endif %}
 {% empty %}

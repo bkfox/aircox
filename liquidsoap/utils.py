@@ -295,12 +295,11 @@ class Controller:
         files dir.
         """
         self.id = station.slug
-        self.name = station.name
-        self.path = os.path.join(settings.AIRCOX_LIQUIDSOAP_MEDIA, station.slug)
+        self.name = station
+        self.path = os.path.join(settings.AIRCOX_LIQUIDSOAP_MEDIA,
+                                 slugify(station))
 
-        self.station = station
-        self.station.controller = self
-        self.outputs = models.Output.objects.filter(station = station)
+        self.outputs = models.Output.objects.all()
 
         self.connector = connector and Connector(self.socket_path)
 
@@ -310,8 +309,7 @@ class Controller:
             source.id : source
             for source in [
                 Source(self, program)
-                for program in programs.Program.objects.filter(station = station,
-                                                             active = True)
+                for program in programs.Program.objects.filter(active = True)
                 if program.stream_set.count()
             ]
         }
@@ -368,25 +366,5 @@ class Controller:
         data = re.sub(r'#\\n#', '\n', data)
         with open(self.config_path, 'w+') as file:
             file.write(data)
-
-
-class Monitor:
-    """
-    Monitor multiple controllers.
-    """
-    controllers = None
-
-    def __init__(self):
-        self.controllers = {
-            controller.id : controller
-            for controller in [
-                Controller(station, True)
-                for station in programs.Station.objects.filter(active = True)
-            ]
-        }
-
-    def update(self):
-        for controller in self.controllers.values():
-            controller.update()
 
 

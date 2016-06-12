@@ -118,10 +118,11 @@ class PostListView(PostBaseView, ListView):
         if not self.list:
            self.list = sections.List(
                truncate = 32,
+               paginate_by = 0,
                fields = ['date', 'time', 'image', 'title', 'content'],
            )
         else:
-            self.list = self.list()
+            self.list = self.list(paginate_by = 0)
             self.template_name = self.list.template_name
             self.css_class = self.list.css_class
 
