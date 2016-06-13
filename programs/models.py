@@ -10,6 +10,7 @@ from django.utils import timezone as tz
 from django.utils.html import strip_tags
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
+from django.conf import settings as main_settings
 
 from taggit.managers import TaggableManager
 
@@ -151,6 +152,16 @@ class Sound(Nameable):
         # db does not store microseconds
         mtime = mtime.replace(microsecond = 0)
         return tz.make_aware(mtime, tz.get_current_timezone())
+
+    def url(self):
+        """
+        Return an url to the stream
+        """
+        # path = self._meta.get_field('path').path
+        path = self.path.replace(main_settings.MEDIA_ROOT, '', 1)
+        #path = self.path.replace(path, '', 1)
+        # print(path, self._meta.get_field('path').path)
+        return path
 
     def file_exists(self):
         """

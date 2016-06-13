@@ -46,7 +46,10 @@ class Player(sections.Section):
 
         context.update({
             'base_template': 'aircox/cms/section.html',
-            'live_streams': self.live_streams
+            'live_streams': self.live_streams,
+            'last_sounds': models.Sound.objects. \
+                                filter(published = True). \
+                                order_by('-pk')[:10],
         })
         return context
 

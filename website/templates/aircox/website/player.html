@@ -1,0 +1,285 @@
+{% extends 'aircox/cms/list.html' %}
+
+{% load staticfiles %}
+{% load i18n %}
+
+{% block header %}
+<style>
+#player {
+    background-color: #212121;
+    color: #818181;
+    border-radius: 0.2em;
+}
+
+.player-box {
+    height: 2em;
+    border-top-left-radius: 0.5em;
+    border-top-right-radius: 0.5em;
+    border: 1px #212121 solid;
+    border-bottom: none;
+}
+
+    .player-box * {
+        vertical-align: middle;
+    }
+
+    .player-box h3 {
+        display: inline-block;
+        margin: 0;
+        padding: 0;
+    }
+
+    .player-button {
+        display: inline-block;
+        height: 2em;
+        width: 2em;
+        overflow: hidden;
+        cursor: pointer;
+        margin-right: 1em;
+    }
+
+        .player-button img {
+            height: inherit;
+            box-shadow: none;
+        }
+
+        #player[play] .player-button img {
+            margin-left: -100%;
+        }
+
+.playlists {}
+
+        .playlists nav {
+            font-size: 0.8em;
+            border-bottom: 1px solid #007EDF;
+        }
+
+        .playlists nav a {
+            padding: 0.2em;
+        }
+
+        .playlists nav > *[selected],
+        .playlists .item[selected] {
+            color: black;
+            border-top-right-radius: 0.2em;
+            background-color: rgba(0, 126, 223, 0.8);
+        }
+
+        .playlists ul:not([selected]) {
+            display: none;
+        }
+
+.playlist {
+    margin: 0;
+    padding: 0;
+}
+
+    .playlist .item > * {
+        display: inline;
+        margin: 0.2em;
+        vertical-align: center;
+    }
+
+    .playlist .item .title {
+        color: #007EDF;
+    }
+
+    .playlist .item .info {
+        float: right;
+        font-size: 0.8em;
+    }
+
+    .playlist .item a {
+        float: right;
+        font-weight: bold;
+    }
+
+
+</style>
+<div id="player">
+    <div class="player-box">
+        <div id="embed-player">
+        </div>
+        <div id="simple-player">
+            <audio preload="metadata">
+                Your browser does not support the <code>audio</code> element.
+                {% for stream in live_streams %}
+                    <source src="{{ stream.detail_url }}">
+                {% endfor %}
+            </audio>
+
+            <span class="player-button" onclick="player.play()">
+                <img src="{% static "aircox/website/player_button.png" %}">
+            </span>
+
+            <h3 class="title"></h3>
+        </div>
+    </div>
+    <div class="playlists">
+        <nav></nav>
+    </div>
+    <li class='item' style="display: none;">
+        <h2 class="title"></h2>
+        <a class="detail">+</a>
+        <div class="info"></div>
+    </li>
+</div>
+
+<script>
+function Playlist(id, name, items) {
+    this.name = name;
+
+    var self = this;
+    this.playlist = document.createElement('ul');
+    this.playlist.setAttribute('id', id);
+    this.playlist.className = 'playlist list';
+
+    this.tab = document.createElement('a');
+    this.tab.addEventListener('click', function(event) {
+        player.select_playlist(self);
+        event.preventDefault();
+    }, true);
+    this.tab.innerHTML = name;
+
+    player.playlists.appendChild(this.playlist);
+    player.playlists.querySelector('nav').appendChild(this.tab);
+
+    self.items = [];
+    if(items)
+        this.add_list(items);
+}
+
+Playlist.prototype = {
+    items: undefined,
+
+    /// Create an item and add to the given container [ = this.playlist ]
+    add: function (info, container) {
+        item = player.player.querySelector('.item');
+        item = item.cloneNode(true);
+        item.removeAttribute('style');
+
+        if(container)
+            container.appendChild(item);
+        else
+            self.playlist.appendChild(item);
+
+        item.querySelector('.title').innerHTML = info.title;
+        item.querySelector('.detail').href = info.url;
+        item.querySelector('.info').innerHTML = info.info || '';
+        item.info = info;
+
+        item.addEventListener('click', function(event) {
+            if(event.target.className.indexOf('detail') != -1)
+                return;
+            player.select(event.currentTarget.info);
+            event.preventDefault();
+        }, true);
+
+        this.items.push(info);
+    },
+
+    /// Add a list of items (optimized)
+    add_list: function (items) {
+        container = document.createDocumentFragment();
+        for(var i = 0; i < items.length; i++)
+            this.add(items[i], container);
+        this.playlist.appendChild(container);
+    },
+}
+
+
+player = {
+    /// main container of the player
+    player: undefined,
+    /// <audio> container
+    audio: undefined,
+
+    /// init player
+    init: function(id) {
+        this.player = document.getElementById(id);
+        this.audio = this.player.querySelector('audio');
+        this.playlists = this.player.querySelector('.playlists');
+        this.live = new Playlist(
+            'playlist-live',
+            "{% trans "live" %}",
+            [ {% for sound in live_streams %}
+                { title: "{{ sound.title }}",
+                  url: "{{ sound.url }}",
+                  stream: "{{ sound.url }}",
+                  info: "{{ sound.info }}",
+                }, {% endfor %} ]
+        );
+        this.recents = new Playlist(
+            'playlist-recents',
+            "{% trans "recents" %}",
+            [ {% for sound in last_sounds %}
+                { title: "{{ sound.title }}",
+                  url: "{{ sound.url }}",
+                  {% if sound.related.embed %}
+                  embed: "{{ sound.related.embed }}",
+                  {% else %}
+                  stream: "{{ MEDIA_URL }}{{ sound.related.url|safe }}",
+                  {% endif %}
+                  info: "{{ sound.related.duration|date:"i:s" }}",
+                }, {% endfor %} ]
+        );
+
+        this.select_playlist(this.recents);
+        this.select(this.live.items[0], false)
+    },
+
+    /// play a given item { title, src }
+    play: function() {
+        var player = this.player;
+        var audio = this.audio;
+
+        if(audio.paused) {
+            audio.play();
+            player.setAttribute('play', 'true');
+        }
+        else {
+            audio.pause();
+            player.removeAttribute('play');
+        }
+    },
+
+    /// update info on the player from the given item
+    set_info: function(item) {
+        var player = this.player;
+        player.querySelectorAll('#simple-player .title')[0]
+            .innerHTML = item.title;
+        player.querySelectorAll('.playlists')[0]
+            .setAttribute('playlist', item.playlist);
+    },
+
+
+    /// select the current track to play, and start playing it
+    select: function(item, play = true) {
+        var audio = this.audio;
+        audio.pause();
+        audio.src = item.stream;
+        audio.load()
+
+        self.item = item;
+        this.set_info(item);
+        if(play)
+            this.play();
+    },
+
+    /// select current playlist to show
+    select_playlist: function(playlist) {
+        v = this.player.querySelectorAll('.playlists *[selected]');
+        if(v)
+            for(var i = 0; i < v.length; i++)
+                v[i].removeAttribute('selected');
+
+        self.playlist = playlist
+        playlist.playlist.setAttribute('selected', 'true');
+        playlist.tab.setAttribute('selected', 'true');
+    },
+}
+
+player.init('player')
+</script>
+{% endblock %}
+

@@ -1,4 +1,5 @@
 import os
+import stat
 import logging
 
 logger = logging.getLogger('aircox')
@@ -110,13 +111,14 @@ class Sound (RelatedPost):
     """
     change file permission depending on the "published" attribute.
     """
-    chmod_flags = (750, 700)
+    chmod_flags = (stat.S_IRWXU, stat.S_IRWXU | stat.S_IRWXG | stat.S_IROTH )
     """
     chmod bit flags, for (not_published, published)
     """
     class Relation:
         model = programs.Sound
         bindings = {
+            'title': 'name',
             'date': 'mtime',
         }
         rel_to_post = True
