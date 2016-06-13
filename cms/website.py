@@ -2,6 +2,7 @@ from django.utils.text import slugify
 from django.conf.urls import url
 
 import aircox.cms.routes as routes
+import aircox.cms.routes as routes_
 import aircox.cms.views as views
 import aircox.cms.models as models
 import aircox.cms.sections as sections
@@ -66,9 +67,11 @@ class Website:
         Register routes for comments, for the moment, only
         ThreadRoute
         """
-        self.register_list(
-            'comment', models.Comment,
+        self.register(
+            'comment',
+            view = views.PostListView,
             routes = [routes.ThreadRoute],
+            model = models.Comment,
             css_class = 'comments',
             list = sections.Comments(
                 truncate = 30,
@@ -76,7 +79,7 @@ class Website:
             )
         )
 
-    def register_model(self, name, model):
+    def __register_model(self, name, model):
         """
         Register a model and return the name under which it is registered.
         Raise a ValueError if another model is yet associated under this name.
@@ -90,82 +93,53 @@ class Website:
         model._website = self
         return name
 
-    def register_detail(self, name, model, view = views.PostDetailView,
-                         **view_kwargs):
+
+    def register(self, name, routes = [], view = views.PageView,
+                 model = None, **view_kwargs):
         """
-        Register a model and the detail view
+        Register a view using given name and routes. If model is given,
+        register the views for it.
+
+        * name is used to register the routes as urls and the model if given
+        * routes: can be a path or a route used to generate urls for the view.
+            Can be a one item or a list of items.
         """
-        name = self.register_model(name, model)
+        if model:
+            name = self.__register_model(name, model)
+            view_kwargs['model'] = model
+
         if not view_kwargs.get('menus'):
             view_kwargs['menus'] = self.menus
-
-        view = view.as_view(
-            website = self,
-            model = model,
-            **view_kwargs
-        )
-
-        self.urls.append(routes.DetailRoute.as_url(name, view))
-        self.registry[name] = model
-
-    def register_list(self, name, model, view = views.PostListView,
-                       routes = [], **view_kwargs):
-        """
-        Register a model and the given list view using the given routes
-        """
-        name = self.register_model(name, model)
-        if not 'menus' in view_kwargs:
-            view_kwargs['menus'] = self.menus
-
-        view = view.as_view(
-            website = self,
-            model = model,
-            **view_kwargs
-        )
-
-        self.urls += [ route.as_url(name, view) for route in routes ]
-        self.registry[name] = model
-
-    def register_page(self, name, view = views.PageView, path = None,
-                      **view_kwargs):
-        """
-        Register a page that is accessible to the given path. If path is None,
-        use a slug of the name.
-        """
-        if not 'menus' in view_kwargs:
-            view_kwargs['menus'] = self.menus
-
         view = view.as_view(
             website = self,
             **view_kwargs
         )
-        self.urls.append(url(
-            slugify(name) if path is None else path,
-            view = view,
-            name = name,
-        ))
 
-    def register(self, name, model, sections = None, routes = None,
-                  list_view = views.PostListView,
-                  detail_view = views.PostDetailView,
-                  list_kwargs = {}, detail_kwargs = {}):
+        if type(routes) not in (tuple, list):
+            routes = [ routes ]
+
+        self.urls += [
+            route.as_url(name, view)
+                if type(route) == type and issubclass(route, routes_.Route)
+                else url(slugify(name) if not route else route,
+                         view = view, name = name)
+            for route in routes
+        ]
+
+    def register_post(self, name, model, sections = None, routes = None,
+                      list_view = views.PostListView,
+                      detail_view = views.PostDetailView,
+                      list_kwargs = {}, detail_kwargs = {}):
         """
         Register a detail and list view for a given model, using
-        routes. Just a wrapper around register_detail and
-        register_list.
+        routes. Just a wrapper around register.
         """
         if sections:
-            self.register_detail(
-                name, model,
-                sections = sections,
-                **detail_kwargs
-            )
+            self.register(name, [ routes_.DetailRoute ], view = detail_view,
+                          model = model, sections = sections, **detail_kwargs)
         if routes:
-            self.register_list(
-                name, model,
-                routes = routes,
-                **list_kwargs
-            )
+            self.register(name, routes, view = list_view,
+                          model = model, **list_kwargs)
 
     def set_menu(self, menu):
         """

@@ -169,6 +169,11 @@ class Command (BaseCommand):
             '-e', '--exec', action='store_true',
             help='run liquidsoap on exit'
         )
+        group.add_argument(
+            '-s', '--station', type=str,
+            default = 'aircox',
+            help='use this name as station name (default is "aircox")'
+        )
 
         group = parser.add_argument_group('actions')
         group.add_argument(
@@ -194,12 +199,6 @@ class Command (BaseCommand):
             help='write configuration and playlist'
         )
 
-        group.add_argument(
-            '-s', '--station', type=str,
-            default = 'aircox',
-            help='use this name as station name (default is "aircox")'
-        )
-
     def handle (self, *args, **options):
         run = options.get('run')
         monitor = options.get('on_air') or options.get('monitor')
@@ -222,33 +221,27 @@ class Command (BaseCommand):
                 controller.process.wait()
 
     def handle_write (self):
-        for controller in self.controllers:
-            controller.write()
+        self.controller.write()
 
     def handle_run (self):
-        for controller in self.controllers:
-            controller.process = \
-                subprocess.Popen(['liquidsoap', '-v', controller.config_path],
-                                 stderr=subprocess.STDOUT)
-            atexit.register(controller.process.terminate)
+        self.controller.process = \
+            subprocess.Popen(
+                ['liquidsoap', '-v', self.controller.config_path],
+                stderr=subprocess.STDOUT
+            )
+            atexit.register(self.controller.process.terminate)
 
     def handle_monitor (self, options):
-        for controller in self.controllers:
-            controller.update()
+        self.controller.update()
 
         if options.get('on_air'):
-            for controller in self.controllers:
-                print(controller.id, controller.on_air)
+            print(self.controller.id, self.controller.on_air)
             return
 
         if options.get('monitor'):
             delay = options.get('delay') / 1000
             while True:
-                for controller in self.controllers:
-                    #try:
-                    Monitor.run(controller)
-                    #except Exception as err:
-                    # print(err)
+                Monitor.run(self.controller)
                 time.sleep(delay)
             return
 

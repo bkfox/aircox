@@ -20,15 +20,35 @@ class Player(sections.Section):
     """
     #default_sounds
 
+    @staticmethod
+    def on_air():
+        """
+        View that return what is on air formatted in JSON.
+        """
+        qs = programs.Diffusion.get(
+            now = True,
+            type = programs.Diffusion.Type.normal
+        )
+
+        if not qs or not qs[0].is_date_in_my_range():
+            return None
+
+        qs = qs[0]
+        post = models.Diffusion.objects.filter(related = qs)
+        if not post:
+            post = models.Program.objects.filter(related = qs.program)
+        if not post:
+            post = ListItem(title = qs.program.name)
+        return post
 
     def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(*args, **kwargs)
 
         context.update({
+            'base_template': 'aircox/cms/section.html',
             'live_streams': self.live_streams
         })
         return context
-
 
 
 class Diffusions(sections.List):

@@ -79,7 +79,7 @@ class Section(Viewable, View):
     * force_object: (can be persistent) related object
 
     """
-    template_name = 'aircox/cms/section.html'
+    template_name = 'aircox/cms/website.html'
 
     tag = 'div'
     name = ''
@@ -132,6 +132,7 @@ class Section(Viewable, View):
             'footer': self.footer,
             'content': self.get_content(),
             'object': self.object,
+            'embed': True,
         }
 
     def render(self, request, object=None, context_only=False, **kwargs):
@@ -140,6 +141,7 @@ class Section(Viewable, View):
             return context
         if not context:
             return ''
+        context['embed'] = True
         return render_to_string(self.template_name, context, request=request)
 
 
@@ -239,6 +241,7 @@ class List(Section):
     * truncate: number of words to keep in content (0 = full content)
     """
     template_name = 'aircox/cms/list.html'
+    base_template = 'aircox/cms/section.html'
 
     object_list = None
     url = None
@@ -277,7 +280,7 @@ class List(Section):
 
         context = super().get_context_data(request, object, *args, **kwargs)
         context.update({
-            'base_template': 'aircox/cms/section.html',
+            'base_template': self.base_template,
             'list': self,
             'object_list': object_list[:self.paginate_by]
                            if object_list and self.paginate_by else

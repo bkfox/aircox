@@ -694,7 +694,6 @@ class Log(models.Model):
         'related_type', 'related_id',
     )
 
-
     @classmethod
     def get_for_related_model(cl, model):
         """

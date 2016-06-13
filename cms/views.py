@@ -7,15 +7,23 @@ from django.contrib import messages
 from django.http import Http404
 
 import aircox.cms.sections as sections
+import aircox.cms.sections as sections_
 
 
-class PostBaseView:
+class BaseView:
     """
-    Base class for views.
+    Render a page using given sections.
+
+    If sections is a list of sections, then render like a detail view;
+    If it is a single section, render it as website.html view;
 
     # Request GET params:
     * embed: view is embedded, render only the content of the view
     """
+    template_name = ''
+    """it is set to "aircox/cms/detail.html" to render multiple sections"""
+    sections = None
+    """sections used to render the page"""
     website = None
     """website that uses the view"""
     menus = None
@@ -27,6 +35,16 @@ class PostBaseView:
     css_class = ''  # css classes for the HTML element of the content
     """css classes used for the HTML element containing the view"""
 
+    def __init__(self, sections = None, *args, **kwargs):
+        if hasattr(sections, '__iter__'):
+            self.sections = sections_.Sections(sections)
+        else:
+            self.sections = sections
+        super().__init__(*args, **kwargs)
+
+    def __is_single(self):
+        return not issubclass(type(self.sections), list)
+
     def add_css_class(self, css_class):
         """
         Add the given class to the current class list if not yet present.
@@ -37,32 +55,54 @@ class PostBaseView:
         else:
             self.css_class = css_class
 
-    def get_base_context(self, **kwargs):
+    def get_context_data(self, **kwargs):
         """
         Return a context with all attributes of this classe plus 'view' set
         to self.
         """
-        context = {
-            key: getattr(self, key)
-            for key in PostBaseView.__dict__.keys()
-                if not key.startswith('__')
-        }
+        context = super().get_context_data(**kwargs)
+
+        # update from sections
+        if self.sections:
+            if self.__is_single():
+                self.template_name = self.sections.template_name
+                context.update(self.sections.get_context_data(
+                    self.request, **self.kwargs
+                ) or {})
+            else:
+                if not self.template_name:
+                    self.template_name = 'aircox/cms/detail.html'
+                context.update({
+                    'content': self.sections.render(self.request, **kwargs)
+                })
+
+        # then from me
+        context.update({
+            'website': self.website,
+            'view': self,
+            'title': self.title,
+            'tag': 'main',
+            'attrs': self.attrs,
+            'css_class': self.css_class,
+        })
 
         if 'embed' not in self.request.GET:
-            object = self.object if hasattr(self, 'object') else None
+            if not kwargs.get('object'):
+                kwargs['object'] = self.object if hasattr(self, 'object') \
+                                    else None
             if self.menus:
                 context['menus'] = {
-                    k: v.render(self.request, object = object, **kwargs)
+                    k: v.render(self.request, **kwargs)
                     for k, v in self.menus.items()
+                    if v is not self
                 }
             context['embed'] = False
         else:
             context['embed'] = True
-        context['view'] = self
         return context
 
 
-class PostListView(PostBaseView, ListView):
+class PostListView(BaseView, ListView):
     """
     List view for posts and children.
 
@@ -85,12 +125,16 @@ class PostListView(PostBaseView, ListView):
 
     route = None
     """route used to render this list"""
-    list = None
-    """list section to use to render the list and get base context.
-    By default it is sections.List"""
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    @property
+    def list(self):
+        """list section to use to render the list and get base context.
+        By default it is sections.List"""
+        return self.sections
+
+    @list.setter
+    def list(self, value):
+        self.sections = value
 
     def dispatch(self, request, *args, **kwargs):
         self.route = self.kwargs.get('route') or self.route
@@ -136,38 +180,27 @@ class PostListView(PostBaseView, ListView):
         self.init_list()
         self.add_css_class('list')
 
-        context = self.list.get_context_data(self.request, **self.kwargs) or {}
-        context.update(super().get_context_data(**kwargs))
-        context.update(self.get_base_context(**kwargs))
+        context = super().get_context_data(**kwargs)
+        # context.update(BaseView.get_context_data(self, **kwargs))
 
-        if self.title:
-            title = self.title
-        elif self.route:
-            title = self.route.get_title(self.model, self.request,
-                                         **self.kwargs)
+        if not context.get('title') and self.route:
+            context['title'] = self.route.get_title(
+                self.model, self.request, **self.kwargs
+            )
 
-        context.update({
-            'title': title,
-            'base_template': 'aircox/cms/website.html',
-            'css_class': self.css_class,
-            'list': self.list,
-        })
+        context['list'] = self.list
         return context
 
 
-class PostDetailView(DetailView, PostBaseView):
+class PostDetailView(BaseView, DetailView):
     """
     Detail view for posts and children
     """
-    template_name = 'aircox/cms/detail.html'
-
-    sections = []
     comments = None
 
-    def __init__(self, sections = None, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.add_css_class('detail')
-        self.sections = [ section() for section in (sections or []) ]
 
     def get_queryset(self):
         if self.model:
@@ -183,17 +216,8 @@ class PostDetailView(DetailView, PostBaseView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context.update(self.get_base_context())
-
-        kwargs['object'] = self.object
-        context.update({
-            'title': self.title or self.object.title,
-            'content': ''.join([
-                section.render(request = self.request, **kwargs)
-                for section in self.sections
-            ]),
-            'css_class': self.css_class,
-        })
+        if not context.get('title'):
+            context['title'] = self.object.title
         return context
 
     def post(self, request, *args, **kwargs):
@@ -210,27 +234,11 @@ class PostDetailView(DetailView, PostBaseView):
         return self.get(request, *args, **kwargs)
 
 
-class PageView(TemplateView, PostBaseView):
+class PageView(BaseView, TemplateView):
     """
-    A simple page view. Used to render pages that have arbitrary content
-    without linked post object.
+    Render a page using given sections.
+
+    If sections is a list of sections, then render like a detail view;
+    If it is a single section, render it as website.html view;
     """
-    template_name = 'aircox/cms/detail.html'
-
-    sections = []
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.sections = sections.Sections(self.sections)
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context.update(self.get_base_context())
-        context.update({
-            'title': self.title,
-            'content': self.sections.render(request=self.request,**kwargs)
-        })
-        return context
-
-
 

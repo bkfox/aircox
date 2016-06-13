@@ -42,10 +42,11 @@
                 </ul>
                 {% endif %}
 
-                <main {% if css_class %} class="{{ css_class }}" {% endif %}
-                    {% for k, v in attrs.items %}
-                    {{ k }} = "{{ v|addslashes }}"
-                    {% endfor %} >
+{% endif %}
+{% if tag %}
+            <{{ tag }} {% if css_class %} class="{{ css_class }}" {% endif %}
+             {% for k, v in attrs.items %}{{ k }} = "{{ v|addslashes }}"
+             {% endfor %}>
 {% endif %}
                     {% block title %}
                     {% if title %}
@@ -61,10 +62,9 @@
                     {% endif %}
                     {% endblock %}
 
-                    <div class="content">
-                        {% block content %}
-                        {% endblock %}
-                    </div>
+                    {% block content %}
+                    {{ content|safe }}
+                    {% endblock %}
 
                     {% block footer %}
                     {% if footer %}
@@ -73,10 +73,10 @@
                     </footer>
                     {% endif %}
                     {% endblock %}
-
+{% if tag %}
+            </{{ tag }}>
+{% endif %}
 {% if not embed %}
-                </main>
-
                 {% if menus.right %}
                     {{ menus.right|safe }}
                 {% endif %}
