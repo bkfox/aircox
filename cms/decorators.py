@@ -1,4 +1,5 @@
 from django.template.loader import render_to_string
+from django.http import HttpResponse
 from django.conf.urls import url
 from django.core.urlresolvers import reverse
 from django.utils.text import slugify
@@ -73,7 +74,7 @@ def part(view, name = None, pattern = None):
     view_.url = url
     return view_
 
-def template(template_name):
+def template(name):
     """
     the decorated function returns a context that is used to
     render a template value.
@@ -84,10 +85,10 @@ def template(template_name):
     def wrapper(func):
         def view_(cl, request, *args, **kwargs):
             context = func(cl, request, *args, **kwargs)
-            if not context and hide_empty:
+            if not context:
                 return ''
             context['embed'] = True
-            return render_to_string(template_name, context, request=request)
+            return render_to_string(name, context, request=request)
         view_.__name__ = func.__name__
         return view_
     return wrapper

@@ -20,16 +20,13 @@ class Player(sections.Section):
     template_name = 'aircox/website/player.html'
     live_streams = []
     """
-    A ListItem objects that display a list of available streams.
+    ListItem objects that display a list of available streams.
     """
     #default_sounds
 
     @decorators.part
-    @decorators.template(template_name = 'aircox/cms/list_item.html')
+    @decorators.template('aircox/cms/list_item.html')
     def on_air(cl, request):
-        """
-        View that return what is on air formatted in JSON.
-        """
         qs = programs.Diffusion.get(
             now = True,
             type = programs.Diffusion.Type.normal
@@ -39,21 +36,17 @@ class Player(sections.Section):
             return ''
 
         qs = qs[0]
-        post = models.Diffusion.objects.filter(related = qs)
-        if not post:
-            post = models.Program.objects.filter(related = qs.program)
-
-        if not post:
-            post = ListItem(title = qs.program.name)
-        else:
+        post = models.Diffusion.objects.filter(related = qs) or \
+               models.Program.objects.filter(related = qs.program)
+        if post:
             post = post[0]
+        else:
+            post = ListItem(title = qs.program.name)
 
         return {
             'item': post,
             'list': sections.List,
         }
-
-        return json.dumps({ 'title': post.title, 'url': post.url() })
 
     def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(*args, **kwargs)

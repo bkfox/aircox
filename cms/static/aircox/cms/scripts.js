@@ -24,6 +24,9 @@ Part_.prototype = {
 
   /// parse request result and save in this.stanza
   __parse_dom: function() {
+    if(self.stanza)
+      return;
+
     var doc = document.implementation.createHTMLDocument('xhr').documentElement;
     doc.innerHTML = this.xhr.responseText;
     this.stanza = doc;
@@ -61,9 +64,10 @@ Part_.prototype = {
     return this;
   },
 
-  // set selectors. if callback is set, call this callback
-  // once data are retrieved with an object of
-  // `selector_name: select_result`
+  // set selectors.
+  // * callback: if set, call it once data are downloaded with an object
+  //   of elements matched with the given selectors only. The object is
+  //   made of `selector_name: select_result` items.
   select: function(selectors, callback = undefined) {
     for(var i in selectors) {
       selector = selectors[i];
@@ -71,15 +75,19 @@ Part_.prototype = {
         selector = [selector]
 
       selector = new Part_.Selector(i, selector[0], selector[1], selector[2])
+      selectors[i] = selector;
       this.selectors.push(selector)
     }
 
     if(callback) {
       var self = this;
       this.actions.push(function() {
+        self.__parse_dom();
+
         var r = {}
-        for(var i in self.selectors)
-          r[i] = self.selectors[i].select(self.stanza);
+        for(var i in selectors) {
+          r[i] = selectors[i].select(self.stanza);
+        }
         callback(r);
       });
     }
@@ -90,8 +98,7 @@ Part_.prototype = {
   map: function(dest) {
     var self = this;
     this.actions.push(function() {
-      if(!self.stanza)
-        self.__parse_dom();
+      self.__parse_dom();
 
       for(var i = 0; i < self.selectors.length; i++) {
         selector = self.selectors[i]
@@ -119,9 +126,7 @@ Part_.Selector = function(name, selector, attribute = null, all = false) {
 Part_.Selector.prototype = {
   select: function(obj, use_attr = true) {
     if(!this.all) {
-      obj = obj.querySelectorAll(this.selector)
-      if(obj)
-        obj = obj[0];
+      obj = obj.querySelector(this.selector)
       return (this.attribute && use_attr && obj) ? obj[this.attribute] : obj;
     }
 

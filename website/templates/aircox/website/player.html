@@ -12,7 +12,6 @@
 }
 
 .player-box {
-    height: 2em;
     border-top-left-radius: 0.5em;
     border-top-right-radius: 0.5em;
     border: 1px #212121 solid;
@@ -47,6 +46,30 @@
             margin-left: -100%;
         }
 
+#player .on_air {
+    background-color: #414141;
+    box-shadow: inset 0 0 0.2em rgba(0, 0, 0, 0.5);
+    padding: 0.2em;
+    margin: 0.2em 0em;
+}
+
+  #player .on_air .title {
+      font-size: 0.8em;
+      display: inline;
+  }
+
+  #player .on_air .title:before {
+      content: "{% trans "on air //" %}";
+      color: red;
+      margin: 0.2em;
+  }
+
+  #player .on_air a {
+      float: right;
+      color: black;
+  }
+
+
 .playlists {}
 
         .playlists nav {
@@ -77,7 +100,7 @@
     .playlist .item > * {
         display: inline;
         margin: 0.2em;
-        vertical-align: center;
+        vertical-align: middle;
     }
 
     .playlist .item .info {
@@ -93,9 +116,13 @@
     .playlist .item[selected] .title {
         color: #007EDF;
     }
-
 </style>
 <div id="player">
+    <li class='item' style="display: none;">
+        <h2 class="title"></h2>
+        <a class="url">+</a>
+        <div class="info"></div>
+    </li>
     <div class="player-box">
         <div id="embed-player">
         </div>
@@ -112,16 +139,16 @@
             </span>
 
             <h3 class="title"></h3>
+
+            <div class='item on_air'>
+                <h2 class="title"></h2>
+                <a class="url">+</a>
+            </div>
         </div>
     </div>
     <div class="playlists">
         <nav></nav>
     </div>
-    <li class='item' style="display: none;">
-        <h2 class="title"></h2>
-        <a class="detail">+</a>
-        <div class="info"></div>
-    </li>
 </div>
 
 <script>
@@ -154,7 +181,7 @@ Playlist.prototype = {
 
     /// Create an item and add to the given container [ = this.playlist ]
     add: function (info, container) {
-        item = player.player.querySelector('.item');
+        var item = player.player.querySelector('.item');
         item = item.cloneNode(true);
         item.removeAttribute('style');
 
@@ -167,15 +194,19 @@ Playlist.prototype = {
         item.info = info;
 
         item.querySelector('.title').innerHTML = info.title;
-        item.querySelector('.detail').href = info.url;
+        item.querySelector('.url').href = info.url;
         item.querySelector('.info').innerHTML = info.info || '';
 
-        item.addEventListener('click', function(event) {
-            if(event.target.className.indexOf('detail') != -1)
-                return;
-            player.select(event.currentTarget.info);
-            event.preventDefault();
-        }, true);
+        if(info.class)
+          item.className += " " + info.class;
+
+        if(info.stream || info.embed)
+          item.addEventListener('click', function(event) {
+              if(event.target.className.indexOf('url') != -1)
+                  return;
+              player.select(event.currentTarget.info);
+              event.preventDefault();
+          }, true);
         this.items.push(info);
     },
 
@@ -227,16 +258,22 @@ player = {
 
         this.select_playlist(this.recents);
         this.select(this.live.items[0], false)
+        this.update_on_air();
     },
 
-    /// update "on_air"
-    get_on_air: function() {
-      part = Part('').select({
-          'title': '.title',
-          'url': 'a',
-      }, function(r) {
-        document.title = r.title;
-      });
+    /// update on air informations
+    update_on_air: function() {
+      part = Part('{% url "player_on_air" %}').get()
+          .select({
+            title: '.title',
+            url: ['.url', 'href'],
+          })
+         .map(this.player.querySelector('.on_air'))
+         .send();
+
+      window.setTimeout(function() {
+        player.update_on_air();
+      }, 60000*5);
     },
 
     /// play a given item { title, src }
