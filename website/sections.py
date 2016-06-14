@@ -12,7 +12,7 @@ import aircox.cms.decorators as decorators
 import aircox.website.models as models
 
 
-@decorators.parts
+@decorators.expose
 class Player(sections.Section):
     """
     Display a player that is cool.
@@ -24,8 +24,7 @@ class Player(sections.Section):
     """
     #default_sounds
 
-    @decorators.part
-    @decorators.template('aircox/cms/list_item.html')
+    @decorators.expose
     def on_air(cl, request):
         qs = programs.Diffusion.get(
             now = True,
@@ -47,6 +46,8 @@ class Player(sections.Section):
             'item': post,
             'list': sections.List,
         }
+    on_air._exposure.template_name = 'aircox/cms/list_item.html'
+
 
     def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(*args, **kwargs)

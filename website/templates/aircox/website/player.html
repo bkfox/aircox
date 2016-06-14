@@ -5,50 +5,40 @@
 
 {% block header %}
 <style>
-#player {
-    background-color: #212121;
-    color: #818181;
-    border-radius: 0.2em;
-}
-
 .player-box {
-    border-top-left-radius: 0.5em;
-    border-top-right-radius: 0.5em;
-    border: 1px #212121 solid;
-    border-bottom: none;
+    padding-top: 0.2em;
 }
 
     .player-box * {
         vertical-align: middle;
     }
 
-    .player-box h3 {
+    .player-box h3, #player h2 {
         display: inline-block;
+        font-size: 0.9em;
         margin: 0;
         padding: 0;
     }
 
-    .player-button {
-        display: inline-block;
-        height: 2em;
-        width: 2em;
-        overflow: hidden;
-        cursor: pointer;
-        margin-right: 1em;
+.player-button {
+    display: inline-block;
+    height: 1.2em;
+    width: 1.2em;
+    overflow: hidden;
+    cursor: pointer;
+    margin-right: 0.4em;
+}
+
+    .player-button img {
+        height: inherit;
+        box-shadow: none;
     }
 
-        .player-button img {
-            height: inherit;
-            box-shadow: none;
-        }
-
-        #player[play] .player-button img {
-            margin-left: -100%;
-        }
+    #player[play] .player-button img {
+        margin-left: -100%;
+    }
 
 #player .on_air {
-    background-color: #414141;
-    box-shadow: inset 0 0 0.2em rgba(0, 0, 0, 0.5);
     padding: 0.2em;
     margin: 0.2em 0em;
 }
@@ -58,43 +48,27 @@
       display: inline;
   }
 
-  #player .on_air .title:before {
-      content: "{% trans "on air //" %}";
-      color: red;
-      margin: 0.2em;
-  }
-
   #player .on_air a {
       float: right;
-      color: black;
   }
 
 
-.playlists {}
+.playlists {
+}
 
-        .playlists nav {
-            font-size: 0.8em;
-            border-bottom: 1px solid #007EDF;
-        }
+      .playlists ul:not([selected]) {
+          display: none;
+      }
 
-        .playlists nav a {
-            padding: 0.2em;
-            cursor: pointer;
-        }
-
-            .playlists nav > *[selected] {
-                color: black;
-                border-top-right-radius: 0.2em;
-                background-color: rgba(0, 126, 223, 0.8);
-            }
-
-        .playlists ul:not([selected]) {
-            display: none;
-        }
+      .playlists nav a.close {
+          float: right;
+      }
 
 .playlist {
     margin: 0;
     padding: 0;
+    height: 15em;
+    overflow-y: auto;
 }
 
     .playlist .item > * {
@@ -105,17 +79,12 @@
 
     .playlist .item .info {
         float: right;
-        font-size: 0.8em;
     }
 
     .playlist .item a {
         float: right;
-        font-weight: bold;
     }
 
-    .playlist .item[selected] .title {
-        color: #007EDF;
-    }
 </style>
 <div id="player">
     <li class='item' style="display: none;">
@@ -135,7 +104,8 @@
             </audio>
 
             <span class="player-button" onclick="player.play()">
-                <img src="{% static "aircox/website/player_button.png" %}">
+                <img src="{% static "aircox/website/player_button.png" %}"
+                     alt="{% trans "play audio" %}">
             </span>
 
             <h3 class="title"></h3>
@@ -147,17 +117,26 @@
         </div>
     </div>
     <div class="playlists">
-        <nav></nav>
+        <nav>
+          <a onclick="player.select_playlist()" class="close"
+             title="{% trans "close" %}">✖</a>
+        </nav>
     </div>
 </div>
 
 <script>
-function Playlist(id, name, items) {
+// Create a Playlist:
+// * name: name of the playlist, used for container id and storage
+// * tab: text to put in the tab
+// * items: list of items to append
+// * store: store the playlist in localStorage
+function Playlist(name, tab, items, store = false) {
     this.name = name;
+    this.store = store;
 
     var self = this;
     this.playlist = document.createElement('ul');
-    this.playlist.setAttribute('id', id);
+    this.playlist.setAttribute('id', 'playlist-' + name );
     this.playlist.className = 'playlist list';
 
     this.tab = document.createElement('a');
@@ -166,12 +145,14 @@ function Playlist(id, name, items) {
         event.preventDefault();
     }, true);
     this.tab.className = 'tab';
-    this.tab.innerHTML = name;
+    this.tab.innerHTML = tab;
 
     player.playlists.appendChild(this.playlist);
     player.playlists.querySelector('nav').appendChild(this.tab);
 
-    self.items = [];
+    this.items = [];
+    if(store)
+      this.load()
     if(items)
         this.add_list(items);
 }
@@ -188,7 +169,7 @@ Playlist.prototype = {
         if(container)
             container.appendChild(item);
         else
-            self.playlist.appendChild(item);
+            this.playlist.appendChild(item);
 
         info.item = item;
         item.info = info;
@@ -208,6 +189,9 @@ Playlist.prototype = {
               event.preventDefault();
           }, true);
         this.items.push(info);
+
+        if(this.store)
+          this.save()
     },
 
     /// Add a list of items (optimized)
@@ -217,6 +201,26 @@ Playlist.prototype = {
             this.add(items[i], container);
         this.playlist.appendChild(container);
     },
+
+    /// Save a playlist to local storage
+    save: function() {
+      pl = []
+      for(var i = 0; i < this.items.length; i++)
+        info = Object.assign({}, this.items[i])
+        info.item = undefined;
+        pl.push(info);
+
+      localStorage.setItem('playlist.' + self.name,
+                           JSON.stringify(pl))
+    },
+
+    /// Load playlist from local storage
+    load: function() {
+      pl = localStorage.getItem('playlist.' + self.name)
+      if(pl)
+        this.add_list(JSON.parse(pl));
+    },
+
 }
 
 
@@ -232,8 +236,8 @@ player = {
         this.audio = this.player.querySelector('audio');
         this.playlists = this.player.querySelector('.playlists');
         this.live = new Playlist(
-            'playlist-live',
-            "{% trans "live" %}",
+            'live',
+            "☰ {% trans "live" %}",
             [ {% for sound in live_streams %}
                 { title: "{{ sound.title }}",
                   url: "{{ sound.url }}",
@@ -242,8 +246,7 @@ player = {
                 }, {% endfor %} ]
         );
         this.recents = new Playlist(
-            'playlist-recents',
-            "{% trans "recents" %}",
+            'recents', '☀ {% trans "recents" %}',
             [ {% for sound in last_sounds %}
                 { title: "{{ sound.title }}",
                   url: "{{ sound.url }}",
@@ -255,15 +258,18 @@ player = {
                   info: "{{ sound.related.duration|date:"i:s" }}",
                 }, {% endfor %} ]
         );
+        this.favorite = new Playlist(
+            'favorite', '♥ {% trans "favorites" %}', null, true);
+        this.playlist = new Playlist(
+            'playlist', '★ {% trans "playlist" %}', null, true);
 
-        this.select_playlist(this.recents);
         this.select(this.live.items[0], false)
         this.update_on_air();
     },
 
     /// update on air informations
     update_on_air: function() {
-      part = Part('{% url "player_on_air" %}').get()
+      part = Part('{% url "exp.player.on_air" %}').get()
           .select({
             title: '.title',
             url: ['.url', 'href'],
@@ -332,8 +338,10 @@ player = {
         this.__unselect('.playlists .playlist[selected]');
 
         self.playlist = playlist
-        playlist.playlist.setAttribute('selected', 'true');
-        playlist.tab.setAttribute('selected', 'true');
+        if(playlist) {
+            playlist.playlist.setAttribute('selected', 'true');
+            playlist.tab.setAttribute('selected', 'true');
+        }
     },
 }
 

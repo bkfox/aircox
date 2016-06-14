@@ -43,7 +43,7 @@ class Route:
 
     @classmethod
     def get_view_name(cl, name):
-        return name + '_' + cl.name
+        return name + '.' + cl.name
 
     @classmethod
     def as_url(cl, name, view, view_kwargs = None):

@@ -35,8 +35,8 @@ class Website:
     ## components
     urls = []
     """list of urls generated thourgh registrations"""
-    parts = []
-    """list of registered parts (done through sections registration)"""
+    exposures = []
+    """list of registered exposures (done through sections registration)"""
     registry = {}
     """dict of registered models by their name"""
 
@@ -45,8 +45,8 @@ class Website:
         * menus: a list of menus to add to the website
         """
         self.registry = {}
-        self.parts = []
-        self.urls = [ url(r'^parts/', include(self.parts)) ]
+        self.exposures = []
+        self.urls = [ url(r'^exp/', include(self.exposures)) ]
         self.menus = {}
         self.__dict__.update(kwargs)
 
@@ -96,18 +96,18 @@ class Website:
         model._website = self
         return name
 
-    def register_parts(self, sections):
+    def register_exposures(self, sections):
         """
-        Register parts that are used in the given sections.
+        Register exposures that are used in the given sections.
         """
         if not hasattr(sections, '__iter__'):
             sections = [sections]
 
         for section in sections:
-            if not hasattr(section, '_parts'):
+            if not hasattr(section, '_exposure'):
                 continue
-            self.parts += [
-                url for url in section._parts
+            self.exposures += [
+                url for url in section._exposure.items
                 if url not in self.urls
             ]
 
@@ -129,7 +129,7 @@ class Website:
             view_kwargs['menus'] = self.menus
 
         if sections:
-            self.register_parts(sections)
+            self.register_exposures(sections)
             view_kwargs['sections'] = sections
 
         view = view.as_view(
@@ -172,7 +172,7 @@ class Website:
         elif menu.position in ('left', 'right'):
             menu.tag = 'side'
         self.menus[menu.position] = menu
-        self.register_parts(menu.sections)
+        self.register_exposures(menu.sections)
 
     def get_menu(self, position):
         """
