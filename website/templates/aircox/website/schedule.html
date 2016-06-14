@@ -22,27 +22,14 @@ function update_schedule(event) {
         return;
     console.log(schedule.className)
 
-    // xhr
-    var xhr = new XMLHttpRequest();
-    xhr.onreadystatechange = function() {
-        if(xhr.readyState != 4 || xhr.status != 200 && xhr.status)
-            return;
-
-        var obj = document.implementation.createHTMLDocument('result');
-        obj.documentElement.innerHTML = xhr.responseText;
-        obj = obj.documentElement;
-
-        schedule.querySelector('header').innerHTML =
-            obj.querySelector('header').innerHTML;
-
-        schedule.querySelector('.content').innerHTML =
-            obj.querySelector('.content').innerHTML;
-    }
     fields = [ {% for field in list.fields %}"fields={{ field }}",{% endfor %} ];
     fields = fields.join('&');
 
-    xhr.open('GET', url + '?embed=1&' + fields, true);
-    xhr.send();
+    part = new Part(url, 'embed&' + fields);
+    part.get().select({
+        'header': ['header', 'innerHTML', true],
+        'content': ['.content', 'innerHTML', true],
+    }).map(schedule).send();
 }
 </script>
 <a href="{{ prev_week }}" onclick="update_schedule(event); return true;">&lt;</a>

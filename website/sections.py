@@ -1,3 +1,5 @@
+import json
+
 from django.utils import timezone as tz
 from django.utils.translation import ugettext as _, ugettext_lazy
 
@@ -5,10 +7,12 @@ import aircox.programs.models as programs
 import aircox.cms.models as cms
 import aircox.cms.routes as routes
 import aircox.cms.sections as sections
+import aircox.cms.decorators as decorators
 
 import aircox.website.models as models
 
 
+@decorators.parts
 class Player(sections.Section):
     """
     Display a player that is cool.
@@ -20,8 +24,9 @@ class Player(sections.Section):
     """
     #default_sounds
 
-    @staticmethod
-    def on_air():
+    @decorators.part
+    @decorators.template(template_name = 'aircox/cms/list_item.html')
+    def on_air(cl, request):
         """
         View that return what is on air formatted in JSON.
         """
@@ -31,19 +36,27 @@ class Player(sections.Section):
         )
 
         if not qs or not qs[0].is_date_in_my_range():
-            return None
+            return ''
 
         qs = qs[0]
         post = models.Diffusion.objects.filter(related = qs)
         if not post:
             post = models.Program.objects.filter(related = qs.program)
+
         if not post:
             post = ListItem(title = qs.program.name)
-        return post
+        else:
+            post = post[0]
+
+        return {
+            'item': post,
+            'list': sections.List,
+        }
+
+        return json.dumps({ 'title': post.title, 'url': post.url() })
 
     def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(*args, **kwargs)
-
         context.update({
             'base_template': 'aircox/cms/section.html',
             'live_streams': self.live_streams,

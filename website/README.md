@@ -19,6 +19,7 @@ a website in a fast and simple manner.
 
 
 ## Sections
+* **Player**: player widget
 * **Diffusions**: generic section list to retrieve diffusions by date, related
   or not to a specific Program. If wanted, can show schedule in the header of
   the section (with indication of reruns).

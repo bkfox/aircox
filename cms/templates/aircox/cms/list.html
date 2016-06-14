@@ -8,65 +8,7 @@
 {% block content %}
 <ul class="content">
 {% for item in object_list %}
-    <li {% if item.css_class %}class="{{ item.css_class }}"{% endif %}
-        {% for k, v in item.attrs.items %}
-        {{ k }} = "{{ v|addslashes }}"
-        {% endfor %} >
-    {% if item.url %}
-        <a href="{{ item.url }}">
-    {% endif %}
-    {% if 'image' in list.fields and item.image %}
-    <img src="{% thumbnail item.image list.image_size crop %}">
-    {% endif %}
-
-    <div class="content">
-        {% if 'title' in list.fields and item.title %}
-        <h2 class="title">{{ item.title }}</h2>
-        {% endif %}
-
-        {% if 'content' in list.fields and item.content %}
-        <div class="text">
-            {% if list.truncate %}
-            {{ item.content|striptags|truncatewords:list.truncate }}
-            {% else %}
-            {{ item.content|striptags }}
-            {% endif %}
-        </div>
-        {% endif %}
-    </div>
-
-    <div class="meta">
-        {% if item.date and 'date' in list.fields or 'time' in list.fields %}
-        <time datetime="{{ item.date }}">
-            {% if 'date' in list.fields %}
-            <span class="date">
-                {{ item.date|date:'D. d F' }}
-            </span>
-            {% endif %}
-            {% if 'time' in list.fields %}
-            <span class="time">
-                {{ item.date|date:'H:i' }}
-            </span>
-            {% endif %}
-        </time>
-        {% endif %}
-        {% if item.author and 'author' in list.fields %}
-        <span class="author">
-            {{ item.author }}
-        </span>
-        {% endif %}
-
-        {% if item.info and 'info' in list.fields %}
-        <span class="info">
-            {{ item.info }}
-        </span>
-        {% endif %}
-    </div>
-
-
-    {% if item.url %}
-    </a>
-    {% endif %}
+{% include "aircox/cms/list_item.html" %}
 {% empty %}
 <div class="message empty">
 {{ list.message_empty }}

@@ -56,14 +56,14 @@
 
         .playlists nav a {
             padding: 0.2em;
+            cursor: pointer;
         }
 
-        .playlists nav > *[selected],
-        .playlists .item[selected] {
-            color: black;
-            border-top-right-radius: 0.2em;
-            background-color: rgba(0, 126, 223, 0.8);
-        }
+            .playlists nav > *[selected] {
+                color: black;
+                border-top-right-radius: 0.2em;
+                background-color: rgba(0, 126, 223, 0.8);
+            }
 
         .playlists ul:not([selected]) {
             display: none;
@@ -80,10 +80,6 @@
         vertical-align: center;
     }
 
-    .playlist .item .title {
-        color: #007EDF;
-    }
-
     .playlist .item .info {
         float: right;
         font-size: 0.8em;
@@ -94,6 +90,9 @@
         font-weight: bold;
     }
 
+    .playlist .item[selected] .title {
+        color: #007EDF;
+    }
 
 </style>
 <div id="player">
@@ -139,6 +138,7 @@ function Playlist(id, name, items) {
         player.select_playlist(self);
         event.preventDefault();
     }, true);
+    this.tab.className = 'tab';
     this.tab.innerHTML = name;
 
     player.playlists.appendChild(this.playlist);
@@ -163,10 +163,12 @@ Playlist.prototype = {
         else
             self.playlist.appendChild(item);
 
+        info.item = item;
+        item.info = info;
+
         item.querySelector('.title').innerHTML = info.title;
         item.querySelector('.detail').href = info.url;
         item.querySelector('.info').innerHTML = info.info || '';
-        item.info = info;
 
         item.addEventListener('click', function(event) {
             if(event.target.className.indexOf('detail') != -1)
@@ -174,7 +176,6 @@ Playlist.prototype = {
             player.select(event.currentTarget.info);
             event.preventDefault();
         }, true);
-
         this.items.push(info);
     },
 
@@ -228,6 +229,16 @@ player = {
         this.select(this.live.items[0], false)
     },
 
+    /// update "on_air"
+    get_on_air: function() {
+      part = Part('').select({
+          'title': '.title',
+          'url': 'a',
+      }, function(r) {
+        document.title = r.title;
+      });
+    },
+
     /// play a given item { title, src }
     play: function() {
         var player = this.player;
@@ -243,35 +254,45 @@ player = {
         }
     },
 
-    /// update info on the player from the given item
-    set_info: function(item) {
-        var player = this.player;
-        player.querySelectorAll('#simple-player .title')[0]
-            .innerHTML = item.title;
-        player.querySelectorAll('.playlists')[0]
-            .setAttribute('playlist', item.playlist);
-    },
-
-
     /// select the current track to play, and start playing it
     select: function(item, play = true) {
         var audio = this.audio;
+        var player = this.player;
+
         audio.pause();
         audio.src = item.stream;
         audio.load()
 
-        self.item = item;
-        this.set_info(item);
+        if(this.item && this.item.item)
+            this.item.item.removeAttribute('selected')
+
+        this.item = item;
+
+        if(item.item)
+            console.log(item.item)
+            item.item.setAttribute('selected', 'true');
+
+        player.querySelectorAll('#simple-player .title')[0]
+            .innerHTML = item.title;
+        player.querySelectorAll('.playlists')[0]
+            .setAttribute('playlist', item.playlist);
+
         if(play)
             this.play();
     },
 
-    /// select current playlist to show
-    select_playlist: function(playlist) {
-        v = this.player.querySelectorAll('.playlists *[selected]');
+    /// remove selection using the given selector.
+    __unselect: function (selector) {
+        v = this.player.querySelectorAll(selector);
         if(v)
             for(var i = 0; i < v.length; i++)
                 v[i].removeAttribute('selected');
+    },
+
+    /// select current playlist to show
+    select_playlist: function(playlist) {
+        this.__unselect('.playlists nav .tab[selected]');
+        this.__unselect('.playlists .playlist[selected]');
 
         self.playlist = playlist
         playlist.playlist.setAttribute('selected', 'true');

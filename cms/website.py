@@ -1,5 +1,5 @@
 from django.utils.text import slugify
-from django.conf.urls import url
+from django.conf.urls import include, url
 
 import aircox.cms.routes as routes
 import aircox.cms.routes as routes_
@@ -35,6 +35,8 @@ class Website:
     ## components
     urls = []
     """list of urls generated thourgh registrations"""
+    parts = []
+    """list of registered parts (done through sections registration)"""
     registry = {}
     """dict of registered models by their name"""
 
@@ -43,7 +45,8 @@ class Website:
         * menus: a list of menus to add to the website
         """
         self.registry = {}
-        self.urls = []
+        self.parts = []
+        self.urls = [ url(r'^parts/', include(self.parts)) ]
         self.menus = {}
         self.__dict__.update(kwargs)
 
@@ -93,9 +96,23 @@ class Website:
         model._website = self
         return name
 
+    def register_parts(self, sections):
+        """
+        Register parts that are used in the given sections.
+        """
+        if not hasattr(sections, '__iter__'):
+            sections = [sections]
+
+        for section in sections:
+            if not hasattr(section, '_parts'):
+                continue
+            self.parts += [
+                url for url in section._parts
+                if url not in self.urls
+            ]
 
     def register(self, name, routes = [], view = views.PageView,
-                 model = None, **view_kwargs):
+                 model = None, sections = None, **view_kwargs):
         """
         Register a view using given name and routes. If model is given,
         register the views for it.
@@ -110,6 +127,11 @@ class Website:
 
         if not view_kwargs.get('menus'):
             view_kwargs['menus'] = self.menus
+
+        if sections:
+            self.register_parts(sections)
+            view_kwargs['sections'] = sections
+
         view = view.as_view(
             website = self,
             **view_kwargs
@@ -150,6 +172,7 @@ class Website:
         elif menu.position in ('left', 'right'):
             menu.tag = 'side'
         self.menus[menu.position] = menu
+        self.register_parts(menu.sections)
 
     def get_menu(self, position):
         """

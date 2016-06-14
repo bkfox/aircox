@@ -3,9 +3,10 @@ Define different Section css_class that can be used by views.Sections;
 """
 import re
 
-from django.templatetags.static import static
 from django.template.loader import render_to_string
 from django.views.generic.base import View
+from django.templatetags.static import static
+from django.http import HttpResponse
 from django.contrib import messages
 from django.utils.html import escape
 from django.utils.translation import ugettext as _, ugettext_lazy
@@ -75,9 +76,6 @@ class Section(Viewable, View):
     * title: title of the section
     * header: header of the section
     * footer: footer of the section
-
-    * force_object: (can be persistent) related object
-
     """
     template_name = 'aircox/cms/website.html'
 
@@ -88,7 +86,6 @@ class Section(Viewable, View):
     title = ''
     header = ''
     footer = ''
-    force_object = None
 
     request = None
     object = None

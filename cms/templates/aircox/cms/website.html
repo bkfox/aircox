@@ -3,7 +3,7 @@
 
 <html>
     <head>
-        {# FIXME: page tags #}
+        {# FIXME: extra head block #}
         <meta charset="utf-8">
         <meta name="application-name" content="aircox-cms">
         <meta name="description" content="{{ website.description }}">
@@ -13,6 +13,7 @@
         {% if website.styles %}
         <link rel="stylesheet" href="{% static website.styles %}" type="text/css">
         {% endif %}
+        <script src="{% static "aircox/cms/scripts.js" %}"></script>
         <title>{% if title %}{{ title }} - {% endif %}{{ website.name }}</title>
     </head>
     <body>
