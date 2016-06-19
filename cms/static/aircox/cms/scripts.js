@@ -158,7 +158,7 @@ Part_.Selector.prototype = {
       var dst = dst_qs[i];
 
       if(this.attribute)
-        dst[this.attribute] = src[this.attribute];
+        dst[this.attribute] = src[this.attribute] || '';
       else
         dst.parentNode.replaceChild(src, dst);
     }
