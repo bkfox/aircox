@@ -25,7 +25,7 @@ class StreamInline(admin.TabularInline):
     extra = 1
 
 class SoundDiffInline(admin.TabularInline):
-    model = Diffusion.sounds.through
+    model = Sound
 
 # from suit.admin import SortableTabularInline, SortableModelAdmin
 #class TrackInline(SortableTabularInline):

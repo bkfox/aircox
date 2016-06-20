@@ -60,13 +60,18 @@
 .playlists {
 }
 
-      .playlists ul:not([selected]) {
-          display: none;
-      }
+    .playlists ul:not([selected]) {
+        display: none;
+    }
 
-      .playlists nav a.close {
-          float: right;
-      }
+    .playlists nav > a.close,
+    .playlists nav > label {
+        float: right;
+    }
+
+    #player-single-mode + label[for="player-single-mode"]::after {
+        content:"{% trans "single mode" %}";
+    }
 
 .playlist {
     margin: 0;
@@ -136,9 +141,8 @@
     </div>
     <div class="playlists">
         <nav>
-          <a onclick="player.select_playlist()" class="close"
-             title="{% trans "close" %}">✖</a>
-          <!-- single mode -->
+          <input type="checkbox" class="single" id="player-single-mode">
+          <label for="player-single-mode"></label>
         </nav>
     </div>
     <div class='item on_air'>
@@ -148,6 +152,46 @@
 </div>
 
 <script>
+playerStore = {
+    // save data to localstorage, or remove it if data is null
+    set: function(name, data) {
+        name = 'player.' + name;
+        if(data == undefined) {
+            localStorage.removeItem(name);
+            return;
+        }
+        localStorage.setItem(name, JSON.stringify(data))
+    },
+
+    // load data from localstorage
+    get: function(name) {
+        try {
+            name = 'player.' + name;
+            var data = localStorage.getItem(name);
+            if(data)
+                return JSON.parse(data);
+        }
+        catch(e) { console.log(e, data); }
+    },
+
+    // return true if the given item is stored
+    exists: function(name) {
+        name = 'player.' + name;
+        return (localStorage.getItem(name) != null);
+    },
+
+    // update a field in the stored data
+    update: function(name, key, value) {
+        data = this.get(name) || {};
+        if(value)
+            data[key] = value;
+        else
+            delete data[key];
+        this.set(name, data);
+    },
+}
+
+
 // Create a Playlist:
 // * name: name of the playlist, used for container id and storage
 // * tab: text to put in the tab
@@ -185,7 +229,12 @@ Playlist.prototype = {
     items: undefined,
 
     /// find an item in playlist
-    find: function(item) {
+    find: function(item, by_stream = false) {
+        if(by_stream)
+            return this.items.find(function(v) {
+                return v.stream == item;
+            });
+
         return this.items.find(function(v) {
             return v.stream == item.stream;
         });
@@ -276,21 +325,15 @@ Playlist.prototype = {
             delete item.playlist;
             pl.push(item);
         }
-
-        if(pl.length)
-            localStorage.setItem('playlist.' + this.name,
-                                 JSON.stringify(pl))
-        else
-            localStorage.removeItem('playlist.' + this.name);
+        playerStore.set('playlist.' + this.name, pl)
     },
 
     /// Load playlist from local storage
     load: function() {
-      var pl = localStorage.getItem('playlist.' + this.name);
+      var pl = playerStore.get('playlist.' + this.name);
       if(pl)
-        this.add_list(JSON.parse(pl));
+        this.add_list(pl);
     },
-
 
     /// called by the player when the given item is unselected
     unselect: function(player, item) {
@@ -311,16 +354,6 @@ Playlist.prototype = {
         this.tab.setAttribute('active', 'true');
         if(item.elm)
             item.elm.setAttribute('selected', 'true');
-
-        if(this.store && item.currentTime &&
-           confirm("{% trans "restart from last position?" %}"))
-        {
-            // FIXME: one track in multiple playlists
-            player.audio.currentTime = Math.max(item.currentTime - 5, 0);
-        }
-
-        item.currentTime = undefined;
-        this.save();
     },
 }
 
@@ -330,12 +363,25 @@ player = {
     player: undefined,
     /// <audio> container
     audio: undefined,
+    /// controls
+    controls: undefined,
 
     /// init player
     init: function(id) {
         this.player = document.getElementById(id);
         this.audio = this.player.querySelector('audio');
+        this.controls = {
+            single: this.player.querySelector('input.single'),
+        }
 
+        // TODO: event on controls -> save info in storage
+
+        this.__init_audio();
+        this.__init_playlists();
+        this.load();
+    },
+
+    __init_audio: function() {
         var self = this;
         this.audio.addEventListener('playing', function() {
             self.player.setAttribute('state', 'playing');
@@ -353,7 +399,19 @@ player = {
             self.player.removeAttribute('state');
         }, false);
 
-        this.__init_playlists()
+        this.audio.addEventListener('timeupdate', function() {
+            if(self.audio.seekable.length)
+                playerStore.set('stream.' + self.item.stream + '.pos',
+                                self.audio.currentTime)
+        }, false);
+
+        this.audio.addEventListener('ended', function() {
+            playerStore.set('streams.' + self.item.stream + '.pos')
+
+            single = self.player.querySelector('input.single');
+            if(!single.checked)
+                self.next(true);
+        }, false);
     },
 
     __init_playlists: function() {
@@ -391,6 +449,27 @@ player = {
         this.update_on_air();
     },
 
+    load: function() {
+        var data = playerStore.get('player');
+        if(!data)
+            return;
+
+        if(data.playlist)
+            this.select_playlist(this[data.playlist]);
+        if(data.stream) {
+            item = this.playlist.find(data.stream, true);
+            item && this.select(item, false);
+        }
+        this.controls.single.checked = data.single
+    },
+
+    save: function() {
+        playerStore.set('player', {
+            'playlist': this.playlist.name,
+            'stream':   this.item && this.item.stream,
+            'single':   this.controls.single.checked,
+        });
+    },
 
     /** player actions **/
     /// play a given item { title, src }
@@ -406,6 +485,16 @@ player = {
         }
     },
 
+    __ask_to_seek(item) {
+        var key = 'stream.' + item.stream + '.pos'
+        var pos = playerStore.get(key);
+        if(!pos)
+            return
+        if(confirm("{% trans "restart from the last position?" %}"))
+            this.audio.currentTime = Math.max(pos - 5, 0);
+        playerStore.set(key);
+    },
+
     /// select the current track to play, and start playing it
     select: function(item, play = true) {
         var audio = this.audio;
@@ -416,7 +505,7 @@ player = {
 
         audio.pause();
         audio.src = item.stream;
-        audio.load()
+        audio.load();
 
         this.item = item;
         if(this.item && this.item.playlist)
@@ -425,8 +514,24 @@ player = {
         player.querySelectorAll('#simple-player .title')[0]
             .innerHTML = item.title;
 
-        if(play)
+        if(play) {
+            this.__ask_to_seek(item);
             this.play();
+        }
+        this.save();
+    },
+
+    /// Select the next track in the current playlist, eventually play it
+    next: function(play = true) {
+        var playlist = this.playlist;
+        var index = this.playlist.items.indexOf(this.item);
+        console.log(index, this.item, this.playlist.items)
+        if(index == -1)
+            return;
+
+        index--;
+        if(index >= 0)
+            this.select(this.playlist.items[index], play);
     },
 
     /// remove selection using the given selector.
@@ -442,14 +547,14 @@ player = {
         this.__unselect('.playlists nav .tab[selected]');
         this.__unselect('.playlists .playlist[selected]');
 
-        self.playlist = playlist
+        this.playlist = playlist;
         if(playlist) {
             playlist.playlist.setAttribute('selected', 'true');
             playlist.tab.setAttribute('selected', 'true');
         }
     },
 
-    /** utility **/
+    /** utility & actions **/
     /// update on air informations
     update_on_air: function() {
       part = Part('{% url "exp.player.on_air" %}').get()
@@ -506,7 +611,6 @@ player = {
             }
         }, true);
 
-        // TODO: remove "play" action 
         if(!elm.parentNode)
             container.appendChild(elm);
     },

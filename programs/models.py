@@ -104,15 +104,17 @@ class Sound(Nameable):
     """
     A Sound is the representation of a sound file that can be either an excerpt
     or a complete archive of the related diffusion.
-
-    The podcasting and public access permissions of a Sound are managed through
-    the related program info.
     """
     class Type(IntEnum):
         other = 0x00,
         archive = 0x01,
         excerpt = 0x02,
 
+    diffusion = models.ForeignKey(
+        'Diffusion',
+        verbose_name = _('diffusion'),
+        blank = True, null = True,
+    )
     type = models.SmallIntegerField(
         verbose_name = _('type'),
         choices = [ (int(y), _(x)) for x,y in Type.__members__.items() ],
@@ -549,11 +551,6 @@ class Diffusion(models.Model):
     program = models.ForeignKey (
         'Program',
         verbose_name = _('program'),
-    )
-    sounds = models.ManyToManyField(
-        Sound,
-        blank = True,
-        verbose_name = _('sounds'),
     )
     # specific
     type = models.SmallIntegerField(

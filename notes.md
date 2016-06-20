@@ -11,8 +11,11 @@
         - (old) schedule.to_string unused? commented
         - write more tests
     - sounds:
-        - inline admin
-        - one sound, one diffusion?
+        - check that a sound is available when uploading too
+        - one sound, one diffusion
+          -> update admin & inlining
+          -> sound_monitor
+          -> liquidsoap
 
 - liquidsoap:
     - update rc's supervisor scripts
@@ -34,6 +37,7 @@
         - article list with the focus
         - similar articles (using tags)
         - calendar
+    - tags: allow tags_url on all publications
 
 - website:
     - diffusions:
@@ -42,10 +46,8 @@
         - print program's name in lists
     - player:
         - "listen" + "favorite" buttons made easy + automated
-        - single mode / play next auto
         - mixcloud
         - seek bar
-    - section for schedule as calendar
     - load complete week for a schedule?
     - finish that fucking website
     - list of played diffusions and tracks when non-stop;
