@@ -317,6 +317,28 @@ class List(Section):
         return self.paginate_by and self.paginate_by < len(self.object_list)
 
 
+class Similar(List):
+    """
+    Section that uses tags to render similar objects of a given one.
+    Note that the list is not a queryset, but the sorted result of
+    taggit's similar_objects function.
+    """
+    title = _('Similar publications')
+    models = None
+    """
+    List of models allowed in the resulting list. If not set, all models
+    are available.
+    """
+
+    def get_object_list(self):
+        if not self.object:
+            return
+
+        qs = self.object.tags.similar_objects()
+        qs.sort(key = lambda post: post.date, reverse=True)
+        return qs
+
+
 class Comments(List):
     """
     Section used to render comment form and comments list. It renders the

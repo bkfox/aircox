@@ -144,6 +144,7 @@ class Post (models.Model, Routable):
     content = models.TextField (
         _('description'),
         default = '',
+        blank = True, null = True,
     )
     image = models.ImageField(
         blank = True, null = True,

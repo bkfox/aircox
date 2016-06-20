@@ -5,21 +5,17 @@
 # TODO:
 - general:
     - timezone shit
+    - translation
 
 - programs:
-    - schedule:
-        - (old) schedule.to_string unused? commented
-        - write more tests
-    - sounds:
-        - check that a sound is available when uploading too
-        - one sound, one diffusion
-          -> sound_monitor
-          -> liquidsoap
-          -> tests: sound_monitor, liquidsoap (monitor)
+    - tests:
+        - sound_monitor
 
 - liquidsoap:
     - update rc's supervisor scripts
-    - check when a played sound has a temp blank
+    - tests:
+        - monitor
+        - check when a played sound has a temp blank
 
 - cms:
     - empty content -> empty string
@@ -33,7 +29,6 @@
     - admin cms
     - content management -> do we use a markup language?
     - sections:
-        - similar articles (using tags)
         - calendar
         - article list with the focus
             -> set html attribute based on values that are public
