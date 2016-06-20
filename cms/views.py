@@ -146,7 +146,6 @@ class PostListView(BaseView, ListView):
         return super().dispatch(request, *args, **kwargs)
 
     def get_queryset(self):
-        print('get_query_set')
         if self.route:
             qs = self.route.get_queryset(self.model, self.request,
                                          **self.kwargs)
@@ -193,7 +192,6 @@ class PostListView(BaseView, ListView):
                 self.model, self.request, **self.kwargs
             )
 
-        print([post.title for post in context.get('object_list')])
         context['list'] = self.list
         return context
 

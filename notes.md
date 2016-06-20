@@ -9,7 +9,6 @@
 - programs:
     - schedule:
         - (old) schedule.to_string unused? commented
-        - check one week on two
         - write more tests
     - sounds:
         - inline admin
@@ -25,9 +24,10 @@
         - cms.views
         - cms.parts
         - cms.script
+        - cms.qcombine
     - routes
         - customized header depending on the list (e.g. thread -> link to thread parent)
-        - different models combinaison
+        - integrate QCombine
     - admin cms
     - content management -> do we use a markup language?
     - sections:

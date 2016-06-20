@@ -5,7 +5,6 @@ from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
 from django.utils.translation import ugettext as _, ugettext_lazy
 
-
 class Route:
     """
     Base class for routing. Given a model, we generate url specific for each
