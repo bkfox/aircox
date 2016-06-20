@@ -51,11 +51,11 @@ class SoundInfo:
     duration = None
 
     @property
-    def path (self):
+    def path(self):
         return self._path
 
     @path.setter
-    def path (self, value):
+    def path(self, value):
         """
         Parse file name to get info on the assumption it has the correct
         format (given in Command.help)
@@ -83,10 +83,10 @@ class SoundInfo:
         self.n = r.get('n')
         return r
 
-    def __init__ (self, path = ''):
+    def __init__(self, path = ''):
         self.path = path
 
-    def get_duration (self):
+    def get_duration(self):
         p = subprocess.Popen(['soxi', '-D', self.path],
                              stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE)
@@ -96,7 +96,7 @@ class SoundInfo:
             self.duration = duration
             return duration
 
-    def get_sound (self, kwargs = None, save = True):
+    def get_sound(self, kwargs = None, save = True):
         """
         Get or create a sound using self info.
 
@@ -116,47 +116,42 @@ class SoundInfo:
         self.sound = sound
         return sound
 
-    def find_diffusion (self, program, attach = False):
+    def find_diffusion(self, program, save = True):
         """
         For a given program, check if there is an initial diffusion
-        to associate to, using the date info we have.
+        to associate to, using the date info we have. Update self.sound
+        and save it consequently.
 
         We only allow initial diffusion since there should be no
         rerun.
-
-        If attach is True and we have self.sound, we add self.sound to
-        the diffusion and update the DB.
         """
-        if self.year == None:
+        if self.year == None or not self.sound or self.sound.diffusion:
             return;
 
-        # check on episodes
         diffusion = Diffusion.objects.filter(
             program = program,
+            initial__isnull = True,
             start__year = self.year,
             start__month = self.month,
             start__day = self.day,
-            initial = None,
         )
         if not diffusion:
             return
-
         diffusion = diffusion[0]
-        if attach and self.sound:
-            qs = diffusion.sounds.get_queryset().filter(path = sound.path)
-            if not qs:
-                logger.info('diffusion %s mathes to sound -> %s', str(diffusion),
-                            sound.path)
-                diffusion.sounds.add(sound.pk)
-                diffusion.save()
+
+        logger.info('diffusion %s mathes to sound -> %s', str(diffusion),
+                    sound.path)
+        self.sound.diffusion = diffusion
+        if save:
+            self.sound.save()
         return diffusion
 
 
-class MonitorHandler (PatternMatchingEventHandler):
+class MonitorHandler(PatternMatchingEventHandler):
     """
     Event handler for watchdog, in order to be used in monitoring.
     """
-    def __init__ (self, subdir):
+    def __init__(self, subdir):
         """
         subdir: AIRCOX_SOUND_ARCHIVES_SUBDIR or AIRCOX_SOUND_EXCERPTS_SUBDIR
         """
@@ -170,10 +165,10 @@ class MonitorHandler (PatternMatchingEventHandler):
                     for ext in settings.AIRCOX_SOUND_FILE_EXT ]
         super().__init__(patterns=patterns, ignore_directories=True)
 
-    def on_created (self, event):
+    def on_created(self, event):
         self.on_modified(event)
 
-    def on_modified (self, event):
+    def on_modified(self, event):
         logger.info('sound modified: %s', event.src_path)
         program = Program.get_from_path(event.src_path)
         if not program:
@@ -182,9 +177,9 @@ class MonitorHandler (PatternMatchingEventHandler):
         si = SoundInfo(event.src_path)
         si.get_sound(self.sound_kwargs, True)
         if si.year != None:
-            si.find_diffusion(program, True)
+            si.find_diffusion(program)
 
-    def on_deleted (self, event):
+    def on_deleted(self, event):
         logger.info('sound deleted: %s', event.src_path)
         sound = Sound.objects.filter(path = event.src_path)
         if sound:
@@ -192,7 +187,7 @@ class MonitorHandler (PatternMatchingEventHandler):
             sound.removed = True
             sound.save()
 
-    def on_moved (self, event):
+    def on_moved(self, event):
         logger.info('sound moved: %s -> %s', event.src_path, event.dest_path)
         sound = Sound.objects.filter(path = event.src_path)
         if not sound:
@@ -206,17 +201,17 @@ class MonitorHandler (PatternMatchingEventHandler):
         sound.save()
 
 
-class Command (BaseCommand):
+class Command(BaseCommand):
     help= __doc__
 
-    def report (self, program = None, component = None, *content):
+    def report(self, program = None, component = None, *content):
         if not component:
             logger.info('%s: %s', str(program), ' '.join([str(c) for c in content]))
         else:
             logger.info('%s, %s: %s', str(program), str(component),
                         ' '.join([str(c) for c in content]))
 
-    def add_arguments (self, parser):
+    def add_arguments(self, parser):
         parser.formatter_class=RawTextHelpFormatter
         parser.add_argument(
             '-q', '--quality_check', action='store_true',
@@ -226,7 +221,7 @@ class Command (BaseCommand):
         parser.add_argument(
             '-s', '--scan', action='store_true',
             help='Scan programs directories for changes, plus check for a '
-                 ' matching episode on sounds that have not been yet assigned'
+                 ' matching diffusion on sounds that have not been yet assigned'
         )
         parser.add_argument(
             '-m', '--monitor', action='store_true',
@@ -235,7 +230,7 @@ class Command (BaseCommand):
         )
 
 
-    def handle (self, *args, **options):
+    def handle(self, *args, **options):
         if options.get('scan'):
             self.scan()
         if options.get('quality_check'):
@@ -244,7 +239,7 @@ class Command (BaseCommand):
             self.monitor()
 
     @staticmethod
-    def check_sounds (qs):
+    def check_sounds(qs):
         """
         Only check for the sound existence or update
         """
@@ -253,7 +248,7 @@ class Command (BaseCommand):
             if sound.check_on_file():
                 sound.save(check = False)
 
-    def scan (self):
+    def scan(self):
         """
         For all programs, scan dirs
         """
@@ -271,7 +266,7 @@ class Command (BaseCommand):
                 type = Sound.Type.excerpt,
             )
 
-    def scan_for_program (self, program, subdir, **sound_kwargs):
+    def scan_for_program(self, program, subdir, **sound_kwargs):
         """
         Scan a given directory that is associated to the given program, and
         update sounds information.
@@ -281,7 +276,7 @@ class Command (BaseCommand):
             return
 
         subdir = os.path.join(program.path, subdir)
-        new_sounds = []
+        sounds = []
 
         # sounds in directory
         for path in os.listdir(subdir):
@@ -291,15 +286,15 @@ class Command (BaseCommand):
 
             si = SoundInfo(path)
             si.get_sound(sound_kwargs, True)
-            if si.year != None:
-                si.find_diffusion(program, True)
-            new_sounds = [si.sound.pk]
+            si.find_diffusion(program)
+            sounds.append(si.sound.pk)
 
-        # sounds in db
-        self.check_sounds(Sound.objects.filter(path__startswith = subdir) \
-                                       .exclude(pk__in = new_sounds ))
+        # sounds in db & unchecked
+        sounds = Sound.objects.filter(path__startswith = subdir). \
+                               exclude(pk__in = sounds)
+        self.check_sounds(sounds)
 
-    def check_quality (self, check = False):
+    def check_quality(self, check = False):
         """
         Check all files where quality has been set to bad
         """
@@ -338,7 +333,7 @@ class Command (BaseCommand):
             update_stats(sound_info, sound)
             sound.save(check = False)
 
-    def monitor (self):
+    def monitor(self):
         """
         Run in monitor mode
         """

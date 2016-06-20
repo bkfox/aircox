@@ -127,10 +127,14 @@ class ThreadRoute(Route):
 
     @classmethod
     def get_title(cl, model, request, thread_model, pk, **kwargs):
-        return _('%(name)s: %(model)s') % {
-            'model': model._meta.verbose_name_plural,
-            'name': cl.get_thread(model, thread_model, pk).title,
-        }
+        thread = cl.get_thread(model, thread_model, pk)
+        return '<a href="{url}">{title}</a>'.format(
+            url = thread.url(),
+            title = _('%(name)s: %(model)s') % {
+                'model': model._meta.verbose_name_plural,
+                'name': thread.title,
+            }
+        )
 
 
 class DateRoute(Route):

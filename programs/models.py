@@ -577,31 +577,18 @@ class Diffusion(models.Model):
     @property
     def playlist(self):
         """
-        List of sounds as playlist
+        List of archives' path; uses get_archives
         """
-        playlist = [ sound.path for sound in self.sounds.all() ]
-        playlist.sort()
-        return playlist
-
-    def archives_duration(self):
-        """
-        Get total duration of the archives. May differ from the schedule
-        duration.
-        """
-        sounds = self.initial.sounds if self.initial else self.sounds
-        r = [ sound.duration
-                for sound in sounds.filter(type = Sound.Type.archive)
-                if sound.duration ]
-        return utils.time_sum(r)
+        return [ sound.path for sound in self.get_archives() ]
 
     def get_archives(self):
         """
-        Return an ordered list of archives sounds for the given episode.
+        Return a list of available archives sounds for the given episode,
+        ordered by path.
         """
-        sounds = self.initial.sounds if self.initial else self.sounds
-        r = [ sound for sound in sounds.all().order_by('path')
-              if sound.type == Sound.Type.archive ]
-        return r
+        sounds = self.initial.sound_set if self.initial else self.sound_set
+        return sounds.filter(type = Sound.Type.archive, removed = False). \
+                      order_by('path')
 
     @classmethod
     def get(cl, date = None,

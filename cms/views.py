@@ -187,7 +187,7 @@ class PostListView(BaseView, ListView):
 
         context = super().get_context_data(**kwargs)
 
-        if not context.get('title') and self.route:
+        if self.route and not context.get('title'):
             context['title'] = self.route.get_title(
                 self.model, self.request, **self.kwargs
             )

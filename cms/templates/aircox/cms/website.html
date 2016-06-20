@@ -14,7 +14,7 @@
         <link rel="stylesheet" href="{% static website.styles %}" type="text/css">
         {% endif %}
         <script src="{% static "aircox/cms/scripts.js" %}"></script>
-        <title>{% if title %}{{ title }} - {% endif %}{{ website.name }}</title>
+        <title>{% if title %}{{ title|striptags }} - {% endif %}{{ website.name }}</title>
     </head>
     <body>
         {% block page_header %}
@@ -51,7 +51,7 @@
 {% endif %}
                     {% block title %}
                     {% if title %}
-                        <h1>{{ title }}</h1>
+                        <h1>{{ title|safe }}</h1>
                     {% endif %}
                     {% endblock %}
 

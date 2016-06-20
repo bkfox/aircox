@@ -95,15 +95,18 @@ class Monitor:
 
         # - preload next diffusion's tracks
         args = {'start__gt': prev_diff.start } if prev_diff else {}
-        next_diff = programs.Diffusion \
-                        .get(now, now = True,
-                             type = programs.Diffusion.Type.normal,
-                             sounds__isnull = False,
-                             **args) \
-                        .prefetch_related('sounds')
+        next_diff = programs.Diffusion.get(
+            now, now = True,
+            type = programs.Diffusion.Type.normal,
+            **args
+        )
         if next_diff:
-            next_diff = next_diff[0]
-            playlist += next_diff.playlist
+            for diff in next_diffs:
+                if not diff.playlist:
+                    continue
+                next_diff = diff
+                playlist += next_diff.playlist
+                break
 
         # playlist update
         if dealer.playlist != playlist:

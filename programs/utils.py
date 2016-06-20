@@ -19,12 +19,3 @@ def seconds_to_time (seconds):
     hours, minutes = divmod(minutes, 60)
     return datetime.time(hour = hours, minute = minutes, second = seconds)
 
-def time_sum (times):
-    """
-    Sum up a list of time elements
-    """
-    seconds = sum([ time.hour * 3600 + time.minute * 60 + time.second
-                    for time in times ])
-    return seconds_to_time(seconds)
-
-

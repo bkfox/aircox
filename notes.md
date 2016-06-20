@@ -13,9 +13,9 @@
     - sounds:
         - check that a sound is available when uploading too
         - one sound, one diffusion
-          -> update admin & inlining
           -> sound_monitor
           -> liquidsoap
+          -> tests: sound_monitor, liquidsoap (monitor)
 
 - liquidsoap:
     - update rc's supervisor scripts
@@ -29,15 +29,15 @@
         - cms.script
         - cms.qcombine
     - routes
-        - customized header depending on the list (e.g. thread -> link to thread parent)
         - integrate QCombine
     - admin cms
     - content management -> do we use a markup language?
     - sections:
-        - article list with the focus
         - similar articles (using tags)
         - calendar
-    - tags: allow tags_url on all publications
+        - article list with the focus
+            -> set html attribute based on values that are public
+    - tags: allow tags_url route QCombine
 
 - website:
     - diffusions:
@@ -51,6 +51,7 @@
     - load complete week for a schedule?
     - finish that fucking website
     - list of played diffusions and tracks when non-stop;
+    - search field -- section
 
 
 

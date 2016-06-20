@@ -24,8 +24,17 @@ class StreamInline(admin.TabularInline):
     model = Stream
     extra = 1
 
-class SoundDiffInline(admin.TabularInline):
+class SoundInline(admin.TabularInline):
+    fields = ['type', 'path', 'duration']
+    readonly_fields = fields
     model = Sound
+    extra = 0
+
+
+class DiffusionInline(admin.StackedInline):
+    model = Diffusion
+    extra = 0
+    fields = ['type', 'start', 'end']
 
 # from suit.admin import SortableTabularInline, SortableModelAdmin
 #class TrackInline(SortableTabularInline):
@@ -83,11 +92,6 @@ class ProgramAdmin(NameableAdmin):
         #return super().get_form(request, obj, **kwargs)
 
 
-class DiffusionInline(admin.StackedInline):
-    model = Diffusion
-    extra = 0
-    fields = ['type', 'start', 'end']
-
 @admin.register(Diffusion)
 class DiffusionAdmin(admin.ModelAdmin):
     def archives(self, obj):
@@ -112,8 +116,7 @@ class DiffusionAdmin(admin.ModelAdmin):
     ordering = ('-start', 'id')
 
     fields = ['type', 'start', 'end', 'initial', 'program']
-    inlines = [ DiffusionInline, SoundDiffInline ]
-    exclude = ('sounds',)
+    inlines = [ DiffusionInline, SoundInline ]
 
 
     def get_form(self, request, obj=None, **kwargs):
@@ -121,9 +124,6 @@ class DiffusionAdmin(admin.ModelAdmin):
             self.readonly_fields = []
         else:
             self.readonly_fields = ['program', 'start', 'end']
-
-        if obj and obj.initial:
-            self.readonly_fields += ['program', 'sounds']
         return super().get_form(request, obj, **kwargs)
 
     def get_object(self, *args, **kwargs):
