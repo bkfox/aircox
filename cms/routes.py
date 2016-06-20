@@ -135,6 +135,9 @@ class ThreadRoute(Route):
 
 
 class DateRoute(Route):
+    """
+    Select posts using a date with format yyyy/mm/dd;
+    """
     name = 'date'
     url_args = [
         ('year', '[0-9]{4}'),
@@ -160,6 +163,11 @@ class DateRoute(Route):
 
 
 class SearchRoute(Route):
+    """
+    Search post using request.GET['q']. It searches in fields designated by
+    model.search_fields
+    """
+    # TODO: q argument in url_args -> need to allow optional url_args
     name = 'search'
 
     @classmethod
@@ -181,5 +189,29 @@ class SearchRoute(Route):
             'model': model._meta.verbose_name_plural,
             'search': request.GET.get('q') or '',
         }
+
+
+class TagsRoute(Route):
+    """
+    Select posts that contains the given tags. The tags are separated
+    by a '+'.
+    """
+    name = 'tags'
+    url_args = [
+        ('tags', '(\w|-|_|\+)+')
+    ]
+
+    @classmethod
+    def get_queryset(cl, model, request, tags, **kwargs):
+        tags = tags.split('+')
+        return model.objects.filter(tags__name__in=tags)
+
+    @classmethod
+    def get_title(cl, model, request, tags, **kwargs):
+        return _('Tagged %(model)s with %(tags)s') % {
+            'model': model._meta.verbose_name_plural,
+            'tags': tags.replace('+', ', ')
+        }
+
 
 

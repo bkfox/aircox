@@ -7,7 +7,7 @@ from django.utils.text import slugify
 from django.utils.translation import ugettext as _, ugettext_lazy
 from django.core.urlresolvers import reverse
 
-from django.db.models.signals import Signal, post_save
+from django.db.models.signals import Signal, post_save, pre_save
 from django.dispatch import receiver
 
 import bleach
@@ -265,11 +265,24 @@ class RelatedMeta (models.base.ModelBase):
 
     @classmethod
     def make_auto_create(cl, model):
+        """
+        Enable auto_create on the given RelatedPost model if it is available.
+        """
         if not model._relation.rel_to_post:
             return
 
-        def handler(sender, instance, created, *args, **kwargs):
+        def handler_rel(sender, instance, created, *args, **kwargs):
+            """
+            handler for the related object
+            """
             rel = model._relation
+            # TODO: make the check happen by overriding inline save function
+            # this check is done in order to allow creation of multiple
+            # models when using admin.inlines: related is saved before
+            # the post, so no post is found, then create an extra post
+            if hasattr(instance, '__cms_post'):
+                return
+
             post = model.objects.filter(related = instance)
             if post.count():
                 post = post[0]
@@ -280,7 +293,7 @@ class RelatedMeta (models.base.ModelBase):
                 return
             post.rel_to_post()
             post.save(avoid_sync = True)
-        post_save.connect(handler, model._relation.model, False)
+        post_save.connect(handler_rel, model._relation.model, False)
 
     def __new__ (cl, name, bases, attrs):
         # TODO: allow proxy models and better inheritance

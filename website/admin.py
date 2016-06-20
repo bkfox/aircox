@@ -12,14 +12,14 @@ class TrackInline(SortableTabularInline):
     form = forms.TrackForm
     model = programs.Track
     sortable = 'position'
-    extra = 10
+    extra = 4
 
 admin.site.register(models.Article, cms.PostAdmin)
 admin.site.register(models.Program, cms.RelatedPostAdmin)
 admin.site.register(models.Diffusion, cms.RelatedPostAdmin)
 
-cms.inject_related_inline(models.Program, True)
 cms.inject_inline(programs.Diffusion, TrackInline, True)
+cms.inject_related_inline(models.Program, True)
 cms.inject_related_inline(models.Diffusion, True)
 cms.inject_related_inline(models.Sound, True)
 

@@ -60,7 +60,7 @@ class BaseView:
         Return a context with all attributes of this classe plus 'view' set
         to self.
         """
-        context = super().get_context_data(**kwargs)
+        context = {}
 
         # update from sections
         if self.sections:
@@ -75,6 +75,8 @@ class BaseView:
                 context.update({
                     'content': self.sections.render(self.request, **kwargs)
                 })
+
+        context.update(super().get_context_data(**kwargs))
 
         # then from me
         context.update({

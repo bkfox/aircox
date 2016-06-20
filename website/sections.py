@@ -77,13 +77,14 @@ class Diffusions(sections.List):
             type = programs.Diffusion.Type.normal
         )
         if self.object:
-            object = self.object.related
-            if type(object) == programs.Program:
-                qs = qs.filter(program = object)
-            elif type(object) == programs.Diffusion:
-                if object.initial:
-                    object = object.initial
-                qs = qs.filter(initial = object) | qs.filter(pk = object.pk)
+            obj = self.object.related
+            obj_type = type(obj)
+            if obj_type == programs.Program:
+                qs = qs.filter(program = obj)
+            elif obj_type == programs.Diffusion:
+                if obj.initial:
+                    obj = obj.initial
+                qs = qs.filter(initial = obj) | qs.filter(pk = obj.pk)
         if filter_args:
             qs = qs.filter(**filter_args).order_by('start')
 
@@ -212,13 +213,17 @@ class Schedule(Diffusions):
 
     def get_object_list(self):
         date = self.date_or_default()
-        qs = routes.DateRoute.get_queryset(
-            models.Diffusion, self.request,
-            year = date.year,
-            month = date.month,
-            day = date.day
-        ).order_by('date')
-        return qs
+        year, month, day = date.year, date.month, date.day
+
+        diffs = [d.initial if d.initial else d
+            for d in programs.Diffusion.objects.filter(
+                start__year = year,
+                start__month = month,
+                start__day = day,
+            )
+        ]
+        return models.Diffusion.objects.filter(related__in = diffs). \
+                      order_by('date')
 
     def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(*args, **kwargs)

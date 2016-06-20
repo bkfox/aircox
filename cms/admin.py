@@ -1,3 +1,5 @@
+import copy
+
 from django.contrib import admin
 from django.utils.translation import ugettext as _, ugettext_lazy
 
@@ -67,6 +69,7 @@ def inject_related_inline(post_model, prepend = False, inline = None):
         verbose_name = _('Related post')
 
     inline = inline or InlineModel
+    inline.fieldsets = copy.deepcopy(inline.fieldsets)
 
     # remove bound attributes
     for none, dic in inline.fieldsets:
@@ -77,6 +80,12 @@ def inject_related_inline(post_model, prepend = False, inline = None):
 
     inject_inline(post_model._meta.get_field('related').rel.to,
                   inline, prepend)
+
+def inject(model, name, value):
+    registry = admin.site._registry
+    if not model in registry:
+        return TypeError('{} not in admin registry'.format(model.__name__))
+    setattr(registry[model], name, value)
 
 def inject_inline(model, inline, prepend = False):
     registry = admin.site._registry

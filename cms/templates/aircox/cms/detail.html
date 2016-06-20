@@ -16,9 +16,8 @@
     </time>
 
     {% if object.tags.all %}
-    {# TODO: url to the tags #}
     <div class="tags">
-        {{ object.tags.all|join:', ' }}
+        {{ object|post_tags:' - '|safe }}
     </div>
     {% endif %}
 </header>

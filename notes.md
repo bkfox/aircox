@@ -3,13 +3,15 @@
 - debug/prod configuration
 
 # TODO:
+- general:
+    - timezone shit
+
 - programs:
     - schedule:
         - (old) schedule.to_string unused? commented
         - check one week on two
         - write more tests
     - sounds:
-        - print sounds of diffusions
         - inline admin
         - one sound, one diffusion?
 
@@ -36,6 +38,7 @@
 - website:
     - diffusions:
         - filter sounds for undiffused diffusions
+        - print sounds of diffusions
     - player:
         - "listen" + "favorite" buttons made easy + automated
         - single mode / play next auto
