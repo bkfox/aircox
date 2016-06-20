@@ -42,7 +42,7 @@ class BaseView:
             self.sections = sections
         super().__init__(*args, **kwargs)
 
-    def __is_single(self):
+    def __section_is_single(self):
         return not issubclass(type(self.sections), list)
 
     def add_css_class(self, css_class):
@@ -64,10 +64,13 @@ class BaseView:
 
         # update from sections
         if self.sections:
-            if self.__is_single():
+            if self.__section_is_single():
                 self.template_name = self.sections.template_name
                 context.update(self.sections.get_context_data(
-                    self.request, **self.kwargs
+                    self.request,
+                    object_list = hasattr(self, 'object_list') and \
+                                    self.object_list,
+                    **self.kwargs
                 ) or {})
             else:
                 if not self.template_name:
@@ -143,6 +146,7 @@ class PostListView(BaseView, ListView):
         return super().dispatch(request, *args, **kwargs)
 
     def get_queryset(self):
+        print('get_query_set')
         if self.route:
             qs = self.route.get_queryset(self.model, self.request,
                                          **self.kwargs)
@@ -183,13 +187,13 @@ class PostListView(BaseView, ListView):
         self.add_css_class('list')
 
         context = super().get_context_data(**kwargs)
-        # context.update(BaseView.get_context_data(self, **kwargs))
 
         if not context.get('title') and self.route:
             context['title'] = self.route.get_title(
                 self.model, self.request, **self.kwargs
             )
 
+        print([post.title for post in context.get('object_list')])
         context['list'] = self.list
         return context
 

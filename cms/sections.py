@@ -238,7 +238,6 @@ class List(Section):
     * truncate: number of words to keep in content (0 = full content)
     """
     template_name = 'aircox/cms/list.html'
-    base_template = 'aircox/cms/section.html'
 
     object_list = None
     url = None
@@ -265,19 +264,45 @@ class List(Section):
     def get_object_list(self):
         return self.object_list
 
-    def get_context_data(self, request, object=None, *args, **kwargs):
+    def prepare_object_list(self, object_list):
+        """
+        Prepare objects before context is sent to the template renderer.
+        Return the object_list that is prepared.
+
+        Remember: since we are in a rendering process, the items should
+        not be saved.
+        """
+        return object_list
+
+    def get_context_data(self, request, object=None, object_list=None,
+                            *args, **kwargs):
+        """
+        Return a context that is passed to the template at rendering, with
+        the following values:
+        - `list`: a reference to self, that contain values used for rendering
+        - `object_list`: a list of object that can be rendered, either
+            instances of Post or ListItem.
+
+        If object_list is not given, call `get_object_list` to retrieve it.
+        Prepare the object_list using `self.prepare_object_list`.
+
+        Set `request`, `object`, `object_list` and `kwargs` in self.
+        """
         if request: self.request = request
         if object: self.object = object
         if kwargs: self.kwargs = kwargs
 
-        object_list = self.object_list or self.get_object_list()
-        if not object_list and not self.message_empty:
-            return
+        if object_list is None:
+            object_list = self.object_list or self.get_object_list()
+            if not object_list and not self.message_empty:
+                return
         self.object_list = object_list
+
+        if object_list:
+            object_list = self.prepare_object_list(object_list)
 
         context = super().get_context_data(request, object, *args, **kwargs)
         context.update({
-            'base_template': self.base_template,
             'list': self,
             'object_list': object_list[:self.paginate_by]
                            if object_list and self.paginate_by else

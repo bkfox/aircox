@@ -99,6 +99,20 @@ class Diffusions(sections.List):
         #                .order_by('-start')[:self.prev_count])
         #return r
 
+    def prepare_object_list(self, object_list):
+        """
+        This function just prepare the list of object, in order to have a good
+        title
+        """
+        for post in object_list:
+            if not hasattr(post, 'related') or \
+                    not hasattr(post.related , 'program'):
+                continue
+            name = post.related.program.name
+            if name not in post.title:
+                post.title = '{}: {}'.format(name, post.title)
+        return object_list
+
     def get_object_list(self):
         diffs = self.get_diffs()
 

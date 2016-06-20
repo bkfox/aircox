@@ -27,24 +27,26 @@
         - cms.script
     - routes
         - customized header depending on the list (e.g. thread -> link to thread parent)
-        - by tags
-        - different models
+        - different models combinaison
     - admin cms
     - content management -> do we use a markup language?
     - sections:
         - article list with the focus
-        - related articles
+        - similar articles (using tags)
+        - calendar
 
 - website:
     - diffusions:
         - filter sounds for undiffused diffusions
         - print sounds of diffusions
+        - print program's name in lists
     - player:
         - "listen" + "favorite" buttons made easy + automated
         - single mode / play next auto
         - mixcloud
         - seek bar
-    - schedule as calendar?
+    - section for schedule as calendar
+    - load complete week for a schedule?
     - finish that fucking website
     - list of played diffusions and tracks when non-stop;
 

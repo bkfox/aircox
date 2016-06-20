@@ -21,7 +21,17 @@ import aircox.programs.settings as settings
 logger = logging.getLogger('aircox.core')
 
 
-def date_or_default(date, date_only = False):
+def as_date(date, as_datetime = True):
+    """
+    If as_datetime, return the date with time info set to 0; else, return
+    a date with date informations of the given date/time.
+    """
+    import datetime
+    if as_datetime:
+        return date.replace(hour = 0, minute = 0, second = 0, microsecond = 0)
+    return datetime.date(date.year, date.month, date.day)
+
+def date_or_default(date, no_time = False):
     """
     Return date or default value (now) if not defined, and remove time info
     if date_only is True
@@ -29,8 +39,8 @@ def date_or_default(date, date_only = False):
     date = date or tz.datetime.today()
     if not tz.is_aware(date):
         date = tz.make_aware(date)
-    if date_only:
-        return date.replace(hour = 0, minute = 0, second = 0, microsecond = 0)
+    if no_time:
+        return as_date(date)
     return date
 
 
@@ -160,7 +170,6 @@ class Sound(Nameable):
         # path = self._meta.get_field('path').path
         path = self.path.replace(main_settings.MEDIA_ROOT, '', 1)
         #path = self.path.replace(path, '', 1)
-        # print(path, self._meta.get_field('path').path)
         return path
 
     def file_exists(self):
@@ -352,7 +361,8 @@ class Schedule(models.Model):
             # NOTE previous algorithm was based on the week number, but this
             # approach is wrong because number of weeks in a year can be
             # 52 or 53. This also clashes with the first week of the year.
-            if not (date - self.date).days % 14:
+            diff = as_date(date, False) - as_date(self.date, False)
+            if not diff.days % 14:
                 date += tz.timedelta(days = 7)
 
             while date.month == month:
