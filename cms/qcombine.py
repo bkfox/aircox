@@ -126,7 +126,7 @@ class Manager(type):
         return qs
 
 
-class FakeModel(Routable,metaclass=Manager):
+class GenericModel(Routable,metaclass=Manager):
     """
     This class is used to register a route for multiple models to a website.
     A QCombine is created with qs for all given models when objects

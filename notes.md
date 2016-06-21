@@ -33,7 +33,7 @@
         - calendar
         - article list with the focus
             -> set html attribute based on values that are public
-    - tags: allow tags_url route QCombine
+    - rename qcombine.FakeModel -> GenericModel?
 
 - website:
     - diffusions:
@@ -47,7 +47,7 @@
     - load complete week for a schedule?
     - finish that fucking website
     - list of played diffusions and tracks when non-stop;
-    - search field -- section
+    - search input in a section
 
 
 

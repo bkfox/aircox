@@ -129,7 +129,7 @@ class Sound (cms.RelatedPost):
                 )
 
 
-class Publications (qcombine.FakeModel):
+class Publications (qcombine.GenericModel):
     """
     Combine views
     """

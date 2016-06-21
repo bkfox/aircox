@@ -189,7 +189,7 @@ class SearchRoute(Route):
     @classmethod
     def get_queryset(cl, model, request, **kwargs):
         q = request.GET.get('q') or ''
-        if issubclass(model, qcombine.FakeModel):
+        if issubclass(model, qcombine.GenericModel):
             models = model.models
             return qcombine.QCombine(
                 *(cl.__search(model, q) for model in models)
