@@ -110,7 +110,9 @@ class Diffusions(sections.List):
                 continue
             name = post.related.program.name
             if name not in post.title:
-                post.title = '{}: {}'.format(name, post.title)
+                post.title = ': ' + post.title if post.title else \
+                            ' // ' + post.related.start.strftime('%A %d %B')
+                post.title = name + post.title
         return object_list
 
     def get_object_list(self):

@@ -1,27 +1,16 @@
 from django import template
 from django.core.urlresolvers import reverse
 
-import aircox.cms.routes as routes
-
+import aircox.cms.utils as utils
 
 register = template.Library()
 
 @register.filter(name='post_tags')
-def post_tags(post, sep = '-'):
+def post_tags(post, sep = ' - '):
     """
-    print the list of all the tags of the given post, with url if available
+    return the result of post.tags_url
     """
-    tags = post.tags.all()
-    r = []
-    for tag in tags:
-        try:
-            r.append('<a href="{url}">{name}</a>'.format(
-                url = post.route_url(routes.TagsRoute, tags = tag),
-                name = tag,
-            ))
-        except:
-            r.push(tag)
-    return sep.join(r)
+    return utils.tags_to_html(type(post), post.tags.all(), sep)
 
 
 @register.filter(name='threads')
@@ -37,7 +26,7 @@ def threads(post, sep = '/'):
 
     return sep.join([
         '<a href="{}">{}</a>'.format(post.url(), post.title)
-        for post in posts if post.published
+        for post in posts[:-1] if post.published
     ])
 
 @register.filter(name='around')

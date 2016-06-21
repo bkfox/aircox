@@ -524,8 +524,10 @@ player = {
     /// Select the next track in the current playlist, eventually play it
     next: function(play = true) {
         var playlist = this.playlist;
+        if(playlist == this.live)
+            return
+
         var index = this.playlist.items.indexOf(this.item);
-        console.log(index, this.item, this.playlist.items)
         if(index == -1)
             return;
 

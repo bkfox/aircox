@@ -21,11 +21,12 @@
     - empty content -> empty string
     - update documentation:
         - cms.views
-        - cms.parts
+        - cms.exposure
         - cms.script
         - cms.qcombine
     - routes
-        - integrate QCombine
+        - tag name instead of tag slug for the title
+        - optional url args
     - admin cms
     - content management -> do we use a markup language?
     - sections:

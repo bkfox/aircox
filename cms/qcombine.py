@@ -2,7 +2,11 @@ import operator
 import itertools
 import heapq
 
+from django.utils.translation import ugettext as _, ugettext_lazy
 from django.db.models.query import QuerySet
+
+from aircox.cms.models import Routable
+
 
 class QCombine:
     """
@@ -29,9 +33,9 @@ class QCombine:
         Map results of qs_func for QuerySet instance and of non_qs for
         the others (if given), because QuerySet always clones itself.
         """
-        for i, qs in self.lists:
-            if issubclass(type(qs, QuerySet):
-                self.lists[i] = func(qs)
+        for i, qs in enumerate(self.lists):
+            if issubclass(type(qs), QuerySet):
+                self.lists[i] = qs_func(qs)
             elif non_qs:
                 self.lists[i] = non_qs(qs)
 
@@ -47,7 +51,7 @@ class QCombine:
         return self
 
     def distinct(self, **kwargs):
-        self.map(qs.distinct())
+        self.map(lambda qs: qs.distinct())
         return self
 
     def get(self, **kwargs):
@@ -68,13 +72,12 @@ class QCombine:
 
         self.order_reverse = reverse
         self.order_fields = fields
-
         self.map(
             lambda qs: qs.order_by(*fields),
             lambda qs: sorted(
                 qs,
                 qs.sort(
-                    key = operator.attrgetter(fields),
+                    key = operator.attrgetter(*fields),
                     reverse = reverse
                 )
             )
@@ -112,7 +115,18 @@ class QCombine:
         return list(it)
 
 
-class QCombined:
+
+
+class Manager(type):
+    models = []
+
+    @property
+    def objects(self):
+        qs = QCombine(*[model.objects.all() for model in self.models])
+        return qs
+
+
+class FakeModel(Routable,metaclass=Manager):
     """
     This class is used to register a route for multiple models to a website.
     A QCombine is created with qs for all given models when objects
@@ -120,21 +134,12 @@ class QCombined:
 
     Note: there no other use-case.
     """
-    def __init__(*models):
-        self.models = models
-        self._meta = self.Meta()
-
     class Meta:
         verbose_name = _('publication')
         verbose_name_plural = _('publications')
 
-    @property
-    def objects(self):
-        """
-        The QCombine that is returned actually holds the models' managers,
-        in order to simulate the same behaviour than a regular model.
-        """
-        qs = QCombine([model.objects for model in self.models])
-        return qs
+    _meta = Meta()
 
+    def __init__(self, **kwargs):
+        self.__dict__.update(kwargs)
 

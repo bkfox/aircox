@@ -5,7 +5,6 @@ from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
 from django.utils.text import slugify
 from django.utils.translation import ugettext as _, ugettext_lazy
-from django.core.urlresolvers import reverse
 
 from django.db.models.signals import Signal, post_save, pre_save
 from django.dispatch import receiver
@@ -38,11 +37,12 @@ class Routable:
         )
 
     @classmethod
-    def route_url(cl, route, **kwargs):
-        name = cl._website.name_of_model(cl)
-        name = route.get_view_name(name)
-        r = reverse(name, kwargs = kwargs)
-        return r
+    def reverse(cl, route, use_default = True, **kwargs):
+        """
+        Reverse a url using a given route for the model - simple wrapper
+        around cl._website.reverse
+        """
+        return cl._website.reverse(cl, route, use_default, **kwargs)
 
 
 class Comment(models.Model, Routable):
@@ -154,7 +154,10 @@ class Post (models.Model, Routable):
         blank = True,
     )
 
-    search_fields = [ 'title', 'content' ]
+    search_fields = [ 'title', 'content', 'tags__name' ]
+    """
+    Fields on which routes.SearchRoute must run the search
+    """
 
     def get_comments(self):
         """
@@ -171,12 +174,33 @@ class Post (models.Model, Routable):
         """
         Return an url to the post detail view.
         """
-        return self.route_url(
+        return self.reverse(
             routes.DetailRoute,
             pk = self.pk, slug = slugify(self.title)
         )
 
+    def fill_empty(self):
+        """
+        Fill empty values using parent thread. Can be used before saving or
+        at loading
+        """
+        if not self.thread:
+            return
+
+        if not self.title:
+            self.title = _('{name} // {date}').format(
+                name = self.thread.title,
+                date = self.date
+            )
+        if not self.content:
+            self.content = self.thread.content
+        if not self.image:
+            self.image = self.thread.image
+        if not self.tags and self.pk:
+            self.tags = self.thread.tags
+
     def get_object_list(self, request, object, **kwargs):
+        # FIXME: wtf
         type = ContentType.objects.get_for_model(object)
         qs = Comment.objects.filter(
             thread_id = object.pk,
@@ -185,6 +209,9 @@ class Post (models.Model, Routable):
         return qs
 
     def make_safe(self):
+        """
+        Ensure that data of the publication are safe from code injection.
+        """
         self.title = bleach.clean(
             self.title,
             tags=settings.AIRCOX_CMS_BLEACH_TITLE_TAGS,
@@ -293,6 +320,7 @@ class RelatedMeta (models.base.ModelBase):
             else:
                 return
             post.rel_to_post()
+            post.fill_empty()
             post.save(avoid_sync = True)
         post_save.connect(handler_rel, model._relation.model, False)
 

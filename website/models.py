@@ -7,11 +7,12 @@ logger = logging.getLogger('aircox')
 from django.db import models
 from django.utils.translation import ugettext as _, ugettext_lazy
 
-from aircox.cms.models import Post, RelatedPost
 import aircox.programs.models as programs
+import aircox.cms.models as cms
+import aircox.cms.qcombine as qcombine
 
 
-class Article (Post):
+class Article (cms.Post):
     """
     Represent an article or a static page on the website.
     """
@@ -29,7 +30,7 @@ class Article (Post):
         verbose_name_plural = _('Articles')
 
 
-class Program (RelatedPost):
+class Program (cms.RelatedPost):
     website = models.URLField(
         _('website'),
         blank=True, null=True
@@ -49,7 +50,7 @@ class Program (RelatedPost):
         auto_create = True
 
 
-class Diffusion (RelatedPost):
+class Diffusion (cms.RelatedPost):
     class Relation:
         model = programs.Diffusion
         bindings = {
@@ -68,18 +69,7 @@ class Diffusion (RelatedPost):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if self.thread:
-            if not self.title:
-                self.title = _('{name} // {first_diff}').format(
-                    name = self.related.program.name,
-                    first_diff = self.related.start.strftime('%A %d %B')
-                )
-            if not self.content:
-                self.content = self.thread.content
-            if not self.image:
-                self.image = self.thread.image
-            if not self.tags and self.pk:
-                self.tags = self.thread.tags
+        self.fill_empty()
 
     @property
     def info(self):
@@ -90,7 +80,7 @@ class Diffusion (RelatedPost):
         }
 
 
-class Sound (RelatedPost):
+class Sound (cms.RelatedPost):
     """
     Publication concerning sound. In order to manage access of sound
     files in the filesystem, we use permissions -- it is up to the
@@ -137,4 +127,13 @@ class Sound (RelatedPost):
                         self.related.path, err
                     )
                 )
+
+
+class Publications (qcombine.FakeModel):
+    """
+    Combine views
+    """
+    models = [ Article, Program, Diffusion, Sound ]
+
+
 

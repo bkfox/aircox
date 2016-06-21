@@ -5,6 +5,9 @@ from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
 from django.utils.translation import ugettext as _, ugettext_lazy
 
+import aircox.cms.qcombine as qcombine
+
+
 class Route:
     """
     Base class for routing. Given a model, we generate url specific for each
@@ -41,7 +44,7 @@ class Route:
         return ''
 
     @classmethod
-    def get_view_name(cl, name):
+    def make_view_name(cl, name):
         return name + '.' + cl.name
 
     @classmethod
@@ -65,7 +68,7 @@ class Route:
             kwargs.update(view_kwargs)
 
         return url(pattern, view, kwargs = kwargs,
-                   name = cl.get_view_name(name))
+                   name = cl.make_view_name(name))
 
 
 class DetailRoute(Route):
@@ -174,21 +177,28 @@ class SearchRoute(Route):
     name = 'search'
 
     @classmethod
-    def get_queryset(cl, model, request, **kwargs):
-        q = request.GET.get('q') or ''
+    def __search(cl, model, q):
         qs = None
-
-        ## TODO: by tag
         for search_field in model.search_fields or []:
             r = models.Q(**{ search_field + '__icontains': q })
             if qs: qs = qs | r
             else: qs = r
-
         return model.objects.filter(qs).distinct()
+
+
+    @classmethod
+    def get_queryset(cl, model, request, **kwargs):
+        q = request.GET.get('q') or ''
+        if issubclass(model, qcombine.FakeModel):
+            models = model.models
+            return qcombine.QCombine(
+                *(cl.__search(model, q) for model in models)
+            )
+        return cl.__search(model, q)
 
     @classmethod
     def get_title(cl, model, request, **kwargs):
-        return _('Search "%(search)s" in %(model)s') % {
+        return _('Search <i>%(search)s</i> in %(model)s') % {
             'model': model._meta.verbose_name_plural,
             'search': request.GET.get('q') or '',
         }
@@ -207,14 +217,14 @@ class TagsRoute(Route):
     @classmethod
     def get_queryset(cl, model, request, tags, **kwargs):
         tags = tags.split('+')
-        return model.objects.filter(tags__name__in=tags)
+        return model.objects.filter(tags__slug__in=tags).distinct()
 
     @classmethod
     def get_title(cl, model, request, tags, **kwargs):
-        return _('Tagged %(model)s with %(tags)s') % {
+        # FIXME: get tag name instead of tag slug
+        return _('%(model)s tagged with %(tags)s') % {
             'model': model._meta.verbose_name_plural,
-            'tags': tags.replace('+', ', ')
+            'tags': model.tags_to_html(model, tags = tags.split('+'))
+                    if '+' in tags else tags
         }
-
-
 

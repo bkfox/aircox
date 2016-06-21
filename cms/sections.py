@@ -2,6 +2,7 @@
 Define different Section css_class that can be used by views.Sections;
 """
 import re
+from random import shuffle
 
 from django.template.loader import render_to_string
 from django.views.generic.base import View
@@ -329,13 +330,22 @@ class Similar(List):
     List of models allowed in the resulting list. If not set, all models
     are available.
     """
+    shuffle = 20
+    """
+    Shuffle results in the self.shuffle most recents articles. If 0 or
+    None, do not shuffle.
+    """
 
+    # FIXME: limit in a date range
     def get_object_list(self):
         if not self.object:
             return
 
         qs = self.object.tags.similar_objects()
         qs.sort(key = lambda post: post.date, reverse=True)
+        if self.shuffle:
+            qs = qs[:self.shuffle]
+            shuffle(qs)
         return qs
 
 
@@ -371,11 +381,9 @@ class Comments(List):
         import aircox.cms.models as models
         import aircox.cms.routes as routes
         if self.object:
-            return models.Comment.route_url(routes.ThreadRoute, {
+            return models.Comment.reverse(routes.ThreadRoute, {
                 'pk': self.object.id,
-                'thread_model': self.object._website.name_of_model(
-                    self.object.__class__
-                ),
+                'thread_model': self.object._registration.name
             })
         return ''
 
