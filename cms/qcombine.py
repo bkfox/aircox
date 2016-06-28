@@ -113,9 +113,10 @@ class QCombine:
         return list(it)
 
 
-
-
 class Manager(type):
+    """
+    Metaclass used to generate the GenericModel.objects property
+    """
     models = []
 
     @property
@@ -140,4 +141,13 @@ class GenericModel(metaclass=Manager):
 
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
+
+    @classmethod
+    def reverse(cl, route, use_default = True, **kwargs):
+        """
+        Reverse a url using a given route for the model - simple wrapper
+        around cl._website.reverse
+        """
+        return cl._website.reverse(cl, route, use_default, **kwargs)
+
 

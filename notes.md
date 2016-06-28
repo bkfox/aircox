@@ -19,23 +19,20 @@
         - config generation and sound diffusion
 
 - cms:
+    - switch to abstract class and remove qcombine (or keep it smw else)?
     - empty content -> empty string
     - update documentation:
-        - cms.views
-        - cms.exposure
         - cms.script
-        - cms.qcombine
-    - routes
-        - tag name instead of tag slug for the title
-        - optional url args
+        - cms.exposure; make it right, see nomenclature, + docstring
     - admin cms
-    - content management -> do we use a markup language?
     - sections:
         - calendar
         - article list with the focus
             -> set html attribute based on values that are public
 
 - website:
+    - strftime on diffusion default name from related model
+    - render schedule does not get the correct list
     - diffusions:
         - filter sounds for undiffused diffusions
         - print sounds of diffusions
@@ -46,9 +43,6 @@
         - seek bar
     - load complete week for a schedule?
     - list of played diffusions and tracks when non-stop;
-    - search input in a section
-
-
 
 
 

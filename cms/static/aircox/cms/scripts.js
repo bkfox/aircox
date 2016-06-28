@@ -1,25 +1,28 @@
 
-function Part(url = '', params = '') {
-  return new Part_(url, params);
-}
 
-// Small utility used to make XMLHttpRequests, and map results to other
-// objects
-function Part_(url = '', params = '') {
+/// Small utility used to make XMLHttpRequests, and map results on objects.
+/// This is intended to dynamically retrieve Section and exposed data.
+///
+/// Request.Selector is a utility class that can be used to map data using
+/// selectors.
+///
+/// Since there is no a common method to render items in JS and Django, we
+/// retrieve items yet rendered, and select data over it.
+function Request_(url = '', params = '') {
   this.url = url;
   this.params = params;
   this.selectors = [];
   this.actions = [];
 }
 
-Part_.prototype = {
-  // XMLHttpRequest object used to retrieve data
+Request_.prototype = {
+  /// XMLHttpRequest object used to retrieve data
   xhr: null,
 
-  // delayed actions that have been registered
+  /// delayed actions that have been registered
   actions: null,
 
-  // registered selectors
+  /// registered selectors
   selectors: null,
 
   /// parse request result and save in this.stanza
@@ -32,7 +35,7 @@ Part_.prototype = {
     this.stanza = doc;
   },
 
-  // make an xhr request, and call callback(err, xhr) if given
+  /// make an xhr request, and call callback(err, xhr) if given
   get: function() {
     var self = this;
 
@@ -58,23 +61,23 @@ Part_.prototype = {
     return this;
   },
 
-  // send request
+  /// send request
   send: function() {
     this.xhr.send();
     return this;
   },
 
-  // set selectors.
-  // * callback: if set, call it once data are downloaded with an object
-  //   of elements matched with the given selectors only. The object is
-  //   made of `selector_name: select_result` items.
+  /// set selectors.
+  /// * callback: if set, call it once data are downloaded with an object
+  ///   of elements matched with the given selectors only. The object is
+  ///   made of `selector_name: select_result` items.
   select: function(selectors, callback = undefined) {
     for(var i in selectors) {
       selector = selectors[i];
       if(!selector.sort)
         selector = [selector]
 
-      selector = new Part_.Selector(i, selector[0], selector[1], selector[2])
+      selector = new Request_.Selector(i, selector[0], selector[1], selector[2])
       selectors[i] = selector;
       this.selectors.push(selector)
     }
@@ -94,7 +97,7 @@ Part_.prototype = {
     return this;
   },
 
-  // map data using this.selectors on xhr result *and* dest
+  /// map data using this.selectors on xhr result *and* dest
   map: function(dest) {
     var self = this;
     this.actions.push(function() {
@@ -108,7 +111,7 @@ Part_.prototype = {
     return this;
   },
 
-  // add an action to the list of actions
+  /// add an action to the list of actions
   on: function(callback) {
     this.actions.push(callback)
     return this;
@@ -116,14 +119,14 @@ Part_.prototype = {
 };
 
 
-Part_.Selector = function(name, selector, attribute = null, all = false) {
+Request_.Selector = function(name, selector, attribute = null, all = false) {
   this.name = name;
   this.selector = selector;
   this.attribute = attribute;
   this.all = all;
 }
 
-Part_.Selector.prototype = {
+Request_.Selector.prototype = {
   select: function(obj, use_attr = true) {
     if(!this.all) {
       obj = obj.querySelector(this.selector)
@@ -164,5 +167,61 @@ Part_.Selector.prototype = {
     }
   },
 }
+
+
+/// Just to by keep same convention between utilities
+/// Create an instance of Request_
+function Request(url = '', params = '') {
+  return new Request_(url, params);
+}
+
+
+var Section = {
+    /// Return the parent section of a DOM element. Compare it using its
+    /// className. If not class_name is given, use "section"
+    get_section: function(item, class_name) {
+        class_name = class_name || 'section';
+        while(item) {
+            if(item.className && item.className.indexOf(class_name) != -1)
+                break
+            item = item.parentNode;
+        }
+        return item;
+    },
+
+
+    /// Load a section using the given url and parameters, update the header,
+    /// the content and the footer automatically. No need to add "embed" in
+    /// url params.
+    ///
+    /// If find_section is true, item is a child of the wanted section.
+    ///
+    /// Return a Request.Selector
+    load: function(item, url, params, find_section) {
+        if(find_section)
+            item = this.get_section(item);
+
+        var rq = Request(url, 'embed&' + (params || ''))
+        return rq.get().select({
+            'header': ['header', 'innerHTML', true],
+            'content': ['.content', 'innerHTML', true],
+            'footer': ['footer', 'innerHTML', true]
+        }).map(item).send();
+    },
+
+
+    /// Load a Section on event, and handle it.
+    load_event: function(event, params) {
+        var item = event.currentTarget;
+        var url = item.getAttribute('href');
+
+        event.preventDefault();
+
+        this.load(item, url, params, true);
+        return true;
+    },
+}
+
+
 
 

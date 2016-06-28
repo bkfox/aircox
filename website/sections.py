@@ -32,7 +32,7 @@ class Player(sections.Section):
         )
 
         if not qs or not qs[0].is_date_in_my_range():
-            return ''
+            return {}
 
         qs = qs[0]
         post = models.Diffusion.objects.filter(related = qs) or \

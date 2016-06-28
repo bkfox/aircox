@@ -4,6 +4,7 @@ Define different Section css_class that can be used by views.Sections;
 import re
 from random import shuffle
 
+from django.utils import timezone as tz
 from django.template.loader import render_to_string
 from django.views.generic.base import View
 from django.templatetags.static import static
@@ -15,6 +16,7 @@ from django.utils.translation import ugettext as _, ugettext_lazy
 from honeypot.decorators import check_honeypot
 
 from aircox.cms.forms import CommentForm
+import aircox.cms.decorators as decorators
 
 
 class Viewable:
@@ -34,6 +36,22 @@ class Viewable:
             instance = cl(*args, **kwargs)
             return instance
         return func
+
+    @classmethod
+    def extends (cl, **kwargs):
+        """
+        Return a sub class where the given attribute have been updated
+        """
+        class Sub(cl):
+            pass
+        Sub.__name__ = cl.__name__
+
+        for k, v in kwargs.items():
+            setattr(Sub, k, v)
+
+        if hasattr(cl, '_exposure'):
+            return decorators.expose(Sub)
+        return Sub
 
 
 class Sections(Viewable, list):
@@ -122,6 +140,7 @@ class Section(Viewable, View):
 
         return {
             'view': self,
+            'exp': (hasattr(self, '_exposure') and self._exposure) or None,
             'tag': self.tag,
             'css_class': self.css_class,
             'attrs': self.attrs,
@@ -444,6 +463,86 @@ class Menu(Section):
             'content': self.sections.render(*args, **kwargs)
         }
 
+
+class Search(Section):
+    """
+    Implement a search form that can be used in menus. Model must be set,
+    even if it is a generic model, in order to be able to reverse urls.
+    """
+    model = None
+    """
+    Model to search on
+    """
+    placeholder = _('Search %(name_plural)s')
+    """
+    Placeholder in the input text. The string is formatted before rendering.
+    - name: model's verbose name
+    - name_plural: model's verbose name in plural form
+    """
+    no_button = True
+    """
+    Hide submit button if true
+    """
+    # TODO: (later) autocomplete using exposures -> might need templates
+
+    def get_content(self):
+        import aircox.cms.routes as routes
+        url = self.model.reverse(routes.SearchRoute)
+        return """
+        <form action="{url}" method="get">
+            <input type="text" name="q" placeholder="{placeholder}"/>
+            <input type="submit" {submit_style}/>
+        </form>
+        """.format(
+            url = url, placeholder = self.placeholder % {
+                'name': self.model._meta.verbose_name,
+                'name_plural': self.model._meta.verbose_name_plural,
+            },
+            submit_style = (self.no_button and 'style="display: none;"') or '',
+        )
+
+
+@decorators.expose
+class Calendar(Section):
+    model = None
+    template_name = "aircox/cms/calendar.html"
+
+    def get_context_data(self, year = None, month = None, *args, **kwargs):
+        import calendar
+        import aircox.cms.routes as routes
+        context = super().get_context_data(*args, **kwargs)
+
+        date = tz.datetime.today()
+        if year:
+            date = date.replace(year = year)
+        if month:
+            date = date.replace(month = month)
+        date = date.replace(day = 1)
+
+        first, count = calendar.monthrange(date.year, date.month)
+        context.update({
+            'first_weekday': first,
+            'days': [
+                (day, self.model.reverse(
+                        routes.DateRoute, year = date.year, month = date.month,
+                        day = day
+                    )
+                ) for day in range(1, count+1)
+            ],
+
+            'month': date,
+            'prev_month': date - tz.timedelta(days=10),
+            'next_month': date + tz.timedelta(days=31),
+        })
+        return context
+
+    @decorators.expose
+    def render_exp(cl, *args, year, month, **kwargs):
+        year = int(year)
+        month = int(month)
+        return cl.render(*args, year = year, month = month, **kwargs)
+    render_exp._exposure.name = 'render'
+    render_exp._exposure.pattern = '(?P<year>[0-9]{4})/(?P<month>[0-1]?[0-9])'
 
 
 

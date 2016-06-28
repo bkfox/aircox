@@ -53,7 +53,7 @@ class Website:
         """
         self.registry = {}
         self.exposures = []
-        self.urls = [ url(r'^exp/', include(self.exposures)) ]
+        self.urls = [ url(r'^exps/', include(self.exposures)) ]
         self.menus = {}
         self.__dict__.update(kwargs)
 
@@ -95,10 +95,7 @@ class Website:
         for section in sections:
             if not hasattr(section, '_exposure'):
                 continue
-            self.exposures += [
-                url for url in section._exposure.items
-                if url not in self.urls
-            ]
+            self.exposures += section._exposure.gather(section)
 
     def register(self, name, routes = [], view = views.PageView,
                  model = None, sections = None,

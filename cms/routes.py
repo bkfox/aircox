@@ -2,8 +2,9 @@ from django.db import models
 from django.utils import timezone as tz
 from django.conf.urls import url
 from django.contrib.contenttypes.models import ContentType
-from django.utils import timezone
 from django.utils.translation import ugettext as _, ugettext_lazy
+
+from taggit.models import Tag
 
 import aircox.cms.qcombine as qcombine
 
@@ -14,7 +15,7 @@ class Route:
     type of route.
 
     The generated url takes this form:
-        name + '/' + route_name + '/' + '/'.join(route_url_args)
+        name + '/' + route_name + '/' + '/'.join(params)
 
     And their name (to use for reverse:
         name + '_' + route_name
@@ -22,8 +23,17 @@ class Route:
     By default name is the verbose name of the model. It is always in
     singular form.
     """
-    name = None         # route name
-    url_args = []       # arguments passed from the url [ (name : regex),... ]
+    name = None
+    """
+    Regular name of the route
+    """
+    params = []
+    """
+    Arguments passed by the url, it is a list of tupple with values:
+    - name: (required) name of the argument
+    - regex: (required) regular expression to append to the url
+    - optional: (not required) if true, argument is optional
+    """
 
     @classmethod
     def get_queryset(cl, model, request, **kwargs):
@@ -50,15 +60,15 @@ class Route:
     @classmethod
     def as_url(cl, name, view, view_kwargs = None):
         pattern = '^{}/{}'.format(name, cl.name)
-        if cl.url_args:
-            url_args = '/'.join([
-                '(?P<{}>{}){}'.format(
-                    arg, expr,
-                    (optional and optional[0] and '?') or ''
+        if cl.params:
+            pattern += ''.join([
+                '{pre}/(?P<{name}>{regexp}){post}'.format(
+                    name = name, regexp = regexp,
+                    pre = (optional and optional[0] and '(?:') or '',
+                    post = (optional and optional[0] and ')?') or '',
                 )
-                for arg, expr, *optional in cl.url_args
+                for name, regexp, *optional in cl.params
             ])
-            pattern += '/' + url_args
         pattern += '/?$'
 
         kwargs = {
@@ -73,7 +83,7 @@ class Route:
 
 class DetailRoute(Route):
     name = 'detail'
-    url_args = [
+    params = [
         ('pk', '[0-9]+'),
         ('slug', '(\w|-|_)+', True),
     ]
@@ -106,7 +116,7 @@ class ThreadRoute(Route):
     - "pk" is the pk of the thread item.
     """
     name = 'thread'
-    url_args = [
+    params = [
         ('thread_model', '(\w|_|-)+'),
         ('pk', '[0-9]+'),
     ]
@@ -145,7 +155,7 @@ class DateRoute(Route):
     Select posts using a date with format yyyy/mm/dd;
     """
     name = 'date'
-    url_args = [
+    params = [
         ('year', '[0-9]{4}'),
         ('month', '[0-1]?[0-9]'),
         ('day', '[0-3]?[0-9]'),
@@ -170,11 +180,13 @@ class DateRoute(Route):
 
 class SearchRoute(Route):
     """
-    Search post using request.GET['q']. It searches in fields designated by
-    model.search_fields
+    Search post using request.GET['q'] or q optional argument. It searches in
+    fields designated by model.search_fields
     """
-    # TODO: q argument in url_args -> need to allow optional url_args
     name = 'search'
+    params = [
+        ( 'q', '[^/]+', True)
+    ]
 
     @classmethod
     def __search(cl, model, q):
@@ -187,8 +199,8 @@ class SearchRoute(Route):
 
 
     @classmethod
-    def get_queryset(cl, model, request, **kwargs):
-        q = request.GET.get('q') or ''
+    def get_queryset(cl, model, request, q = None, **kwargs):
+        q = request.GET.get('q') or q or ''
         if issubclass(model, qcombine.GenericModel):
             models = model.models
             return qcombine.QCombine(
@@ -197,10 +209,10 @@ class SearchRoute(Route):
         return cl.__search(model, q)
 
     @classmethod
-    def get_title(cl, model, request, **kwargs):
+    def get_title(cl, model, request, q = None, **kwargs):
         return _('Search <i>%(search)s</i> in %(model)s') % {
             'model': model._meta.verbose_name_plural,
-            'search': request.GET.get('q') or '',
+            'search': request.GET.get('q') or q or '',
         }
 
 
@@ -210,7 +222,7 @@ class TagsRoute(Route):
     by a '+'.
     """
     name = 'tags'
-    url_args = [
+    params = [
         ('tags', '(\w|-|_|\+)+')
     ]
 
@@ -221,10 +233,12 @@ class TagsRoute(Route):
 
     @classmethod
     def get_title(cl, model, request, tags, **kwargs):
+        import aircox.cms.utils as utils
+        tags = Tag.objects.filter(slug__in = tags.split('+'))
+
         # FIXME: get tag name instead of tag slug
         return _('%(model)s tagged with %(tags)s') % {
             'model': model._meta.verbose_name_plural,
-            'tags': model.tags_to_html(model, tags = tags.split('+'))
-                    if '+' in tags else tags
+            'tags': utils.tags_to_html(model, tags = tags)
         }
 

@@ -1,30 +1,11 @@
+import uuid
+import inspect
+
 from django.template.loader import render_to_string
-from django.http import HttpResponse
+from django.http import HttpResponse, Http404
 from django.conf.urls import url
 from django.core.urlresolvers import reverse
 from django.utils.text import slugify
-
-
-def template(name):
-    """
-    the decorated function returns a context that is used to
-    render a template value.
-
-    * template_name: name of the template to use
-    * hide_empty: an empty context returns an empty string
-    """
-    def template_(func):
-        def wrapper(request, *args, **kwargs):
-            if kwargs.get('cl'):
-                context = func(kwargs.pop('cl'), request, *args, **kwargs)
-            else:
-                context = func(request, *args, **kwargs)
-            if not context:
-                return ''
-            context['embed'] = True
-            return render_to_string(name, context, request=request)
-        return wrapper
-    return template_
 
 
 class Exposure:
@@ -35,8 +16,6 @@ class Exposure:
     """generated view name"""
     pattern = None
     """url pattern"""
-    items = None
-    """for classes: list of url objects for exposed methods"""
     template_name = None
     """
     for methods: exposed method return a context to be use with
@@ -44,24 +23,69 @@ class Exposure:
     """
     item = None
     """
-    exposed item
+    Back ref to the exposed item, can be used to detect inheritance of
+    exposed classes.
     """
 
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
 
-    def url(self, *args, **kwargs):
+    @staticmethod
+    def gather(cl):
         """
-        reverse url for this exposure
+        Prepare all exposure declared in self.cl, create urls and return
+        them. This is done at this place in order to allow sub-classing
+        of exposed classes.
         """
-        return reverse(self.name, *args, **kwargs)
+        def view(request, key, *args, fn = None, **kwargs):
+            if not fn:
+                if not hasattr(cl, key):
+                    raise Http404()
 
-    def prefix(self, parent):
-        """
-        prefix exposure with the given parent
-        """
-        self.name = parent.name + '.' + self.name
-        self.pattern = parent.pattern + '/' + self.pattern
+                fn = getattr(cl, key)
+                if not hasattr(fn, '_exposure'):
+                    raise Http404()
+
+            exp = fn._exposure
+            res = fn(request, *args, **kwargs)
+            if res and exp.template_name:
+                ctx = res or {}
+                ctx.update({
+                    'embed': True,
+                    'exp': cl._exposure,
+                })
+                res = render_to_string(exp.template_name,
+                                       v, request = request)
+            return HttpResponse(res or '')
+
+        # id = str(uuid.uuid1())
+        exp = cl._exposure
+        exp.pattern = '{name}/{id}'.format(name = exp.name, id = id(cl))
+        exp.name = 'exps.{name}.{id}'.format(name = exp.name, id = id(cl))
+
+        urls = []
+
+        for name, fn in inspect.getmembers(cl):
+            if name.startswith('__') or not hasattr(fn, '_exposure'):
+                continue
+            fn_exp = fn._exposure
+            if not fn_exp.pattern:
+                continue
+
+            name = fn_exp.name or name
+            pattern = exp.pattern + '/(?P<key>{name})/{pattern}'.format(
+                name = name, pattern = fn_exp.pattern
+            )
+
+            urls.append(url(
+                pattern, name = exp.name, view = view,
+                kwargs = { 'fn': fn }
+            ))
+
+        urls.append(url(
+            exp.pattern + '(?P<key>\w+)', name = exp.name, view = view
+        ))
+        return urls
 
 
 def expose(item):
@@ -74,7 +98,7 @@ def expose(item):
 
     The exposed method has the following signature:
 
-        `func(cl, request, parent, *args, **kwargs) -> str`
+        `func(cl, request, *args, **kwargs) -> str`
 
     Data related to the exposure are put in the `_exposure` attribute,
     as instance of Exposure.
@@ -96,40 +120,6 @@ def expose(item):
     pattern = get_attr('pattern', item.__name__)
 
     exp = Exposure(name = name, pattern = pattern, item = item)
-
-    # expose a class container: set _exposure attribute
-    if type(item) == type:
-        exp.name = 'exp.' + exp.name
-        exp.items = []
-
-        for func in item.__dict__.values():
-            if not hasattr(func, '_exposure'):
-                continue
-
-            sub = func._exposure
-            sub.prefix(exp)
-
-            # FIXME: template warping lose args
-            if sub.template_name:
-                sub.item = template(sub.template_name)(sub.item)
-
-            func = url(sub.pattern, name = sub.name,
-                       view = func, kwargs = {'cl': item})
-            exp.items.append(func)
-
-        item._exposure = exp;
-        return item
-    # expose a method: wrap it
-    else:
-        if hasattr(item, '_exposure'):
-            del item._exposure
-
-        def wrapper(request, as_str = False, *args, **kwargs):
-            v = exp.item(request, *args, **kwargs)
-            if as_str:
-                return v
-            return HttpResponse(v)
-        wrapper._exposure = exp;
-        return wrapper
-
+    item._exposure = exp;
+    return item
 

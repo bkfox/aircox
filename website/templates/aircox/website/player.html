@@ -559,7 +559,7 @@ player = {
     /** utility & actions **/
     /// update on air informations
     update_on_air: function() {
-      part = Part('{% url "exp.player.on_air" %}').get()
+       rq = Request('{% url exp.name key="on_air" %}').get()
           .select({
             title: '.title',
             url: ['.url', 'href'],

@@ -3,43 +3,17 @@
 {% block header %}
 <header>
 <script>
-function update_schedule(event) {
-    var target = event.currentTarget;
-    var url = target.getAttribute('href');
-    var schedule = target;
-
-    // prevent event
-    event.preventDefault();
-
-    // get schedule
-    while(schedule) {
-        if (schedule.className &&
-                schedule.className.indexOf('section_schedule') != -1)
-            break;
-        schedule = schedule.parentNode;
-    }
-    if(!schedule)
-        return;
-    console.log(schedule.className)
-
-    fields = [ {% for field in list.fields %}"fields={{ field }}",{% endfor %} ];
-    fields = fields.join('&');
-
-    part = new Part(url, 'embed&' + fields);
-    part.get().select({
-        'header': ['header', 'innerHTML', true],
-        'content': ['.content', 'innerHTML', true],
-    }).map(schedule).send();
-}
+sched_fields = [ {% for field in list.fields %}"fields={{ field }}",{% endfor %} ];
+sched_fields = sched_fields.join('&');
 </script>
-<a href="{{ prev_week }}" onclick="update_schedule(event); return true;">&lt;</a>
+<a href="{{ prev_week }}" onclick="return Section.load_event(event, sched_fields);">&lt;</a>
 {% for curr, url in dates %}
 <a href="{{ url }}" {% if curr == date %}class="selected" {% endif %}
-    onclick="update_schedule(event); return true;">
+    onclick="return Section.load_event(event);">
     {{ curr|date:'D. d' }}
 </a>
 {% endfor %}
-<a href="{{ next_week }}" onclick="update_schedule(event); return true;">&gt;</a>
+<a href="{{ next_week }}" onclick="return Section.load_event(event, sched_fields);">&gt;</a>
 </header>
 {% endblock %}
 

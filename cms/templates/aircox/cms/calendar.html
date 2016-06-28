@@ -1,0 +1,25 @@
+{% extends "aircox/cms/website.html" %}
+
+{% block header %}
+<header>
+<a href="{% url exp.name key="render" year=prev_month.year month=prev_month.month %}"
+   onclick="return Section.load_event(event);">&lt;</a>
+
+<time>{{ month|date:'F Y' }}</time>
+
+<a href="{% url exp.name key="render" year=next_month.year month=next_month.month %}"
+   onclick="return Section.load_event(event);">&gt;</a>
+</header>
+{% endblock %}
+
+{% block content %}
+<div class="content">
+    <div first_weekday="{{ first_weekday }}">
+        {% for day, url in days %}
+            <a href="{{ url }}">{{ day }}</a>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+
