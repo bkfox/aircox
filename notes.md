@@ -8,15 +8,15 @@
     - translation
 
 - programs:
-    - schedule: potential issue with nth' week of month
     - tests:
         - sound_monitor
 
 - liquidsoap:
-    - models to template
+    - models to template -> note
     - tests:
         - monitor
         - check when a played sound has a temp blank
+        - config generation and sound diffusion
 
 - cms:
     - empty content -> empty string
