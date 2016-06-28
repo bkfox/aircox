@@ -264,19 +264,16 @@ class Schedule(models.Model):
     # Important: the first week is always the first week where the weekday of
     # the schedule is present.
     # For ponctual programs, there is no need for a schedule, only a diffusion
-    Frequency = {
-        'first':            (0b000001, _('first week of the month')),
-        'second':           (0b000010, _('second week of the month')),
-        'third':            (0b000100, _('third week of the month')),
-        'fourth':           (0b001000, _('fourth week of the month')),
-        'last':             (0b010000, _('last week of the month')),
-        'first and third':  (0b000101, _('first and third weeks of the month')),
-        'second and fourth': (0b001010, _('second and fourth weeks of the month')),
-        'every':            (0b011111, _('every week')),
-        'one on two':       (0b100000, _('one week on two')),
-    }
-    VerboseFrequency = { value[0]: value[1] for key, value in Frequency.items() }
-    Frequency = { key: value[0] for key, value in Frequency.items() }
+    class Frequency(IntEnum):
+        first = 0b000001
+        second = 0b000010
+        third = 0b000100
+        fourth = 0b001000
+        last = 0b010000
+        first_and_third = 0b000101
+        second_and_fourth = 0b001010
+        every = 0b011111
+        one_on_two = 0b100000
 
     program = models.ForeignKey(
         'Program',
@@ -289,7 +286,19 @@ class Schedule(models.Model):
     )
     frequency = models.SmallIntegerField(
         _('frequency'),
-        choices = VerboseFrequency.items(),
+        choices = [
+            (int(y), {
+                'first': _('first week of the month'),
+                'second': _('second week of the month'),
+                'third': _('third week of the month'),
+                'fourth': _('fourth week of the month'),
+                'last': _('last week of the month'),
+                'first_and_third': _('first and third weeks of the month'),
+                'second_and_fourth': _('second and fourth weeks of the month'),
+                'every': _('every week'),
+                'one_on_two': _('one week on two'),
+            }[x]) for x,y in Frequency.__members__.items()
+        ],
     )
     initial = models.ForeignKey(
         'self',
@@ -303,7 +312,6 @@ class Schedule(models.Model):
         Return True if the given datetime matches the schedule
         """
         date = date_or_default(date)
-
         if self.date.weekday() == date.weekday() and self.match_week(date):
             return self.date.time() == date.time() if check_time else True
         return False
@@ -314,11 +322,14 @@ class Schedule(models.Model):
         otherwise.
         If the schedule is ponctual, return None.
         """
-        # FIXME: does not work if first_day > date_day
+        # since we care only about the week, go to the same day of the week
         date = date_or_default(date)
-        if self.frequency == Schedule.Frequency['one on two']:
-            week = date.isocalendar()[1]
-            return (week % 2) == (self.date.isocalendar()[1] % 2)
+        date += tz.timedelta(days = self.date.weekday() - date.weekday() )
+
+        if self.frequency == Schedule.Frequency.one_on_two:
+            # cf notes in date_of_month
+            diff = as_date(date, False) - as_date(self.date, False)
+            return not (diff.days % 14)
 
         first_of_month = date.replace(day = 1)
         week = date.isocalendar()[1] - first_of_month.isocalendar()[1]
@@ -351,7 +362,7 @@ class Schedule(models.Model):
         month = date.month
 
         # last of the month
-        if freq == Schedule.Frequency['last']:
+        if freq == Schedule.Frequency.last:
             date += tz.timedelta(days = 4 * 7)
             next_date = date + tz.timedelta(days = 7)
             if next_date.month == month:
@@ -359,12 +370,12 @@ class Schedule(models.Model):
             return [self.normalize(date)]
 
         dates = []
-        if freq == Schedule.Frequency['one on two']:
+        if freq == Schedule.Frequency.one_on_two:
             # NOTE previous algorithm was based on the week number, but this
             # approach is wrong because number of weeks in a year can be
             # 52 or 53. This also clashes with the first week of the year.
             diff = as_date(date, False) - as_date(self.date, False)
-            if not diff.days % 14:
+            if diff.days % 14:
                 date += tz.timedelta(days = 7)
 
             while date.month == month:
@@ -376,6 +387,7 @@ class Schedule(models.Model):
                 if freq & (0b1 << week):
                     dates.append(date)
                 date += tz.timedelta(days = 7)
+                week += 1;
         return [self.normalize(date) for date in dates]
 
     def diffusions_of_month(self, date, exclude_saved = False):

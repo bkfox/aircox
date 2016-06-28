@@ -18,8 +18,8 @@ from aircox.cms import settings
 
 class Routable:
     @classmethod
-    def get_with_thread(cl, thread = None, queryset = None,
-                        thread_model = None, thread_id = None):
+    def get_siblings(cl, thread = None, queryset = None,
+                     thread_model = None, thread_id = None):
         """
         Return posts of the cl's type that are children of the given thread.
         """

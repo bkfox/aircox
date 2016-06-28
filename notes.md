@@ -8,11 +8,12 @@
     - translation
 
 - programs:
+    - schedule: potential issue with nth' week of month
     - tests:
         - sound_monitor
 
 - liquidsoap:
-    - update rc's supervisor scripts
+    - models to template
     - tests:
         - monitor
         - check when a played sound has a temp blank
@@ -33,7 +34,6 @@
         - calendar
         - article list with the focus
             -> set html attribute based on values that are public
-    - rename qcombine.FakeModel -> GenericModel?
 
 - website:
     - diffusions:
@@ -45,7 +45,6 @@
         - mixcloud
         - seek bar
     - load complete week for a schedule?
-    - finish that fucking website
     - list of played diffusions and tracks when non-stop;
     - search input in a section
 

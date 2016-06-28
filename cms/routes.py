@@ -126,7 +126,7 @@ class ThreadRoute(Route):
     @classmethod
     def get_queryset(cl, model, request, thread_model, pk, **kwargs):
         thread = cl.get_thread(model, thread_model, pk)
-        return model.get_with_thread(thread_model = thread, thread_id = pk)
+        return model.get_siblings(thread_model = thread, thread_id = pk)
 
     @classmethod
     def get_title(cl, model, request, thread_model, pk, **kwargs):

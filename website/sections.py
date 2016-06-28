@@ -150,11 +150,11 @@ class Diffusions(sections.List):
             return
 
         if self.object:
-            return models.Diffusion.route_url(routes.ThreadRoute,
+            return models.Diffusion.reverse(routes.ThreadRoute,
                 pk = self.object.id,
                 thread_model = 'program',
             )
-        return models.Diffusion.route_url(routes.AllRoute)
+        return models.Diffusion.reverse(routes.AllRoute)
 
     @property
     def header(self):
@@ -246,7 +246,7 @@ class Schedule(Diffusions):
 
         date = self.date_or_default()
         dates = [
-            (date, models.Diffusion.route_url(
+            (date, models.Diffusion.reverse(
                 routes.DateRoute,
                 year = date.year, month = date.month, day = date.day
             ))
@@ -254,14 +254,14 @@ class Schedule(Diffusions):
         ]
 
         next_week = dates[-1][0] + tz.timedelta(days=1)
-        next_week = models.Diffusion.route_url(
+        next_week = models.Diffusion.reverse(
                 routes.DateRoute,
                 year = next_week.year, month = next_week.month,
                 day = next_week.day
         )
 
         prev_week = dates[0][0] - tz.timedelta(days=1)
-        prev_week = models.Diffusion.route_url(
+        prev_week = models.Diffusion.reverse(
                 routes.DateRoute,
                 year = prev_week.year, month = prev_week.month,
                 day = prev_week.day

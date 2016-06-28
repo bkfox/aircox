@@ -5,8 +5,6 @@ import heapq
 from django.utils.translation import ugettext as _, ugettext_lazy
 from django.db.models.query import QuerySet
 
-from aircox.cms.models import Routable
-
 
 class QCombine:
     """
@@ -126,7 +124,7 @@ class Manager(type):
         return qs
 
 
-class GenericModel(Routable,metaclass=Manager):
+class GenericModel(metaclass=Manager):
     """
     This class is used to register a route for multiple models to a website.
     A QCombine is created with qs for all given models when objects

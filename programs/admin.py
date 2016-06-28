@@ -137,8 +137,11 @@ class DiffusionAdmin(admin.ModelAdmin):
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
-        if request.GET and '_changelist_filters' in request.GET and \
-                request.GET.get('type__exact') == Diffusion.Type.unconfirmed:
+        print('type__exact' in request.GET,
+                request.GET.get('type__exact'),
+                Diffusion.Type.unconfirmed,
+                request.GET.get('type__exact') == Diffusion.Type.unconfirmed)
+        if request.GET and len(request.GET):
             return qs
         return qs.exclude(type = Diffusion.Type.unconfirmed)
 
@@ -164,6 +167,7 @@ class ScheduleAdmin(admin.ModelAdmin):
     rerun.short_description = _('Rerun')
     rerun.boolean = True
 
+    list_filter = ['frequency', 'program']
     list_display = ['id', 'program_name', 'frequency', 'date', 'day', 'rerun']
     list_editable = ['frequency', 'date']
 
