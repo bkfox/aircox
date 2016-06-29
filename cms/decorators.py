@@ -1,4 +1,3 @@
-import uuid
 import inspect
 
 from django.template.loader import render_to_string

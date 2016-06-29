@@ -190,7 +190,7 @@ class Post (models.Model, Routable):
         if not self.title:
             self.title = _('{name} // {date}').format(
                 name = self.thread.title,
-                date = self.date
+                date = self.date.strftime('%d %B %Y')
             )
         if not self.content:
             self.content = self.thread.content

@@ -26,12 +26,13 @@
         - cms.exposure; make it right, see nomenclature, + docstring
     - admin cms
     - sections:
-        - calendar
         - article list with the focus
             -> set html attribute based on values that are public
 
 - website:
-    - strftime on diffusion default name from related model
+    - diff post init:
+        - strftime on title
+        - image?
     - render schedule does not get the correct list
     - diffusions:
         - filter sounds for undiffused diffusions
@@ -41,7 +42,6 @@
         - "listen" + "favorite" buttons made easy + automated
         - mixcloud
         - seek bar
-    - load complete week for a schedule?
     - list of played diffusions and tracks when non-stop;
 
 

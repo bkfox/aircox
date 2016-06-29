@@ -80,5 +80,76 @@ main .section {
 }
 
 
+/** calendar **/
+.section_calendar header {
+    border-bottom: 1px black solid;
+    width: 100%;
+}
 
+    .section_calendar header h3,
+    .section_calendar header a {
+        display: inline-block;
+        width: 2em;
+        padding: 0;
+        margin: 0;
+        font-size: 1em;
+    }
+
+    .section_calendar header h3 {
+        width: calc(100% - 4em);
+        text-align: center;
+    }
+
+    .section_calendar header a:last-child {
+        text-align: right;
+    }
+
+.section_calendar .content {
+    padding: 0.2em;
+    margin: 0;
+    font-size: 0.9em;
+}
+
+.section_calendar .content > * {
+    padding: 0;
+    margin: 0;
+    text-align: right;
+    display: inline-block;
+}
+
+    .section_calendar .content a {
+        width: calc(100% / 7);
+    }
+
+        .section_calendar .content a.today {
+            font-style: italic;
+        }
+
+    .section_calendar div[first_weekday] {
+        width: 0;
+    }
+
+    .section_calendar div[first_weekday="1"] {
+        width: calc(100% / 7);
+    }
+
+    .section_calendar div[first_weekday="2"] {
+        width: calc(100% / 7 * 2);
+    }
+
+    .section_calendar div[first_weekday="3"] {
+        width: calc(100% / 7 * 3);
+    }
+
+    .section_calendar div[first_weekday="4"] {
+        width: calc(100% / 7 * 4);
+    }
+
+    .section_calendar div[first_weekday="5"] {
+        width: calc(100% / 7 * 5);
+    }
+
+    .section_calendar div[first_weekday="6"] {
+        width: calc(100% / 7 * 6);
+    }
 

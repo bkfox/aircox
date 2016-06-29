@@ -530,9 +530,9 @@ class Calendar(Section):
                 ) for day in range(1, count+1)
             ],
 
-            'month': date,
+            'today': tz.datetime.today(),
             'prev_month': date - tz.timedelta(days=10),
-            'next_month': date + tz.timedelta(days=31),
+            'next_month': date + tz.timedelta(days=count),
         })
         return context
 
