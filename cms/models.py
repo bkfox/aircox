@@ -317,6 +317,7 @@ class RelatedMeta (models.base.ModelBase):
             elif rel.auto_create(instance) if callable(rel.auto_create) else \
                  rel.auto_create:
                 post = model(related = instance)
+                # TODO: hackish way: model.objects.filter(related=null,...).delete()
             else:
                 return
             post.rel_to_post()
@@ -325,7 +326,6 @@ class RelatedMeta (models.base.ModelBase):
         post_save.connect(handler_rel, model._relation.model, False)
 
     def __new__ (cl, name, bases, attrs):
-        # TODO: allow proxy models and better inheritance
         # TODO: check bindings
         if name == 'RelatedPost':
             return super().__new__(cl, name, bases, attrs)
@@ -348,7 +348,6 @@ class RelatedMeta (models.base.ModelBase):
         name = rel.model._meta.object_name
         if name == model._meta.object_name:
             model._meta.default_related_name = '{} Post'.format(name)
-
         return model
 
 
@@ -401,7 +400,7 @@ class RelatedPost (Post, metaclass = RelatedMeta):
         bindings = None
         """
         dict of `post_attr: rel_attr` that represent bindings of values
-        between the post and the related object. Field are updated according
+        between the post and the related object. Fields are updated according
         to `post_to_rel` and `rel_to_post`.
 
         If there is a post_attr "thread", the corresponding rel_attr is used
@@ -412,6 +411,11 @@ class RelatedPost (Post, metaclass = RelatedMeta):
         the value, as `rel_attr(post, related)`
 
         note: bound values can be any value, not only Django field.
+        """
+        defaults = None
+        """
+        dict of `post_attr: value` that gives default value for the given
+        fields.
         """
         post_to_rel = False
         """
@@ -474,7 +478,6 @@ class RelatedPost (Post, metaclass = RelatedMeta):
         if save:
             self.related.save()
 
-
     def rel_to_post(self, save = True):
         """
         Change the post using the related object bound values. Save the
@@ -507,13 +510,6 @@ class RelatedPost (Post, metaclass = RelatedMeta):
 
         if has_changed and save:
             self.save()
-
-    def __init__ (self, *kargs, **kwargs):
-        super().__init__(*kargs, **kwargs)
-        # we use this method for sync, in order to avoid intrusive code on other
-        # applications, e.g. using signals.
-        if self.pk and self._relation.rel_to_post:
-            self.rel_to_post(False)
 
     def save (self, avoid_sync = False, save = True, *args, **kwargs):
         """

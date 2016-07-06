@@ -7,7 +7,7 @@
 
 {% block content %}
 <ul class="content">
-{% for item in object_list %}
+{% for object in object_list %}
 {% include "aircox/cms/list_item.html" %}
 {% empty %}
 <div class="message empty">

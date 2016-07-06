@@ -288,9 +288,6 @@ class List(Section):
         """
         Prepare objects before context is sent to the template renderer.
         Return the object_list that is prepared.
-
-        Remember: since we are in a rendering process, the items should
-        not be saved.
         """
         return object_list
 

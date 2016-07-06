@@ -2,12 +2,18 @@
 - logs: archive functionnality + track stats for diffusions
 - debug/prod configuration
 
+# TODO ajd
+- website/sections Diffusions/prepare\_object\_list -> sounds
+- players' buttons
+
+
 # TODO:
 - general:
     - timezone shit
     - translation
 
 - programs:
+    - schedule changes -> update later diffusions according to the new schedule
     - tests:
         - sound_monitor
 
@@ -26,13 +32,11 @@
         - cms.exposure; make it right, see nomenclature, + docstring
     - admin cms
     - sections:
+        - calendar title update
         - article list with the focus
             -> set html attribute based on values that are public
 
 - website:
-    - diff post init:
-        - strftime on title
-        - image?
     - render schedule does not get the correct list
     - diffusions:
         - filter sounds for undiffused diffusions
@@ -43,7 +47,4 @@
         - mixcloud
         - seek bar
     - list of played diffusions and tracks when non-stop;
-
-
-
 

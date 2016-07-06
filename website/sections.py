@@ -101,10 +101,12 @@ class Diffusions(sections.List):
 
     def prepare_object_list(self, object_list):
         """
-        This function just prepare the list of object, in order to have a good
-        title
+        This function just prepare the list of object, in order to:
+        - have a good title
+        - given a stream to listen to if needed
         """
         for post in object_list:
+            # title
             if not hasattr(post, 'related') or \
                     not hasattr(post.related , 'program'):
                 continue
@@ -113,6 +115,7 @@ class Diffusions(sections.List):
                 post.title = ': ' + post.title if post.title else \
                             ' // ' + post.related.start.strftime('%A %d %B')
                 post.title = name + post.title
+            # sounds
         return object_list
 
     def get_object_list(self):
