@@ -81,8 +81,8 @@ class Track(Nameable):
         _('artist'),
         max_length = 128,
     )
-    # position can be used to specify a position in seconds for non-
-    # stop programs or a position in the playlist
+    # position can be used to specify a position in seconds for stream
+    # programs or a position in the playlist
     position = models.SmallIntegerField(
         default = 0,
         help_text=_('position in the playlist'),
@@ -172,7 +172,7 @@ class Sound(Nameable):
         # path = self._meta.get_field('path').path
         path = self.path.replace(main_settings.MEDIA_ROOT, '', 1)
         #path = self.path.replace(path, '', 1)
-        return path
+        return main_settings.MEDIA_URL + '/' + path
 
     def file_exists(self):
         """
@@ -684,8 +684,30 @@ class Diffusion(models.Model):
 
 class Log(models.Model):
     """
-    Log a played sound start and stop, or a single message
+    Log sounds and diffusions that are played in the streamer. It
+    can also be used for other purposes.
     """
+    class Type(IntEnum):
+        stop = 0x00
+        """
+        Source has been stopped (only when there is no more sound)
+        """
+        play = 0x01
+        """
+        Source has been started/changed and is running related_object
+        If no related_object is available, comment is used to designate
+        the sound.
+        """
+        load = 0x02
+        """
+        Source starts to be preload related_object
+        """
+
+    type = models.SmallIntegerField(
+        verbose_name = _('type'),
+        choices = [ (int(y), _(x)) for x,y in Type.__members__.items() ],
+        blank = True, null = True,
+    )
     source = models.CharField(
         _('source'),
         max_length = 64,
@@ -693,10 +715,11 @@ class Log(models.Model):
         blank = True, null = True,
     )
     date = models.DateTimeField(
-        'date',
+        _('date'),
         auto_now_add=True,
     )
     comment = models.CharField(
+        _('comment'),
         max_length = 512,
         blank = True, null = True,
     )

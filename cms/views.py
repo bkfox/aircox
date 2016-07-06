@@ -168,7 +168,6 @@ class PostListView(BaseView, ListView):
            self.list = sections.List(
                truncate = 32,
                paginate_by = 0,
-               fields = ['date', 'time', 'image', 'title', 'content'],
            )
         else:
             self.list = self.list(paginate_by = 0)

@@ -4,63 +4,72 @@
 
 {% with object|downcast as object %}
 <li {% if object.css_class %}class="{{ object.css_class }}"{% endif %}
-      {% for k, v in object.attrs.items %}
-      {{ k }} = "{{ v|addslashes }}"
-      {% endfor %} >
-  {% if object.url %}
+        {% for k, v in object.attrs.items %}
+        {{ k }} = "{{ v|addslashes }}"
+        {% endfor %} >
+    {% if object.url %}
       <a class="url" href="{{ object.url }}">
-  {% endif %}
-  {% if 'image' in list.fields and object.image %}
-  <img class="image" src="{% thumbnail object.image list.image_size crop %}">
-  {% endif %}
+    {% endif %}
+    {% if 'image' in list.fields and object.image %}
+    <img class="image" src="{% thumbnail object.image list.image_size crop %}">
+    {% endif %}
 
-  <div class="body">
-      {% if 'title' in list.fields and object.title %}
-      <h2 class="title">{{ object.title }}</h2>
-      {% endif %}
+    <div class="body">
+        {% if 'title' in list.fields and object.title %}
+        <h2 class="title">{{ object.title }}</h2>
+        {% endif %}
 
-      {% if 'content' in list.fields and object.content %}
-      <div class="content">
-          {% if list.truncate %}
-          {{ object.content|striptags|truncatewords:list.truncate }}
-          {% else %}
-          {{ object.content|striptags }}
-          {% endif %}
-      </div>
-      {% endif %}
-  </div>
+        {% if 'content' in list.fields and object.content %}
+        <div class="content">
+            {% if list.truncate %}
+            {{ object.content|striptags|truncatewords:list.truncate }}
+            {% else %}
+            {{ object.content|striptags }}
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
 
-  <div class="meta">
-      {% if object.date and 'date' in list.fields or 'time' in list.fields %}
-      <time datetime="{{ object.date }}">
-          {% if 'date' in list.fields %}
-          <span class="date">
-              {{ object.date|date:'D. d F' }}
-          </span>
-          {% endif %}
-          {% if 'time' in list.fields %}
-          <span class="time">
-              {{ object.date|date:'H:i' }}
-          </span>
-          {% endif %}
-      </time>
-      {% endif %}
-      {% if object.author and 'author' in list.fields %}
-      <span class="author">
-          {{ object.author }}
-      </span>
-      {% endif %}
+    <div class="meta">
+        {% if object.date and 'date' in list.fields or 'time' in list.fields %}
+        <time datetime="{{ object.date }}">
+            {% if 'date' in list.fields %}
+            <span class="date">
+                {{ object.date|date:'D. d F' }}
+            </span>
+            {% endif %}
+            {% if 'time' in list.fields %}
+            <span class="time">
+                {{ object.date|date:'H:i' }}
+            </span>
+            {% endif %}
+        </time>
+        {% endif %}
+        {% if object.author and 'author' in list.fields %}
+        <span class="author">
+            {{ object.author }}
+        </span>
+        {% endif %}
 
-      {% if object.info and 'info' in list.fields %}
-      <span class="info">
-          {{ object.info }}
-      </span>
-      {% endif %}
-  </div>
+        {% if object.info and 'info' in list.fields %}
+        <span class="info">
+            {{ object.info }}
+        </span>
+        {% endif %}
+    </div>
 
-  {% if object.url %}
-  </a>
-  {% endif %}
+    {% if object.actions and 'actions' in list.fields %}
+        <div class="actions">
+        {% for action_id,action_data in object.actions.items %}
+            <a class="action" action="{{action_id}}"
+            {% for k,v in action_data.items %}data-{{ k }}="{{ v }}"{% endfor %}></a>
+        {% endfor %}
+        </div>
+    {% endif %}
+
+    {% if object.url %}
+    </a>
+    {% endif %}
 </li>
 {% endwith %}
 

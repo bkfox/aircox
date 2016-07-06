@@ -58,7 +58,7 @@ class SoundAdmin(NameableAdmin):
     fields = None
     list_display = ['id', 'name', 'duration', 'type', 'mtime', 'good_quality', 'removed']
     fieldsets = [
-        (None, { 'fields': NameableAdmin.fields + ['path', 'type'] } ),
+        (None, { 'fields': NameableAdmin.fields + ['path', 'type', 'diffusion'] } ),
         (None, { 'fields': ['embed', 'duration', 'mtime'] }),
         (None, { 'fields': ['removed', 'good_quality' ] } )
     ]

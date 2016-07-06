@@ -64,7 +64,8 @@ class Monitor:
         playlist = diff.playlist
         if played_sounds:
             diff.played = [ sound.related_object.path
-                            for sound in sound_logs[0:len(playlist)] ]
+                            for sound in sound_logs[0:len(playlist)]
+                            if sound.type = program.Logs.Type.switch ]
         return diff
 
     @classmethod
@@ -111,6 +112,13 @@ class Monitor:
         # playlist update
         if dealer.playlist != playlist:
             dealer.playlist = playlist
+            if next_diff:
+                cl.log(
+                    type = programs.Log.Type.load,
+                    source = dealer.id,
+                    date = now,
+                    related_object = next_diff
+                )
 
         # dealer.on when next_diff.start <= now
         if next_diff and not dealer.on and next_diff.start <= now:
@@ -118,18 +126,16 @@ class Monitor:
             for source in controller.streams.values():
                 source.skip()
             cl.log(
+                type = programs.Log.Type.play,
                 source = dealer.id,
                 date = now,
-                comment = 'trigger diffusion to liquidsoap; '
-                          'skip other streams',
                 related_object = next_diff,
             )
 
     @classmethod
     def run_source (cl, source):
         """
-        Keep trace of played sounds on the given source. For the moment we only
-        keep track of known sounds.
+        Keep trace of played sounds on the given source.
         """
         # TODO: repetition of the same sound out of an interval of time
         last_log = programs.Log.objects.filter(
@@ -150,16 +156,16 @@ class Monitor:
                 return
 
         sound = programs.Sound.objects.filter(path = on_air)
-        if not sound:
-            return
-
-        sound = sound[0]
-        cl.log(
-            source = source.id,
-            date = tz.make_aware(tz.datetime.now()),
-            comment = 'sound changed',
-            related_object = sound or None,
-        )
+        kwargs = {
+            'type': programs.Log.Type.play,
+            'source': source.id,
+            'date': tz.make_aware(tz.datetime.now()),
+        }
+        if sound:
+            kwargs['related_object'] = sound[0]
+        else:
+            kwargs['comment'] = on_air
+        cl.log(**kwargs)
 
 
 class Command (BaseCommand):

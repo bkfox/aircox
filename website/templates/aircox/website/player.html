@@ -99,10 +99,11 @@
         display: inline;
     }
 
+    .playlist .actions label,
     #playlist-live .actions,
     #playlist-recents .actions a.action[action="remove"],
-    #playlist-marked .actions a.action[action="mark"],
-    .playlist .actions a.action[action="play"],
+    #playlist-marked .actions a.action[action="sound.mark"],
+    .playlist .actions a.action[action="sound.play"],
     .playlist .actions a.url:not([href]),
     .playlist .actions a.url[href=""] {
         display: none;
@@ -113,10 +114,6 @@
     }
 </style>
 <div id="player">
-    <div class="actions sounds" style="display: none;">
-        <a class="action" action="mark" title="{% trans "mark this sound" %}">★</a>
-        <a class="action" action="play" title="{% trans "play this sound" %}">▶</a>
-    </div>
     <li class='item' style="display: none;">
         <h2 class="title"></h2>
         <div class="info"></div>
@@ -455,7 +452,7 @@ player = {
             return;
 
         if(data.playlist)
-            this.select_playlist(this[data.playlist]);
+            this.select_playlist(this[data.selected_playlist]);
         if(data.stream) {
             item = this.playlist.find(data.stream, true);
             item && this.select(item, false);
@@ -465,7 +462,7 @@ player = {
 
     save: function() {
         playerStore.set('player', {
-            'playlist': this.playlist.name,
+            'selected_playlist': this.__playlist && this.__playlist.name,
             'stream':   this.item && this.item.stream,
             'single':   this.controls.single.checked,
         });
@@ -477,12 +474,10 @@ player = {
         var player = this.player;
         var audio = this.audio;
 
-        if(audio.paused) {
+        if(audio.paused)
             audio.play();
-        }
-        else {
+        else
             audio.pause();
-        }
     },
 
     __ask_to_seek(item) {
@@ -523,17 +518,17 @@ player = {
 
     /// Select the next track in the current playlist, eventually play it
     next: function(play = true) {
-        var playlist = this.playlist;
+        var playlist = this.__playlist;
         if(playlist == this.live)
             return
 
-        var index = this.playlist.items.indexOf(this.item);
+        var index = this.__playlist.items.indexOf(this.item);
         if(index == -1)
             return;
 
         index--;
         if(index >= 0)
-            this.select(this.playlist.items[index], play);
+            this.select(this.__playlist.items[index], play);
     },
 
     /// remove selection using the given selector.
@@ -549,7 +544,7 @@ player = {
         this.__unselect('.playlists nav .tab[selected]');
         this.__unselect('.playlists .playlist[selected]');
 
-        this.playlist = playlist;
+        this.__playlist = playlist;
         if(playlist) {
             playlist.playlist.setAttribute('selected', 'true');
             playlist.tab.setAttribute('selected', 'true');
@@ -574,51 +569,28 @@ player = {
 
     /// add sound actions to a given element
     add_actions: function(item, container) {
-        var player = this;
-
-        var actions = player.player.querySelector('.actions')
-        var elm = container.querySelector('.actions');
-        if(elm) {
-            var actions = actions.childNodes;
-            for(var i = 0; i < actions.length; i++)
-                elm.appendChild(actions[i].cloneNode(true));
-        }
-        else {
-            elm = elm.cloneNode(true);
-            elm.removeAttribute('style');
-        }
-
-        elm.addEventListener('click', function(event) {
-            var action = event.target.getAttribute('action');
-            if(!action)
-                return;
-
-            event.preventDefault();
-            event.stopImmediatePropagation();
-
-            switch(action) {
-                case 'mark':
-                    player.marked.add(item);
-                    break;
-                case 'play':
-                    item = player.playlist.add(item);
-                    player.select_playlist(player.playlist);
-                    player.select(item, true);
-                    break;
-                case 'remove':
-                    item.playlist.remove(item);
-                    break;
-                default:
-                    return;
-            }
-        }, true);
-
-        if(!elm.parentNode)
-            container.appendChild(elm);
+        Actions.add_action(container, 'sound.mark', item);
+        Actions.add_action(container, 'sound.play', item, item.stream);
+        // TODO: remove from playlist
     },
 }
 
-player.init('player')
+Actions.register('sound.mark', '★', '{% trans "add to my playlist" %}',
+    function(item) {
+        player.marked.add(item);
+    }
+);
+
+Actions.register('sound.play', '▶', '{% trans "listen" %}',
+    function(item) {
+        item = player.playlist.add(item);
+        player.select_playlist(player.playlist);
+        player.select(item, true);
+    }
+);
+
+player.init('player');
+
 </script>
 {% endblock %}
 

@@ -1,3 +1,77 @@
+/// Actions manager
+/// This class is used to register actions and to execute them when it is
+/// triggered by the user.
+var Actions = {
+    registry: {},
+
+    /// Add an handler for a given action
+    register: function(id, symbol, title, handler) {
+        this.registry[id] = {
+            symbol: symbol,
+            title: title,
+            handler: handler,
+        }
+    },
+
+
+    /// Init an existing action HTML element
+    init_action: function(item, action_id, data, url) {
+        var action = this.registry[action_id];
+        if(!action)
+            return;
+        item.title      = action.title;
+        item.innerHTML  = (action.symbol || '') + '<label>' +
+                          action.title + '</label>';
+        item.data       = data;
+        item.className  = 'action';
+        if(url)
+            item.href       = url;
+        item.setAttribute('action', action_id);
+        item.addEventListener('click', Actions.run, true);
+    },
+
+    /// Add an action to the given item
+    add_action: function(item, action_id, data, url) {
+        var actions = item.querySelector('.actions');
+        if(actions && actions.querySelector('[action="' + action_id + '"]'))
+            return;
+
+        var item = document.createElement('a');
+        this.init_action(item, action_id, data, url);
+        actions.appendChild(item);
+    },
+
+    /// Run an action from the given event -- ! this can be undefined
+    run: function(event) {
+        var item = event.target;
+        var action = item.hasAttribute('action') &&
+                     item.getAttribute('action');
+        if(!action)
+            return;
+
+        event.preventDefault();
+        event.stopImmediatePropagation();
+
+        action = Actions.registry[action];
+        if(!action)
+            return
+
+        data = item.data || item.dataset;
+        action.handler(data, item);
+        return true;
+    },
+};
+
+
+document.addEventListener('DOMContentLoaded', function(event) {
+    var items = document.querySelectorAll('.action[action]');
+    for(var i = 0; i < items.length; i++) {
+        var item = items[i];
+        var action_id = item.getAttribute('action');
+        var data = item.dataset;
+        Actions.init_action(item, action_id, data);
+    }
+}, false);
 
 
 /// Small utility used to make XMLHttpRequests, and map results on objects.

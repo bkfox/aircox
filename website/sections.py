@@ -115,7 +115,17 @@ class Diffusions(sections.List):
                 post.title = ': ' + post.title if post.title else \
                             ' // ' + post.related.start.strftime('%A %d %B')
                 post.title = name + post.title
+
             # sounds
+            pl = post.related.get_archives()
+            if pl:
+                item = { 'title': post.title, 'stream': pl[0].url,
+                         'url': post.url() }
+                post.actions = {
+                    'sound.play': item,
+                    'sound.mark': item,
+                }
+
         return object_list
 
     def get_object_list(self):

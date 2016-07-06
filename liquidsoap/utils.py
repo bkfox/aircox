@@ -2,10 +2,10 @@ import os
 import socket
 import re
 import json
-import subprocess
 
-from django.utils.translation import ugettext as _, ugettext_lazy
 from django.utils import timezone as tz
+from django.utils.translation import ugettext as _, ugettext_lazy
+from django.utils.text import slugify
 from django.conf import settings as main_settings
 from django.template.loader import render_to_string
 
@@ -130,7 +130,6 @@ class BaseSource:
             return self.update(metadata = r or {})
 
         source = metadata.get('source') or ''
-        # FIXME: self.program
         if hasattr(self, 'program') and self.program \
                 and not source.startswith(self.id):
             return -1
@@ -145,20 +144,19 @@ class Source(BaseSource):
     metadata = None
 
     def __init__(self, controller, program = None, is_dealer = None):
-        station = controller.station
         if is_dealer:
-            id, name = '{}_dealer'.format(station.slug), \
+            id, name = '{}_dealer'.format(controller.id), \
                        'Dealer'
             self.is_dealer = True
         else:
-            id, name = '{}_stream_{}'.format(station.slug, program.id), \
+            id, name = '{}_stream_{}'.format(controller.id, program.id), \
                        program.name
 
         super().__init__(controller, id, name)
 
         self.program = program
         self.path = os.path.join(settings.AIRCOX_LIQUIDSOAP_MEDIA,
-                                 station.slug,
+                                 controller.id,
                                  self.id + '.m3u')
         if program:
             self.playlist_from_db()
@@ -237,10 +235,6 @@ class Master (BaseSource):
     """
     A master Source based on a given station
     """
-    def __init__(self, controller):
-        station = controller.station
-        super().__init__(controller, station.slug, station.name)
-
     def update(self, metadata = None):
         if metadata is not None:
             return super().update(metadata)
@@ -259,13 +253,12 @@ class Controller:
     path = None
 
     connector = None
-    station = None      # the related station
-    master = None       # master source (station's source)
+    master = None       # master source
     dealer = None       # dealer source
     streams = None      # streams streams
 
     # FIXME: used nowhere except in liquidsoap cli to get on air item but is not
-    #       correctly
+    #       correct
     @property
     def on_air(self):
         return self.master
@@ -294,10 +287,9 @@ class Controller:
         to the given station; We ensure the existence of the controller's
         files dir.
         """
-        self.id = station.slug
+        self.id = slugify(station)
         self.name = station
-        self.path = os.path.join(settings.AIRCOX_LIQUIDSOAP_MEDIA,
-                                 slugify(station))
+        self.path = os.path.join(settings.AIRCOX_LIQUIDSOAP_MEDIA, self.id)
 
         self.outputs = models.Output.objects.all()
 
@@ -360,6 +352,7 @@ class Controller:
             'log_script': log_script,
         }
 
+        # FIXME: remove this crappy thing
         data = render_to_string('aircox/liquidsoap/station.liq', context)
         data = re.sub(r'\s*\\\n', r'#\\n#', data)
         data = data.replace('\n', '')

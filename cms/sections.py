@@ -265,7 +265,7 @@ class List(Section):
     message_empty = _('nothing')
     paginate_by = 4
 
-    fields = [ 'date', 'time', 'image', 'title', 'content', 'info' ]
+    fields = [ 'date', 'time', 'image', 'title', 'content', 'info', 'actions' ]
     image_size = '64x64'
     truncate = 16
 
