@@ -1,7 +1,8 @@
-
 {% load i18n %}
 {% load thumbnail %}
+{% load aircox_cms %}
 
+{% with object|downcast as object %}
 <li {% if object.css_class %}class="{{ object.css_class }}"{% endif %}
       {% for k, v in object.attrs.items %}
       {{ k }} = "{{ v|addslashes }}"
@@ -61,5 +62,5 @@
   </a>
   {% endif %}
 </li>
-
+{% endwith %}
 

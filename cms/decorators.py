@@ -54,7 +54,7 @@ class Exposure:
                     'exp': cl._exposure,
                 })
                 res = render_to_string(exp.template_name,
-                                       v, request = request)
+                                       ctx, request = request)
             return HttpResponse(res or '')
 
         # id = str(uuid.uuid1())

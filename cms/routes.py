@@ -6,8 +6,6 @@ from django.utils.translation import ugettext as _, ugettext_lazy
 
 from taggit.models import Tag
 
-import aircox.cms.qcombine as qcombine
-
 
 class Route:
     """
@@ -189,24 +187,14 @@ class SearchRoute(Route):
     ]
 
     @classmethod
-    def __search(cl, model, q):
+    def get_queryset(cl, model, request, q = None, **kwargs):
+        q = request.GET.get('q') or q or ''
         qs = None
         for search_field in model.search_fields or []:
             r = models.Q(**{ search_field + '__icontains': q })
             if qs: qs = qs | r
             else: qs = r
         return model.objects.filter(qs).distinct()
-
-
-    @classmethod
-    def get_queryset(cl, model, request, q = None, **kwargs):
-        q = request.GET.get('q') or q or ''
-        if issubclass(model, qcombine.GenericModel):
-            models = model.models
-            return qcombine.QCombine(
-                *(cl.__search(model, q) for model in models)
-            )
-        return cl.__search(model, q)
 
     @classmethod
     def get_title(cl, model, request, q = None, **kwargs):

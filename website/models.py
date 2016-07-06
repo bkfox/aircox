@@ -9,7 +9,6 @@ from django.utils.translation import ugettext as _, ugettext_lazy
 
 import aircox.programs.models as programs
 import aircox.cms.models as cms
-import aircox.cms.qcombine as qcombine
 
 
 class Article (cms.Post):
@@ -127,13 +126,5 @@ class Sound (cms.RelatedPost):
                         self.related.path, err
                     )
                 )
-
-
-class Publications (qcombine.GenericModel):
-    """
-    Combine views
-    """
-    models = [ Article, Program, Diffusion, Sound ]
-
 
 

@@ -2,7 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
-from django.utils import timezone
+from django.utils import timezone as tz
 from django.utils.text import slugify
 from django.utils.translation import ugettext as _, ugettext_lazy
 
@@ -75,7 +75,7 @@ class Comment(models.Model, Routable):
     )
     date = models.DateTimeField(
         _('date'),
-        default = timezone.datetime.now
+        auto_now_add = True,
     )
     content = models.TextField (
         _('comment'),
@@ -107,10 +107,18 @@ class Post (models.Model, Routable):
     You can declare an extra property "info" that can be used to append
     info in lists rendering.
     """
+    # used for inherited children
+    real_type = models.CharField(
+        max_length=32,
+        blank = True, null = True,
+    )
+
     # metadata
+    # FIXME: on_delete
     thread_type = models.ForeignKey(
         ContentType,
         on_delete=models.SET_NULL,
+        related_name = 'thread_type',
         blank = True, null = True
     )
     thread_id = models.PositiveIntegerField(
@@ -135,7 +143,7 @@ class Post (models.Model, Routable):
     )
     date = models.DateTimeField(
         _('date'),
-        default = timezone.datetime.now
+        default = tz.datetime.now
     )
     title = models.CharField (
         _('title'),
@@ -154,6 +162,11 @@ class Post (models.Model, Routable):
         blank = True,
     )
 
+    info = ''
+    """
+    Used to be extended: used in template to render contextual information about
+    a sub-post item.
+    """
     search_fields = [ 'title', 'content', 'tags__name' ]
     """
     Fields on which routes.SearchRoute must run the search
@@ -196,7 +209,7 @@ class Post (models.Model, Routable):
             self.content = self.thread.content
         if not self.image:
             self.image = self.thread.image
-        if not self.tags and self.pk:
+        if self.pk and not self.tags:
             self.tags = self.thread.tags
 
     def get_object_list(self, request, object, **kwargs):
@@ -228,16 +241,23 @@ class Post (models.Model, Routable):
                 for tag in self.tags.all()
             ])
 
+    def downcast(self):
+        """
+        Return a downcasted version of the post if it is from another
+        model, or itself
+        """
+        if not self.real_type or type(self) != Post:
+            return self
+        return getattr(self, self.real_type)
+
     def save(self, make_safe = True, *args, **kwargs):
+        if type(self) != Post and not self.real_type:
+            self.real_type = type(self).__name__.lower()
+        if self.date and tz.is_naive(self.date):
+            self.date = tz.make_aware(self.date)
         if make_safe:
             self.make_safe()
-        if self.date and self.date.tzinfo is None or \
-                self.date.tzinfo.utcoffset(self.date) is None:
-            timezone.make_aware(self.date)
         return super().save(*args, **kwargs)
-
-    class Meta:
-        abstract = True
 
 
 class RelatedMeta (models.base.ModelBase):
@@ -499,6 +519,8 @@ class RelatedPost (Post, metaclass = RelatedMeta):
                 continue
             value = rel_attr(self, self.related) if callable(rel_attr) else \
                     getattr(self.related, rel_attr)
+            if type(value) == tz.datetime and tz.is_naive(value):
+                value = tz.make_aware(value)
             set_attr(attr, value)
 
         if rel.thread_model:

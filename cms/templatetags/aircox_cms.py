@@ -5,6 +5,17 @@ import aircox.cms.utils as utils
 
 register = template.Library()
 
+@register.filter(name='downcast')
+def downcast(post):
+    """
+    Downcast an object if it has a downcast function, or just return the
+    post.
+    """
+    if hasattr(post, 'downcast') and callable(post.downcast):
+        return post.downcast
+    return post
+
+
 @register.filter(name='post_tags')
 def post_tags(post, sep = ' - '):
     """
