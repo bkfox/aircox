@@ -2,6 +2,7 @@
 Define different Section css_class that can be used by views.Sections;
 """
 import re
+import datetime # used in calendar
 from random import shuffle
 
 from django.utils import timezone as tz
@@ -509,7 +510,7 @@ class Calendar(Section):
         import aircox.cms.routes as routes
         context = super().get_context_data(*args, **kwargs)
 
-        date = tz.datetime.today()
+        date = datetime.date.today()
         if year:
             date = date.replace(year = year)
         if month:
@@ -520,14 +521,15 @@ class Calendar(Section):
         context.update({
             'first_weekday': first,
             'days': [
-                (day, self.model.reverse(
+                (date + tz.timedelta(days=day), self.model.reverse(
                         routes.DateRoute, year = date.year, month = date.month,
                         day = day
                     )
-                ) for day in range(1, count+1)
+                ) for day in range(0, count)
             ],
 
-            'today': tz.datetime.today(),
+            'today': datetime.date.today(),
+            'this_month': date,
             'prev_month': date - tz.timedelta(days=10),
             'next_month': date + tz.timedelta(days=count),
         })
