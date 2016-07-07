@@ -102,7 +102,7 @@
     .playlist .actions label,
     #playlist-live .actions,
     #playlist-recents .actions a.action[action="remove"],
-    #playlist-marked .actions a.action[action="sound.mark"],
+    #playlist-favorites .actions a.action[action="sound.mark"],
     .playlist .actions a.action[action="sound.play"],
     .playlist .actions a.url:not([href]),
     .playlist .actions a.url[href=""] {
@@ -118,8 +118,11 @@
         <h2 class="title"></h2>
         <div class="info"></div>
         <div class="actions">
+            <a class="action" action="sound.mark"
+               title="{% trans "add to my favorites" %}">★</a>
             <a class="url action" title="{% trans "more informations" %}">➔</a>
-            <a class="action" action="remove" title="{% trans "remove from the playlist" %}">✖</a>
+            <a class="action" action="sound.remove"
+               title="{% trans "remove from the playlist" %}">✖</a>
         </div>
     </li>
     <div class="player-box">
@@ -130,7 +133,7 @@
                 Your browser does not support the <code>audio</code> element.
             </audio>
 
-            <span class="player-button" onclick="player.play()"
+            <span class="player-button" onclick="Player.play()"
               title="{% trans "play/pause" %}"></span>
 
             <h3 class="title"></h3>
@@ -149,7 +152,7 @@
 </div>
 
 <script>
-playerStore = {
+PlayerStore = {
     // save data to localstorage, or remove it if data is null
     set: function(name, data) {
         name = 'player.' + name;
@@ -194,8 +197,7 @@ playerStore = {
 // * tab: text to put in the tab
 // * items: list of items to append
 // * store: store the playlist in localStorage
-function Playlist(player, name, tab, items, store = false) {
-    this.player = player;
+function Playlist(name, tab, items, store = false) {
     this.name = name;
     this.store = store;
 
@@ -206,14 +208,14 @@ function Playlist(player, name, tab, items, store = false) {
     var self = this;
     this.tab = document.createElement('a');
     this.tab.addEventListener('click', function(event) {
-        player.select_playlist(self);
+        Player.select_playlist(self);
         event.preventDefault();
     }, true);
     this.tab.className = 'tab';
     this.tab.innerHTML = tab;
 
-    player.playlists.appendChild(this.playlist);
-    player.playlists.querySelector('nav').appendChild(this.tab);
+    Player.playlists.appendChild(this.playlist);
+    Player.playlists.querySelector('nav').appendChild(this.tab);
 
     this.items = [];
     if(store)
@@ -237,15 +239,30 @@ Playlist.prototype = {
         });
     },
 
-    /// add an item to the playlist or container, if not in this playlist.
+    /// add sound actions to a given element
+    add_actions: function(item, container) {
+        Actions.add_action(container, 'sound.mark', item);
+        Actions.add_action(container, 'sound.play', item, item.stream);
+
+        var elm = container.querySelector('.actions a[action="sound.mark"]');
+        elm.addEventListener('click', function(event) {
+            Player.favorites.add(item);
+        }, true);
+
+        var elm = container.querySelector('.actions a[action="sound.remove"]');
+        elm.addEventListener('click', function() {
+            item.playlist.remove(item);
+        }, true);
+    },
+
+    /// add an item to the playlist or container, if not in this.playlist.
     /// return the existing item or the newly created item.
     add: function(item, container) {
         var item_ = this.find(item);
         if(item_)
             return item_;
 
-        var player = this.player;
-        var elm = player.player.querySelector('.item').cloneNode(true);
+        var elm = Player.player.querySelector('.item').cloneNode(true);
         elm.removeAttribute('style');
 
         if(!container)
@@ -255,10 +272,18 @@ Playlist.prototype = {
         else
             container.appendChild(elm);
 
-        item.elm      = elm;
-        item.playlist = this;
-        elm.item      = item;
+        item = {
+            title: item.title,
+            url: item.url,
+            stream: item.stream,
+            info: item.info,
+            seekable: 'seekable' in item ? item.seekable : true,
 
+            elm: elm,
+            playlist: this,
+        }
+
+        elm.item      = item;
         elm.querySelector('.title').innerHTML = item.title || '';
         elm.querySelector('.url').href = item.url || '';
         elm.querySelector('.info').innerHTML = item.info || '';
@@ -273,13 +298,13 @@ Playlist.prototype = {
 
             var item = event.currentTarget.item;
             if(item.stream || item.embed)
-              player.select(item);
+                Player.select(item);
             event.stopPropagation();
             return true;
         }, false);
 
         if(item.embed || item.stream)
-            player.add_actions(item, elm);
+            this.add_actions(item, elm);
         this.items.push(item);
 
         if(container == this.playlist && this.store)
@@ -322,32 +347,32 @@ Playlist.prototype = {
             delete item.playlist;
             pl.push(item);
         }
-        playerStore.set('playlist.' + this.name, pl)
+        PlayerStore.set('playlist.' + this.name, pl)
     },
 
     /// Load playlist from local storage
     load: function() {
-      var pl = playerStore.get('playlist.' + this.name);
+      var pl = PlayerStore.get('playlist.' + this.name);
       if(pl)
         this.add_list(pl);
     },
 
-    /// called by the player when the given item is unselected
-    unselect: function(player, item) {
+    /// called by Player when the given item is unselected
+    unselect: function(item) {
         this.tab.removeAttribute('active');
         if(item.elm)
           item.elm.removeAttribute('selected');
 
-        var audio = this.player.audio;
+        var audio = Player.audio;
         if(this.store && !audio.ended) {
             item.currentTime = audio.currentTime;
             this.save();
         }
     },
 
-    /// called by the player when the given item is selected, in order to
+    /// called by Player when the given item is selected, in order to
     /// prepare it.
-    select: function(player, item) {
+    select: function(item) {
         this.tab.setAttribute('active', 'true');
         if(item.elm)
             item.elm.setAttribute('selected', 'true');
@@ -355,15 +380,15 @@ Playlist.prototype = {
 }
 
 
-player = {
-    /// main container of the player
+Player = {
+    /// main container of the Player
     player: undefined,
     /// <audio> container
     audio: undefined,
     /// controls
     controls: undefined,
 
-    /// init player
+    /// init Player
     init: function(id) {
         this.player = document.getElementById(id);
         this.audio = this.player.querySelector('audio');
@@ -398,12 +423,12 @@ player = {
 
         this.audio.addEventListener('timeupdate', function() {
             if(self.audio.seekable.length)
-                playerStore.set('stream.' + self.item.stream + '.pos',
+                PlayerStore.set('stream.' + self.item.stream + '.pos',
                                 self.audio.currentTime)
         }, false);
 
         this.audio.addEventListener('ended', function() {
-            playerStore.set('streams.' + self.item.stream + '.pos')
+            PlayerStore.set('streams.' + self.item.stream + '.pos')
 
             single = self.player.querySelector('input.single');
             if(!single.checked)
@@ -413,7 +438,7 @@ player = {
 
     __init_playlists: function() {
         this.playlists = this.player.querySelector('.playlists');
-        this.live = new Playlist(this,
+        this.live = new Playlist(
             'live',
             " {% trans "live" %}",
             [ {% for sound in live_streams %}
@@ -421,25 +446,28 @@ player = {
                   url: "{{ sound.url }}",
                   stream: "{{ sound.url }}",
                   info: "{{ sound.info }}",
+                  seekable: false,
                 }, {% endfor %} ]
         );
-        this.recents = new Playlist(this,
+        this.recents = new Playlist(
             'recents', '{% trans "recents" %}',
-            [ {% for sound in last_sounds %}
+            [ {% for sound in recents %}
                 { title: "{{ sound.title }}",
                   url: "{{ sound.url }}",
                   {% if sound.related.embed %}
                   embed: "{{ sound.related.embed }}",
                   {% else %}
-                  stream: "{{ MEDIA_URL }}{{ sound.related.url|safe }}",
+                  stream: "{{ sound.related.url|safe }}",
                   {% endif %}
-                  info: "{{ sound.related.duration|date:"i:s" }}",
+                  info: "{{ sound.related.duration|date:"H:i:s" }}",
                 }, {% endfor %} ]
         );
-        this.marked = new Playlist(this,
-            'marked', '★ {% trans "marked" %}', null, true);
-        this.playlist = new Playlist(this,
-            'playlist', '☰ {% trans "playlist" %}', null, true);
+        this.favorites = new Playlist(
+            'favorites', '★ {% trans "favorites" %}', null, true
+        );
+        this.playlist = new Playlist(
+            'playlist', '☰ {% trans "playlist" %}', null, true
+        );
 
         this.select(this.live.items[0], false);
         this.select_playlist(this.recents);
@@ -447,7 +475,7 @@ player = {
     },
 
     load: function() {
-        var data = playerStore.get('player');
+        var data = PlayerStore.get('Player');
         if(!data)
             return;
 
@@ -461,19 +489,17 @@ player = {
     },
 
     save: function() {
-        playerStore.set('player', {
+        PlayerStore.set('player', {
             'selected_playlist': this.__playlist && this.__playlist.name,
             'stream':   this.item && this.item.stream,
             'single':   this.controls.single.checked,
         });
     },
 
-    /** player actions **/
+    /** Player actions **/
     /// play a given item { title, src }
     play: function() {
-        var player = this.player;
         var audio = this.audio;
-
         if(audio.paused)
             audio.play();
         else
@@ -481,13 +507,16 @@ player = {
     },
 
     __ask_to_seek(item) {
+        if(!item.seekable)
+            return;
+
         var key = 'stream.' + item.stream + '.pos'
-        var pos = playerStore.get(key);
+        var pos = PlayerStore.get(key);
         if(!pos)
             return
         if(confirm("{% trans "restart from the last position?" %}"))
             this.audio.currentTime = Math.max(pos - 5, 0);
-        playerStore.set(key);
+        PlayerStore.set(key);
     },
 
     /// select the current track to play, and start playing it
@@ -496,7 +525,7 @@ player = {
         var player = this.player;
 
         if(this.item && this.item.playlist)
-            this.item.playlist.unselect(this, this.item);
+            this.item.playlist.unselect(this.item);
 
         audio.pause();
         audio.src = item.stream;
@@ -504,7 +533,7 @@ player = {
 
         this.item = item;
         if(this.item && this.item.playlist)
-            this.item.playlist.select(this, this.item);
+            this.item.playlist.select(this.item);
 
         player.querySelectorAll('#simple-player .title')[0]
             .innerHTML = item.title;
@@ -563,33 +592,12 @@ player = {
          .send();
 
       window.setTimeout(function() {
-        player.update_on_air();
+        Player.update_on_air();
       }, 60000*5);
-    },
-
-    /// add sound actions to a given element
-    add_actions: function(item, container) {
-        Actions.add_action(container, 'sound.mark', item);
-        Actions.add_action(container, 'sound.play', item, item.stream);
-        // TODO: remove from playlist
     },
 }
 
-Actions.register('sound.mark', '★', '{% trans "add to my playlist" %}',
-    function(item) {
-        player.marked.add(item);
-    }
-);
-
-Actions.register('sound.play', '▶', '{% trans "listen" %}',
-    function(item) {
-        item = player.playlist.add(item);
-        player.select_playlist(player.playlist);
-        player.select(item, true);
-    }
-);
-
-player.init('player');
+Player.init('player');
 
 </script>
 {% endblock %}

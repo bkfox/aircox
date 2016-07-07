@@ -171,6 +171,11 @@ class Post (models.Model, Routable):
     """
     Fields on which routes.SearchRoute must run the search
     """
+    actions = None
+    """
+    Actions are a list of actions available to the end user for this model.
+    See aircox.cms.actions for more information
+    """
 
     def get_comments(self):
         """

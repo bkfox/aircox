@@ -2,6 +2,7 @@ from django import template
 from django.core.urlresolvers import reverse
 
 import aircox.cms.utils as utils
+import aircox.cms.actions as actions
 
 register = template.Library()
 
@@ -40,8 +41,12 @@ def threads(post, sep = '/'):
         for post in posts[:-1] if post.published
     ])
 
+
 @register.filter(name='around')
 def around(page_num, n):
+    """
+    Return a range of value around a given number.
+    """
     return range(page_num-n, page_num+n+1)
 
 

@@ -14,6 +14,14 @@
         <link rel="stylesheet" href="{% static website.styles %}" type="text/css">
         {% endif %}
         <script src="{% static "aircox/cms/scripts.js" %}"></script>
+
+        {% if actions %}
+        <script>
+        {{ actions|safe }}
+        </script>
+        {% endif %}
+
+
         <title>{% if title %}{{ title|striptags }} - {% endif %}{{ website.name }}</title>
     </head>
     <body>

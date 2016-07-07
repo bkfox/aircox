@@ -6,8 +6,9 @@ from django.utils.translation import ugettext as _, ugettext_lazy
 from django.contrib import messages
 from django.http import Http404
 
+from aircox.cms.actions import Actions
 import aircox.cms.sections as sections
-import aircox.cms.sections as sections_
+sections_ = sections # used for name clashes
 
 
 class BaseView:
@@ -101,6 +102,7 @@ class BaseView:
                     for k, v in self.menus.items()
                     if v is not self
                 }
+            context['actions'] = Actions.register_code()
             context['embed'] = False
         else:
             context['embed'] = True
@@ -163,7 +165,7 @@ class PostListView(BaseView, ListView):
 
         return qs
 
-    def init_list(self):
+    def prepare_list(self):
         if not self.list:
            self.list = sections.List(
                truncate = 32,
@@ -180,8 +182,11 @@ class PostListView(BaseView, ListView):
                 if field in self.list.fields
             ]
 
+        # done in list
+        # Actions.make(self.request, object_list = self.object_list)
+
     def get_context_data(self, **kwargs):
-        self.init_list()
+        self.prepare_list()
         self.add_css_class('list')
 
         context = super().get_context_data(**kwargs)

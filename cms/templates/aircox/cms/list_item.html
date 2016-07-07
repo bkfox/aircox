@@ -60,10 +60,9 @@
 
     {% if object.actions and 'actions' in list.fields %}
         <div class="actions">
-        {% for action_id,action_data in object.actions.items %}
-            <a class="action" action="{{action_id}}"
-            {% for k,v in action_data.items %}data-{{ k }}="{{ v }}"{% endfor %}></a>
-        {% endfor %}
+            {% for action in object.actions %}
+            {{ action|safe }}
+            {% endfor %}
         </div>
     {% endif %}
 

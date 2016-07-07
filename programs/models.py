@@ -154,6 +154,11 @@ class Sound(Nameable):
         default = False,
         help_text = _('sound\'s quality is okay')
     )
+    public = models.BooleanField(
+        _('public'),
+        default = False,
+        help_text = _('the sound is accessible to the public')
+    )
 
     def get_mtime(self):
         """
@@ -204,14 +209,40 @@ class Sound(Nameable):
             return True
         return old_removed != self.removed
 
-    def save(self, check = True, *args, **kwargs):
-        if check:
-            self.check_on_file()
+    def check_perms(self):
+        """
+        Check permissions and update them if this is activated
+        """
+        if not settings.AIRCOX_SOUND_AUTO_CHMOD or \
+                self.removed or not os.path.exists(self.path):
+            return
 
+        flags = settings.AIRCOX_SOUND_CHMOD_FLAGS[self.public]
+        try:
+            os.chmod(self.path, flags)
+        except PermissionError as err:
+            logger.error(
+                'cannot set permissions {} to file {}: {}'.format(
+                    self.flags[self.public],
+                    self.path, err
+                )
+            )
+
+    def __check_name(self):
         if not self.name and self.path:
+            # FIXME: later, remove date?
             self.name = os.path.basename(self.path)
             self.name = os.path.splitext(self.name)[0]
             self.name = self.name.replace('_', ' ')
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.__check_name()
+
+    def save(self, check = True, *args, **kwargs):
+        if check:
+            self.check_on_file()
+        self.__check_name()
         super().save(*args, **kwargs)
 
     def __str__(self):

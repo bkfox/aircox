@@ -9,6 +9,7 @@ from django.utils.translation import ugettext as _, ugettext_lazy
 
 import aircox.programs.models as programs
 import aircox.cms.models as cms
+import aircox.website.actions as actions
 
 
 class Article (cms.Post):
@@ -50,6 +51,8 @@ class Program (cms.RelatedPost):
 
 
 class Diffusion (cms.RelatedPost):
+    actions = [actions.Play, actions.AddToPlaylist]
+
     class Relation:
         model = programs.Diffusion
         bindings = {
@@ -77,54 +80,4 @@ class Diffusion (cms.RelatedPost):
         return _('rerun of %(day)s') % {
             'day': self.related.initial.start.strftime('%A %d/%m')
         }
-
-
-class Sound (cms.RelatedPost):
-    """
-    Publication concerning sound. In order to manage access of sound
-    files in the filesystem, we use permissions -- it is up to the
-    user to work select the correct groups and permissions.
-    """
-    embed = models.TextField(
-        _('embedding code'),
-        blank=True, null=True,
-        help_text = _('HTML code used to embed a sound from an external '
-                      'plateform'),
-    )
-    """
-    Embedding code if the file has been published on an external
-    plateform.
-    """
-
-    auto_chmod = True
-    """
-    change file permission depending on the "published" attribute.
-    """
-    chmod_flags = (stat.S_IRWXU, stat.S_IRWXU | stat.S_IRWXG | stat.S_IROTH )
-    """
-    chmod bit flags, for (not_published, published)
-    """
-    class Relation:
-        model = programs.Sound
-        bindings = {
-            'title': 'name',
-            'date': 'mtime',
-        }
-        rel_to_post = True
-
-    def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
-        if self.auto_chmod and not self.related.removed and \
-                os.path.exists(self.related.path):
-            try:
-                os.chmod(self.related.path,
-                         self.chmod_flags[self.published])
-            except PermissionError as err:
-                logger.error(
-                    'cannot set permission {} to file {}: {}'.format(
-                        self.chmod_flags[self.published],
-                        self.related.path, err
-                    )
-                )
-
 

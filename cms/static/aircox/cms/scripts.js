@@ -13,7 +13,6 @@ var Actions = {
         }
     },
 
-
     /// Init an existing action HTML element
     init_action: function(item, action_id, data, url) {
         var action = this.registry[action_id];
@@ -54,15 +53,15 @@ var Actions = {
 
         action = Actions.registry[action];
         if(!action)
-            return
+            return;
 
-        data = item.data || item.dataset;
-        action.handler(data, item);
+        action.handler(item.data || item.dataset, item);
         return true;
     },
 };
 
 
+/*
 document.addEventListener('DOMContentLoaded', function(event) {
     var items = document.querySelectorAll('.action[action]');
     for(var i = 0; i < items.length; i++) {
@@ -72,6 +71,7 @@ document.addEventListener('DOMContentLoaded', function(event) {
         Actions.init_action(item, action_id, data);
     }
 }, false);
+*/
 
 
 /// Small utility used to make XMLHttpRequests, and map results on objects.

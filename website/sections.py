@@ -7,12 +7,16 @@ import aircox.programs.models as programs
 import aircox.cms.models as cms
 import aircox.cms.routes as routes
 import aircox.cms.sections as sections
-import aircox.cms.decorators as decorators
+
+from aircox.cms.exposures import expose
+from aircox.cms.actions import Action
 
 import aircox.website.models as models
+import aircox.website.actions as actions
+import aircox.website.utils as utils
 
 
-@decorators.expose
+@expose
 class Player(sections.Section):
     """
     Display a player that is cool.
@@ -24,7 +28,7 @@ class Player(sections.Section):
     """
     #default_sounds
 
-    @decorators.expose
+    @expose
     def on_air(cl, request):
         qs = programs.Diffusion.get(
             now = True,
@@ -46,17 +50,56 @@ class Player(sections.Section):
             'item': post,
             'list': sections.List,
         }
+
     on_air._exposure.template_name = 'aircox/cms/list_item.html'
 
+    @staticmethod
+    def make_sound(post = None, sound = None):
+        """
+        Return a standard item from a sound that can be used as a
+        player's item
+        """
+        r = {
+            'title': post.title if post else sound.name,
+            'url': post.url() if post else None,
+            'info': utils.duration_to_str(sound.duration),
+        }
+        if sound.embed:
+            r['embed'] = sound.embed
+        else:
+            r['stream'] = sound.url()
+        return r
+
+    @classmethod
+    def get_recents(cl, count):
+        """
+        Return a list of count recent published diffusions that have sounds,
+        as item usable in the playlist.
+        """
+        qs = models.Diffusion.objects \
+                             .filter(published = True) \
+                             .filter(related__end__lte = tz.datetime.now()) \
+                             .order_by('-related__end')
+
+        recents = []
+        for post in qs:
+            archives = post.related.get_archives()
+            if not archives:
+                continue
+
+            archives = archives[0]
+            recents.append(cl.make_sound(post, archives))
+            if len(recents) >= count:
+                break
+        return recents
 
     def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(*args, **kwargs)
+
         context.update({
             'base_template': 'aircox/cms/section.html',
             'live_streams': self.live_streams,
-            'last_sounds': models.Sound.objects. \
-                                filter(published = True). \
-                                order_by('-pk')[:10],
+            'recents': self.get_recents(10),
         })
         return context
 
@@ -99,7 +142,7 @@ class Diffusions(sections.List):
         #                .order_by('-start')[:self.prev_count])
         #return r
 
-    def prepare_object_list(self, object_list):
+    def prepare_list(self, object_list):
         """
         This function just prepare the list of object, in order to:
         - have a good title
@@ -115,17 +158,6 @@ class Diffusions(sections.List):
                 post.title = ': ' + post.title if post.title else \
                             ' // ' + post.related.start.strftime('%A %d %B')
                 post.title = name + post.title
-
-            # sounds
-            pl = post.related.get_archives()
-            if pl:
-                item = { 'title': post.title, 'stream': pl[0].url,
-                         'url': post.url() }
-                post.actions = {
-                    'sound.play': item,
-                    'sound.mark': item,
-                }
-
         return object_list
 
     def get_object_list(self):
@@ -205,7 +237,24 @@ class Playlist(sections.List):
 
 
 class Sounds(sections.List):
-    pass
+    title = _('Podcasts')
+
+    def get_object_list(self):
+        if self.object.related.end > tz.make_aware(tz.datetime.now()):
+            return
+
+        sounds = programs.Sound.objects.filter(
+            diffusion = self.object.related
+            # public = True
+        ).order_by('type')
+        return [
+            sections.ListItem(
+                title=sound.name,
+                info=utils.duration_to_str(sound.duration),
+                sound = sound,
+                actions = [ actions.AddToPlaylist, actions.Play ],
+            ) for sound in sounds
+        ]
 
 
 class Schedule(Diffusions):

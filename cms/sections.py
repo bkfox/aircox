@@ -17,7 +17,8 @@ from django.utils.translation import ugettext as _, ugettext_lazy
 from honeypot.decorators import check_honeypot
 
 from aircox.cms.forms import CommentForm
-import aircox.cms.decorators as decorators
+from aircox.cms.exposures import expose
+from aircox.cms.actions import Actions
 
 
 class Viewable:
@@ -51,7 +52,7 @@ class Viewable:
             setattr(Sub, k, v)
 
         if hasattr(cl, '_exposure'):
-            return decorators.expose(Sub)
+            return expose(Sub)
         return Sub
 
 
@@ -224,6 +225,7 @@ class ListItem:
     image = None
     info = None
     url = None
+    actions = None
 
     css_class = None
     attrs = None
@@ -285,7 +287,7 @@ class List(Section):
     def get_object_list(self):
         return self.object_list
 
-    def prepare_object_list(self, object_list):
+    def prepare_list(self, object_list):
         """
         Prepare objects before context is sent to the template renderer.
         Return the object_list that is prepared.
@@ -302,7 +304,7 @@ class List(Section):
             instances of Post or ListItem.
 
         If object_list is not given, call `get_object_list` to retrieve it.
-        Prepare the object_list using `self.prepare_object_list`.
+        Prepare the object_list using `self.prepare_list`.
 
         Set `request`, `object`, `object_list` and `kwargs` in self.
         """
@@ -314,10 +316,11 @@ class List(Section):
             object_list = self.object_list or self.get_object_list()
             if not object_list and not self.message_empty:
                 return
-        self.object_list = object_list
 
+        self.object_list = object_list
         if object_list:
-            object_list = self.prepare_object_list(object_list)
+            object_list = self.prepare_list(object_list)
+            Actions.make(request, object_list = object_list)
 
         context = super().get_context_data(request, object, *args, **kwargs)
         context.update({
@@ -500,7 +503,7 @@ class Search(Section):
         )
 
 
-@decorators.expose
+@expose
 class Calendar(Section):
     model = None
     template_name = "aircox/cms/calendar.html"
@@ -535,11 +538,12 @@ class Calendar(Section):
         })
         return context
 
-    @decorators.expose
+    @expose
     def render_exp(cl, *args, year, month, **kwargs):
         year = int(year)
         month = int(month)
         return cl.render(*args, year = year, month = month, **kwargs)
+
     render_exp._exposure.name = 'render'
     render_exp._exposure.pattern = '(?P<year>[0-9]{4})/(?P<month>[0-1]?[0-9])'
 

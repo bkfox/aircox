@@ -56,10 +56,11 @@ class NameableAdmin(admin.ModelAdmin):
 @admin.register(Sound)
 class SoundAdmin(NameableAdmin):
     fields = None
-    list_display = ['id', 'name', 'duration', 'type', 'mtime', 'good_quality', 'removed']
+    list_display = ['id', 'name', 'duration', 'type', 'mtime',
+                    'public', 'good_quality', 'removed']
     fieldsets = [
         (None, { 'fields': NameableAdmin.fields + ['path', 'type', 'diffusion'] } ),
-        (None, { 'fields': ['embed', 'duration', 'mtime'] }),
+        (None, { 'fields': ['embed', 'duration', 'public', 'mtime'] }),
         (None, { 'fields': ['removed', 'good_quality' ] } )
     ]
     readonly_fields = ('path', 'duration',)
