@@ -45,6 +45,7 @@
 - player support diffusions with multiple archive files
 - view as grid
 - actions -> noscript case, think of accessibility
+- comments edit/remove by the poster
 
 
 

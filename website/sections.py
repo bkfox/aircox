@@ -244,8 +244,8 @@ class Sounds(sections.List):
             return
 
         sounds = programs.Sound.objects.filter(
-            diffusion = self.object.related
-            # public = True
+            diffusion = self.object.related,
+            public = True,
         ).order_by('type')
         return [
             sections.ListItem(
@@ -265,6 +265,7 @@ class Schedule(Diffusions):
     date = None
     nav_date_format = '%a. %d'
     fields = [ 'time', 'image', 'title']
+    message_empty = ''
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -341,31 +342,4 @@ class Schedule(Diffusions):
     def url(self):
         return None
 
-
-
-#class DatesOfDiffusion(sections.List):
-#    title = _('Dates of diffusion')
-#
-#    def get_object_list(self):
-#        diffs = list(programs.Diffusion.objects. \
-#            filter(initial = self.object.related). \
-#            exclude(type = programs.Diffusion.Type.unconfirmed)
-#        )
-#        diffs.append(self.object.related)
-#
-#        items = []
-#        for diff in sorted(diffs, key = lambda d: d.date, reverse = True):
-#            info = ''
-#            if diff.initial:
-#                info = _('rerun')
-#            if diff.type == programs.Diffusion.Type.canceled:
-#                info += ' ' + _('canceled')
-#            items.append(
-#                sections.List.Item(None, diff.start.strftime('%c'), info, None,
-#                                   'canceled')
-#            )
-#        return items
-#
-## TODO sounds
-#
 

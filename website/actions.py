@@ -46,7 +46,6 @@ class AddToPlaylist(Action):
         from aircox.programs.models import Sound
         from aircox.website.models import Diffusion
 
-        print(object)
         if not in_list:
             return False
 

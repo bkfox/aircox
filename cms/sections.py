@@ -97,6 +97,10 @@ class Section(Viewable, View):
     * title: title of the section
     * header: header of the section
     * footer: footer of the section
+
+    * message_empty: if message_empty is not None, print its value as
+        content of the section instead of hiding it. This works also when
+        its value is an empty string (prints an empty string).
     """
     template_name = 'aircox/cms/website.html'
 
@@ -107,6 +111,8 @@ class Section(Viewable, View):
     title = ''
     header = ''
     footer = ''
+
+    message_empty = None
 
     request = None
     object = None
@@ -132,8 +138,13 @@ class Section(Viewable, View):
             self.attrs['name'] = self.name
             self.attrs['id'] = self.name
 
-    def get_content(self):
-        return ''
+    def is_empty(self):
+        """
+        Return True if the section content will be empty. This allows to
+        hide the section.
+        This must be implemented by the subclasses.
+        """
+        return False
 
     def get_context_data(self, request = None, object = None, **kwargs):
         if request: self.request = request
@@ -149,17 +160,21 @@ class Section(Viewable, View):
             'title': self.title,
             'header': self.header,
             'footer': self.footer,
-            'content': self.get_content(),
+            'content': '',
             'object': self.object,
             'embed': True,
         }
 
-    def render(self, request, object=None, context_only=False, **kwargs):
+    def render(self, request, object=None, **kwargs):
         context = self.get_context_data(request=request, object=object, **kwargs)
-        if context_only:
-            return context
-        if not context:
+
+        is_empty = self.is_empty()
+        if not context or (is_empty and not self.message_empty):
             return ''
+
+        if is_empty and self.message_empty:
+            context['content'] = self.message_empty
+
         context['embed'] = True
         return render_to_string(self.template_name, context, request=request)
 
@@ -170,45 +185,61 @@ class Image(Section):
 
     Attributes:
     * url: relative image url
-    * rel_attr: name of the attribute of self.object to use
+    * img_attr: name of the attribute of self.object to use
     """
     url = None
-    rel_attr = 'image'
+    img_attr = 'image'
 
-    def get_content(self, **kwargs):
-        if self.url is None:
-            image = getattr(self.object, self.rel_attr)
-            return '<img src="{}">'.format(image.url) if image else ''
-        return '<img src="{}">'.format(static(self.url))
+    def get_image(self):
+        if self.url:
+            return static(self.url)
+        if hasattr(self.object, self.img_attr):
+            image = getattr(self.object, self.img_attr)
+            return (image and image.url) or None
 
+    def is_empty(self):
+        return not self.get_image()
 
-class Content(Section):
+    def get_context_data(self, *args, **kwargs):
+        context = super().get_context_data(*args, **kwargs)
+        url = self.get_image()
+        if url:
+            context['content'] += '<img src="{}">'.format(url)
+        return context
+
+class Content(Image):
     """
     Render content using the self.content or relative to self.object.
+    Since it is a child of Image, can also render an image.
 
     Attributes:
     * content: raw HTML code to render
-    * rel_attr: name of the attribute of self.object to use
-    * re_image_attr: if true and there is an image on the current object,
-      render the object's image
+    * content_attr: name of the attribute of self.object to use
     """
+    # FIXME: markup language -- coordinate with object's one (post/comment)?
     content = None
-    rel_attr = 'content'
-    rel_image_attr = 'image'
+    content_attr = 'content'
 
     def get_content(self):
-        if self.content is None:
-            content = getattr(self.object, self.rel_attr)
-            content = escape(content)
-            content = re.sub(r'(^|\n\n)((\n?[^\n])+)', r'<p>\2</p>', content)
-            content = re.sub(r'\n', r'<br>', content)
+        if self.content:
+            return self.content
+        if hasattr(self.object, self.content_attr):
+            return getattr(self.object, self.content_attr) or None
 
-            if self.rel_image_attr and hasattr(self.object, self.rel_image_attr):
-                image = getattr(self.object, self.rel_image_attr)
-                if image:
-                    content = '<img src="{}">'.format(image.url) + content
-            return content
-        return str(self.content)
+    def is_empty(self):
+        return super().is_empty() and not self.get_content()
+
+    def get_context_data(self, *args, **kwargs):
+        context = super().get_context_data(*args, **kwargs)
+        content = self.get_content()
+        if content:
+            if not self.content:
+                content = escape(content)
+                content = re.sub(r'(^|\n\n)((\n?[^\n])+)', r'<p>\2</p>', content)
+                content = re.sub(r'\n', r'<br>', content)
+
+            context['content'] += content
+        return context
 
 
 class ListItem:
@@ -245,7 +276,7 @@ class ListItem:
             if hasattr(post, i) and not getattr(self, i):
                 setattr(self, i, getattr(post, i))
         if not self.url and hasattr(post, 'url'):
-            self.url = post.url()
+            self.url = post.url() if callable(post.url) else post.url
 
 
 class List(Section):
@@ -264,7 +295,6 @@ class List(Section):
 
     object_list = None
     url = None
-    message_empty = _('nothing')
     paginate_by = 4
 
     fields = [ 'date', 'time', 'image', 'title', 'content', 'info', 'actions' ]
@@ -283,6 +313,9 @@ class List(Section):
             self.object_list = [
                 ListItem(item) for item in items
             ]
+
+    def is_empty(self):
+        return not self.object_list
 
     def get_object_list(self):
         return self.object_list
@@ -304,7 +337,8 @@ class List(Section):
             instances of Post or ListItem.
 
         If object_list is not given, call `get_object_list` to retrieve it.
-        Prepare the object_list using `self.prepare_list`.
+        Prepare the object_list using `self.prepare_list`, and make actions
+        for its items.
 
         Set `request`, `object`, `object_list` and `kwargs` in self.
         """
@@ -379,7 +413,7 @@ class Comments(List):
     css_class='comments'
     truncate = 0
     fields = [ 'date', 'time', 'author', 'content' ]
-    message_empty = _('no comment yet')
+    message_empty = _('no comment has been posted yet')
 
     comment_form = None
     success_message = ( _('Your message is awaiting for approval'),
@@ -419,7 +453,6 @@ class Comments(List):
         context.update({
             'comment_form': comment_form,
         })
-
         self.comment_form = None
         return context
 
@@ -486,10 +519,12 @@ class Search(Section):
     """
     # TODO: (later) autocomplete using exposures -> might need templates
 
-    def get_content(self):
+    def get_context_data(self, *args, **kwargs):
         import aircox.cms.routes as routes
+        context = super().get_context_data(*args, **kwargs)
         url = self.model.reverse(routes.SearchRoute)
-        return """
+
+        context['content'] += """
         <form action="{url}" method="get">
             <input type="text" name="q" placeholder="{placeholder}"/>
             <input type="submit" {submit_style}/>
@@ -501,6 +536,7 @@ class Search(Section):
             },
             submit_style = (self.no_button and 'style="display: none;"') or '',
         )
+        return context
 
 
 @expose
