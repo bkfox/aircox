@@ -7,6 +7,7 @@
 - programs:
     - schedule changes -> update later diffusions according to the new schedule
     - stream disable -> remote control on liquidsoap
+    - users
     - tests:
         - sound_monitor
 
@@ -18,16 +19,15 @@
         - config generation and sound diffusion
 
 - cms:
-    - empty content/list -> nothing
     - update documentation:
         - cms.script
         - cms.exposure; make it right, see nomenclature, + docstring
         - cms.actions;
     - admin cms
+        -> sections/actions and django decorator?
+        -> enhance calendar with possible actions?
 
 - website:
-    - render schedule does not get the correct list
-        -> postlistview has not the same queryset as website/sections/schedule
     - diffusions:
         - print program's name in lists / clean up that thing also a bit
     - article list with the focus
@@ -45,7 +45,7 @@
 - player support diffusions with multiple archive files
 - view as grid
 - actions -> noscript case, think of accessibility
-- comments edit/remove by the poster
+- comments -> remove/edit by the author
 
 
 

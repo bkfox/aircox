@@ -88,6 +88,9 @@ class DetailRoute(Route):
 
     @classmethod
     def get_object(cl, model, request, pk, **kwargs):
+        """
+        * request is optional
+        """
         return model.objects.get(pk = int(pk))
 
 
@@ -96,6 +99,9 @@ class AllRoute(Route):
 
     @classmethod
     def get_queryset(cl, model, request, **kwargs):
+        """
+        * request is optional
+        """
         return model.objects.all()
 
     @classmethod
@@ -133,6 +139,9 @@ class ThreadRoute(Route):
 
     @classmethod
     def get_queryset(cl, model, request, thread_model, pk, **kwargs):
+        """
+        * request is optional
+        """
         thread = cl.get_thread(model, thread_model, pk)
         return model.get_siblings(thread_model = thread, thread_id = pk)
 
@@ -161,6 +170,9 @@ class DateRoute(Route):
 
     @classmethod
     def get_queryset(cl, model, request, year, month, day, **kwargs):
+        """
+        * request is optional
+        """
         return model.objects.filter(
             date__year = int(year),
             date__month = int(month),
@@ -188,6 +200,9 @@ class SearchRoute(Route):
 
     @classmethod
     def get_queryset(cl, model, request, q = None, **kwargs):
+        """
+        * request is required if q is None
+        """
         q = request.GET.get('q') or q or ''
         qs = None
         for search_field in model.search_fields or []:

@@ -292,17 +292,10 @@ class Schedule(Diffusions):
 
     def get_object_list(self):
         date = self.date_or_default()
-        year, month, day = date.year, date.month, date.day
-
-        diffs = [d.initial if d.initial else d
-            for d in programs.Diffusion.objects.filter(
-                start__year = year,
-                start__month = month,
-                start__day = day,
-            )
-        ]
-        return models.Diffusion.objects.filter(related__in = diffs). \
-                      order_by('date')
+        return routes.DateRoute.get_queryset(
+            models.Diffusion, self.request, date.year, date.month,
+            date.day
+        ).order_by('date')
 
     def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(*args, **kwargs)
