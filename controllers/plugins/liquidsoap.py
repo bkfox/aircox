@@ -34,17 +34,20 @@ class StationController(plugins.StationController):
     def fetch(self):
         super().fetch()
 
-        data = self._send('request.on_air')
-        if not data:
+        rid = self._send('request.on_air')
+        if not rid:
             return
 
-        data = self._send('request.metadata', data, parse = True)
+        data = self._send('request.metadata', rid, parse = True)
         if not data:
             return
 
         self.current_sound = data.get('initial_uri')
-        # FIXME: point to the Source object
-        self.current_source = data.get('source')
+        self.current_source = [
+            # we assume sound is always from a registered source
+            source for source in self.station.get_sources()
+            if source.rid = rid
+        ][0]
 
 
 class SourceController(plugins.SourceController):
@@ -77,10 +80,7 @@ class SourceController(plugins.SourceController):
         if not data:
             return
 
-        # FIXME: still usefull? originally tested only if there ass self.program
-        source = data.get('source') or ''
-        if not source.startswith(self.id):
-            return
+        self.rid = data.get('rid')
         self.current_sound = data.get('initial_uri')
 
     def stream(self):

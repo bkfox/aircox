@@ -39,7 +39,9 @@
     - list of played diffusions and tracks when non-stop;
 
 # Long term TODO
-- automatic cancel of passed diffusion based on logs
+- automatic cancel of passed diffusion based on logs?
+    - archives can be set afterwards for rerun, so check must be done
+        at the same time we monitor
 - sounds monitor: max_size of path, take in account
 - logs: archive functionnality
 - track stats for diffusions

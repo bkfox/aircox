@@ -12,6 +12,18 @@ class Monitor:
     do that.
     """
     station = None
+    controller = None
+
+    def run(self):
+        """
+        Run all monitoring functions. Ensure that station has controllers
+        """
+        if not self.controller:
+            self.station.prepare()
+        self.controller = self.station.controller
+
+        self.track()
+        self.handler()
 
     @staticmethod
     def log(**kwargs):
@@ -27,25 +39,23 @@ class Monitor:
         Check the current_sound of the station and update logs if
         needed
         """
-        station = self.station
-        station.controller.fetch()
-
-        current_sound = station.controller.current_sound
-        current_source = station.controller.current_source
+        self.controller.fetch()
+        current_sound = self.controller.current_sound
+        current_source = self.controller.current_source
         if not current_sound:
             return
 
         log = Log.get_for(model = programs.Sound) \
-                    .filter(station = station).order_by('date').last()
+                    .filter(station = self.station).order_by('date').last()
         # TODO: expiration
-        if log and (log.source == current_source and \
+        if log and (log.source == current_source.id_ and \
                     log.related.path == current_sound):
             return
 
         sound = programs.Sound.object.filter(path = current_sound)
         self.log(
             type = Log.Type.play,
-            source = current_source,
+            source = current_source.id_,
             date = tz.make_aware(tz.datetime.now()),
 
             related = sound[0] if sound else None,
@@ -60,17 +70,21 @@ class Monitor:
         station = self.station
         now = tz.make_aware(tz.datetime.now())
 
-        sound_log = Log.get_for(model = programs.Sound) \
-                        .filter(station = station).order_by('date').last()
         diff_log = Log.get_for(model = programs.Diffusion) \
-                        .filter(station = station).order_by('date').last()
+                        .filter(station = station, type = Log.Type.play) \
+                        .order_by('date').last()
 
-        if not sound_log or not diff_log or \
-                sound_log.source != diff_log.source or \
-                diff_log.related.is_date_in_my_range(now) :
+        if not diff_log or \
+                not diff_log.related.is_date_in_my_range(now):
             return None, []
 
-        # last registered diff is still playing: update the playlist
+        # sound has switched? assume it has been (forced to) stopped
+        sound_log = Log.get_for(model = programs.Sound) \
+                        .filter(station = station).order_by('date').last()
+        if sound_log and sound_log.source != diff_log.source:
+            return None, []
+
+        # last diff is still playing: get the remaining playlist
         sounds = Log.get_for(model = programs.Sound) \
                     .filter(station = station, source = diff_log.source) \
                     .filter(pk__gt = diff.log.pk)
@@ -94,12 +108,12 @@ class Monitor:
         diff = programs.Diffusion.get(
             now, now = True,
             type = programs.Diffusion.Type.normal,
+
             sound__type = programs.Sound.Type.archive,
             sound__removed = False,
             **args
         ).distinct().order_by('start').first()
         return (diff, diff and diff.playlist or [])
-
 
     def handle(self):
         """
@@ -116,7 +130,7 @@ class Monitor:
         diff, playlist = self.__current_diff()
         dealer.on = bool(playlist)
 
-        next_diff, next_playlist = self.__next_diff()
+        next_diff, next_playlist = self.__next_diff(diff)
         playlist += next_playlist
 
         # playlist update
@@ -125,7 +139,7 @@ class Monitor:
             if next_diff:
                 self.log(
                     type = Log.Type.load,
-                    source = dealer.id,
+                    source = dealer.id_,
                     date = now,
                     related_object = next_diff
                 )
@@ -137,7 +151,7 @@ class Monitor:
                 source.controller.skip()
             cl.log(
                 type = Log.Type.play,
-                source = dealer.id,
+                source = dealer.id_,
                 date = now,
                 related_object = next_diff,
             )

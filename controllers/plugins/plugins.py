@@ -53,10 +53,10 @@ class StationController:
     """
     Current sound being played (retrieved by fetch)
     """
-
-    @property
-    def id(self):
-        return '{station.slug}_{station.pk}'.format(station = self.station)
+    current_source = None
+    """
+    Current source object that is responsible of self.current_sound
+    """
 
     # TODO: add function to launch external program?
 
@@ -72,6 +72,7 @@ class StationController:
         """
         sources = self.station.get_sources()
         for source in sources:
+            source.prepare()
             if source.controller:
                 source.controller.fetch()
 
@@ -110,7 +111,6 @@ class StationController:
         pass
 
 
-
 class SourceController:
     """
     Controller of a Source. Value are usually updated directly on the
@@ -137,10 +137,6 @@ class SourceController:
     """
     Current source being responsible of the current sound
     """
-
-    @property
-    def id(self):
-        return '{source.station.slug}_{source.slug}'.format(source = self.source)
 
     __playlist = None
 

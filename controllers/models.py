@@ -51,6 +51,10 @@ class Station(programs.Nameable):
     plugin.StationController
     """
 
+    @property
+    def id_(self):
+        return self.slug
+
     def get_sources(self, type = None, prepare = True):
         """
         Return a list of active sources that can have their controllers
@@ -87,7 +91,8 @@ class Station(programs.Nameable):
         """
         List of active outputs
         """
-        return [ output for output in self.output_set if output.active ]
+        print(self.output_set)
+        return [ output for output in self.output_set.filter(active = True) ]
 
     def prepare(self, fetch = True):
         """
@@ -128,6 +133,32 @@ class Station(programs.Nameable):
 
         if self.plugin_name:
             self.plugin = Plugins.registry.get(self.plugin_name)
+
+
+    def play_logs(self, include_diffusions = True,
+                  include_sounds = True,
+                  exclude_archives = True):
+        """
+        Return a queryset with what is playing on air for this station.
+        Ordered by date ascending.
+        """
+        models = []
+        if include_diffusions: models.append(programs.Diffusion)
+        if include_sounds: models.append(programs.Sound)
+
+        qs = Log.get_for(model = models) \
+                .filter(station = station, type = Log.Type.play)
+
+        if exclude_archives and self.dealer:
+            qs = qs.exclude(
+                source = self.dealer.id_,
+                related_type = ContentType.objects.get_for_model(
+                    program.Sound
+                )
+            )
+
+        return qs.order_by('date')
+
 
     def save(self, make_sources = True, *args, **kwargs):
         """
@@ -215,6 +246,10 @@ class Source(programs.Nameable):
     Implement controls over a Source. This is done by the plugin, that
     implements plugin.SourceController;
     """
+
+    @property
+    def id_(self):
+        return self.slug
 
     @property
     def stream(self):
@@ -392,8 +427,14 @@ class Log(models.Model):
         if not model and object:
             model = type(object)
 
-        qs = cl.objects.filter(related_type__pk =
-                                    ContentTYpe.objects.get_for_model(model).id)
+        if type(model) in (list, tuple):
+            model = [ ContentType.objects.get_for_model(m).id
+                        for m in model ]
+            qs = cl.objects.filter(related_type__pk__in = model)
+        else:
+            model = ContentType.objects.get_for_model(model)
+            qs = cl.objects.filter(related_type__pk = model.id)
+
         if object:
             qs = qs.filter(related_id = object.pk)
         return qs
@@ -408,7 +449,7 @@ class Log(models.Model):
 
     def __str__(self):
         return '#{} ({}, {})'.format(
-                self.id, self.date.strftime('%Y/%m/%d %H:%M'), self.source.name
+                self.pk, self.date.strftime('%Y/%m/%d %H:%M'), self.source.name
         )
 
 
