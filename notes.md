@@ -26,6 +26,7 @@
     - admin cms
         -> sections/actions and django decorator?
         -> enhance calendar with possible actions?
+    - sections id generator
 
 - website:
     - diffusions:
@@ -38,6 +39,7 @@
     - list of played diffusions and tracks when non-stop;
 
 # Long term TODO
+- automatic cancel of passed diffusion based on logs
 - sounds monitor: max_size of path, take in account
 - logs: archive functionnality
 - track stats for diffusions
@@ -46,6 +48,7 @@
 - view as grid
 - actions -> noscript case, think of accessibility
 - comments -> remove/edit by the author
+- integrate logs for tracks + in on air
 
 
 

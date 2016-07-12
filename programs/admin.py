@@ -147,12 +147,6 @@ class DiffusionAdmin(admin.ModelAdmin):
         return qs.exclude(type = Diffusion.Type.unconfirmed)
 
 
-@admin.register(Log)
-class LogAdmin(admin.ModelAdmin):
-    list_display = ['id', 'date', 'source', 'comment', 'related_object']
-    list_filter = ['date', 'source', 'related_type']
-
-
 @admin.register(Schedule)
 class ScheduleAdmin(admin.ModelAdmin):
     def program_name(self, obj):

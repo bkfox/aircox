@@ -340,16 +340,9 @@ class Controller:
         if not config:
             return
 
-        log_script = main_settings.BASE_DIR \
-                     if hasattr(main_settings, 'BASE_DIR') else \
-                     main_settings.PROJECT_ROOT
-        log_script = os.path.join(log_script, 'manage.py') + \
-                        ' liquidsoap_log'
-
         context = {
             'controller': self,
             'settings': settings,
-            'log_script': log_script,
         }
 
         # FIXME: remove this crappy thing
