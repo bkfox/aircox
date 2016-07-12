@@ -66,15 +66,6 @@ class Station(programs.Nameable):
         return [ source.prepare() or source for source in qs ]
 
     @property
-    def dealer_sources(self):
-        return self.get_sources(Source.Type.dealer)
-
-    @property
-    def dealer(self):
-        dealers = self.dealer_sources
-        return dealers[0] if dealers else None
-
-    @property
     def stream_sources(self):
         return self.get_sources(type = Source.Type.stream)
 
@@ -91,7 +82,6 @@ class Station(programs.Nameable):
         """
         List of active outputs
         """
-        print(self.output_set)
         return [ output for output in self.output_set.filter(active = True) ]
 
     def prepare(self, fetch = True):
@@ -106,6 +96,7 @@ class Station(programs.Nameable):
             raise ValueError('station be must saved first')
 
         self.controller = self.plugin.init_station(self)
+        self.dealer.prepare()
         for source in self.source_set.all():
             source.prepare()
         if fetch:
@@ -115,10 +106,6 @@ class Station(programs.Nameable):
         """
         Generate default sources for the station and save them.
         """
-        Source(station = self,
-               type = Source.Type.dealer,
-               name = _('Dealer')).save()
-
         streams = programs.Program.objects.filter(
             active = True, stream__isnull = False
         )
@@ -131,15 +118,20 @@ class Station(programs.Nameable):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        self.dealer = Source(
+            station = self,
+            name = _('Dealer'),
+            type = Source.Type.dealer
+        )
+
         if self.plugin_name:
             self.plugin = Plugins.registry.get(self.plugin_name)
-
 
     def play_logs(self, include_diffusions = True,
                   include_sounds = True,
                   exclude_archives = True):
         """
-        Return a queryset with what is playing on air for this station.
+        Return a queryset with log of played elements on this station.
         Ordered by date ascending.
         """
         models = []
@@ -148,7 +140,6 @@ class Station(programs.Nameable):
 
         qs = Log.get_for(model = models) \
                 .filter(station = station, type = Log.Type.play)
-
         if exclude_archives and self.dealer:
             qs = qs.exclude(
                 source = self.dealer.id_,
@@ -156,9 +147,7 @@ class Station(programs.Nameable):
                     program.Sound
                 )
             )
-
         return qs.order_by('date')
-
 
     def save(self, make_sources = True, *args, **kwargs):
         """
@@ -200,8 +189,8 @@ class Source(programs.Nameable):
         """
         dealer = 0x02
         """
-        This source is used for scheduled programs. For the moment only
-        one should be set.
+        This source is used for scheduled programs. It is automatically
+        added to the station, and may not be saved.
         """
         stream = 0x03
         """
@@ -301,6 +290,8 @@ class Source(programs.Nameable):
                 (not self.program or not self.program.stream_set.count()):
             raise ValueError('missing related stream program; program must be '
                              'a streamed program')
+        if self.type == self.Type.dealer:
+            raise ValueError('can not save a dealer source')
 
         super().save(*args, **kwargs)
         # TODO update controls

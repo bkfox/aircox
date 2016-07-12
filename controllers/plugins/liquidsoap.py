@@ -46,7 +46,7 @@ class StationController(plugins.StationController):
         self.current_source = [
             # we assume sound is always from a registered source
             source for source in self.station.get_sources()
-            if source.rid = rid
+            if source.rid == rid
         ][0]
 
 
@@ -100,6 +100,5 @@ class SourceController(plugins.SourceController):
             'end': stream.end.strftime('%Hh%M') if stream.end else None,
             'delay': to_seconds(stream.delay) if stream.delay else 0
         }
-
 
 
