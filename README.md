@@ -12,7 +12,7 @@ Platform to manage a radio, schedules, website, and so on. We use the power of D
 
 ## Applications
 * **programs**: managing stations, programs, schedules and diffusions. This is the core application, that handle most of the work;
-* **liquidsoap**: generate configuration and controls over liquidsoap. We use one instance of liquidsoap per station;
+* **controllers**: interface with external stream generators. For the moment only support [Liquidsoap](http://liquidsoap.fm/). Generate configuration files, trigger scheduled diffusions and so on;
 * **cms**: cms manager with reusable tools (can be used in another website application);
 * **website**: set of common models, sections, and other items ready to be used for a website;
 
