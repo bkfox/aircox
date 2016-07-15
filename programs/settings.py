@@ -37,9 +37,33 @@ ensure('AIRCOX_SOUND_QUALITY', {
 )
 
 # Extension of sound files
-ensure('AIRCOX_SOUND_FILE_EXT',
-        ('.ogg','.flac','.wav','.mp3','.opus'))
+ensure(
+    'AIRCOX_SOUND_FILE_EXT',
+    ('.ogg','.flac','.wav','.mp3','.opus')
+)
 
 # Stream for the scheduled diffusions
 ensure('AIRCOX_SCHEDULED_STREAM', 0)
+
+
+# Import playlist: columns for plain text files
+ensure(
+    'AIRCOX_IMPORT_PLAYLIST_PLAIN_COLS',
+    ('artist', 'title', 'tags', 'version')
+)
+# Import playlist: delimiter for plain text files
+ensure('AIRCOX_IMPORT_PLAYLIST_PLAIN_DELIMITER', '--')
+
+# Import playlist: columns for CSV file
+ensure(
+    'AIRCOX_IMPORT_PLAYLIST_CSV_COLS',
+    ('artist', 'title', 'minutes', 'seconds', 'tags', 'version')
+)
+# Import playlist: column delimiter of csv text files
+ensure('AIRCOX_IMPORT_PLAYLIST_CSV_DELIMITER', ';')
+# Import playlist: text delimiter of csv text files
+ensure('AIRCOX_IMPORT_PLAYLIST_CSV_TEXT_QUOTE', '"')
+
+
+
 

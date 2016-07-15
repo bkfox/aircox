@@ -1,5 +1,6 @@
 import datetime
 
+
 def to_timedelta (time):
     """
     Transform a datetime or a time instance to a timedelta,

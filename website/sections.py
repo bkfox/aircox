@@ -229,8 +229,7 @@ class Playlist(sections.List):
     message_empty = ''
 
     def get_object_list(self):
-        tracks = programs.Track.objects \
-                     .filter(diffusion = self.object.related) \
+        tracks = programs.Track.get_for(object = self.object.related) \
                      .order_by('position')
         return [ sections.ListItem(title=track.name, content=track.artist)
                     for track in tracks ]
@@ -335,4 +334,11 @@ class Schedule(Diffusions):
     def url(self):
         return None
 
+
+class Logs(Schedule):
+    """
+    Return a list of played stream sounds and diffusions.
+    """
+    template_name = 'aircox/website/schedule.html'
+    # HERE -- + rename aircox/website/schedule to dated_list
 

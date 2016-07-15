@@ -10,6 +10,11 @@ class Monitor:
     Monitor should be able to be used after a crash a go back
     where it was playing, so we heavily use logs to be able to
     do that.
+
+    We keep trace of played items on the generated stream:
+    - sounds played on this stream;
+    - scheduled diffusions
+    - tracks for sounds of streamed programs
     """
     station = None
     controller = None
@@ -22,11 +27,10 @@ class Monitor:
             self.station.prepare()
         self.controller = self.station.controller
 
-        self.track()
+        self.trace()
         self.handler()
 
-    @staticmethod
-    def log(**kwargs):
+    def log(self, **kwargs):
         """
         Create a log using **kwargs, and print info
         """
@@ -34,10 +38,10 @@ class Monitor:
         log.save()
         log.print()
 
-    def track(self):
+    def trace(self):
         """
         Check the current_sound of the station and update logs if
-        needed
+        needed.
         """
         self.controller.fetch()
         current_sound = self.controller.current_sound
@@ -47,6 +51,11 @@ class Monitor:
 
         log = Log.get_for(model = programs.Sound) \
                     .filter(station = self.station).order_by('date').last()
+
+        # only streamed
+        if log and not log.related.diffusion:
+            self.trace_sound_tracks(log)
+
         # TODO: expiration
         if log and (log.source == current_source.id_ and \
                     log.related.path == current_sound):
@@ -56,11 +65,36 @@ class Monitor:
         self.log(
             type = Log.Type.play,
             source = current_source.id_,
-            date = tz.make_aware(tz.datetime.now()),
-
+            date = tz.now(),
             related = sound[0] if sound else None,
             comment = None if sound else current_sound,
         )
+
+    def trace_sound_tracks(self, log):
+        """
+        Log tracks for the given sound (for streamed programs); Called by
+        self.trace
+        """
+        logs = Log.get_for(model = programs.Track) \
+                  .filter(pk__gt = log.pk)
+        logs = [ log.pk for log in logs ]
+
+        tracks = programs.Track.get_for(object = log.related)
+                               .filter(pos_in_sec = True)
+        if len(tracks) == len(logs):
+            return
+
+        tracks = tracks.exclude(pk__in = logs).order_by('pos')
+        now = tz.now()
+        for track in tracks:
+            pos = log.date + tz.timedelta(seconds = track.pos)
+            if pos < now:
+                self.log(
+                    type = Log.Type.play,
+                    source = log.source,
+                    date = pos,
+                    related = track
+                )
 
     def __current_diff(self):
         """
@@ -70,24 +104,23 @@ class Monitor:
         station = self.station
         now = tz.make_aware(tz.datetime.now())
 
-        diff_log = Log.get_for(model = programs.Diffusion) \
-                        .filter(station = station, type = Log.Type.play) \
-                        .order_by('date').last()
+        diff_log = station.get_played(models = programs.Diffusion) \
+                          .order_by('date').last()
 
         if not diff_log or \
                 not diff_log.related.is_date_in_my_range(now):
             return None, []
 
         # sound has switched? assume it has been (forced to) stopped
-        sound_log = Log.get_for(model = programs.Sound) \
-                        .filter(station = station).order_by('date').last()
-        if sound_log and sound_log.source != diff_log.source:
+        sounds = station.get_played(models = programs.Sound)
+        last_sound = sounds.order_by('date').last()
+        if last_sound and last_sound.source != diff_log.source:
             return None, []
 
         # last diff is still playing: get the remaining playlist
-        sounds = Log.get_for(model = programs.Sound) \
-                    .filter(station = station, source = diff_log.source) \
-                    .filter(pk__gt = diff.log.pk)
+        sounds = sounds.filter(
+            source = diff_log.source, pk__gt = diff_log.pk
+        )
         sounds = [ sound.path for sound in sounds if not sound.removed ]
 
         return (

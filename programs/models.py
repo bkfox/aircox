@@ -44,6 +44,48 @@ def date_or_default(date, no_time = False):
     return date
 
 
+class Related(models.Model):
+    """
+    Add a field "related" of type GenericForeignKey, plus utilities.
+    """
+    related_type = models.ForeignKey(
+        ContentType,
+        blank = True, null = True,
+    )
+    related_id = models.PositiveIntegerField(
+        blank = True, null = True,
+    )
+    related = GenericForeignKey(
+        'related_type', 'related_id',
+    )
+
+    @classmethod
+    def get_for(cl, object = None, model = None):
+        """
+        Return a queryset that filter on the given object or model(s)
+
+        * object: if given, use its type and pk; match on models only.
+        * model: one model or list of models
+        """
+        if not model and object:
+            model = type(object)
+
+        if type(model) in (list, tuple):
+            model = [ ContentType.objects.get_for_model(m).id
+                        for m in model ]
+            qs = cl.objects.filter(related_type__pk__in = model)
+        else:
+            model = ContentType.objects.get_for_model(model)
+            qs = cl.objects.filter(related_type__pk = model.id)
+
+        if object:
+            qs = qs.filter(related_id = object.pk)
+        return qs
+
+    class Meta:
+        abstract = True
+
+
 class Nameable(models.Model):
     name = models.CharField (
         _('name'),
@@ -66,40 +108,6 @@ class Nameable(models.Model):
         abstract = True
 
 
-class Track(Nameable):
-    """
-    Track of a playlist of a diffusion. The position can either be expressed
-    as the position in the playlist or as the moment in seconds it started.
-    """
-    # There are no nice solution for M2M relations ship (even without
-    # through) in django-admin. So we unfortunately need to make one-
-    # to-one relations and add a position argument
-    diffusion = models.ForeignKey(
-        'Diffusion',
-    )
-    artist = models.CharField(
-        _('artist'),
-        max_length = 128,
-    )
-    # position can be used to specify a position in seconds for stream
-    # programs or a position in the playlist
-    position = models.SmallIntegerField(
-        default = 0,
-        help_text=_('position in the playlist'),
-    )
-    tags = TaggableManager(
-        verbose_name=_('tags'),
-        blank=True,
-    )
-
-    def __str__(self):
-        return ' '.join([self.artist, ':', self.name ])
-
-    class Meta:
-        verbose_name = _('Track')
-        verbose_name_plural = _('Tracks')
-
-
 class Sound(Nameable):
     """
     A Sound is the representation of a sound file that can be either an excerpt
@@ -114,6 +122,7 @@ class Sound(Nameable):
         'Diffusion',
         verbose_name = _('diffusion'),
         blank = True, null = True,
+        help_text = _('this is set for scheduled programs')
     )
     type = models.SmallIntegerField(
         verbose_name = _('type'),
@@ -712,4 +721,46 @@ class Diffusion(models.Model):
         permissions = (
             ('programming', _('edit the diffusion\'s planification')),
         )
+
+
+class Track(Nameable,Related):
+    """
+    Track of a playlist of an object. The position can either be expressed
+    as the position in the playlist or as the moment in seconds it started.
+    """
+    # There are no nice solution for M2M relations ship (even without
+    # through) in django-admin. So we unfortunately need to make one-
+    # to-one relations and add a position argument
+    artist = models.CharField(
+        _('artist'),
+        max_length = 128,
+    )
+    position = models.SmallIntegerField(
+        default = 0,
+        help_text=_('position in the playlist'),
+    )
+    info = models.CharField(
+        _('information'),
+        max_length = 128,
+        blank = True, null = True,
+        help_text=_('additional informations about this track, such as '
+                    'the version, if is it a remix, features, etc.'),
+    )
+    tags = TaggableManager(
+        verbose_name=_('tags'),
+        blank=True,
+    )
+    pos_in_secs = models.BooleanField(
+        _('use seconds'),
+        default = False,
+        help_text=_('position in the playlist is expressed in seconds')
+    )
+
+    def __str__(self):
+        return ' '.join([self.artist, ':', self.name ])
+
+    class Meta:
+        verbose_name = _('Track')
+        verbose_name_plural = _('Tracks')
+
 

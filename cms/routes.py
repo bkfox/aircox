@@ -95,6 +95,9 @@ class DetailRoute(Route):
 
 
 class AllRoute(Route):
+    """
+    Retrieve all element of the given model.
+    """
     name = 'all'
 
     @classmethod

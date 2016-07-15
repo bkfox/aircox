@@ -39,6 +39,11 @@ class Station(programs.Nameable):
         max_length = 32,
         choices = [ (name, name) for name in Plugins.registry.keys() ],
     )
+    active = models.BooleanField(
+        _('active'),
+        default = True,
+        help_text = _('this station is active')
+    )
 
     plugin = None
     """
@@ -127,24 +132,22 @@ class Station(programs.Nameable):
         if self.plugin_name:
             self.plugin = Plugins.registry.get(self.plugin_name)
 
-    def play_logs(self, include_diffusions = True,
-                  include_sounds = True,
-                  exclude_archives = True):
+    def get_played(self, models, archives = True):
         """
-        Return a queryset with log of played elements on this station.
-        Ordered by date ascending.
-        """
-        models = []
-        if include_diffusions: models.append(programs.Diffusion)
-        if include_sounds: models.append(programs.Sound)
+        Return a queryset with log of played elements on this station,
+        of the given models, ordered by date ascending.
 
+        * model: a model or a list of models
+        * archive: if false, exclude log of diffusion's archives from
+            the queryset;
+        """
         qs = Log.get_for(model = models) \
                 .filter(station = station, type = Log.Type.play)
-        if exclude_archives and self.dealer:
+        if not archives and self.dealer:
             qs = qs.exclude(
                 source = self.dealer.id_,
                 related_type = ContentType.objects.get_for_model(
-                    program.Sound
+                    programs.Sound
                 )
             )
         return qs.order_by('date')
@@ -294,7 +297,6 @@ class Source(programs.Nameable):
             raise ValueError('can not save a dealer source')
 
         super().save(*args, **kwargs)
-        # TODO update controls
 
 
 class Output (models.Model):
@@ -326,7 +328,7 @@ class Output (models.Model):
     )
 
 
-class Log(models.Model):
+class Log(programs.Related):
     """
     Log sounds and diffusions that are played on the station.
 
@@ -376,16 +378,6 @@ class Log(models.Model):
         max_length = 512,
         blank = True, null = True,
     )
-    related_type = models.ForeignKey(
-        ContentType,
-        blank = True, null = True,
-    )
-    related_id = models.PositiveIntegerField(
-        blank = True, null = True,
-    )
-    related = GenericForeignKey(
-        'related_type', 'related_id',
-    )
 
     @property
     def end(self):
@@ -406,29 +398,6 @@ class Log(models.Model):
         """
         date = programs.date_or_default(date)
         return self.end < date
-
-    @classmethod
-    def get_for(cl, object = None, model = None):
-        """
-        Return a queryset that filter on the related object. If object is
-        given, filter using it, otherwise only using model.
-
-        If model is not given, uses object's type.
-        """
-        if not model and object:
-            model = type(object)
-
-        if type(model) in (list, tuple):
-            model = [ ContentType.objects.get_for_model(m).id
-                        for m in model ]
-            qs = cl.objects.filter(related_type__pk__in = model)
-        else:
-            model = ContentType.objects.get_for_model(model)
-            qs = cl.objects.filter(related_type__pk = model.id)
-
-        if object:
-            qs = qs.filter(related_id = object.pk)
-        return qs
 
     def print(self):
         logger.info('log #%s: %s%s',

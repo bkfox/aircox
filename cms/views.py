@@ -249,4 +249,8 @@ class PageView(BaseView, TemplateView):
     If sections is a list of sections, then render like a detail view;
     If it is a single section, render it as website.html view;
     """
+    # dirty hack in order to accept a "model" kwargs, to allow "model=None"
+    # in routes. Cf. website.register (at if model / else)
+    model = None
+
 

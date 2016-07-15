@@ -120,6 +120,8 @@ class Website:
             reg = self.register_model(name, model, as_default)
             reg.routes.extend(routes)
             view_kwargs['model'] = model
+        else:
+            view_kwargs['model'] = None
 
         # init view
         if not view_kwargs.get('menus'):

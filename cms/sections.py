@@ -87,32 +87,45 @@ class Section(Viewable, View):
 
     ! Important Note: values given for rendering are considered as safe
     HTML in templates.
-
-    Attributes:
-    * template_name: template to use for rendering
-    * tag: container's tags
-    * name: set name/id of the section container
-    * css_class: css classes of the container
-    * attr: HTML attributes of the container
-    * title: title of the section
-    * header: header of the section
-    * footer: footer of the section
-
-    * message_empty: if message_empty is not None, print its value as
-        content of the section instead of hiding it. This works also when
-        its value is an empty string (prints an empty string).
     """
     template_name = 'aircox/cms/website.html'
-
+    """
+    Template used for rendering
+    """
     tag = 'div'
+    """
+    HTML tag used for the container
+    """
     name = ''
+    """
+    Name/ID of the container
+    """
     css_class = ''
+    """
+    CSS classes for the container
+    """
     attrs = None
+    """
+    HTML Attributes of the container
+    """
     title = ''
+    """
+    Safe HTML code for the title
+    """
     header = ''
+    """
+    Safe HTML code for the header
+    """
     footer = ''
-
+    """
+    Safe HTML code for the footer
+    """
     message_empty = None
+    """
+    If message_empty is not None, print its value as
+    content of the section instead of hiding it. This works also when
+    its value is an empty string (prints an empty string).
+    """
 
     request = None
     object = None
@@ -284,22 +297,31 @@ class List(Section):
     Common interface for list configuration.
 
     Attributes:
-    * object_list: force an object list to be used
-    * url: url to the list in full page
-    * message_empty: message to print when list is empty (if not hiding)
-    * fields: fields of the items to render
-    * image_size: size of the images
-    * truncate: number of words to keep in content (0 = full content)
     """
     template_name = 'aircox/cms/list.html'
 
     object_list = None
+    """
+    Use this object list (default behaviour for lists)
+    """
     url = None
+    """
+    URL to the list in full page; If given, print it
+    """
     paginate_by = 4
 
     fields = [ 'date', 'time', 'image', 'title', 'content', 'info', 'actions' ]
+    """
+    Fields that must be rendered.
+    """
     image_size = '64x64'
+    """
+    Size of the image when rendered in the list
+    """
     truncate = 16
+    """
+    Number of words to print in content. If 0, print all the content
+    """
 
     def __init__ (self, items = None, *args, **kwargs):
         """

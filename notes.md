@@ -10,6 +10,7 @@
     - users
     - tests:
         - sound_monitor
+        - import_playlist
 
 - liquidsoap:
     - models to template -> note
@@ -52,5 +53,6 @@
 - comments -> remove/edit by the author
 - integrate logs for tracks + in on air
 
+- get_for "model" -> "models"
 
 
