@@ -166,5 +166,9 @@ class ScheduleAdmin(admin.ModelAdmin):
     list_display = ['id', 'program_name', 'frequency', 'date', 'day', 'rerun']
     list_editable = ['frequency', 'date']
 
-admin.site.register(Track)
+
+@admin.register(Track)
+class TrackAdmin(admin.ModelAdmin):
+    list_display = ['id', 'title', 'artist', 'position', 'pos_in_secs', 'related']
+
 

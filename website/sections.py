@@ -231,7 +231,7 @@ class Playlist(sections.List):
     def get_object_list(self):
         tracks = programs.Track.get_for(object = self.object.related) \
                      .order_by('position')
-        return [ sections.ListItem(title=track.name, content=track.artist)
+        return [ sections.ListItem(title=track.title, content=track.artist)
                     for track in tracks ]
 
 

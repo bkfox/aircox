@@ -2,20 +2,13 @@
 Import one or more playlist for the given sound. Attach it to the sound
 or to the related Diffusion if wanted.
 
-We support different formats:
-- plain text: a track per line, where columns are separated with a
-    '{settings.AIRCOX_IMPORT_PLAYLIST_PLAIN_DELIMITER}'.
-    The order of the elements is: {settings.AIRCOX_IMPORT_PLAYLIST_PLAIN_COLS}
-- csv: CSV file where columns are separated with a
-    '{settings.AIRCOX_IMPORT_PLAYLIST_CSV_DELIMITER)}'. Text quote is
-    {settings.AIRCOX_IMPORT_PLAYLIST_CSV_TEXT_QUOTE}.
-    The order of the elements is: {settings.AIRCOX_IMPORT_PLAYLIST_CSV_COLS}
+Playlists are in CSV format, where columns are separated with a
+'{settings.AIRCOX_IMPORT_PLAYLIST_CSV_DELIMITER}'. Text quote is
+{settings.AIRCOX_IMPORT_PLAYLIST_CSV_TEXT_QUOTE}.
+The order of the elements is: {settings.AIRCOX_IMPORT_PLAYLIST_CSV_COLS}
 
 If 'minutes' or 'seconds' are given, position will be expressed as timed
 position, instead of position in playlist.
-
-Base the format detection using file extension. If '.csv', uses CSV importer,
-otherwise plain text one.
 """
 import os
 import csv
@@ -23,52 +16,41 @@ import logging
 from argparse import RawTextHelpFormatter
 
 from django.core.management.base import BaseCommand, CommandError
+from django.contrib.contenttypes.models import ContentType
 
 from aircox.programs.models import *
 import aircox.programs.settings as settings
-__doc__ = __doc__.format(settings)
+__doc__ = __doc__.format(settings = settings)
 
 logger = logging.getLogger('aircox.tools')
 
 
 class Importer:
-    type = None
     data = None
     tracks = None
 
-    def __init__(self, related = None, path = None):
+    def __init__(self, related = None, path = None, save = False):
         if path:
             self.read(path)
             if related:
-                self.make_playlist(related, True)
+                self.make_playlist(related, save)
 
     def reset(self):
-        self.type = None
         self.data = None
         self.tracks = None
 
     def read(self, path):
         if not os.path.exists(path):
             return True
-
         with open(path, 'r') as file:
-            sp, *ext = os.path.splitext(path)[1]
-            if ext[0] and ext[0] == 'csv':
-                self.type = 'csv'
-                self.data = csv.reader(
-                    file,
-                    delimiter = settings.AIRCOX_IMPORT_PLAYLIST_CSV_DELIMITER,
-                    quotechar = settings.AIRCOX_IMPORT_PLAYLIST_CSV_TEXT_QUOTE,
-                )
-            else:
-                self.type = 'plain'
-                self.data = [
-                    line.split(settings.AIRCOX_IMPORT_PLAYLIST_PLAIN_DELIMITER)
-                    for line in file.readlines()
-                ]
+            self.data = list(csv.reader(
+                file,
+                delimiter = settings.AIRCOX_IMPORT_PLAYLIST_CSV_DELIMITER,
+                quotechar = settings.AIRCOX_IMPORT_PLAYLIST_CSV_TEXT_QUOTE,
+            ))
 
     def __get(self, line, field, default = None):
-        maps = settings.AIRCOX_IMPORT_CSV_COLS
+        maps = settings.AIRCOX_IMPORT_PLAYLIST_CSV_COLS
         if field not in maps:
             return default
         index = maps.index(field)
@@ -79,26 +61,30 @@ class Importer:
         Make a playlist from the read data, and return it. If save is
         true, save it into the database
         """
-        maps = settings.AIRCOX_IMPORT_CSV_COLS if self.type == 'csv' else \
-               settings.AIRCOX_IMPORT_PLAIN_COLS
+        maps = settings.AIRCOX_IMPORT_PLAYLIST_CSV_COLS
         tracks = []
 
+        pos_in_secs = ('minutes' or 'seconds') in maps
         for index, line in enumerate(self.data):
-            if ('minutes' or 'seconds') in maps:
-                kwargs['pos_in_secs'] = True
-                kwargs['pos'] = int(self.__get(line, 'minutes', 0)) * 60 + \
-                                int(self.__get(line, 'seconds', 0))
-            else:
-                kwargs['pos'] = index
+            position = \
+                int(self.__get(line, 'minutes', 0)) * 60 + \
+                int(self.__get(line, 'seconds', 0)) \
+                if pos_in_secs else index
 
-            kwargs['related'] = related
-            kwargs.update({
-                k: self.__get(line, k) for k in maps
-                if k not in ('minutes', 'seconds')
-            })
+            track, created = Track.objects.get_or_create(
+                related_type = ContentType.objects.get_for_model(related),
+                related_id = related.pk,
+                title = self.__get(line, 'title'),
+                artist = self.__get(line, 'artist'),
+                position = position,
+            )
 
-            track = Track(**kwargs)
-            # FIXME: bulk_create?
+            track.pos_in_secs = pos_in_secs
+            track.info = self.__get(line, 'info')
+            tags = self.__get(line, 'tags')
+            if tags:
+                track.tags.add(*tags.split(','))
+
             if save:
                 track.save()
             tracks.append(track)
@@ -114,7 +100,7 @@ class Command (BaseCommand):
         now = tz.datetime.today()
 
         parser.add_argument(
-            'path', type=str,
+            'path', metavar='PATH', type=str,
             help='path of the input playlist to read'
         )
         parser.add_argument(
@@ -130,7 +116,9 @@ class Command (BaseCommand):
     def handle (self, path, *args, **options):
         # FIXME: absolute/relative path of sounds vs given path
         if options.get('sound'):
-            related = Sound.objects.filter(path__icontains = path).first()
+            related = Sound.objects.filter(
+                path__icontains = options.get('sound')
+            ).first()
         else:
             path, ext = os.path.splitext(options.get('path'))
             related = Sound.objects.filter(path__icontains = path).first()
@@ -143,12 +131,12 @@ class Command (BaseCommand):
         if options.get('diffusion') and related.diffusion:
             related = related.diffusion
 
-        importer = Importer(related = related, path = path)
+        importer = Importer(related = related, path = path, save = True)
         for track in importer.tracks:
-            logger.log('imported track at {pos}: {name}, by '
-                       '{artist}'.format(
-                    pos = track.pos,
-                    name = track.name, artist = track.artist
+            logger.info('imported track at {pos}: {title}, by '
+                        '{artist}'.format(
+                    pos = track.position,
+                    title = track.title, artist = track.artist
                 )
             )
 

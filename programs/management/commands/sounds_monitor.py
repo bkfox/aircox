@@ -101,7 +101,7 @@ class SoundInfo:
         Get or create a sound using self info.
 
         If the sound is created/modified, get its duration and update it
-        (if save is True, sync to DB).
+        (if save is True, sync to DB), and check for a playlist file.
         """
         sound, created = Sound.objects.get_or_create(
             path = self.path,
@@ -115,6 +115,23 @@ class SoundInfo:
                 sound.save()
         self.sound = sound
         return sound
+
+    def find_playlist(self, sound):
+        """
+        Find a playlist file corresponding to the sound path
+        """
+        import aircox.programs.management.commands.import_playlist \
+                as import_playlist
+
+        path = os.path.splitext(self.sound.path)[0] + '.csv'
+        if not os.path.exists(path):
+            return
+
+        old = Tracks.get_for(object = sound).exclude(tracks_id)
+        if old:
+            return
+
+        import_playlist.Importer(sound, path, save=True)
 
     def find_diffusion(self, program, save = True):
         """
@@ -229,7 +246,6 @@ class Command(BaseCommand):
                  'and react in consequence'
         )
 
-
     def handle(self, *args, **options):
         if options.get('scan'):
             self.scan()
@@ -287,6 +303,7 @@ class Command(BaseCommand):
             si = SoundInfo(path)
             si.get_sound(sound_kwargs, True)
             si.find_diffusion(program)
+            si.find_playlist(si.sound)
             sounds.append(si.sound.pk)
 
         # sounds in db & unchecked

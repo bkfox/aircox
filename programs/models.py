@@ -723,7 +723,7 @@ class Diffusion(models.Model):
         )
 
 
-class Track(Nameable,Related):
+class Track(Related):
     """
     Track of a playlist of an object. The position can either be expressed
     as the position in the playlist or as the moment in seconds it started.
@@ -731,6 +731,10 @@ class Track(Nameable,Related):
     # There are no nice solution for M2M relations ship (even without
     # through) in django-admin. So we unfortunately need to make one-
     # to-one relations and add a position argument
+    title = models.CharField (
+        _('title'),
+        max_length = 128,
+    )
     artist = models.CharField(
         _('artist'),
         max_length = 128,
@@ -757,7 +761,7 @@ class Track(Nameable,Related):
     )
 
     def __str__(self):
-        return ' '.join([self.artist, ':', self.name ])
+        return '{self.artist} -- {self.title}'.format(self=self)
 
     class Meta:
         verbose_name = _('Track')

@@ -46,18 +46,10 @@ ensure(
 ensure('AIRCOX_SCHEDULED_STREAM', 0)
 
 
-# Import playlist: columns for plain text files
-ensure(
-    'AIRCOX_IMPORT_PLAYLIST_PLAIN_COLS',
-    ('artist', 'title', 'tags', 'version')
-)
-# Import playlist: delimiter for plain text files
-ensure('AIRCOX_IMPORT_PLAYLIST_PLAIN_DELIMITER', '--')
-
 # Import playlist: columns for CSV file
 ensure(
     'AIRCOX_IMPORT_PLAYLIST_CSV_COLS',
-    ('artist', 'title', 'minutes', 'seconds', 'tags', 'version')
+    ('artist', 'title', 'minutes', 'seconds', 'tags', 'info')
 )
 # Import playlist: column delimiter of csv text files
 ensure('AIRCOX_IMPORT_PLAYLIST_CSV_DELIMITER', ';')
