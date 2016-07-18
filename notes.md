@@ -6,14 +6,14 @@
 
 - programs:
     - schedule changes -> update later diffusions according to the new schedule
-    - stream disable -> remote control on liquidsoap
     - users
     - tests:
         - sound_monitor
         - import_playlist
 
-- liquidsoap:
+- controllers :
     - models to template -> note
+    - streamed program disable -> remote control on liquidsoap
     - tests:
         - monitor
         - check when a played sound has a temp blank
@@ -29,12 +29,9 @@
         -> enhance calendar with possible actions?
 
 - website:
-    - diffusions:
-        - print program's name in lists / clean up that thing also a bit
     - article list with the focus
     - player:
         - mixcloud
-        - seek bar + timer
         - remove from playing playlist -> stop
     - date_by_list:
         - sections' url
@@ -52,7 +49,6 @@
 - actions -> noscript case, think of accessibility
 - comments -> remove/edit by the author
 - integrate logs for tracks + in on air
-
-- get_for "model" -> "models"
+- rename controllers.Station into controllers.Streamer -> keep Station for sth else
 
 

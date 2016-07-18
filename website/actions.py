@@ -23,7 +23,7 @@ class AddToPlaylist(Action):
     """
 
     @classmethod
-    def make_for_diffusions(cl, request, object):
+    def make_for_diffusion(cl, request, object):
         from aircox.website.sections import Player
         if object.related.end > tz.make_aware(tz.datetime.now()):
             return
@@ -50,7 +50,7 @@ class AddToPlaylist(Action):
             return False
 
         if issubclass(type(object), Diffusion):
-            return cl.make_for_diffusions(request, object)
+            return cl.make_for_diffusion(request, object)
         if issubclass(type(object), Sound):
             return cl.make_for_sound(request, object)
         if hasattr(object, 'sound') and object.sound:

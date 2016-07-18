@@ -82,7 +82,6 @@ class Player(sections.Section):
                              .filter(published = True) \
                              .filter(related__end__lte = tz.datetime.now()) \
                              .order_by('-related__end')
-
         recents = []
         for post in qs:
             archives = post.related.get_archives()

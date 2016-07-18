@@ -47,25 +47,43 @@
     padding: 0.2em;
 }
 
-  #player .on_air .title {
-      font-size: 0.8em;
-      display: inline;
-  }
+    #player .on_air .title {
+        font-size: 0.8em;
+        display: inline;
+    }
 
-  #player .on_air a {
-      float: right;
-  }
+    #player .on_air a {
+        float: right;
+    }
+
+    #player .info {
+        float: right;
+    }
 
 
-.playlists {
+#player progress {
+    background: none;
+    border: none;
+    width: 100%;
+    height: 0.8em;
+    cursor: pointer;
+    display: none;
 }
 
-    .playlists ul:not([selected]) {
+    #player[seekable]:hover progress {
+        display: block;
+    }
+
+
+#player .playlists {
+}
+
+    #player .playlists ul:not([selected]) {
         display: none;
     }
 
-    .playlists nav > a.close,
-    .playlists nav > label {
+    #player .playlists nav > a.close,
+    #player .playlists nav > label {
         float: right;
     }
 
@@ -73,33 +91,29 @@
         content:"{% trans "single mode" %}";
     }
 
-.playlist {
+
+#player .playlist {
     margin: 0;
     padding: 0;
     height: 15em;
     /*overflow-y: auto;*/
 }
 
-    .playlist .item > *:not(.actions) {
+    #player .playlist .item > *:not(.actions) {
         display: inline;
         margin: 0.2em;
         vertical-align: middle;
     }
 
-    .playlist .item .info {
-        float: right;
-    }
-
-
-.playlist .actions {
+#player .playlist .actions {
     float: right;
 }
 
-    .playlist .actions a.action {
+    #player .playlist .actions a.action {
         display: inline;
     }
 
-    .playlist .actions label,
+    #player .playlist .actions label,
     #playlist-live .actions,
     #playlist-recents .actions a.action[action="remove"],
     #playlist-favorites .actions a.action[action="sound.mark"],
@@ -109,7 +123,7 @@
         display: none;
     }
 
-    .playlist .action[action="remove"] {
+    #player .playlist .action[action="remove"] {
         float: right;
     }
 </style>
@@ -137,7 +151,10 @@
               title="{% trans "play/pause" %}"></span>
 
             <h3 class="title"></h3>
+
+            <div class="progress info"></div>
         </div>
+        <progress value="0" max="1"></progress>
     </div>
     <div class="playlists">
         <nav>
@@ -380,6 +397,71 @@ Playlist.prototype = {
 }
 
 
+function PlayerProgress(player) {
+    this.player = player;
+    this.progress = player.player.querySelector('progress');
+    this.info = player.player.querySelector('.progress.info');
+
+    var self = this;
+
+    // events
+    player.audio.addEventListener('timeupdate', function(evt) {
+        self.update();
+    }, false);
+
+    this.progress.addEventListener('click', function(evt) {
+        player.audio.currentTime = self.time_from_event(evt);
+    }, false);
+
+    this.progress.addEventListener('mouseout', function(evt) {
+        self.update();
+    }, false);
+
+    this.progress.addEventListener('mousemove', function(evt) {
+        if(self.player.audio.duration == Infinity)
+           return;
+
+        var pos = self.time_from_event(evt);
+        self.info.innerHTML = self.secs_to_str(pos);
+    }, false);
+}
+
+PlayerProgress.prototype = {
+    update: function() {
+        if( //!this.player.item.seekable ||
+                this.player.audio.duration == Infinity) {
+            this.info.innerHTML = '';
+            this.progress.value = 0;
+            return;
+        }
+
+        var pos = this.player.audio.currentTime;
+        this.progress.value = pos;
+        this.progress.max = this.player.audio.duration;
+        this.info.innerHTML = this.secs_to_str(pos);
+    },
+
+    secs_to_str: function(seconds) {
+        seconds = Math.floor(seconds);
+        var hours = Math.floor(seconds / 3600);
+        seconds -= hours;
+        var minutes = Math.floor(seconds / 60);
+        seconds -= minutes;
+
+        var str = hours ? (hours < 10 ? '0' + hours : hours) + ':' : '';
+        str += (minutes < 10 ? '0' + minutes : minutes) + ':';
+        str += (seconds < 10 ? '0' + seconds : seconds);
+        return str;
+    },
+
+    time_from_event: function(evt) {
+        bounding = this.progress.getBoundingClientRect()
+        offset = (evt.clientX - bounding.left);
+        return offset * this.player.audio.duration / bounding.width;
+    },
+}
+
+
 Player = {
     /// main container of the Player
     player: undefined,
@@ -400,6 +482,7 @@ Player = {
 
         this.__init_audio();
         this.__init_playlists();
+        this.progress = new PlayerProgress(this);
         this.load();
     },
 
@@ -422,9 +505,11 @@ Player = {
         }, false);
 
         this.audio.addEventListener('timeupdate', function() {
-            if(self.audio.seekable.length)
-                PlayerStore.set('stream.' + self.item.stream + '.pos',
-                                self.audio.currentTime)
+            if(!self.item.seekable)
+                return;
+
+            PlayerStore.set('stream.' + self.item.stream + '.pos',
+                            self.audio.currentTime);
         }, false);
 
         this.audio.addEventListener('ended', function() {
@@ -537,6 +622,11 @@ Player = {
 
         player.querySelectorAll('#simple-player .title')[0]
             .innerHTML = item.title;
+
+        if(this.item.seekable)
+            player.setAttribute('seekable', true);
+        else
+            player.removeAttribute('seekable', true);
 
         if(play) {
             this.__ask_to_seek(item);
