@@ -147,7 +147,12 @@ class Post (models.Model, Routable):
     )
     title = models.CharField (
         _('title'),
+        max_length = 64,
+    )
+    subtitle = models.CharField (
+        _('subtitle'),
         max_length = 128,
+        blank = True, null = True,
     )
     content = models.TextField (
         _('description'),
@@ -192,6 +197,8 @@ class Post (models.Model, Routable):
         """
         Return an url to the post detail view.
         """
+        if not self.pk:
+            return ''
         return self.reverse(
             routes.DetailRoute,
             pk = self.pk, slug = slugify(self.title)
@@ -436,11 +443,6 @@ class RelatedPost (Post, metaclass = RelatedMeta):
         the value, as `rel_attr(post, related)`
 
         note: bound values can be any value, not only Django field.
-        """
-        defaults = None
-        """
-        dict of `post_attr: value` that gives default value for the given
-        fields.
         """
         post_to_rel = False
         """

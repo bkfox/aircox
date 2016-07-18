@@ -37,6 +37,8 @@
         - mixcloud
         - seek bar + timer
         - remove from playing playlist -> stop
+    - date_by_list:
+        - sections' url
     - list of played diffusions and tracks when non-stop;
 
 # Long term TODO

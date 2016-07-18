@@ -141,52 +141,9 @@ class Diffusions(sections.List):
         #                .order_by('-start')[:self.prev_count])
         #return r
 
-    def prepare_list(self, object_list):
-        """
-        This function just prepare the list of object, in order to:
-        - have a good title
-        - given a stream to listen to if needed
-        """
-        for post in object_list:
-            # title
-            if not hasattr(post, 'related') or \
-                    not hasattr(post.related , 'program'):
-                continue
-            name = post.related.program.name
-            if name not in post.title:
-                post.title = ': ' + post.title if post.title else \
-                            ' // ' + post.related.start.strftime('%A %d %B')
-                post.title = name + post.title
-        return object_list
-
     def get_object_list(self):
-        diffs = self.get_diffs()
-
-        posts = models.Diffusion.objects.filter(related__in = diffs)
-        r = []
-        for diff in diffs:
-            diff_ = diff.initial if diff.initial else diff
-            post = next((x for x in posts if x.related == diff_), None)
-            if not post:
-                post = sections.ListItem(date = diff.start)
-            else:
-                post = sections.ListItem(post=post)
-                post.date = diff.start
-
-            if diff.initial:
-                post.info = _('rerun of %(day)s') % {
-                    'day': diff.initial.start.strftime('%A %d/%m')
-                }
-
-            if self.object:
-                post.update(self.object)
-            else:
-                thread = models.Program.objects. \
-                            filter(related = diff.program, published = True)
-                if thread:
-                    post.update(thread[0])
-            r.append(post)
-        return [ sections.ListItem(post=post) for post in r ]
+        diffs = self.get_diffs().order_by('start')
+        return models.Diffusion.objects.get_for(diffs)
 
     @property
     def url(self):
@@ -253,7 +210,6 @@ class Sounds(sections.List):
                 actions = [ actions.AddToPlaylist, actions.Play ],
             ) for sound in sounds
         ]
-
 
 
 class ListByDate(sections.List):
@@ -354,10 +310,11 @@ class Schedule(Diffusions,ListByDate):
 
     def get_object_list(self):
         date = self.date_or_default()
-        return routes.DateRoute.get_queryset(
-            models.Diffusion, self.request, date.year, date.month,
-            date.day
-        ).order_by('date')
+        diffs = routes.DateRoute.get_queryset(
+            programs.Diffusion, None, date.year, date.month, date.day,
+            attr = 'start'
+        ).order_by('start')
+        return models.Diffusion.objects.get_for(diffs, create = True)
 
     @staticmethod
     def get_date_url(date):
@@ -400,6 +357,10 @@ class Logs(ListByDate):
             )
         return post
 
+    @staticmethod
+    def make_diff(diff):
+        pass
+
     def get_object_list(self):
         return []
         station = self.view.website.station
@@ -409,8 +370,11 @@ class Logs(ListByDate):
             date__year = int(year), date__month = int(month),
             date__day = int(day)
         )
-        # TODO for each, exclude if there is a diffusion (that has not been logged)
-        return [ cl.make_item(log) for log in qs ]
+        # TODO for each, exclude if there is a corresponding diffusion
+        #       (that has not been logged)
+        #    if diff and diff != last_diff:
+        #        r.append(cl.make_item
+        # return [ cl.make_item(log) for log in qs ]
 
     @staticmethod
     def get_date_url(date):

@@ -285,6 +285,7 @@ class ListItem:
     behaves like it.
     """
     title = None
+    subtitle = None
     content = None
     author = None
     date = None
@@ -332,7 +333,8 @@ class List(Section):
     """
     paginate_by = 4
 
-    fields = [ 'date', 'time', 'image', 'title', 'content', 'info', 'actions' ]
+    fields = [ 'date', 'time', 'image', 'title', 'subtitle', 'content', 'info',
+               'actions' ]
     """
     Fields that must be rendered.
     """
