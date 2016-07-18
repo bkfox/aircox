@@ -64,7 +64,7 @@ class BaseView:
         if self.sections:
             if issubclass(type(self.sections), sections.Section):
                 self.template_name = self.sections.template_name
-                self.sections.prepare(self)
+                self.sections.prepare(self, **self.kwargs)
                 context.update(self.sections.get_context_data())
             else:
                 if not self.template_name:
@@ -142,9 +142,9 @@ class PostListView(BaseView, ListView):
 
     def get_queryset(self):
         default = self.prepare_list()
-        if default:
+        if not default:
             qs = self.list.get_object_list()
-            if qs:
+            if qs is not None:
                 return qs
 
         if self.route:
@@ -181,7 +181,7 @@ class PostListView(BaseView, ListView):
             self.css_class = self.list.css_class
             default = False
 
-        self.list.prepare(self)
+        self.list.prepare(self, **self.kwargs)
 
         if self.request.GET.get('fields'):
             self.list.fields = [

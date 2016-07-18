@@ -96,8 +96,8 @@ class Website:
         for section in sections:
             if not hasattr(section, '_exposure'):
                 continue
-            self.exposures += section._exposure.gather(section)
-
+            self.exposures += section._exposure.gather(section, website = self)
+            section.website = self
 
     def __route_to_url(self, name, route, view, sections, kwargs):
         # route can be a tuple

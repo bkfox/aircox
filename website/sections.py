@@ -282,6 +282,10 @@ class ListByDate(sections.List):
     if true, print days in header by week
     """
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.add_css_class('list_by_date')
+
     def nav_dates(self, date):
         """
         Return a list of dates of the week of the given date.
@@ -317,10 +321,12 @@ class ListByDate(sections.List):
         prev_week = self.get_date_url(prev_week)
 
         context.update({
-            'date': date,
-            'dates': dates,
-            'next_week': next_week,
-            'prev_week': prev_week,
+            'nav': {
+                'date': date,
+                'dates': dates,
+                'next': next_week,
+                'prev': prev_week,
+            }
         })
         return context
 
@@ -368,7 +374,6 @@ class Logs(ListByDate):
     """
     Return a list of played stream sounds and diffusions.
     """
-
     @staticmethod
     def make_item(log):
         """
@@ -396,7 +401,8 @@ class Logs(ListByDate):
         return post
 
     def get_object_list(self):
-        station = self.view._website.station
+        return []
+        station = self.view.website.station
         qs = station.get_played(
             models = [ programs.Diffusion, programs.Track ],
         ).filter(
@@ -404,10 +410,9 @@ class Logs(ListByDate):
             date__day = int(day)
         )
         # TODO for each, exclude if there is a diffusion (that has not been logged)
-
         return [ cl.make_item(log) for log in qs ]
 
     @staticmethod
     def get_date_url(date):
-        pass
+        return 'TODO'
 

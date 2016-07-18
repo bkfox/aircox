@@ -11,6 +11,8 @@ class Exposure:
     """
     Define an exposure. Look at @expose decorator.
     """
+    __uuid = 0
+
     name = None
     """generated view name"""
     pattern = None
@@ -30,7 +32,12 @@ class Exposure:
         self.__dict__.update(kwargs)
 
     @staticmethod
-    def gather(cl):
+    def new_id():
+        Exposure.__uuid += 1
+        return Exposure.__uuid
+
+    @staticmethod
+    def gather(cl, website):
         """
         Prepare all exposure declared in self.cl, create urls and return
         them. This is done at this place in order to allow sub-classing
@@ -46,7 +53,8 @@ class Exposure:
                     raise Http404()
 
             exp = fn._exposure
-            res = fn(request, *args, **kwargs)
+            # kwargs['request'] = request
+            res = fn(cl, *args, **kwargs)
             if res and exp.template_name:
                 ctx = res or {}
                 ctx.update({
@@ -57,13 +65,12 @@ class Exposure:
                                        ctx, request = request)
             return HttpResponse(res or '')
 
-        # id = str(uuid.uuid1())
+        uuid = Exposure.new_id()
         exp = cl._exposure
-        exp.pattern = '{name}/{id}'.format(name = exp.name, id = id(cl))
-        exp.name = 'exps.{name}.{id}'.format(name = exp.name, id = id(cl))
+        exp.pattern = '{name}/{id}'.format(name = exp.name, id = uuid)
+        exp.name = 'exps.{name}.{id}'.format(name = exp.name, id = uuid)
 
         urls = []
-
         for name, fn in inspect.getmembers(cl):
             if name.startswith('__') or not hasattr(fn, '_exposure'):
                 continue
@@ -78,7 +85,7 @@ class Exposure:
 
             urls.append(url(
                 pattern, name = exp.name, view = view,
-                kwargs = { 'fn': fn }
+                kwargs = { 'fn': fn, 'website': website }
             ))
 
         urls.append(url(

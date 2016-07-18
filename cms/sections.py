@@ -181,22 +181,23 @@ class Section(Viewable, View):
             'embed': True,
         }
 
-    def prepare(self, view, **kwargs):
+    def prepare(self, view = None, **kwargs):
         """
         initialize the object with valuable informations.
         """
-        self.view = view
-        self.request = view.request
-        self.kwargs = view.kwargs
-        if hasattr(view, 'object'):
-            self.object = view.object
+        self.kwargs = kwargs
+        if view:
+            self.view = view
+            self.request = view.request
+            if hasattr(view, 'object'):
+                self.object = view.object
 
     def render(self, *args, **kwargs):
         """
         Render the section as a string. Use *args and **kwargs to prepare
         the section, then get_context_data and render.
         """
-        if args and not self.view:
+        if args or kwargs:
             self.prepare(*args, **kwargs)
         context = self.get_context_data()
 
@@ -594,10 +595,15 @@ class Calendar(Section):
     model = None
     template_name = "aircox/cms/calendar.html"
 
-    def get_context_data(self, year = None, month = None, *args, **kwargs):
+    def get_context_data(self):
         import calendar
         import aircox.cms.routes as routes
-        context = super().get_context_data(*args, **kwargs)
+        context = super().get_context_data()
+
+        if self.kwargs:
+            year, month = self.kwargs.get('year'), self.kwargs.get('month')
+        else:
+            year, month = None, None
 
         date = datetime.date.today()
         if year:
@@ -610,8 +616,9 @@ class Calendar(Section):
         def make_date(date, day):
             date += tz.timedelta(days=day)
             return (
-                date, self.model.reverse(
-                    routes.DateRoute, year = date.year,
+                date, self.website.reverse(
+                    model = None,
+                    route = routes.DateRoute, year = date.year,
                     month = date.month, day = date.day
                 )
             )
@@ -630,7 +637,8 @@ class Calendar(Section):
     def render_exp(cl, *args, year, month, **kwargs):
         year = int(year)
         month = int(month)
-        return cl.render(*args, year = year, month = month, **kwargs)
+        calendar = cl(website = cl.website)
+        return calendar.render(year = year, month = month, **kwargs)
 
     render_exp._exposure.name = 'render'
     render_exp._exposure.pattern = '(?P<year>[0-9]{4})/(?P<month>[0-1]?[0-9])'
