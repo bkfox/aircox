@@ -108,7 +108,7 @@ class Monitor:
                           .order_by('date').last()
 
         if not diff_log or \
-                not diff_log.related.is_date_in_my_range(now):
+                not diff_log.related.is_date_in_range(now):
             return None, []
 
         # sound has switched? assume it has been (forced to) stopped
@@ -138,10 +138,8 @@ class Monitor:
         now = tz.make_aware(tz.datetime.now())
 
         args = {'start__gt': diff.start } if diff else {}
-        diff = programs.Diffusion.get(
-            now, now = True,
+        diff = programs.Diffusion.objects.get_at(now).filter(
             type = programs.Diffusion.Type.normal,
-
             sound__type = programs.Sound.Type.archive,
             sound__removed = False,
             **args

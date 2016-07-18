@@ -27,7 +27,6 @@
     - admin cms
         -> sections/actions and django decorator?
         -> enhance calendar with possible actions?
-    - sections id generator
 
 - website:
     - diffusions:
@@ -39,7 +38,6 @@
         - remove from playing playlist -> stop
     - date_by_list:
         - sections' url
-    - list of played diffusions and tracks when non-stop;
 
 # Long term TODO
 - automatic cancel of passed diffusion based on logs?

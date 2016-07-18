@@ -1,9 +1,11 @@
 import json
+import datetime
 
 from django.utils import timezone as tz
 from django.utils.translation import ugettext as _, ugettext_lazy
 
 import aircox.programs.models as programs
+import aircox.controllers.models as controllers
 import aircox.cms.models as cms
 import aircox.cms.routes as routes
 import aircox.cms.sections as sections
@@ -30,12 +32,12 @@ class Player(sections.Section):
 
     @expose
     def on_air(cl, request):
-        qs = programs.Diffusion.get(
-            now = True,
+        now = tz.now()
+        qs = programs.Diffusion.objects.get_at(now).filter(
             type = programs.Diffusion.Type.normal
         )
 
-        if not qs or not qs[0].is_date_in_my_range():
+        if not qs or not qs[0].is_date_in_range():
             return {}
 
         qs = qs[0]
@@ -214,7 +216,8 @@ class Sounds(sections.List):
 
 class ListByDate(sections.List):
     """
-    List that add a navigation by date in its header.
+    List that add a navigation by date in its header. It aims to be
+    used with DateRoute.
     """
     template_name = 'aircox/website/list_by_date.html'
     message_empty = ''
@@ -253,15 +256,19 @@ class ListByDate(sections.List):
         return [ first + tz.timedelta(days=i) for i in range(0, self.nav_days) ]
 
     def date_or_default(self):
+        """
+        Return self.date or create a date if needed, using kwargs'
+        year, month, day attributes if exists (otherwise, use today)
+        """
         if self.date:
-            return self.date
+            return datetime.date(self.date)
         elif self.kwargs and 'year' in self.kwargs:
-            return tz.datetime(year = int(self.kwargs['year']),
-                               month = int(self.kwargs['month']),
-                               day = int(self.kwargs['day']),
-                               hour = 0, minute = 0, second = 0,
-                               microsecond = 0)
-        return tz.now()
+            return datetime.date(
+                year = int(self.kwargs['year']),
+                month = int(self.kwargs['month']),
+                day = int(self.kwargs['day'])
+            )
+        return datetime.date.today()
 
     def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(*args, **kwargs)
@@ -270,6 +277,7 @@ class ListByDate(sections.List):
         dates = [ (date, self.get_date_url(date))
                     for date in self.nav_dates(date) ]
 
+        # FIXME
         next_week = dates[-1][0] + tz.timedelta(days=1)
         next_week = self.get_date_url(next_week)
 
@@ -289,18 +297,22 @@ class ListByDate(sections.List):
     @staticmethod
     def get_date_url(date):
         """
-        return a url to the list for the given date
+        return an url for the given date
         """
+        return self.view.website.reverse(
+            model = self.model, route = routes.DateRoute,
+            year = date.year, month = date.month, day = date.day,
+        )
 
     @property
     def url(self):
         return None
 
-
 class Schedule(Diffusions,ListByDate):
     """
     Render a list of diffusions in the form of a schedule
     """
+    model = models.Diffusion
     fields = [ 'time', 'image', 'title', 'content', 'info', 'actions' ]
     truncate = 30
 
@@ -310,10 +322,7 @@ class Schedule(Diffusions,ListByDate):
 
     def get_object_list(self):
         date = self.date_or_default()
-        diffs = routes.DateRoute.get_queryset(
-            programs.Diffusion, None, date.year, date.month, date.day,
-            attr = 'start'
-        ).order_by('start')
+        diffs = programs.Diffusion.objects.get_at(date).order_by('start')
         return models.Diffusion.objects.get_for(diffs, create = True)
 
     @staticmethod
@@ -329,54 +338,58 @@ class Schedule(Diffusions,ListByDate):
 
 class Logs(ListByDate):
     """
-    Return a list of played stream sounds and diffusions.
+    Print a list of played stream tracks and diffusions.
+    Note that for the moment we don't print if the track has been
+    partially hidden by a scheduled diffusion
     """
+    model = controllers.Log
+
     @staticmethod
-    def make_item(log):
+    def make_item(item):
         """
         Return a list of items to add to the playlist.
+        Only support Log related to a Track and programs.Diffusion
         """
-        if issubclass(type(log.related), programs.Diffusion):
-            diff = log.related
-            post = models.Diffusion.objects.filter(related = diff).first() \
-                    or models.Program.objects.filter(related = diff.program).first() \
-                    or ListItem(title = diff.program.name)
-            post.date = diff.start
-            return post
-
-        if issubclass(type(log.related), programs.Track):
-            track = log.related
-            post = ListItem(
-                title = '{artist} &#8212; {name}'.format(
-                    artist = track.artist,
-                    name = track.name,
-                ),
-                date = log.date,
-                content = track.info,
-                info = '♫',
+        if issubclass(type(item), programs.Diffusion):
+            return models.Diffusion.objects.get_for(
+                item, create = True, save = False
             )
+
+        track = log.related
+        post = ListItem(
+            title = '{artist} &#8212; {name}'.format(
+                artist = track.artist,
+                name = track.name,
+            ),
+            date = log.date,
+            content = track.info,
+            info = '♫',
+        )
         return post
 
-    @staticmethod
-    def make_diff(diff):
-        pass
-
     def get_object_list(self):
-        return []
-        station = self.view.website.station
-        qs = station.get_played(
-            models = [ programs.Diffusion, programs.Track ],
-        ).filter(
-            date__year = int(year), date__month = int(month),
-            date__day = int(day)
-        )
-        # TODO for each, exclude if there is a corresponding diffusion
-        #       (that has not been logged)
-        #    if diff and diff != last_diff:
-        #        r.append(cl.make_item
-        # return [ cl.make_item(log) for log in qs ]
+        date = self.date_or_default()
+        if date > datetime.date.today():
+            return []
 
-    @staticmethod
-    def get_date_url(date):
-        return 'TODO'
+        logs = controllers.Log.get_for(model = programs.Track) \
+                              .filter(date__contains = date) \
+                              .order_by('date')
+
+        diffs = programs.Diffusion.objects.get_at(date) \
+                        .filter(type = programs.Diffusion.Type.normal)
+
+        items = []
+        prev_diff = None
+        for diff in diffs:
+            logs_ = logs.filter(date__gt = prev_diff.end,
+                                date__lt = diff.start) \
+                    if prev_diff else \
+                    logs.filter(date__lt = diff.start)
+            prev_diff = diff
+            items.extend(logs_)
+            items.append(diff)
+
+        return list(map(self.make_item, items))
+
 

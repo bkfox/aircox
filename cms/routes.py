@@ -1,3 +1,5 @@
+import datetime
+
 from django.db import models
 from django.utils import timezone as tz
 from django.conf.urls import url
@@ -176,17 +178,13 @@ class DateRoute(Route):
     ]
 
     @classmethod
-    def get_queryset(cl, model, request, year, month, day,
-                     attr='date', **kwargs):
+    def get_queryset(cl, model, request, year, month, day, **kwargs):
         """
         * request: optional
         * attr: name of the attribute to check the date against
         """
-        return model.objects.filter(**{
-            attr + '__year': int(year),
-            attr + '__month': int(month),
-            attr + '__day': int(day)
-        })
+        date = datetime.date(int(year), int(month), int(day))
+        return model.objects.filter(date__contains = date)
 
     @classmethod
     def get_title(cl, model, request, year, month, day, **kwargs):

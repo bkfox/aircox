@@ -1,3 +1,4 @@
+import datetime
 import os
 import shutil
 import logging
@@ -36,7 +37,7 @@ def date_or_default(date, no_time = False):
     Return date or default value (now) if not defined, and remove time info
     if date_only is True
     """
-    date = date or tz.datetime.today()
+    date = date or tz.now()
     if not tz.is_aware(date):
         date = tz.make_aware(date)
     if no_time:
@@ -576,6 +577,49 @@ class Program(Nameable):
         return qs[0] if qs else None
 
 
+class DiffusionManager(models.Manager):
+    def get_at(self, date = None):
+        """
+        Return a queryset of diffusions that have the given date
+        in their range.
+
+        If date is a datetime.date object, check only against the
+        date.
+        """
+        date = date or tz.now()
+        if issubclass(type(date), datetime.date):
+            return self.filter(
+                models.Q(start__contains = date) | \
+                models.Q(end__contains = date)
+            )
+
+        return self.filter(
+            models.Q(start__lte = date, end__gte = date) |
+            # FIXME: should not be here?
+            models.Q(start__gte = date),
+        ).order_by('start')
+
+    def get_after(self, date = None):
+        """
+        Return a queryset of diffusions that happen after the given
+        date.
+        """
+        date = date_or_default(date)
+        return self.filter(
+            start__gte = date,
+        ).order_by('start')
+
+    def get_before(self, date):
+        """
+        Return a queryset of diffusions that finish before the given
+        date.
+        """
+        date = date_or_default(date)
+        return self.filter(
+            end__lte = date,
+        ).order_by('start')
+
+
 class Diffusion(models.Model):
     """
     A Diffusion is an occurrence of a Program that is scheduled on the
@@ -594,6 +638,8 @@ class Diffusion(models.Model):
     - cancel: the diffusion has been canceled
     - stop: the diffusion has been manually stopped
     """
+    objects = DiffusionManager()
+
     class Type(IntEnum):
         normal = 0x00
         unconfirmed = 0x01
@@ -642,52 +688,13 @@ class Diffusion(models.Model):
         return sounds.filter(type = Sound.Type.archive, removed = False). \
                       order_by('path')
 
-    @classmethod
-    def get(cl, date = None,
-             now = False, next = False, prev = False,
-             queryset = None,
-             **filter_args):
-        """
-        Return a queryset of diffusions, depending on value of now/next/prev
-        - now: that have date in their start-end range or start after
-        - next: that start after date
-        - prev: that end before date
-
-        If queryset is not given, use self.objects.all
-
-        Diffusions are ordered by +start for now and next; -start for prev
-        """
-        #FIXME: conflicts? ( + calling functions)
-        date = date_or_default(date)
-        if queryset is None:
-            queryset = cl.objects
-
-        if now:
-            return queryset.filter(
-                models.Q(start__lte = date,
-                         end__gte = date) |
-                models.Q(start__gte = date),
-                **filter_args
-            ).order_by('start')
-
-        if next:
-            return queryset.filter(
-                start__gte = date,
-                **filter_args
-            ).order_by('start')
-
-        if prev:
-            return queryset.filter(
-                end__lte = date,
-                **filter_args
-            ).order_by('-start')
-
-    def is_date_in_my_range(self, date = None):
+    def is_date_in_range(self, date = None):
         """
         Return true if the given date is in the diffusion's start-end
         range.
         """
-        return self.start < date_or_default(date) < self.end
+        date = date or tz.now()
+        return self.start < date < self.end
 
     def get_conflicts(self):
         """
