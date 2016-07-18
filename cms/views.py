@@ -21,7 +21,7 @@ class BaseView:
     # Request GET params:
     * embed: view is embedded, render only the content of the view
     """
-    template_name = ''
+    template_name = 'aircox/cms/website.html'
     """it is set to "aircox/cms/detail.html" to render multiple sections"""
     sections = None
     """sections used to render the page"""
@@ -43,9 +43,6 @@ class BaseView:
             self.sections = sections
         super().__init__(*args, **kwargs)
 
-    def __section_is_single(self):
-        return not issubclass(type(self.sections), list)
-
     def add_css_class(self, css_class):
         """
         Add the given class to the current class list if not yet present.
@@ -65,19 +62,15 @@ class BaseView:
 
         # update from sections
         if self.sections:
-            if self.__section_is_single():
+            if issubclass(type(self.sections), sections.Section):
                 self.template_name = self.sections.template_name
-                context.update(self.sections.get_context_data(
-                    self.request,
-                    object_list = hasattr(self, 'object_list') and \
-                                    self.object_list,
-                    **self.kwargs
-                ) or {})
+                self.sections.prepare(self)
+                context.update(self.sections.get_context_data())
             else:
                 if not self.template_name:
                     self.template_name = 'aircox/cms/detail.html'
                 context.update({
-                    'content': self.sections.render(self.request, **kwargs)
+                    'content': self.sections.render(self)
                 })
 
         context.update(super().get_context_data(**kwargs))
@@ -98,7 +91,7 @@ class BaseView:
                                     else None
             if self.menus:
                 context['menus'] = {
-                    k: v.render(self.request, **kwargs)
+                    k: v.render(self)
                     for k, v in self.menus.items()
                     if v is not self
                 }
@@ -148,6 +141,12 @@ class PostListView(BaseView, ListView):
         return super().dispatch(request, *args, **kwargs)
 
     def get_queryset(self):
+        default = self.prepare_list()
+        if default:
+            qs = self.list.get_object_list()
+            if qs:
+                return qs
+
         if self.route:
             qs = self.route.get_queryset(self.model, self.request,
                                          **self.kwargs)
@@ -166,15 +165,23 @@ class PostListView(BaseView, ListView):
         return qs
 
     def prepare_list(self):
+        """
+        Prepare the list and return True if the list has been created using
+        defaults.
+        """
         if not self.list:
-           self.list = sections.List(
-               truncate = 32,
-               paginate_by = 0,
-           )
-        else:
+            self.list = sections.List(
+                truncate = 32,
+                paginate_by = 0,
+            )
+            default = True
+        elif type(self.list) == type:
             self.list = self.list(paginate_by = 0)
             self.template_name = self.list.template_name
             self.css_class = self.list.css_class
+            default = False
+
+        self.list.prepare(self)
 
         if self.request.GET.get('fields'):
             self.list.fields = [
@@ -184,12 +191,14 @@ class PostListView(BaseView, ListView):
 
         # done in list
         # Actions.make(self.request, object_list = self.object_list)
+        return default
 
     def get_context_data(self, **kwargs):
-        self.prepare_list()
         self.add_css_class('list')
 
         context = super().get_context_data(**kwargs)
+        if not context.get('object_list'):
+            context['object_list'] = self.list.object_list
 
         if self.route and not context.get('title'):
             context['title'] = self.route.get_title(
@@ -232,12 +241,14 @@ class PostDetailView(BaseView, DetailView):
         """
         Handle new comments
         """
+        self.sections.prepare(self)
         if not self.comments:
             for section in self.sections:
                 if issubclass(type(section), sections.Comments):
                     self.comments = section
 
         self.object = self.get_object()
+        self.comments.prepare(self)
         self.comments.post(self, request, self.object)
         return self.get(request, *args, **kwargs)
 
@@ -249,8 +260,5 @@ class PageView(BaseView, TemplateView):
     If sections is a list of sections, then render like a detail view;
     If it is a single section, render it as website.html view;
     """
-    # dirty hack in order to accept a "model" kwargs, to allow "model=None"
-    # in routes. Cf. website.register (at if model / else)
-    model = None
 
 

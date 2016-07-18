@@ -34,21 +34,21 @@ class Route:
     """
 
     @classmethod
-    def get_queryset(cl, model, request, **kwargs):
+    def get_queryset(cl, website, request, **kwargs):
         """
         Called by the view to get the queryset when it is needed
         """
         pass
 
     @classmethod
-    def get_object(cl, model, request, **kwargs):
+    def get_object(cl, website, request, **kwargs):
         """
         Called by the view to get the object when it is needed
         """
         pass
 
     @classmethod
-    def get_title(cl, model, request, **kwargs):
+    def get_title(cl, website, request, **kwargs):
         return ''
 
     @classmethod
@@ -56,8 +56,12 @@ class Route:
         return name + '.' + cl.name
 
     @classmethod
-    def as_url(cl, name, view, view_kwargs = None):
-        pattern = '^{}/{}'.format(name, cl.name)
+    def make_pattern(cl, prefix = ''):
+        """
+        Make a url pattern using prefix as prefix and cl.params as
+        parameters.
+        """
+        pattern = prefix
         if cl.params:
             pattern += ''.join([
                 '{pre}/(?P<{name}>{regexp}){post}'.format(
@@ -68,13 +72,13 @@ class Route:
                 for name, regexp, *optional in cl.params
             ])
         pattern += '/?$'
+        return pattern
 
-        kwargs = {
-            'route': cl,
-        }
-        if view_kwargs:
-            kwargs.update(view_kwargs)
-
+    @classmethod
+    def as_url(cl, name, view, kwargs = None):
+        pattern = cl.make_pattern('^{}/{}'.format(name, cl.name))
+        kwargs = kwargs.copy() if kwargs else {}
+        kwargs['route'] = cl
         return url(pattern, view, kwargs = kwargs,
                    name = cl.make_view_name(name))
 

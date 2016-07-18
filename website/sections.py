@@ -95,7 +95,6 @@ class Player(sections.Section):
 
     def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(*args, **kwargs)
-
         context.update({
             'base_template': 'aircox/cms/section.html',
             'live_streams': self.live_streams,
@@ -220,7 +219,7 @@ class Diffusions(sections.List):
 
         return ' / \n'.join([str_sched(sched)
                  for sched in programs.Schedule.objects \
-                    .filter(program = self.object.related.pk)
+                    .filter(program = self.object and self.object.related.pk)
         ])
 
 
@@ -256,27 +255,42 @@ class Sounds(sections.List):
         ]
 
 
-class Schedule(Diffusions):
+
+class ListByDate(sections.List):
     """
-    Render a list of diffusions in the form of a schedule
+    List that add a navigation by date in its header.
     """
-    template_name = 'aircox/website/schedule.html'
-    date = None
-    nav_date_format = '%a. %d'
-    fields = [ 'time', 'image', 'title']
+    template_name = 'aircox/website/list_by_date.html'
     message_empty = ''
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.add_css_class('schedule')
+    model = None
 
-    @staticmethod
-    def get_week_dates(date):
+    date = None
+    """
+    date of the items to print
+    """
+    nav_days = 7
+    """
+    number of days to display in the header
+    """
+    nav_date_format = '%a. %d'
+    """
+    format of dates to display in the header
+    """
+    nav_per_week = True
+    """
+    if true, print days in header by week
+    """
+
+    def nav_dates(self, date):
         """
         Return a list of dates of the week of the given date.
         """
-        first = date - tz.timedelta(days=date.weekday())
-        return [ first + tz.timedelta(days=i) for i in range(0, 7) ]
+        first = int((self.nav_days - 1) / 2)
+        first = date - tz.timedelta(days=date.weekday()) \
+                if self.nav_per_week else \
+                date - tz.timedelta(days=first)
+        return [ first + tz.timedelta(days=i) for i in range(0, self.nav_days) ]
 
     def date_or_default(self):
         if self.date:
@@ -287,40 +301,20 @@ class Schedule(Diffusions):
                                day = int(self.kwargs['day']),
                                hour = 0, minute = 0, second = 0,
                                microsecond = 0)
-        return tz.datetime.now()
-
-    def get_object_list(self):
-        date = self.date_or_default()
-        return routes.DateRoute.get_queryset(
-            models.Diffusion, self.request, date.year, date.month,
-            date.day
-        ).order_by('date')
+        return tz.now()
 
     def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(*args, **kwargs)
 
         date = self.date_or_default()
-        dates = [
-            (date, models.Diffusion.reverse(
-                routes.DateRoute,
-                year = date.year, month = date.month, day = date.day
-            ))
-            for date in self.get_week_dates(date)
-        ]
+        dates = [ (date, self.get_date_url(date))
+                    for date in self.nav_dates(date) ]
 
         next_week = dates[-1][0] + tz.timedelta(days=1)
-        next_week = models.Diffusion.reverse(
-                routes.DateRoute,
-                year = next_week.year, month = next_week.month,
-                day = next_week.day
-        )
+        next_week = self.get_date_url(next_week)
 
         prev_week = dates[0][0] - tz.timedelta(days=1)
-        prev_week = models.Diffusion.reverse(
-                routes.DateRoute,
-                year = prev_week.year, month = prev_week.month,
-                day = prev_week.day
-        )
+        prev_week = self.get_date_url(prev_week)
 
         context.update({
             'date': date,
@@ -330,15 +324,90 @@ class Schedule(Diffusions):
         })
         return context
 
+    @staticmethod
+    def get_date_url(date):
+        """
+        return a url to the list for the given date
+        """
+
     @property
     def url(self):
         return None
 
 
-class Logs(Schedule):
+class Schedule(Diffusions,ListByDate):
+    """
+    Render a list of diffusions in the form of a schedule
+    """
+    fields = [ 'time', 'image', 'title', 'content', 'info', 'actions' ]
+    truncate = 30
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.add_css_class('schedule')
+
+    def get_object_list(self):
+        date = self.date_or_default()
+        return routes.DateRoute.get_queryset(
+            models.Diffusion, self.request, date.year, date.month,
+            date.day
+        ).order_by('date')
+
+    @staticmethod
+    def get_date_url(date):
+        """
+        return an url for the given date
+        """
+        return models.Diffusion.reverse(
+            routes.DateRoute,
+            year = date.year, month = date.month, day = date.day,
+        )
+
+
+class Logs(ListByDate):
     """
     Return a list of played stream sounds and diffusions.
     """
-    template_name = 'aircox/website/schedule.html'
-    # HERE -- + rename aircox/website/schedule to dated_list
+
+    @staticmethod
+    def make_item(log):
+        """
+        Return a list of items to add to the playlist.
+        """
+        if issubclass(type(log.related), programs.Diffusion):
+            diff = log.related
+            post = models.Diffusion.objects.filter(related = diff).first() \
+                    or models.Program.objects.filter(related = diff.program).first() \
+                    or ListItem(title = diff.program.name)
+            post.date = diff.start
+            return post
+
+        if issubclass(type(log.related), programs.Track):
+            track = log.related
+            post = ListItem(
+                title = '{artist} &#8212; {name}'.format(
+                    artist = track.artist,
+                    name = track.name,
+                ),
+                date = log.date,
+                content = track.info,
+                info = '♫',
+            )
+        return post
+
+    def get_object_list(self):
+        station = self.view._website.station
+        qs = station.get_played(
+            models = [ programs.Diffusion, programs.Track ],
+        ).filter(
+            date__year = int(year), date__month = int(month),
+            date__day = int(day)
+        )
+        # TODO for each, exclude if there is a diffusion (that has not been logged)
+
+        return [ cl.make_item(log) for log in qs ]
+
+    @staticmethod
+    def get_date_url(date):
+        pass
 

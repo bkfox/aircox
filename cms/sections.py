@@ -29,20 +29,19 @@ class Viewable:
     @classmethod
     def as_view (cl, *args, **kwargs):
         """
-        Similar to View.as_view, but instead, wrap a constructor of the
-        given class that is used as is.
+        Create a view containing the current viewable, using a subclass
+        of aircox.cms.views.BaseView.
+        All the arguments are passed to the view directly.
         """
-        def func(**kwargs_):
-            if kwargs_:
-                kwargs.update(kwargs_)
-            instance = cl(*args, **kwargs)
-            return instance
-        return func
+        from aircox.cms.views import PageView
+        kwargs['sections'] = cl
+        return PageView.as_view(*args, **kwargs)
 
     @classmethod
     def extends (cl, **kwargs):
         """
         Return a sub class where the given attribute have been updated
+        using kwargs.
         """
         class Sub(cl):
             pass
@@ -60,13 +59,20 @@ class Sections(Viewable, list):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+    def prepare(self, *args, **kwargs):
+        """
+        prepare all children sections
+        """
         for i, section in enumerate(self):
             if callable(section) or type(section) == type:
                 self[i] = section()
+            self[i].prepare(*args, **kwargs)
 
     def render(self, *args, **kwargs):
+        if args:
+            self.prepare(*args, **kwargs)
         return ''.join([
-            section.render(*args, **kwargs)
+            section.render()
             for section in self
         ])
 
@@ -127,6 +133,7 @@ class Section(Viewable, View):
     its value is an empty string (prints an empty string).
     """
 
+    view = None
     request = None
     object = None
     kwargs = None
@@ -138,8 +145,8 @@ class Section(Viewable, View):
         else:
             self.css_class = css_class
 
-    def __init__ (self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__ (self, **kwargs):
+        super().__init__(**kwargs)
 
         self.add_css_class('section')
         if type(self) != Section:
@@ -159,11 +166,7 @@ class Section(Viewable, View):
         """
         return False
 
-    def get_context_data(self, request = None, object = None, **kwargs):
-        if request: self.request = request
-        if object: self.object = object
-        if kwargs: self.kwargs = kwargs
-
+    def get_context_data(self):
         return {
             'view': self,
             'exp': (hasattr(self, '_exposure') and self._exposure) or None,
@@ -178,8 +181,24 @@ class Section(Viewable, View):
             'embed': True,
         }
 
-    def render(self, request, object=None, **kwargs):
-        context = self.get_context_data(request=request, object=object, **kwargs)
+    def prepare(self, view, **kwargs):
+        """
+        initialize the object with valuable informations.
+        """
+        self.view = view
+        self.request = view.request
+        self.kwargs = view.kwargs
+        if hasattr(view, 'object'):
+            self.object = view.object
+
+    def render(self, *args, **kwargs):
+        """
+        Render the section as a string. Use *args and **kwargs to prepare
+        the section, then get_context_data and render.
+        """
+        if args and not self.view:
+            self.prepare(*args, **kwargs)
+        context = self.get_context_data()
 
         is_empty = self.is_empty()
         if not context or (is_empty and not self.message_empty):
@@ -189,7 +208,9 @@ class Section(Viewable, View):
             context['content'] = self.message_empty
 
         context['embed'] = True
-        return render_to_string(self.template_name, context, request=request)
+        return render_to_string(
+            self.template_name, context, request=self.request
+        )
 
 
 class Image(Section):
@@ -336,11 +357,17 @@ class List(Section):
                 ListItem(item) for item in items
             ]
 
+    @classmethod
+    def as_view(cl, *args, **kwargs):
+        from aircox.cms.views import PostListView
+        kwargs['sections'] = cl
+        return PostListView.as_view(*args, **kwargs)
+
     def is_empty(self):
         return not self.object_list
 
     def get_object_list(self):
-        return self.object_list
+        return self.object_list or []
 
     def prepare_list(self, object_list):
         """
@@ -349,8 +376,7 @@ class List(Section):
         """
         return object_list
 
-    def get_context_data(self, request, object=None, object_list=None,
-                            *args, **kwargs):
+    def get_context_data(self, *args, object_list=None, **kwargs):
         """
         Return a context that is passed to the template at rendering, with
         the following values:
@@ -364,21 +390,20 @@ class List(Section):
 
         Set `request`, `object`, `object_list` and `kwargs` in self.
         """
-        if request: self.request = request
-        if object: self.object = object
-        if kwargs: self.kwargs = kwargs
+        if args:
+            self.prepare(*args, **kwargs)
 
         if object_list is None:
             object_list = self.object_list or self.get_object_list()
             if not object_list and not self.message_empty:
-                return
+                return {}
 
         self.object_list = object_list
         if object_list:
             object_list = self.prepare_list(object_list)
-            Actions.make(request, object_list = object_list)
+            Actions.make(self.request, object_list = object_list)
 
-        context = super().get_context_data(request, object, *args, **kwargs)
+        context = super().get_context_data()
         context.update({
             'list': self,
             'object_list': object_list[:self.paginate_by]
@@ -510,13 +535,16 @@ class Menu(Section):
         if not self.attrs:
             self.attrs = {}
 
-    def get_context_data(self, *args, **kwargs):
-        super().get_context_data(*args, **kwargs)
+    def prepare(self, *args, **kwargs):
+        super().prepare(*args, **kwargs)
+        self.sections.prepare(*args, **kwargs)
+
+    def get_context_data(self):
         return {
             'tag': self.tag,
             'css_class': self.css_class,
             'attrs': self.attrs,
-            'content': self.sections.render(*args, **kwargs)
+            'content': self.sections.render()
         }
 
 
@@ -579,16 +607,18 @@ class Calendar(Section):
         date = date.replace(day = 1)
 
         first, count = calendar.monthrange(date.year, date.month)
+        def make_date(date, day):
+            date += tz.timedelta(days=day)
+            return (
+                date, self.model.reverse(
+                    routes.DateRoute, year = date.year,
+                    month = date.month, day = date.day
+                )
+            )
+
         context.update({
             'first_weekday': first,
-            'days': [
-                (date + tz.timedelta(days=day), self.model.reverse(
-                        routes.DateRoute, year = date.year, month = date.month,
-                        day = day
-                    )
-                ) for day in range(0, count)
-            ],
-
+            'days': [ make_date(date, day) for day in range(0, count) ],
             'today': datetime.date.today(),
             'this_month': date,
             'prev_month': date - tz.timedelta(days=10),

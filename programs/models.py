@@ -755,7 +755,7 @@ class Track(Related):
         blank=True,
     )
     pos_in_secs = models.BooleanField(
-        _('use seconds'),
+        _('seconds'),
         default = False,
         help_text=_('position in the playlist is expressed in seconds')
     )

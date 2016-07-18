@@ -9,6 +9,7 @@ import aircox.cms.routes as routes_
 import aircox.cms.views as views
 import aircox.cms.models as models
 import aircox.cms.sections as sections
+import aircox.cms.sections as sections_
 
 
 class Website:
@@ -37,7 +38,7 @@ class Website:
 
     ## components
     Registration = namedtuple('Registration',
-        'name model routes as_default'
+        'name model routes default'
     )
 
     urls = []
@@ -64,7 +65,7 @@ class Website:
         if self.comments_routes:
             self.register_comments()
 
-    def register_model(self, name, model, as_default):
+    def register_model(self, name, model, default):
         """
         Register a model and update model's fields with few data:
         - _website: back ref to self
@@ -77,9 +78,9 @@ class Website:
             if reg.model is model:
                 return reg
             raise ValueError('A model has yet been registered under "{}"'
-                             .format(name))
+                             .format(reg.model, name))
 
-        reg = self.Registration(name, model, [], as_default)
+        reg = self.Registration(name, model, [], default)
         self.registry[name] = reg
         model._registration = reg
         model._website = self
@@ -97,74 +98,89 @@ class Website:
                 continue
             self.exposures += section._exposure.gather(section)
 
-    def register(self, name, routes = [], view = views.PageView,
-                 model = None, sections = None,
-                 as_default = False, **view_kwargs):
-        """
-        Register a view using given name and routes. If model is given,
-        register the views for it.
 
-        * name is used to register the routes as urls and the model if given
-        * routes: can be a path or a route used to generate urls for the view.
-            Can be a one item or a list of items.
-        * view: route that is registered for the given routes
-        * model: model being registrated. If given, register it in the website
-            under the given name, and make it available to the view.
-        * as_default: make the view available as a default view.
-        """
-        if type(routes) not in (tuple, list):
-            routes = [ routes ]
+    def __route_to_url(self, name, route, view, sections, kwargs):
+        # route can be a tuple
+        if type(route) in (tuple,list):
+            route, view = route
+            view = view.as_view(
+                website = self, **kwargs
+            )
 
-        # model registration
-        if model:
-            reg = self.register_model(name, model, as_default)
-            reg.routes.extend(routes)
-            view_kwargs['model'] = model
-        else:
-            view_kwargs['model'] = None
+        # route can be a route or a string
+        if type(route) == type and issubclass(route, routes_.Route):
+            return route.as_url(name, view)
 
-        # init view
-        if not view_kwargs.get('menus'):
-            view_kwargs['menus'] = self.menus
-
-        if sections:
-            self.register_exposures(sections)
-            view_kwargs['sections'] = sections
-
-        view = view.as_view(
-            website = self,
-            **view_kwargs
+        return url(
+            slugify(name) if not route else str(route),
+            view = view, name = name, kwargs = kwargs
         )
 
-        # url gen
+    def add_page(self, name, routes = [], view = views.PageView,
+                 sections = None, default = False, **kwargs):
+        """
+        Add a view and declare it on the given routes.
+
+        * routes: list of routes or patterns, or tuple (route/pattern, view)
+            to force a view to be used;
+        * view: view to use by default to render the page;
+        * sections: sections to display on the view;
+        * default: use this as a default view;
+        * kwargs: extra kwargs to pass to the view;
+
+        If view is a section, generate a PageView with this section as
+        child. Note: the kwargs are passed to the PageView constructor.
+        """
+        if view and issubclass(type(view), sections_.Section):
+            sections, view = view, views.PageView
+
+        if not kwargs.get('menus'):
+            kwargs['menus'] = self.menus
+        if sections:
+            self.register_exposures(sections)
+
+        view = view.as_view(website = self, sections = sections, **kwargs)
+
+        if not hasattr(routes, '__iter__'):
+            routes = [routes]
+
         self.urls += [
-            route.as_url(name, view)
-                if type(route) == type and issubclass(route, routes_.Route)
-                else url(slugify(name) if not route else route,
-                         view = view, name = name)
+            self.__route_to_url(name, route, view, sections, kwargs)
             for route in routes
         ]
 
-    def register_dl(self, name, model, sections = None, routes = None,
-                    list_view = views.PostListView,
-                    detail_view = views.PostDetailView,
-                    list_kwargs = {}, detail_kwargs = {},
-                    as_default = False):
+    def add_model(self, name, model, sections = None, routes = None,
+                  default = False,
+                  list_view = views.PostListView,
+                  detail_view = views.PostDetailView,
+                  **kwargs):
         """
-        Register a detail and list view for a given model, using
-        routes.
+        Add a model to the Website, register it and declare its routes.
 
-        Just a wrapper around `register`.
+        * model: model to register
+        * sections: sections to display in the *detail* view;
+        * routes: routes to use for the *list* view -- cf. add_page.routes;
+        * default: use as default route;
+        * list_view: use it as view for lists;
+        * detail_view: use it as view for details;
+        * kwargs: extra kwargs arguments to pass to the view;
         """
+        # register the model and the routes
+        reg = self.register_model(name, model, default)
+        reg.routes.extend([
+            route[0] if type(route) in (list,tuple) else route
+            for route in routes
+        ])
+        reg.routes.append(routes_.DetailRoute)
+
+        kwargs['model'] = model
         if sections:
-            self.register(name, [ routes_.DetailRoute ], view = detail_view,
-                          model = model, sections = sections,
-                          as_default = as_default,
-                          **detail_kwargs)
+            self.add_page(name, view = detail_view, sections = sections,
+                          routes = routes_.DetailRoute, default = default,
+                          **kwargs)
         if routes:
-            self.register(name, routes, view = list_view,
-                          model = model, as_default = as_default,
-                          **list_kwargs)
+            self.add_page(name, view = list_view, routes = routes,
+                          default = default, **kwargs)
 
     def register_comments(self):
         """
@@ -173,16 +189,12 @@ class Website:
 
         Just a wrapper around `register`.
         """
-        self.register(
+        self.add_model(
             'comment',
-            view = views.PostListView,
-            routes = [routes.ThreadRoute],
             model = models.Comment,
+            routes = [routes.ThreadRoute],
             css_class = 'comments',
-            list = sections.Comments(
-                truncate = 30,
-                fields = ['content','author','date','time'],
-            )
+            list = sections.Comments
         )
 
     def set_menu(self, menu):
@@ -204,7 +216,7 @@ class Website:
         given route.
         """
         for r in self.registry.values():
-            if r.as_default and route in r.routes:
+            if r.default and route in r.routes:
                 return r
 
     def reverse(self, model, route, use_default = True, **kwargs):
@@ -226,7 +238,7 @@ class Website:
             return ''
 
         for r in self.registry.values():
-            if r.as_default and route in r.routes:
+            if r.default and route in r.routes:
                 try:
                     name = route.make_view_name(r.name)
                     return reverse(name, kwargs = kwargs)
