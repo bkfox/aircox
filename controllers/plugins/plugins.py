@@ -1,5 +1,7 @@
 import os
 import re
+import subprocess
+import atexit
 
 from django.template.loader import render_to_string
 
@@ -57,8 +59,7 @@ class StationController:
     """
     Current source object that is responsible of self.current_sound
     """
-
-    # TODO: add function to launch external program?
+    process = None
 
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
@@ -75,6 +76,46 @@ class StationController:
             source.prepare()
             if source.controller:
                 source.controller.fetch()
+
+    def __get_process_args(self):
+        """
+        Get arguments for the executed application. Called by exec, to be
+        used as subprocess.Popen(__get_process_args()).
+        If no value is returned, abort the execution.
+
+        Must be implemented by the plugin
+        """
+        return []
+
+    def process_run(self):
+        """
+        Execute the external application with corresponding informations.
+
+        This function must make sure that all needed files have been generated.
+        """
+        if self.process:
+            return
+
+        self.push()
+
+        args = self.__get_process_args()
+        if not args:
+            return
+        self.process = subprocess.Popen(args, stderr=subprocess.STDOUT)
+        atexit.register(self.process.terminate)
+
+    def process_terminate(self):
+        if self.process:
+            self.process.terminate()
+            self.process = None
+
+    def process_wait(self):
+        """
+        Wait for the process to terminate if there is a process
+        """
+        if self.process:
+            self.process.wait()
+            self.process = None
 
     def push(self, config = True):
         """

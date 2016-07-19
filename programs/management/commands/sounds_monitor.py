@@ -127,7 +127,7 @@ class SoundInfo:
         if not os.path.exists(path):
             return
 
-        old = Tracks.get_for(object = sound).exclude(tracks_id)
+        old = Track.get_for(object = sound)
         if old:
             return
 
@@ -296,6 +296,7 @@ class Command(BaseCommand):
 
         # sounds in directory
         for path in os.listdir(subdir):
+            print(path)
             path = os.path.join(subdir, path)
             if not path.endswith(settings.AIRCOX_SOUND_FILE_EXT):
                 continue

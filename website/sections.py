@@ -356,12 +356,11 @@ class Logs(ListByDate):
 
         track = log.related
         post = ListItem(
-            title = '{artist} &#8212; {name}'.format(
-                artist = track.artist,
-                name = track.name,
-            ),
+            title = track.name,
+            subtitle = track.artist,
             date = log.date,
             content = track.info,
+            css_class = 'track',
             info = '♫',
         )
         return post

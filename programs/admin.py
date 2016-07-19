@@ -2,6 +2,7 @@ import copy
 
 from django import forms
 from django.contrib import admin
+from django.contrib.contenttypes.admin import GenericTabularInline
 from django.db import models
 from django.utils.translation import ugettext as _, ugettext_lazy
 
@@ -44,13 +45,21 @@ class DiffusionInline(admin.StackedInline):
 #    sortable = 'position'
 #    extra = 10
 
-
 class NameableAdmin(admin.ModelAdmin):
     fields = [ 'name' ]
 
     list_display = ['id', 'name']
     list_filter = []
     search_fields = ['name',]
+
+
+class TrackInline(GenericTabularInline):
+    ct_field = 'related_type'
+    ct_fk_field = 'related_id'
+    model = Track
+    extra = 0
+    fields = ('artist', 'title', 'tags', 'info', 'position')
+    readonly_fields = ('position',)
 
 
 @admin.register(Sound)
@@ -64,6 +73,7 @@ class SoundAdmin(NameableAdmin):
         (None, { 'fields': ['removed', 'good_quality' ] } )
     ]
     readonly_fields = ('path', 'duration',)
+    inlines = [TrackInline]
 
 
 @admin.register(Stream)

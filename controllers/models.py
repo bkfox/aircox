@@ -12,6 +12,7 @@ sources that are used to generate the audio stream:
 - **master**: main output
 """
 import os
+import logging
 from enum import Enum, IntEnum
 
 from django.db import models
@@ -23,6 +24,9 @@ import aircox.programs.models as programs
 from aircox.programs.utils import to_timedelta
 import aircox.controllers.settings as settings
 from aircox.controllers.plugins.plugins import Plugins
+
+
+logger = logging.getLogger('aircox.controllers')
 
 Plugins.discover()
 
@@ -142,7 +146,7 @@ class Station(programs.Nameable):
             the queryset;
         """
         qs = Log.get_for(model = models) \
-                .filter(station = station, type = Log.Type.play)
+                .filter(station = self, type = Log.Type.play)
         if not archives and self.dealer:
             qs = qs.exclude(
                 source = self.dealer.id_,
@@ -270,7 +274,7 @@ class Source(programs.Nameable):
             self.controller.playlist = diffusion.playlist
             return
 
-        program = program or self.stream
+        program = program or self.program
         if program:
             self.controller.playlist = [ sound.path for sound in
                 programs.Sound.objects.filter(
@@ -404,12 +408,12 @@ class Log(programs.Related):
             str(self),
             self.comment or '',
             ' -- {} #{}'.format(self.related_type, self.related_id)
-                if self.related_object else ''
+                if self.related else ''
         )
 
     def __str__(self):
         return '#{} ({}, {})'.format(
-                self.pk, self.date.strftime('%Y/%m/%d %H:%M'), self.source.name
+                self.pk, self.date.strftime('%Y/%m/%d %H:%M'), self.source
         )
 
 

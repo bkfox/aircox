@@ -1,4 +1,6 @@
 import os
+import subprocess
+import atexit
 
 import aircox.controllers.plugins.plugins as plugins
 from aircox.controllers.plugins.connector import Connector
@@ -29,7 +31,10 @@ class StationController(plugins.StationController):
         self.connector = Connector(self.socket_path)
 
     def _send(self, *args, **kwargs):
-        self.connector.send(*args, **kwargs)
+        return self.connector.send(*args, **kwargs)
+
+    def __get_process_args(self):
+        return ['liquidsoap', '-v', self.path]
 
     def fetch(self):
         super().fetch()
@@ -38,19 +43,22 @@ class StationController(plugins.StationController):
         if not rid:
             return
 
-        data = self._send('request.metadata', rid, parse = True)
+        data = self._send('request.metadata ', rid, parse = True)
         if not data:
             return
 
         self.current_sound = data.get('initial_uri')
-        self.current_source = [
-            # we assume sound is always from a registered source
-            source for source in self.station.get_sources()
-            if source.rid == rid
-        ][0]
+        try:
+            self.current_source = next(
+                source for source in self.station.get_sources()
+                if source.controller.rid == rid
+            )
+        except:
+            self.current_source = None
 
 
 class SourceController(plugins.SourceController):
+    rid = None
     connector = None
 
     def __init__(self, *args, **kwargs):
@@ -58,7 +66,7 @@ class SourceController(plugins.SourceController):
         self.connector = self.source.station.controller.connector
 
     def _send(self, *args, **kwargs):
-        self.connector.send(*args, **kwargs)
+        return self.connector.send(*args, **kwargs)
 
     @property
     def active(self):
@@ -76,7 +84,7 @@ class SourceController(plugins.SourceController):
         self._send(self.source.slug, '.skip')
 
     def fetch(self):
-        data = self._send(self.source.slug, '.get', parse = True)
+        data = self._send(self.source.id_, '.get', parse = True)
         if not data:
             return
 

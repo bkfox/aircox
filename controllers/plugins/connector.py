@@ -56,7 +56,6 @@ class Connector:
             if data:
                 data = reg.sub(r'\1', data)
                 data = data.strip()
-
                 if parse:
                     data = self.parse(data)
                 elif parse_json:

@@ -16,14 +16,13 @@ class OutputInline(admin.StackedInline):
 class StationAdmin(admin.ModelAdmin):
     inlines = [ SourceInline, OutputInline ]
 
-#@admin.register(Log)
-#class LogAdmin(admin.ModelAdmin):
-#    list_display = ['id', 'date', 'source', 'comment', 'related_object']
-#    list_filter = ['date', 'source', 'related_type']
+@admin.register(models.Log)
+class LogAdmin(admin.ModelAdmin):
+    list_display = ['id', 'date', 'station', 'source', 'comment', 'related']
+    list_filter = ['date', 'source', 'related_type']
 
 admin.site.register(models.Source)
 admin.site.register(models.Output)
-admin.site.register(models.Log)
 
 
 

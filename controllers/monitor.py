@@ -1,7 +1,9 @@
+import time
+
 from django.utils import timezone as tz
 
 import aircox.programs.models as programs
-from aircox.controller.models import Log
+from aircox.controllers.models import Log
 
 class Monitor:
     """
@@ -19,22 +21,28 @@ class Monitor:
     station = None
     controller = None
 
-    def run(self):
+    def __init__(self, station):
+        self.station = station
+
+    def monitor(self):
         """
         Run all monitoring functions. Ensure that station has controllers
         """
         if not self.controller:
             self.station.prepare()
+            for stream in self.station.stream_sources:
+                stream.load_playlist()
+
         self.controller = self.station.controller
 
         self.trace()
-        self.handler()
+        self.handle()
 
     def log(self, **kwargs):
         """
         Create a log using **kwargs, and print info
         """
-        log = programs.Log(station = self.station, **kwargs)
+        log = Log(station = self.station, **kwargs)
         log.save()
         log.print()
 
@@ -46,7 +54,7 @@ class Monitor:
         self.controller.fetch()
         current_sound = self.controller.current_sound
         current_source = self.controller.current_source
-        if not current_sound:
+        if not current_sound or not current_source:
             return
 
         log = Log.get_for(model = programs.Sound) \
@@ -61,7 +69,7 @@ class Monitor:
                     log.related.path == current_sound):
             return
 
-        sound = programs.Sound.object.filter(path = current_sound)
+        sound = programs.Sound.objects.filter(path = current_sound)
         self.log(
             type = Log.Type.play,
             source = current_source.id_,
@@ -77,17 +85,17 @@ class Monitor:
         """
         logs = Log.get_for(model = programs.Track) \
                   .filter(pk__gt = log.pk)
-        logs = [ log.pk for log in logs ]
+        logs = [ log.related_id for log in logs ]
 
-        tracks = programs.Track.get_for(object = log.related)
-                               .filter(pos_in_sec = True)
-        if len(tracks) == len(logs):
+        tracks = programs.Track.get_for(object = log.related) \
+                               .filter(pos_in_secs = True)
+        if tracks and len(tracks) == len(logs):
             return
 
-        tracks = tracks.exclude(pk__in = logs).order_by('pos')
+        tracks = tracks.exclude(pk__in = logs).order_by('position')
         now = tz.now()
         for track in tracks:
-            pos = log.date + tz.timedelta(seconds = track.pos)
+            pos = log.date + tz.timedelta(seconds = track.position)
             if pos < now:
                 self.log(
                     type = Log.Type.play,
@@ -165,8 +173,8 @@ class Monitor:
         playlist += next_playlist
 
         # playlist update
-        if dealer.playlist != playlist:
-            dealer.playlist = playlist
+        if dealer.controller.playlist != playlist:
+            dealer.controller.playlist = playlist
             if next_diff:
                 self.log(
                     type = Log.Type.load,
@@ -186,4 +194,5 @@ class Monitor:
                 date = now,
                 related_object = next_diff,
             )
+
 
