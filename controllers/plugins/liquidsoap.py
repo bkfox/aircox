@@ -42,7 +42,6 @@ class StationController(plugins.StationController):
     def fetch(self):
         super().fetch()
 
-
         rid = self._send('request.on_air').split(' ')[0]
         if ' ' in rid:
             rid = rid[:rid.index(' ')]

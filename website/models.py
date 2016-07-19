@@ -122,7 +122,7 @@ class Diffusion(cms.RelatedPost):
             self.rel_to_post()
 
         self.fill_empty()
-        if not self.subtitle:
+        if not self.subtitle and hasattr(self, 'related'):
             self.subtitle = _('Diffusion of the %(date)s') % {
                 'date': self.related.start.strftime('%A %d/%m')
             }

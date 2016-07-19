@@ -587,7 +587,7 @@ class DiffusionManager(models.Manager):
         date.
         """
         date = date or tz.now()
-        if issubclass(type(date), datetime.date):
+        if not issubclass(type(date), datetime.datetime):
             return self.filter(
                 models.Q(start__contains = date) | \
                 models.Q(end__contains = date)

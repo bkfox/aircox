@@ -358,6 +358,10 @@ class Log(programs.Related):
         """
         Source starts to be preload related_object
         """
+        other = 0x03
+        """
+        Other log
+        """
 
     type = models.SmallIntegerField(
         verbose_name = _('type'),

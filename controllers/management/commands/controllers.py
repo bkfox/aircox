@@ -39,20 +39,27 @@ class Command (BaseCommand):
 
         group = parser.add_argument_group('options')
         group.add_argument(
+            '-d', '--delay', type=int,
+            default=1000,
+            help='time to sleep in MILLISECONDS between two updates when we '
+                 'monitor'
+        )
+        group.add_argument(
             '-s', '--station', type=str, action='append',
             help='name of the station to monitor instead of monitoring '
                  'all stations'
         )
         group.add_argument(
-            '-d', '--delay', type=int,
-            default=1000,
-            help='time to sleep in milliseconds between two updates when we '
-                 'monitor'
+            '-t', '--timeout', type=int,
+            default=600,
+            help='time to wait in SECONDS before canceling a diffusion that '
+                 'has not been ran but should have been. If 0, does not '
+                 'check'
         )
 
     def handle (self, *args,
                 config = None, run = None, monitor = None,
-                station = [], delay = 1000,
+                station = [], delay = 1000, timeout = 600,
                 **options):
 
         stations = Station.objects.filter(name__in = station)[:] \
@@ -67,7 +74,10 @@ class Command (BaseCommand):
                 station.controller.process_run()
 
         if monitor:
-            monitors = [ Monitor(station) for station in stations ]
+            monitors = [
+                Monitor(station, cancel_timeout = timeout)
+                    for station in stations
+            ]
             delay = delay / 1000
             while True:
                 for monitor in monitors:

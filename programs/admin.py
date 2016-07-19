@@ -27,7 +27,7 @@ class StreamInline(admin.TabularInline):
 
 class SoundInline(admin.TabularInline):
     fields = ['type', 'path', 'duration']
-    readonly_fields = fields
+    # readonly_fields = fields
     model = Sound
     extra = 0
 
@@ -148,10 +148,6 @@ class DiffusionAdmin(admin.ModelAdmin):
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
-        print('type__exact' in request.GET,
-                request.GET.get('type__exact'),
-                Diffusion.Type.unconfirmed,
-                request.GET.get('type__exact') == Diffusion.Type.unconfirmed)
         if request.GET and len(request.GET):
             return qs
         return qs.exclude(type = Diffusion.Type.unconfirmed)

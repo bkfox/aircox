@@ -20,10 +20,16 @@ class Monitor:
     """
     station = None
     controller = None
+    cancel_timeout = 60*10
+    """
+    Time in seconds before a diffusion that have archives is cancelled
+    because it has not been played.
+    """
 
-    def __init__(self, station):
+    def __init__(self, station, **kwargs):
         Log.objects.all().delete()
         self.station = station
+        self.__dict__.update(kwargs)
 
     def monitor(self):
         """
@@ -105,6 +111,34 @@ class Monitor:
                     source = log.source,
                     date = pos,
                     related = track
+                )
+
+    def trace_canceled(self):
+        """
+        Check diffusions that should have been played but did not start,
+        and cancel them
+        """
+        if not self.cancel_timeout:
+            return
+
+        diffs = programs.objects.get_at().filter(
+            type = programs.Diffusion.Type.normal,
+            sound__type = programs.Sound.Type.archive,
+        )
+        logs = station.get_played(models = programs.Diffusion)
+
+        date = tz.now() - datetime.timedelta(seconds = self.cancel_timeout)
+        for diff in diffs:
+            if logs.filter(related = diff):
+                continue
+            if diff.start < now:
+                diff.type = programs.Diffusion.Type.canceled
+                diff.save()
+                self.log(
+                    type = Log.Type.other,
+                    related = diff,
+                    comment = 'Diffusion canceled after {} seconds' \
+                              .format(self.cancel_timeout)
                 )
 
     def __current_diff(self):
