@@ -22,6 +22,7 @@ class Monitor:
     controller = None
 
     def __init__(self, station):
+        Log.objects.all().delete()
         self.station = station
 
     def monitor(self):
@@ -32,8 +33,10 @@ class Monitor:
             self.station.prepare()
             for stream in self.station.stream_sources:
                 stream.load_playlist()
-
         self.controller = self.station.controller
+
+        if not self.controller.ready():
+            return
 
         self.trace()
         self.handle()
@@ -114,22 +117,26 @@ class Monitor:
 
         diff_log = station.get_played(models = programs.Diffusion) \
                           .order_by('date').last()
-
         if not diff_log or \
                 not diff_log.related.is_date_in_range(now):
             return None, []
 
         # sound has switched? assume it has been (forced to) stopped
-        sounds = station.get_played(models = programs.Sound)
-        last_sound = sounds.order_by('date').last()
-        if last_sound and last_sound.source != diff_log.source:
-            return None, []
+        sounds = station.get_played(models = programs.Sound) \
+                        .filter(date__gte = diff_log.date) \
+                        .order_by('date')
+
+        if sounds.last() and sounds.last().source != diff_log.source:
+            return diff_log, []
 
         # last diff is still playing: get the remaining playlist
         sounds = sounds.filter(
             source = diff_log.source, pk__gt = diff_log.pk
         )
-        sounds = [ sound.path for sound in sounds if not sound.removed ]
+        sounds = [
+            sound.related.path for sound in sounds
+            if not sound.related.removed
+        ]
 
         return (
             diff_log.related,
@@ -141,11 +148,13 @@ class Monitor:
         """
         Return the tuple with the next diff that should be played and
         the playlist
+
+        Note: diff is a log
         """
         station = self.station
-        now = tz.make_aware(tz.datetime.now())
+        now = tz.now()
 
-        args = {'start__gt': diff.start } if diff else {}
+        args = {'start__gt': diff.date } if diff else {}
         diff = programs.Diffusion.objects.get_at(now).filter(
             type = programs.Diffusion.Type.normal,
             sound__type = programs.Sound.Type.archive,
@@ -163,11 +172,11 @@ class Monitor:
         dealer = station.dealer
         if not dealer:
             return
-        now = tz.make_aware(tz.datetime.now())
+        now = tz.now()
 
         # current and next diffs
         diff, playlist = self.__current_diff()
-        dealer.on = bool(playlist)
+        dealer.controller.active = bool(playlist)
 
         next_diff, next_playlist = self.__next_diff(diff)
         playlist += next_playlist
@@ -180,19 +189,20 @@ class Monitor:
                     type = Log.Type.load,
                     source = dealer.id_,
                     date = now,
-                    related_object = next_diff
+                    related = next_diff
                 )
 
         # dealer.on when next_diff start <= now
-        if next_diff and not dealer.on and next_diff.start <= now:
-            dealer.on = True
+        if next_diff and not dealer.controller.active and \
+                next_diff.start <= now:
+            dealer.controller.active = True
             for source in station.get_sources():
                 source.controller.skip()
-            cl.log(
+            self.log(
                 type = Log.Type.play,
                 source = dealer.id_,
                 date = now,
-                related_object = next_diff,
+                related = next_diff,
             )
 
 

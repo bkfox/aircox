@@ -36,10 +36,16 @@ class StationController(plugins.StationController):
     def __get_process_args(self):
         return ['liquidsoap', '-v', self.path]
 
+    def ready(self):
+        return self._send('var.list') != ''
+
     def fetch(self):
         super().fetch()
 
-        rid = self._send('request.on_air')
+
+        rid = self._send('request.on_air').split(' ')[0]
+        if ' ' in rid:
+            rid = rid[:rid.index(' ')]
         if not rid:
             return
 
@@ -50,7 +56,7 @@ class StationController(plugins.StationController):
         self.current_sound = data.get('initial_uri')
         try:
             self.current_source = next(
-                source for source in self.station.get_sources()
+                source for source in self.station.get_sources(dealer = True)
                 if source.controller.rid == rid
             )
         except:
@@ -70,12 +76,12 @@ class SourceController(plugins.SourceController):
 
     @property
     def active(self):
-        return self._send('var.get ', self.source.slug, '_active') == 'true'
+        return self._send('var.get ', self.source.id_, '_active') == 'true'
 
     @active.setter
     def active(self, value):
-        return self._send('var.set ', self.source.slug, '_active', '=',
-                           'true' if value else 'false')
+        self._send('var.set ', self.source.id_, '_active', '=',
+                   'true' if value else 'false')
 
     def skip(self):
         """
@@ -85,7 +91,7 @@ class SourceController(plugins.SourceController):
 
     def fetch(self):
         data = self._send(self.source.id_, '.get', parse = True)
-        if not data:
+        if not data or type(data) != dict:
             return
 
         self.rid = data.get('rid')

@@ -64,7 +64,7 @@ class Station(programs.Nameable):
     def id_(self):
         return self.slug
 
-    def get_sources(self, type = None, prepare = True):
+    def get_sources(self, type = None, prepare = True, dealer = False):
         """
         Return a list of active sources that can have their controllers
         initialized.
@@ -72,7 +72,11 @@ class Station(programs.Nameable):
         qs = self.source_set.filter(active = True)
         if type:
             qs = qs.filter(type = type)
-        return [ source.prepare() or source for source in qs ]
+
+        sources = [ source.prepare() or source for source in qs ]
+        if dealer == True:
+            sources.append(self.dealer)
+        return sources
 
     @property
     def stream_sources(self):

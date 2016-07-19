@@ -18,7 +18,7 @@ class StationAdmin(admin.ModelAdmin):
 
 @admin.register(models.Log)
 class LogAdmin(admin.ModelAdmin):
-    list_display = ['id', 'date', 'station', 'source', 'comment', 'related']
+    list_display = ['id', 'date', 'station', 'source', 'type', 'comment', 'related']
     list_filter = ['date', 'source', 'related_type']
 
 admin.site.register(models.Source)

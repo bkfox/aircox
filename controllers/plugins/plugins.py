@@ -71,7 +71,7 @@ class StationController:
         The base function just execute the function of all children
         sources. The plugin must implement the other extra part
         """
-        sources = self.station.get_sources()
+        sources = self.station.get_sources(dealer = True)
         for source in sources:
             source.prepare()
             if source.controller:
@@ -117,6 +117,11 @@ class StationController:
             self.process.wait()
             self.process = None
 
+    def ready(self):
+        """
+        If external program is ready to use, returns True
+        """
+
     def push(self, config = True):
         """
         Update configuration and children's info.
@@ -124,7 +129,7 @@ class StationController:
         The base function just execute the function of all children
         sources. The plugin must implement the other extra part
         """
-        sources = self.station.get_sources()
+        sources = self.station.get_sources(dealer = True)
         for source in sources:
             source.prepare()
             if source.controller:
