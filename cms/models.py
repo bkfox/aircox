@@ -516,100 +516,15 @@ class EventPage(Publication):
 #
 # Lists
 #
-class BaseDateList(models.Model):
-    nav_days = models.SmallIntegerField(
-        _('navigation days count'),
-        default = 7,
-        help_text = _('number of days to display in the navigation header '
-                      'when we use dates')
-    )
-    nav_per_week = models.BooleanField(
-        _('navigation per week'),
-        default = False,
-        help_text = _('if selected, show dates navigation per weeks instead '
-                      'of show days equally around the current date')
-    )
-
-    class Meta:
-        abstract = True
-
-    panels = [
-        MultiFieldPanel([
-            FieldPanel('nav_days'),
-            FieldPanel('nav_per_week'),
-        ], heading=_('Navigation')),
-    ]
-
-    @staticmethod
-    def str_to_date(date):
-        """
-        Parse a string and return a regular date or None.
-        Format is either "YYYY/MM/DD" or "YYYY-MM-DD" or "YYYYMMDD"
-        """
-        try:
-            exp = r'(?P<year>[0-9]{4})(-|\/)?(?P<month>[0-9]{1,2})(-|\/)?' \
-                  r'(?P<day>[0-9]{1,2})'
-            date = re.match(exp, date).groupdict()
-            return datetime.date(
-                year = int(date['year']), month = int(date['month']),
-                day = int(date['day'])
-            )
-        except:
-            return None
-
-    def get_date_context(self, date, date_max = None):
-        """
-        Return a dict that can be added to the context to be used by
-        a date_list.
-        """
-        if not date:
-            date = tz.now().today()
-
-        if date_max:
-            date = min(date, date_max)
-
-        # dates
-        if date_max == date:
-            first = self.nav_days - 1
-        elif self.nav_per_week:
-            first = date.weekday()
-        else:
-            first = int((self.nav_days - 1) / 2)
-        first = date - tz.timedelta(days = first)
-        dates = [ first + tz.timedelta(days=i)
-                    for i in range(0, self.nav_days) ]
-
-        # next/prev weeks/date bunch
-        next = date + tz.timedelta(days=self.nav_days)
-        prev = date - tz.timedelta(days=self.nav_days)
-
-        if date_max:
-            dates = [ date for date in dates if date <= date_max ]
-            next = min(next, date_max)
-            if next in dates:
-                next = None
-            prev = min(prev, date_max)
-
-        # context dict
-        return {
-            'nav_dates': {
-                'date': date,
-                'next': next,
-                'prev': prev,
-                'dates': dates,
-            }
-        }
-
-
 class ListPage(Page):
     """
     Page for simple lists, query is done though request' GET fields.
     Look at get_queryset for more information.
     """
-    summary = models.TextField(
-        _('summary'),
+    body = RichTextField(
+        _('body'),
         blank = True, null = True,
-        help_text = _('some short description if you want to, just for fun'),
+        help_text = _('add an extra description for this list')
     )
 
     @classmethod
@@ -697,102 +612,106 @@ class ListPage(Page):
         return context
 
 
-class LogsPage(BaseDateList,Page):
-    summary = models.TextField(
-        _('summary'),
-        blank = True, null = True,
-        help_text = _('some short description if you want to, just for fun'),
+class BaseDatedList(models.Model):
+    nav_days = models.SmallIntegerField(
+        _('navigation days count'),
+        default = 7,
+        help_text = _('number of days to display in the navigation header '
+                      'when we use dates')
     )
-    station = models.ForeignKey(
-        controllers.Station,
-        verbose_name = _('station'),
-        null = True,
-        on_delete=models.SET_NULL,
-        help_text = _('(required for logs) the station on which the logs '
-                      'happened')
-    )
-    max_days = models.IntegerField(
-        _('maximum days'),
-        default=15,
-        help_text = _('maximum days in the past allowed to be shown. '
-                      '0 means no limit')
+    nav_per_week = models.BooleanField(
+        _('navigation per week'),
+        default = False,
+        help_text = _('if selected, show dates navigation per weeks instead '
+                      'of show days equally around the current date')
     )
 
     class Meta:
-        verbose_name = _('Logs Page')
+        abstract = True
+
+    panels = [
+        MultiFieldPanel([
+            FieldPanel('nav_days'),
+            FieldPanel('nav_per_week'),
+        ], heading=_('Navigation')),
+    ]
+
+    @staticmethod
+    def str_to_date(date):
+        """
+        Parse a string and return a regular date or None.
+        Format is either "YYYY/MM/DD" or "YYYY-MM-DD" or "YYYYMMDD"
+        """
+        try:
+            exp = r'(?P<year>[0-9]{4})(-|\/)?(?P<month>[0-9]{1,2})(-|\/)?' \
+                  r'(?P<day>[0-9]{1,2})'
+            date = re.match(exp, date).groupdict()
+            return datetime.date(
+                year = int(date['year']), month = int(date['month']),
+                day = int(date['day'])
+            )
+        except:
+            return None
+
+    def get_nav_dates(self, date):
+        """
+        Return a list of dates availables for the navigation
+        """
+        if self.nav_per_week:
+            first = date.weekday()
+        else:
+            first = int((self.nav_days - 1) / 2)
+        first = date - tz.timedelta(days = first)
+        return [ first + tz.timedelta(days=i)
+                    for i in range(0, self.nav_days) ]
+
+    def get_date_context(self, date):
+        """
+        Return a dict that can be added to the context to be used by
+        a date_list.
+        """
+        today = tz.now().today()
+        if not date:
+            date = today
+
+        # next/prev weeks/date bunch
+        dates = self.get_nav_dates(date)
+        next = date + tz.timedelta(days=self.nav_days)
+        prev = date - tz.timedelta(days=self.nav_days)
+
+        # context dict
+        return {
+            'nav_dates': {
+                'date': date,
+                'next': next,
+                'prev': prev,
+                'dates': dates,
+            }
+        }
+
+
+class DatedListPage(BaseDatedList,Page):
+    body = RichTextField(
+        _('body'),
+        blank = True, null = True,
+        help_text = _('add an extra description for this list')
+    )
+
+    class Meta:
+        abstract = True
 
     content_panels = [
-        FieldPanel('title'),
         MultiFieldPanel([
-            FieldPanel('station'),
-            FieldPanel('max_days'),
-        ], heading=_('Configuration')),
-    ] + BaseDateList.panels
-
-    def as_item(cl, log):
-        """
-        Return a log object as a DiffusionPage or ListItem.
-        Supports: Log/Track, Diffusion
-        """
-        if type(log) == programs.Diffusion:
-            return DiffusionPage.as_item(log)
-        return ListItem(
-            title = '{artist} -- {title}'.format(
-                artist = log.related.artist,
-                title = log.related.title,
-            ),
-            summary = log.related.info,
-            date = log.date,
-            info = '♫',
-            css_class = 'track'
-        )
+            FieldPanel('title'),
+            FieldPanel('body'),
+        ], heading=_('Content')),
+    ] + BaseDatedList.panels
 
     def get_queryset(self, request, context):
-        logs = []
-        for date in context['nav_dates']['dates']:
-            items = self.station.get_on_air(date)
-            items = [ self.as_item(item) for item in items ]
-            logs.append((date, items))
-        return logs
-
-    def get_context(self, request, *args, **kwargs):
         """
-        note: context is updated using self.get_date_context
+        Must be implemented by the child
         """
-        context = super().get_context(request, *args, **kwargs)
-
-        # date navigation
-        if 'date' in request.GET:
-            date = request.GET.get('date')
-            date = self.str_to_date(date)
-
-            if date and self.max_days:
-                date = max(
-                    tz.now().date() - tz.timedelta(days=self.max_days),
-                    date
-                )
-        else:
-            date = tz.now().date()
-        context.update(self.get_date_context(date, date_max=tz.now().date()))
-
-        # queryset
-        context['object_list'] = self.get_queryset(request, context)
-        return context
-
-
-class TimetablePage(BaseDateList,Page):
-    class Meta:
-        verbose_name = _('Timetable')
-
-    content_panels = Page.content_panels + BaseDateList.panels
-
-    def get_queryset(self, request, context):
-        diffs = []
-        for date in context['nav_dates']['dates']:
-            items = programs.Diffusion.objects.get_at(date).order_by('start')
-            items = [ DiffusionPage.as_item(item) for item in items ]
-            diffs.append((date, items))
-        return diffs
+        return []
 
     def get_context(self, request, *args, **kwargs):
         """
@@ -812,10 +731,96 @@ class TimetablePage(BaseDateList,Page):
         context['object_list'] = self.get_queryset(request, context)
         return context
 
-#
-# Menus and Sections
-#
 
+class LogsPage(DatedListPage):
+    template = 'cms/dated_list_page.html'
+
+    station = models.ForeignKey(
+        controllers.Station,
+        verbose_name = _('station'),
+        null = True,
+        on_delete=models.SET_NULL,
+        help_text = _('(required for logs) the station on which the logs '
+                      'happened')
+    )
+    age_max = models.IntegerField(
+        _('maximum age'),
+        default=15,
+        help_text = _('maximum days in the past allowed to be shown. '
+                      '0 means no limit')
+    )
+
+    content_panels = BaseDatedList.panels + [
+        MultiFieldPanel([
+            FieldPanel('station'),
+            FieldPanel('age_max'),
+        ], heading=_('Configuration')),
+    ]
+
+    def as_item(cl, log):
+        """
+        Return a log object as a DiffusionPage or ListItem.
+        Supports: Log/Track, Diffusion
+        """
+        if type(log) == programs.Diffusion:
+            return DiffusionPage.as_item(log)
+        return ListItem(
+            title = '{artist} -- {title}'.format(
+                artist = log.related.artist,
+                title = log.related.title,
+            ),
+            summary = log.related.info,
+            date = log.date,
+            info = '♫',
+            css_class = 'track'
+        )
+
+    def get_nav_dates(self, date):
+        """
+        Return a list of dates availables for the navigation
+        """
+        # there might be a bug if age_max < nav_days
+        today = tz.now().date()
+        first = min(date, today)
+        first = max( first - tz.timedelta(days = self.nav_days-1),
+                     today - tz.timedelta(days = self.age_max))
+        return [ first + tz.timedelta(days=i)
+                    for i in range(0, self.nav_days) ]
+
+    def get_queryset(self, request, context):
+        today = tz.now().date()
+        if context['nav_dates']['next'] > today:
+            context['nav_dates']['next'] = None
+        if context['nav_dates']['prev'] < \
+                today - tz.timedelta(days = self.age_max):
+            context['nav_dates']['prev'] = None
+
+        logs = []
+        for date in context['nav_dates']['dates']:
+            items = self.station.get_on_air(date)
+            items = [ self.as_item(item) for item in items ]
+            logs.append((date, items))
+        return logs
+
+
+class TimetablePage(DatedListPage):
+    template = 'cms/dated_list_page.html'
+
+    class Meta:
+        verbose_name = _('Timetable')
+
+    def get_queryset(self, request, context):
+        diffs = []
+        for date in context['nav_dates']['dates']:
+            items = programs.Diffusion.objects.get_at(date).order_by('start')
+            items = [ DiffusionPage.as_item(item) for item in items ]
+            diffs.append((date, items))
+        return diffs
+
+
+#
+# Menus
+#
 @register_snippet
 class Menu(ClusterableModel):
     name = models.CharField(
@@ -895,6 +900,10 @@ class MenuItem(models.Model):
         if type(self) != MenuItem and not self.real_type:
             self.real_type = type(self).__name__.lower()
         return super().save(*args, **kwargs)
+
+
+
+
 
 
 

@@ -2,6 +2,7 @@
 {# generic page to display list of articles #}
 
 {% load i18n %}
+{% load wagtailcore_tags %}
 {% load wagtailimages_tags %}
 
 
@@ -31,7 +32,12 @@
     {{ thread_query.summary }}
     <a href="{{ thread_query.url }}">{% trans "More about it" %}</a>
 </div>
+{% elif page.body %}
+<div class="body">
+{{ page.body|richtext }}
+</div>
 {% endif %}
+
 
 {% with list_paginator=paginator %}
 {% include "cms/snippets/list.html" %}
