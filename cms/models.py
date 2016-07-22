@@ -514,7 +514,7 @@ class EventPage(Publication):
 
 
 #
-# Indexes
+# Lists
 #
 class BaseDateList(models.Model):
     nav_days = models.SmallIntegerField(
@@ -529,6 +529,16 @@ class BaseDateList(models.Model):
         help_text = _('if selected, show dates navigation per weeks instead '
                       'of show days equally around the current date')
     )
+
+    class Meta:
+        abstract = True
+
+    panels = [
+        MultiFieldPanel([
+            FieldPanel('nav_days'),
+            FieldPanel('nav_per_week'),
+        ], heading=_('Navigation')),
+    ]
 
     @staticmethod
     def str_to_date(date):
@@ -589,9 +599,6 @@ class BaseDateList(models.Model):
                 'dates': dates,
             }
         }
-
-    class Meta:
-        abstract = True
 
 
 class ListPage(Page):
@@ -711,6 +718,8 @@ class LogsPage(BaseDateList,Page):
                       '0 means no limit')
     )
 
+    class Meta:
+        verbose_name = _('Logs Page')
 
     content_panels = [
         FieldPanel('title'),
@@ -718,8 +727,7 @@ class LogsPage(BaseDateList,Page):
             FieldPanel('station'),
             FieldPanel('max_days'),
         ], heading=_('Configuration')),
-    ]
-
+    ] + BaseDateList.panels
 
     def as_item(cl, log):
         """
@@ -740,6 +748,20 @@ class LogsPage(BaseDateList,Page):
         )
 
     def get_queryset(self, request, context):
+        logs = []
+        for date in context['nav_dates']['dates']:
+            items = self.station.get_on_air(date)
+            items = [ self.as_item(item) for item in items ]
+            logs.append((date, items))
+        return logs
+
+    def get_context(self, request, *args, **kwargs):
+        """
+        note: context is updated using self.get_date_context
+        """
+        context = super().get_context(request, *args, **kwargs)
+
+        # date navigation
         if 'date' in request.GET:
             date = request.GET.get('date')
             date = self.str_to_date(date)
@@ -753,19 +775,42 @@ class LogsPage(BaseDateList,Page):
             date = tz.now().date()
         context.update(self.get_date_context(date, date_max=tz.now().date()))
 
-        r = []
-        for date in context['nav_dates']['dates']:
-            logs = self.station.get_on_air(date)
-            logs = [ self.as_item(log) for log in logs ]
-            r.append((date, logs))
-        return r
-
-    def get_context(self, request, *args, **kwargs):
-        context = super().get_context(request, *args, **kwargs)
-        qs = self.get_queryset(request, context)
-        context['object_list'] = qs
+        # queryset
+        context['object_list'] = self.get_queryset(request, context)
         return context
 
+
+class TimetablePage(BaseDateList,Page):
+    class Meta:
+        verbose_name = _('Timetable')
+
+    content_panels = Page.content_panels + BaseDateList.panels
+
+    def get_queryset(self, request, context):
+        diffs = []
+        for date in context['nav_dates']['dates']:
+            items = programs.Diffusion.objects.get_at(date).order_by('start')
+            items = [ DiffusionPage.as_item(item) for item in items ]
+            diffs.append((date, items))
+        return diffs
+
+    def get_context(self, request, *args, **kwargs):
+        """
+        note: context is updated using self.get_date_context
+        """
+        context = super().get_context(request, *args, **kwargs)
+
+        # date navigation
+        if 'date' in request.GET:
+            date = request.GET.get('date')
+            date = self.str_to_date(date)
+        else:
+            date = tz.now().date()
+        context.update(self.get_date_context(date))
+
+        # queryset
+        context['object_list'] = self.get_queryset(request, context)
+        return context
 
 #
 # Menus and Sections
