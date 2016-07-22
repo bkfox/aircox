@@ -8,6 +8,7 @@
 {# list view #}
     <div class="body summary">
     {{ page.summary }}
+    <a href="?" class="go_back">{% trans "Go back to the publication" %}</a>
     </div>
 
     {% with list_paginator=paginator %}

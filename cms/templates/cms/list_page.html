@@ -8,10 +8,9 @@
 
 {% block title %}
 <h1>
-{% if list_selector.search_query %}
-{% blocktrans %}Search in publications for <i>{{ search_query }}</i>{% endblocktrans %}
-{% elif list_selector.tag_query %}
-{% blocktrans %}Search in publications for <i>{{ search_query }}</i>{% endblocktrans %}
+{% with terms=list_selector.terms %}
+{% if terms %}
+{% blocktrans %}Search in publications for <i>{{ terms }}</i>{% endblocktrans %}
 {% elif list_selector.filter_related %}
 {# should never happen #}
 {% with title=list_selector.filter_related.title url=list_selector.filter_related.url %}
@@ -21,6 +20,7 @@
 {% else %}
 {% blocktrans %}All the publications{% endblocktrans %}
 {% endif %}
+{% endwith %}
 </h1>
 {% endblock %}
 
