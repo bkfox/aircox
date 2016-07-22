@@ -1,0 +1,38 @@
+{% extends "cms/publication.html" %}
+{% load i18n %}
+
+{% block content_extras %}
+{% with tracks=page.tracks.all %}
+{% if tracks %}
+<div class="playlist">
+    <h2>{% trans "Playlist" %}</h2>
+    <ul>
+        {% for track in tracks %}
+        <li><span class="artist">{{ track.artist }}</span>
+            <span class="title">{{ track.title }}</span>
+            {% if track.info %} <span class="info">{{ track.info }}</span>{% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+{% endwith %}
+
+<div class="dates">
+    <h2>{% trans "Dates of diffusion" %}</h2>
+    <ul>
+        {% with diffusion=page.diffusion %}
+        <li>{{ diffusion.date|date:"l d F Y, H:i" }}</li>
+        {% for diffusion in diffusion.diffusion_set.all %}
+        <li>{{ diffusion.date|date:"l d F Y, H:i" }}</li>
+        {% endfor %}
+        {% endwith %}
+    </ul>
+</div>
+
+{# TODO: podcasts #}
+{% endblock %}
+
+
+
+

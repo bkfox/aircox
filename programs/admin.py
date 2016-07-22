@@ -175,6 +175,6 @@ class ScheduleAdmin(admin.ModelAdmin):
 
 @admin.register(Track)
 class TrackAdmin(admin.ModelAdmin):
-    list_display = ['id', 'title', 'artist', 'position', 'pos_in_secs', 'related']
+    list_display = ['id', 'title', 'artist', 'position', 'in_seconds', 'related']
 
 

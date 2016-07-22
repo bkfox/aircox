@@ -64,12 +64,12 @@ class Importer:
         maps = settings.AIRCOX_IMPORT_PLAYLIST_CSV_COLS
         tracks = []
 
-        pos_in_secs = ('minutes' or 'seconds') in maps
+        in_seconds = ('minutes' or 'seconds') in maps
         for index, line in enumerate(self.data):
             position = \
                 int(self.__get(line, 'minutes', 0)) * 60 + \
                 int(self.__get(line, 'seconds', 0)) \
-                if pos_in_secs else index
+                if in_seconds else index
 
             track, created = Track.objects.get_or_create(
                 related_type = ContentType.objects.get_for_model(related),
@@ -79,7 +79,7 @@ class Importer:
                 position = position,
             )
 
-            track.pos_in_secs = pos_in_secs
+            track.in_seconds = pos_in_secs
             track.info = self.__get(line, 'info')
             tags = self.__get(line, 'tags')
             if tags:

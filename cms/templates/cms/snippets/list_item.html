@@ -1,0 +1,16 @@
+{% load wagtailimages_tags %}
+
+<a {% if item.url %}href="{{ item.url }}" {% endif %}class="item page_item">
+    {% image item.cover fill-64x64 class="cover item_cover" %}
+    <h3>{{ item.title }}</h3>
+    <div class="summary">{{ item.summary }}</div>
+    {% if not item.show_in_menus %}
+    {% if item.date %}
+    <time datetime="{{ item.date }}">
+        {{ item.date|date:'l d F, H:i' }}
+    </time>
+    {% endif %}
+    {% endif %}
+</a>
+
+

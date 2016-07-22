@@ -1,9 +1,6 @@
-{% extends 'aircox/cms/list.html' %}
-
 {% load i18n %}
 {% load honeypot %}
 
-{% block header %}
 {% if comment_form %}
 {% with comment_form as form %}
 {{ form.non_field_errors }}
@@ -11,6 +8,7 @@
 {% csrf_token %}
 {% render_honeypot_field "hp_website" %}
 <div>
+    <input type="hidden" name="type" value="comments">
     {{ form.author.errors }}
     {{ form.author }}
     <div>
@@ -31,7 +29,24 @@
     <button type="submit">{% trans "Post!" %}</button>
 </div>
 </form>
+
+<ul>
+    {% for comment in page.comments %}
+    <li class="comment">
+        <div class="metadata">
+            <a {% if comment.url %}href="{{ comment.url }}" {% endif %}
+                class="author">{{ comment.author }}</a>
+            <time datetime="{{ comment.date }}">
+                {{ comment.date|date:'l d F, H:i' }}
+            </time>
+        </div>
+        <div class="body">{{ comment.content }}</div>
+    </li>
+    {% endfor %}
+</ul>
+
 {% endwith %}
 {% endif %}
-{% endblock %}
+
+
 

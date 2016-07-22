@@ -1,0 +1,51 @@
+{% load staticfiles %}
+{% load i18n %}
+{% load wagtailimages_tags %}
+{% load wagtailsettings_tags %}
+{% get_settings %}
+
+<html>
+    <head>
+        {% block css %}
+            <link rel="stylesheet" href="{% static 'cms/css/layout.css' %}" type="text/css" />
+            <link rel="stylesheet" href="{% static 'cms/css/theme.css' %}" type="text/css" />
+
+            {% block css_extras %}{% endblock %}
+        {% endblock %}
+
+        <title>{{ page.title }}</title>
+    </head>
+    <body>
+        <div class="top">
+            <nav>
+                <a href="">Grille Horaire</a>
+                <a href="">Programmes</a>
+                <a href="">Contact</a>
+            </nav>
+        </div>
+
+        <div class="middle">
+            <nav class="left">
+                <img src="{{ settings.cms.WebsiteSettings.logo.file.url }}" class="logo">
+            </nav>
+
+            <main>
+            {% if messages %}
+            <ul class="messages">
+                {% for message in messages %}
+                    <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>
+                    {{ message }}
+                    </li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+
+            {% block title %}
+            <h1>{{ page.title }}</h1>
+            {% endblock %}
+            {% block content %}
+            {% endblock %}
+            </main>
+        </div>
+    </body>
+</html>

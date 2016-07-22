@@ -1,0 +1,9 @@
+
+<div class="list">
+{% for page in object_list %}
+{% with item=page.specific %}
+{% include "cms/snippets/list_item.html" %}
+{% endwith %}
+{% endfor %}
+</div>
+

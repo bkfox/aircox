@@ -1,66 +1,135 @@
+
 from django.db import models
-from django.contrib.auth.models import User
-from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.contrib.auth.models import User
+from django.contrib import messages
 from django.utils import timezone as tz
-from django.utils.text import slugify
 from django.utils.translation import ugettext as _, ugettext_lazy
 
-from django.db.models.signals import Signal, post_save, pre_save
-from django.dispatch import receiver
+# pages and panels
+from wagtail.contrib.settings.models import BaseSetting, register_setting
+from wagtail.wagtailcore.models import Page, Orderable, \
+        PageManager, PageQuerySet
+from wagtail.wagtailcore.fields import RichTextField
+from wagtail.wagtailimages.edit_handlers import ImageChooserPanel
+from wagtail.wagtailadmin.edit_handlers import FieldPanel, FieldRowPanel, \
+        MultiFieldPanel, InlinePanel, PageChooserPanel, StreamFieldPanel
 
+# snippets
+from wagtail.wagtailsnippets.edit_handlers import SnippetChooserPanel
+from wagtail.wagtailsnippets.models import register_snippet
+
+# tags
+from modelcluster.models import ClusterableModel
+from modelcluster.fields import ParentalKey
+from modelcluster.tags import ClusterTaggableManager
+from taggit.models import TaggedItemBase
+
+# comment clean-up
 import bleach
-from taggit.managers import TaggableManager
 
-from aircox.cms import routes
-from aircox.cms import settings
-
-
-class Routable:
-    @classmethod
-    def get_siblings(cl, thread = None, queryset = None,
-                     thread_model = None, thread_id = None):
-        """
-        Return posts of the cl's type that are children of the given thread.
-        """
-        if not queryset:
-            queryset = cl.objects
-
-        if thread:
-            thread_model = type(thread)
-            thread_id = thread.id
-
-        thread_model = ContentType.objects.get_for_model(thread_model)
-        return queryset.filter(
-            thread_id = thread_id,
-            thread_type__pk = thread_model.id
-        )
-
-    @classmethod
-    def reverse(cl, route, use_default = True, **kwargs):
-        """
-        Reverse a url using a given route for the model - simple wrapper
-        around cl._website.reverse
-        """
-        return cl._website.reverse(cl, route, use_default, **kwargs)
+import aircox.programs.models as programs
+import aircox.cms.settings as settings
 
 
-class Comment(models.Model, Routable):
-    thread_type = models.ForeignKey(
-        ContentType,
+@register_setting
+class WebsiteSettings(BaseSetting):
+    logo = models.ForeignKey(
+        'wagtailimages.Image',
+        verbose_name = _('logo'),
+        null=True, blank=True,
         on_delete=models.SET_NULL,
-        blank = True, null = True
+        related_name='+',
+        help_text = _('logo of the website'),
     )
-    thread_id = models.PositiveIntegerField(
-        blank = True, null = True
+    favicon = models.ForeignKey(
+        'wagtailimages.Image',
+        verbose_name = _('favicon'),
+        null=True, blank=True,
+        on_delete=models.SET_NULL,
+        related_name='+',
+        help_text = _('favicon for the website'),
     )
-    thread = GenericForeignKey('thread_type', 'thread_id')
+    accept_comments = models.BooleanField(
+        default = True,
+        help_text = _('publish comments automatically without verifying'),
+    )
+    allow_comments = models.BooleanField(
+        default = True,
+        help_text = _('publish comments automatically without verifying'),
+    )
+    comment_success_message = models.TextField(
+        _('success message'),
+        default = _('Your comment has been successfully posted!'),
+        help_text = _('message to display when a post has been posted'),
+    )
+    comment_wait_message = models.TextField(
+        _('waiting message'),
+        default = _('Your comment is awaiting for approval.'),
+        help_text = _('message to display when a post waits to be reviewed'),
+    )
+    comment_error_message = models.TextField(
+        _('error message'),
+        default = _('We could not save your message. Please correct the error(s) below.'),
+        help_text = _('message to display there is an error an incomplete form.'),
+    )
 
+    panels = [
+        ImageChooserPanel('logo'),
+        ImageChooserPanel('favicon'),
+        MultiFieldPanel([
+            FieldPanel('allow_comments'),
+            FieldPanel('accept_comments'),
+            FieldPanel('comment_success_message'),
+            FieldPanel('comment_wait_message'),
+            FieldPanel('comment_error_message'),
+        ], heading = _('Comments'))
+    ]
+
+    class Meta:
+        verbose_name = _('website settings')
+
+
+class RelatedLink(Orderable):
+    parent = ParentalKey('Publication', related_name='related_links')
+    url = models.URLField(
+        _('url'),
+        help_text = _('URL of the link'),
+    )
+    icon = models.ForeignKey(
+        'wagtailimages.Image',
+        verbose_name = _('icon'),
+        null=True, blank=True,
+        on_delete=models.SET_NULL,
+        related_name='+',
+        help_text = _('icon to display before the url'),
+    )
+    title = models.CharField(
+        _('title'),
+        max_length = 64,
+        null = True, blank=True,
+        help_text = _('text to display of the link'),
+    )
+
+    panels = [
+        FieldPanel('url'),
+        FieldRowPanel([
+            FieldPanel('title'),
+            ImageChooserPanel('icon'),
+        ]),
+    ]
+
+
+@register_snippet
+class Comment(models.Model):
+    publication = models.ForeignKey(
+        'Publication',
+    )
     published = models.BooleanField(
         verbose_name = _('public'),
         default = False
     )
-
     author = models.CharField(
         verbose_name = _('author'),
         max_length = 32,
@@ -85,8 +154,10 @@ class Comment(models.Model, Routable):
         self.author = bleach.clean(self.author, tags=[])
         if self.email:
             self.email = bleach.clean(self.email, tags=[])
+            self.email = self.email.replace('"', '%22')
         if self.url:
             self.url = bleach.clean(self.url, tags=[])
+            self.url = self.url.replace('"', '%22')
         self.content = bleach.clean(
             self.content,
             tags=settings.AIRCOX_CMS_BLEACH_COMMENT_TAGS,
@@ -99,161 +170,435 @@ class Comment(models.Model, Routable):
         return super().save(*args, **kwargs)
 
 
-class Post (models.Model, Routable):
-    """
-    Base model that can be used as is if wanted. Represent a generic
-    publication on the website.
+class PublicationTag(TaggedItemBase):
+    content_object = ParentalKey('Publication', related_name='tagged_items')
 
-    You can declare an extra property "info" that can be used to append
-    info in lists rendering.
-    """
-    # used for inherited children
+
+class Publication(Page):
+    order_field = 'first_published_at'
+
+    publish_as = models.ForeignKey(
+        'ProgramPage',
+        verbose_name = _('publish as program'),
+        on_delete=models.SET_NULL,
+        blank = True, null = True,
+        help_text = _('use this program as the author of the publication'),
+    )
+    focus = models.BooleanField(
+        _('focus'),
+        default = False,
+        help_text = _('the publication is highlighted;'),
+    )
+    allow_comments = models.BooleanField(
+        _('allow comments'),
+        default = True,
+        help_text = _('allow comments')
+    )
+
+    body = RichTextField(blank=True)
+    cover = models.ForeignKey(
+        'wagtailimages.Image',
+        verbose_name = _('cover'),
+        null=True, blank=True,
+        on_delete=models.SET_NULL,
+        related_name='+',
+        help_text = _('image to use as cover of the publication'),
+    )
+    summary = models.TextField(
+        _('summary'),
+        blank = True, null = True,
+        help_text = _('summary of the publication'),
+    )
+    tags = ClusterTaggableManager(
+        verbose_name = _('tags'),
+        through=PublicationTag,
+        blank=True
+    )
+
+    content_panels = Page.content_panels + [
+        FieldPanel('body', classname="full")
+    ]
+    promote_panels = [
+        MultiFieldPanel([
+            ImageChooserPanel('cover'),
+            FieldPanel('summary'),
+            FieldPanel('tags'),
+            FieldPanel('focus'),
+        ]),
+        InlinePanel('related_links', label=_('Links'))
+    ] + Page.promote_panels
+    settings_panels = Page.settings_panels + [
+        FieldPanel('publish_as'),
+        FieldPanel('allow_comments'),
+    ]
+
+    @property
+    def date(self):
+        return self.first_published_at
+
+    @property
+    def recents(self):
+        return self.get_children().not_in_menu() \
+                   .order_by('-first_published_at')
+
+    @property
+    def comments(self):
+        return Comment.objects.filter(
+            publication = self,
+            published = True,
+        ).order_by('-date')
+
+    @classmethod
+    def get_queryset(cl, request, *args,
+                     thread = None, context = {},
+                     **kwargs):
+        """
+        Return a queryset from the request's GET parameters. Context
+        can be used to update relative informations.
+
+        Parameters:
+        * type:     ['program','diffusion','event'] type of the publication
+        * tag:      tag to search for
+        * search:   query to search in the publications
+        * thread:   children of the thread passed in arguments only
+        * order:    ['asc','desc'] sort ordering
+        * page:     page number
+
+        Context's fields:
+        * list_type:        type of the items in the list (as Page subclass)
+        * tag_query:        tag searched for
+        * search_query:     search terms
+        * thread_query:     thread
+        * paginator:        paginator object
+        """
+        if 'thread' in request.GET and thread:
+            qs = self.get_children()
+            context['thread_query'] = thread
+        else:
+            qs = cl.objects.all()
+        qs = qs.not_in_menu().live()
+
+        # type
+        type = request.GET.get('type')
+        if type == 'program':
+            qs = qs.type(ProgramPage)
+            context['list_type'] = ProgramPage
+        elif type == 'diffusion':
+            qs = qs.type(DiffusionPage)
+            context['list_type'] = DiffusionPage
+        elif type == 'event':
+            qs = qs.type(EventPage)
+            context['list_type'] = EventPage
+
+        # filter by tag
+        tag = request.GET.get('tag')
+        if tag:
+            context['tag_query'] = tag
+            qs = qs.filter(tags__name = tag)
+
+        # search
+        search = request.GET.get('search')
+        if search:
+            context['search_query'] = search
+            qs = qs.search(search)
+
+        # ordering
+        order = request.GET.get('order')
+        if order not in ('asc','desc'):
+            order = 'desc'
+        qs = qs.order_by(
+            ('-' if order == 'desc' else '') + 'first_published_at'
+        )
+
+        qs = self.get_queryset(request, *args, context, **kwargs)
+        if qs:
+            paginator = Paginator(qs, 30)
+            try:
+                qs = paginator.page('page')
+            except PageNotAnInteger:
+                qs = paginator.page(1)
+            except EmptyPage:
+                qs = parginator.page(paginator.num_pages)
+            context['paginator'] = paginator
+        return qs
+
+    def get_context(self, request, *args, **kwargs):
+        from aircox.cms.forms import CommentForm
+        context = super().get_context(request, *args, **kwargs)
+        view = request.GET.get('view')
+        page = request.GET.get('page')
+
+        if self.allow_comments and \
+                WebsiteSettings.for_site(request.site).allow_comments:
+            context['comment_form'] = CommentForm()
+
+        if view == 'list':
+            context['object_list'] = self.get_queryset(
+                request, *args, context = context, thread = self, **kwargs
+            )
+        return context
+
+    def serve(self, request):
+        from aircox.cms.forms import CommentForm
+        if request.POST and 'comment' in request.POST['type']:
+            settings = WebsiteSettings.for_site(request.site)
+            comment_form = CommentForm(request.POST)
+            if comment_form.is_valid():
+                comment = comment_form.save(commit=False)
+                comment.publication = self
+                comment.published = settings.accept_comments
+                comment.save()
+                messages.success(request,
+                    settings.comment_success_message
+                        if comment.published else
+                    settings.comment_wait_message,
+                    fail_silently=True,
+                )
+            else:
+                messages.error(
+                    request, settings.comment_error_message, fail_silently=True
+                )
+
+        return super().serve(request)
+
+
+class ProgramPage(Publication):
+    program = models.ForeignKey(
+        programs.Program,
+        verbose_name = _('program'),
+        on_delete=models.SET_NULL,
+        blank=True, null=True,
+    )
+    # rss = models.URLField()
+    email = models.EmailField(
+        _('email'), blank=True, null=True,
+    )
+    email_is_public = models.BooleanField(
+        _('email is public'),
+        default = False,
+        help_text = _('the email addess is accessible to the public'),
+    )
+
+    class Meta:
+        verbose_name = _('Program')
+        verbose_name_plural = _('Programs')
+
+    content_panels = [
+        FieldPanel('program'),
+    ] + Publication.content_panels
+
+    settings_panels = Publication.settings_panels + [
+        FieldPanel('email'),
+        FieldPanel('email_is_public'),
+    ]
+
+    def diffs_to_page(self, diffs):
+        for diff in diffs:
+            if diff.page.count():
+                diff.page_ = diff.page.first()
+            else:
+                diff.page_ = ListItem(
+                    title = '{}, {}'.format(
+                        self.program.name, diff.date.strftime('%d %B %Y')
+                    ),
+                    cover = self.cover,
+                    live = True,
+                )
+            diff.page_.date = diff.start
+        return [
+            diff.page_ for diff in diffs if diff.page_.live
+        ]
+
+    def next_diffs(self):
+        now = tz.now()
+        diffs = programs.Diffusion.objects \
+                    .filter(end__gte = now, program = self.program) \
+                    .order_by('start').prefetch_related('page')
+        return self.diffs_to_page(diffs)
+
+    def prev_diffs(self):
+        now = tz.now()
+        diffs = programs.Diffusion.objects \
+                    .filter(end__lte = now, program = self.program) \
+                    .order_by('-start').prefetch_related('page')
+        return self.diffs_to_page(diffs)
+
+
+class Track(programs.Track,Orderable):
+    sort_order_field = 'position'
+
+    diffusion = ParentalKey('DiffusionPage',
+                            related_name='tracks')
+    panels = [
+        FieldRowPanel([
+            FieldPanel('artist'),
+            FieldPanel('title'),
+        ]),
+        FieldPanel('tags'),
+        FieldPanel('info'),
+    ]
+
+    def save(self, *args, **kwargs):
+        if self.diffusion.diffusion:
+            self.related = self.diffusion.diffusion
+        self.in_seconds = False
+        super().save(*args, **kwargs)
+
+
+class DiffusionPage(Publication):
+    order_field = 'diffusion__start'
+
+    diffusion = models.ForeignKey(
+        programs.Diffusion,
+        verbose_name = _('diffusion'),
+        related_name = 'page',
+        on_delete=models.SET_NULL,
+        null=True,
+        limit_choices_to = lambda: {
+            'initial__isnull': True,
+            'start__gt': tz.now() - tz.timedelta(days=10),
+            'start__lt': tz.now() + tz.timedelta(days=10),
+        }
+    )
+
+    class Meta:
+        verbose_name = _('Diffusion')
+        verbose_name_plural = _('Diffusions')
+
+    content_panels = [
+        FieldPanel('diffusion'),
+    ] + Publication.content_panels + [
+        InlinePanel('tracks', label=_('Tracks'))
+    ]
+
+    def save(self, *args, **kwargs):
+        if self.diffusion:
+            self.first_published_at = self.diffusion.start
+        super().save(*args, **kwargs)
+
+class EventPageQuerySet(PageQuerySet):
+    def upcoming(self):
+        now = tz.now().date()
+        return self.filter(start_date__gte=now)
+
+
+class EventPage(Publication):
+    order_field = 'start'
+
+    start = models.DateTimeField(
+        _('start'),
+        help_text = _('when it happens'),
+    )
+    end = models.DateTimeField(
+        _('end'),
+        blank = True, null = True,
+    )
+    place = models.TextField(
+        _('place'),
+        help_text = _('address where the event takes place'),
+    )
+    price = models.CharField(
+        _('price'),
+        max_length=64,
+        blank = True, null = True,
+        help_text = _('price of the event'),
+    )
+    info = models.TextField(
+        _('info'),
+        blank = True, null = True,
+        help_text = _('additional information'),
+    )
+
+    objects = PageManager.from_queryset(EventPageQuerySet)
+
+    class Meta:
+        verbose_name = _('Event')
+        verbose_name_plural = _('Events')
+
+    content_panels = Publication.content_panels + [
+        FieldRowPanel([
+            FieldPanel('start'),
+            FieldPanel('end'),
+        ]),
+        FieldPanel('place'),
+    ]
+
+    def save(self, *args, **kwargs):
+        self.first_published_at = self.start
+        super().save(*args, **kwargs)
+
+
+#
+# Menus and Sections
+#
+
+@register_snippet
+class Menu(ClusterableModel):
+    name = models.CharField(
+        _('name'),
+        max_length=32,
+        blank = True, null = True,
+        help_text=_('name of this menu (not displayed)'),
+    )
+    css_class = models.CharField(
+        _('CSS class'),
+        max_length=64,
+        blank = True, null = True,
+        help_text=_('menu container\'s "class" attribute')
+    )
+    related = models.ForeignKey(
+        ContentType,
+        blank = True, null = True,
+        help_text=_('this menu is displayed only for this model')
+    )
+    position = models.CharField(
+        _('position'),
+        max_length=16,
+        blank = True, null = True,
+        help_text = _('name of the template block in which the menu must '
+                      'be set'),
+    )
+
+    panels = [
+        MultiFieldPanel([
+            FieldPanel('name'),
+            FieldPanel('css_class'),
+        ], heading=_('General')),
+        MultiFieldPanel([
+            FieldPanel('related'),
+            FieldPanel('position'),
+        ], heading=_('Position')),
+        InlinePanel('menu_items', label=_('menu items')),
+    ]
+
+
+@register_snippet
+class MenuItem(models.Model):
     real_type = models.CharField(
         max_length=32,
         blank = True, null = True,
     )
-
-    # metadata
-    # FIXME: on_delete
-    thread_type = models.ForeignKey(
-        ContentType,
-        on_delete=models.SET_NULL,
-        related_name = 'thread_type',
-        blank = True, null = True
-    )
-    thread_id = models.PositiveIntegerField(
-        blank = True, null = True
-    )
-    thread = GenericForeignKey('thread_type', 'thread_id')
-
-    published = models.BooleanField(
-        verbose_name = _('public'),
-        default = True
-    )
-    allow_comments = models.BooleanField(
-        verbose_name = _('allow comments'),
-        default = True,
-    )
-
-    # content
-    author = models.ForeignKey(
-        User,
-        verbose_name = _('author'),
-        blank = True, null = True,
-    )
-    date = models.DateTimeField(
-        _('date'),
-        default = tz.datetime.now
-    )
-    title = models.CharField (
+    title = models.CharField(
         _('title'),
-        max_length = 64,
-    )
-    subtitle = models.CharField (
-        _('subtitle'),
-        max_length = 128,
+        max_length=32,
         blank = True, null = True,
     )
-    content = models.TextField (
-        _('description'),
-        default = '',
+    css_class = models.CharField(
+        _('CSS class'),
+        max_length=64,
         blank = True, null = True,
+        help_text=_('menu container\'s "class" attribute')
     )
-    image = models.ImageField(
-        blank = True, null = True,
-    )
-    tags = TaggableManager(
-        verbose_name = _('tags'),
-        blank = True,
-    )
+    menu = ParentalKey(Menu, related_name='menu_items')
 
-    info = ''
-    """
-    Used to be extended: used in template to render contextual information about
-    a sub-post item.
-    """
-    search_fields = [ 'title', 'content', 'tags__name' ]
-    """
-    Fields on which routes.SearchRoute must run the search
-    """
-    actions = None
-    """
-    Actions are a list of actions available to the end user for this model.
-    See aircox.cms.actions for more information
-    """
+    panels = [
+        MultiFieldPanel([
+            FieldPanel('name'),
+            FieldPanel('css_class'),
+        ], heading=_('General')),
+    ]
 
-    def get_comments(self):
-        """
-        Return comments pointing to this post
-        """
-        type = ContentType.objects.get_for_model(self)
-        qs = Comment.objects.filter(
-            thread_id = self.pk,
-            thread_type__pk = type.pk
-        )
-        return qs
-
-    def url(self):
-        """
-        Return an url to the post detail view.
-        """
-        if not self.pk:
-            return ''
-        return self.reverse(
-            routes.DetailRoute,
-            pk = self.pk, slug = slugify(self.title)
-        )
-
-    def fill_empty(self):
-        """
-        Fill empty values using parent thread. Can be used before saving or
-        at loading
-        """
-        if not self.thread:
-            return
-
-        if not self.title:
-            self.title = _('{name} // {date}').format(
-                name = self.thread.title,
-                date = self.date.strftime('%d %B %Y')
-            )
-        if not self.content:
-            self.content = self.thread.content
-        if not self.image:
-            self.image = self.thread.image
-        if self.pk and not self.tags:
-            self.tags = self.thread.tags
-
-    def get_object_list(self, request, object, **kwargs):
-        # FIXME: wtf
-        type = ContentType.objects.get_for_model(object)
-        qs = Comment.objects.filter(
-            thread_id = object.pk,
-            thread_type__pk = type.pk
-        )
-        return qs
-
-    def make_safe(self):
-        """
-        Ensure that data of the publication are safe from code injection.
-        """
-        self.title = bleach.clean(
-            self.title,
-            tags=settings.AIRCOX_CMS_BLEACH_TITLE_TAGS,
-            attributes=settings.AIRCOX_CMS_BLEACH_TITLE_ATTRS
-        )
-        self.content = bleach.clean(
-            self.content,
-            tags=settings.AIRCOX_CMS_BLEACH_CONTENT_TAGS,
-            attributes=settings.AIRCOX_CMS_BLEACH_CONTENT_ATTRS
-        )
-        if self.pk:
-            self.tags.set(*[
-                bleach.clean(tag, tags=[])
-                for tag in self.tags.all()
-            ])
-
-    def downcast(self):
+    def specific(self):
         """
         Return a downcasted version of the post if it is from another
         model, or itself
@@ -263,293 +608,9 @@ class Post (models.Model, Routable):
         return getattr(self, self.real_type)
 
     def save(self, make_safe = True, *args, **kwargs):
-        if type(self) != Post and not self.real_type:
+        if type(self) != MenuItem and not self.real_type:
             self.real_type = type(self).__name__.lower()
-        if self.date and tz.is_naive(self.date):
-            self.date = tz.make_aware(self.date)
-        if make_safe:
-            self.make_safe()
         return super().save(*args, **kwargs)
 
 
-class RelatedMeta (models.base.ModelBase):
-    """
-    Metaclass for RelatedPost children.
-    """
-    registry = {}
-
-    @classmethod
-    def register (cl, key, post_model):
-        """
-        Register a model and return the key under which it is registered.
-        Raise a ValueError if another model is yet associated under this key.
-        """
-        if key in cl.registry and cl.registry[key] is not post_model:
-            raise ValueError('A model has yet been registered with "{}"'
-                             .format(key))
-        cl.registry[key] = post_model
-        return key
-
-    @classmethod
-    def make_relation(cl, name, attrs):
-        """
-        Make instance of RelatedPost.Relation
-        """
-        rel = RelatedPost.Relation()
-        if 'Relation' not in attrs:
-            raise ValueError('RelatedPost item has not defined Relation class')
-        rel.__dict__.update(attrs['Relation'].__dict__)
-
-        if not rel.model or not issubclass(rel.model, models.Model):
-            raise ValueError('Relation.model is not a django model (None?)')
-
-        if not rel.bindings:
-            rel.bindings = {}
-
-        # thread model
-        if rel.bindings.get('thread'):
-            rel.thread_model = rel.bindings.get('thread')
-            rel.thread_model = rel.model._meta.get_field(rel.thread_model). \
-                               rel.to
-            rel.thread_model = cl.registry.get(rel.thread_model)
-
-            if not rel.thread_model:
-                raise ValueError(
-                    'no registered RelatedPost for the bound thread. Is there '
-                    ' a RelatedPost for {} declared before {}?'
-                    .format(rel.bindings.get('thread').__class__.__name__,
-                            name)
-                )
-
-        return rel
-
-    @classmethod
-    def make_auto_create(cl, model):
-        """
-        Enable auto_create on the given RelatedPost model if it is available.
-        """
-        if not model._relation.rel_to_post:
-            return
-
-        def handler_rel(sender, instance, created, *args, **kwargs):
-            """
-            handler for the related object
-            """
-            rel = model._relation
-            # TODO: make the check happen by overriding inline save function
-            # this check is done in order to allow creation of multiple
-            # models when using admin.inlines: related is saved before
-            # the post, so no post is found, then create an extra post
-            if hasattr(instance, '__cms_post'):
-                return
-
-            post = model.objects.filter(related = instance)
-            if post.count():
-                post = post[0]
-            elif rel.auto_create(instance) if callable(rel.auto_create) else \
-                 rel.auto_create:
-                post = model(related = instance)
-                # TODO: hackish way: model.objects.filter(related=null,...).delete()
-            else:
-                return
-            post.rel_to_post()
-            post.fill_empty()
-            post.save(avoid_sync = True)
-        post_save.connect(handler_rel, model._relation.model, False)
-
-    def __new__ (cl, name, bases, attrs):
-        # TODO: check bindings
-        if name == 'RelatedPost':
-            return super().__new__(cl, name, bases, attrs)
-
-        rel = cl.make_relation(name, attrs)
-        field_args = rel.field_args or {}
-        attrs['_relation'] = rel
-        attrs.update({ x:y for x,y in {
-            'related': models.ForeignKey(rel.model, **field_args),
-            '__str__': lambda self: str(self.related)
-        }.items() if not attrs.get(x) })
-
-        model = super().__new__(cl, name, bases, attrs)
-        cl.register(rel.model, model)
-
-        # auto create and/or update
-        cl.make_auto_create(model)
-
-        # name clashes
-        name = rel.model._meta.object_name
-        if name == model._meta.object_name:
-            model._meta.default_related_name = '{} Post'.format(name)
-        return model
-
-
-class RelatedPost (Post, metaclass = RelatedMeta):
-    """
-    Post linked to an object of other model. This object is accessible through
-    the field "related".
-
-    It is possible to map attributes of the Post to the ones of the Related
-    Object. It is also possible to automatically update Post's thread based
-    on the Related Object's parent if it is required (but not Related Object's
-    parent based on Post's thread).
-
-    Bindings can ensure that the Related Object will be updated when mapped
-    fields of the Post are updated.
-
-    To configure the Related Post, you just need to create set attributes of
-    the Relation sub-class.
-
-    ```
-    class MyModelPost(RelatedPost):
-        class Relation:
-            model = MyModel
-            bindings = {
-                'thread': 'parent_field_name',
-                'title': 'name'
-            }
-    ```
-    """
-    related = None
-
-    class Meta:
-        abstract = True
-
-    # FIXME: declare a binding only for init
-    class Relation:
-        """
-        Relation descriptor used to generate and manage the related object.
-
-        Be careful with post_to_rel!
-        * There is no check of permissions when related object is synchronised
-            from the post, so be careful when enabling post_to_rel.
-        * In post_to_rel synchronisation, if the parent thread is not a
-            (sub-)class thread_model, the related parent is set to None
-        """
-        model = None
-        """
-        model of the related object
-        """
-        bindings = None
-        """
-        dict of `post_attr: rel_attr` that represent bindings of values
-        between the post and the related object. Fields are updated according
-        to `post_to_rel` and `rel_to_post`.
-
-        If there is a post_attr "thread", the corresponding rel_attr is used
-        to update the post thread to the correct Post model (in order to
-        establish a parent-child relation between two models)
-
-        When a callable is set as `rel_attr`, it will be called to retrieve
-        the value, as `rel_attr(post, related)`
-
-        note: bound values can be any value, not only Django field.
-        """
-        post_to_rel = False
-        """
-        update related object when the post is saved, using bindings
-        """
-        rel_to_post = False
-        """
-        update the post when related object is updated, using bindings
-        """
-        thread_model = None
-        """
-        generated by the metaclass, points to the RelatedPost model
-        generated for the bindings.thread object.
-        """
-        field_args = None
-        """
-        dict of arguments to pass to the ForeignKey constructor, such as
-        `ForeignKey(related_model, **field_args)`
-        """
-        auto_create = False
-        """
-        automatically create a RelatedPost for each new item of the related
-        object and init it with bounded values. Use 'post_save' signal. If
-        auto_create is callable, use `auto_create(related_object)`.
-        """
-
-    def get_rel_attr(self, attr):
-        attr = self._relation.bindings.get(attr)
-        if callable(attr):
-            return attr(self, self.related)
-        return getattr(self.related, attr) if attr else None
-
-    def set_rel_attr(self, attr, value):
-        if attr not in self._relation.bindings:
-            raise AttributeError('attribute {} is not bound'.format(attr))
-        attr = self._relation.bindings.get(attr)
-        setattr(self.related, attr, value)
-
-    def post_to_rel(self, save = True):
-        """
-        Change related object using post bound values. Save the related
-        object if save = True.
-        Note: does not check if Relation.post_to_rel is True
-        """
-        rel = self._relation
-        if not self.related or not rel.bindings:
-            return
-
-        for attr, rel_attr in rel.bindings.items():
-            if attr == 'thread':
-                continue
-            value = getattr(self, attr) if hasattr(self, attr) else None
-            setattr(self.related, rel_attr, value)
-
-        if rel.thread_model:
-            thread = self.thread if not issubclass(thread, rel.thread_model) \
-                        else None
-            self.set_rel_attr('thread', thread.related)
-
-        if save:
-            self.related.save()
-
-    def rel_to_post(self, save = True):
-        """
-        Change the post using the related object bound values. Save the
-        post if save = True.
-        Note: does not check if Relation.post_to_rel is True
-        """
-        rel = self._relation
-        if not self.related or not rel.bindings:
-            return
-
-        has_changed = False
-        def set_attr(attr, value):
-            if getattr(self, attr) != value:
-                has_changed = True
-                setattr(self, attr, value)
-
-        for attr, rel_attr in rel.bindings.items():
-            if attr == 'thread':
-                continue
-            value = rel_attr(self, self.related) if callable(rel_attr) else \
-                    getattr(self.related, rel_attr)
-            if type(value) == tz.datetime and tz.is_naive(value):
-                value = tz.make_aware(value)
-            set_attr(attr, value)
-
-        if rel.thread_model:
-            thread = self.get_rel_attr('thread')
-            thread = rel.thread_model.objects.filter(related = thread) \
-                        if thread else None
-            thread = thread[0] if thread else None
-            set_attr('thread', thread)
-
-        if has_changed and save:
-            self.save()
-
-    def save (self, avoid_sync = False, save = True, *args, **kwargs):
-        """
-        * avoid_sync: do not synchronise the post/related object;
-        * save: if False, does not call parent save functions
-        """
-        if not avoid_sync:
-            if not self.pk and self._relation.rel_to_post:
-                self.rel_to_post(False)
-            if self._relation.post_to_rel:
-                self.post_to_rel(True)
-        if save:
-            super().save(*args, **kwargs)
 

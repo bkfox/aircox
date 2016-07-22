@@ -348,6 +348,10 @@ class Schedule(models.Model):
         help_text = 'this schedule is a rerun of this one',
     )
 
+    @property
+    def end(self):
+        return self.date + utils.to_timedelta(self.duration)
+
     def match(self, date = None, check_time = True):
         """
         Return True if the given datetime matches the schedule
@@ -746,9 +750,9 @@ class Track(Related):
         _('artist'),
         max_length = 128,
     )
-    position = models.SmallIntegerField(
-        default = 0,
-        help_text=_('position in the playlist'),
+    tags = TaggableManager(
+        verbose_name=_('tags'),
+        blank=True,
     )
     info = models.CharField(
         _('information'),
@@ -757,12 +761,12 @@ class Track(Related):
         help_text=_('additional informations about this track, such as '
                     'the version, if is it a remix, features, etc.'),
     )
-    tags = TaggableManager(
-        verbose_name=_('tags'),
-        blank=True,
+    position = models.SmallIntegerField(
+        default = 0,
+        help_text=_('position in the playlist'),
     )
-    pos_in_secs = models.BooleanField(
-        _('seconds'),
+    in_seconds = models.BooleanField(
+        _('in seconds'),
         default = False,
         help_text=_('position in the playlist is expressed in seconds')
     )

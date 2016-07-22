@@ -23,13 +23,13 @@ class CommentForm(forms.ModelForm):
                 'placeholder': _('your website (optional)'),
             }),
             'comment': forms.TextInput(attrs={
-                'placeholder': _('your lovely comment'),
+                'placeholder': _('your comment'),
             })
         }
 
     def __init__(self, *args, **kwargs):
         self.request = kwargs.pop('request', None)
-        self.thread = kwargs.pop('object', None)
+        self.page = kwargs.pop('object', None)
         super().__init__(*args, **kwargs)
 
     def clean(self):
@@ -40,8 +40,5 @@ class CommentForm(forms.ModelForm):
 
             if not self.object:
                 raise ValidationError(_('No publication found for this comment'))
-
-
-
 
 

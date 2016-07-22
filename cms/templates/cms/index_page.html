@@ -1,0 +1,42 @@
+{% extends "cms/base_site.html" %}
+{# generic page to display list of articles #}
+
+{% load i18n %}
+{% load wagtailimages_tags %}
+
+
+{% block title %}
+<h1>
+{% if search_query %}
+{% blocktrans %}Search in publications for <i>{{ search_query }}</i>{% endblocktrans %}
+{% elif tag_query %}
+{% blocktrans %}Search in publications for <i>{{ search_query }}</i>{% endblocktrans %}
+{% elif thread_query %}
+{# should never happen #}
+{% with title=thread_query.title url=thread_query.url %}
+{% blocktrans %}
+    Publications in <a href="{{ url }}">{{ title }}</a>{% endblocktrans %}
+{% endwith %}
+{% else %}
+{% blocktrans %}All the publications{% endblocktrans %}
+{% endif %}
+</h1>
+{% endblock %}
+
+
+{% block content %}
+{% if thread_query %}
+<div class="body summary">
+    {% image thread_query.cover fill-128x128 class="cover item_cover" %}
+    {{ thread_query.summary }}
+    <a href="{{ thread_query.url }}">{% trans "More about it" %}</a>
+</div>
+{% endif %}
+
+{% with list_paginator=paginator %}
+{% include "cms/list.html" %}
+{% endwith %}
+{% endblock %}
+
+
+

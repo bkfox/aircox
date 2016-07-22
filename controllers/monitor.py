@@ -97,7 +97,7 @@ class Monitor:
         logs = [ log.related_id for log in logs ]
 
         tracks = programs.Track.get_for(object = log.related) \
-                               .filter(pos_in_secs = True)
+                               .filter(in_seconds = True)
         if tracks and len(tracks) == len(logs):
             return
 
