@@ -12,6 +12,7 @@ sources that are used to generate the audio stream:
 - **master**: main output
 """
 import os
+import datetime
 import logging
 from enum import Enum, IntEnum
 
@@ -159,6 +160,47 @@ class Station(programs.Nameable):
                 )
             )
         return qs.order_by('date')
+
+    def get_on_air(self, date = None):
+        """
+        Return a list of what should have normally been on air at the
+        given date, ordered descending on the diffusion time
+
+        The list contains:
+        - track logs: for the streamed programs;
+        - diffusion: for the scheduled diffusions;
+        """
+        # TODO: argument to get sound instead of tracks
+        date = date or tz.now().date()
+        if date > datetime.date.today():
+            return []
+
+        logs = Log.get_for(model = programs.Track) \
+                    .filter(date__contains = date) \
+                    .order_by('date')
+        diffs = programs.Diffusion.objects.get_at(date) \
+                    .filter(type = programs.Diffusion.Type.normal) \
+                    .order_by('start')
+
+        # mix up
+        items = []
+        prev_diff = None
+        for diff in diffs:
+            logs_ = logs.filter(date__gt = prev_diff.end,
+                                date__lt = diff.start) \
+                    if prev_diff else \
+                    logs.filter(date__lt = diff.start)
+            prev_diff = diff
+            items.extend(logs_)
+            items.append(diff)
+
+        # last logs
+        if prev_diff:
+            logs_ = logs.filter(date__gt = prev_diff.end)
+            items.extend(logs_)
+        return reversed(items)
+
+
 
     def save(self, make_sources = True, *args, **kwargs):
         """

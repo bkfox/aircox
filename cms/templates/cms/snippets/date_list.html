@@ -1,0 +1,37 @@
+{% load i18n %}
+
+{# FIXME: get current complete URL #}
+<div class="list dated_list">
+{% if nav_dates %}
+<nav class="nav_dates">
+    {% if nav_dates.prev %}
+    <a href="?date={{ nav_dates.prev|date:"Y-m-d" }}" title="{% trans "previous days" %}">&lt;</a>
+    {% endif %}
+
+    {% for day in nav_dates.dates %}
+    <a href="#day_{{day|date:"Y-m-d"}}"
+        {% if day == nav_dates.date %}class="today"{% endif %}>
+        {{ day|date:'D. d' }}
+    </a>
+    {% endfor %}
+
+    {% if nav_dates.next %}
+    <a href="?date={{ nav_dates.next|date:"Y-m-d" }}" title="{% trans "next days" %}">&gt;</a>
+    {% endif %}
+</nav>
+{% endif %}
+
+{% for day, list in object_list %}
+<ul id="day_{{day|date:"Y-m-d"}}"
+    {% if day == nav_dates.date %}class="today"{% endif %}>
+    {# you might like to hide it by default -- this more for sections #}
+    <h2>{{ day|date:'l d F' }}</h2>
+    {% with object_list=list list_date_format="H:i" %}
+    {% for item in list %}
+    {% include "cms/snippets/list_item.html" %}
+    {% endfor %}
+    {% endwith %}
+</ul>
+{% endfor %}
+</div>
+

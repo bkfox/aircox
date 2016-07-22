@@ -1,9 +1,59 @@
+{% load i18n %}
+{% load aircox_cms %}
+
 
 <div class="list">
+<ul>
 {% for page in object_list %}
 {% with item=page.specific %}
 {% include "cms/snippets/list_item.html" %}
 {% endwith %}
 {% endfor %}
+</ul>
+
+{# we use list_paginator to avoid conflicts when there are multiple lists #}
+{% if list_paginator and list_paginator.num_pages > 1 %}
+<nav>
+{% with list_paginator.num_pages as num_pages %}
+    {% if object_list.has_previous %}
+        <a href="?page={{ object_list.previous_page_number }}">
+            {% trans "previous page" %}
+        </a>
+    {% endif %}
+
+    {% if object_list.number > 3 %}
+        <a href="?page=1">1</a>
+        {% if object_list.number > 4 %}
+        &#8230;
+        {% endif %}
+    {% endif %}
+
+    {% for i in object_list.number|around:2 %}
+        {% if i == object_list.number %}
+            {{ object_list.number }}
+        {% elif i > 0 and i <= num_pages %}
+            <a href="?page={{ i }}">{{ i }}</a>
+        {% endif %}
+    {% endfor %}
+
+    {% with object_list.number|add:"2" as max %}
+    {% if max < num_pages %}
+        {% if max|add:"1" < num_pages %}
+        &#8230;
+        {% endif %}
+        <a href="?page={{ num_pages }}">{{ num_pages }}</a>
+    {% endif %}
+    {% endwith %}
+
+    {% if object_list.has_next %}
+        <a href="?page={{ object_list.next_page_number }}">
+            {% trans "next page" %}
+        </a>
+    {% endif %}
+{% endwith %}
+</nav>
+{% endif %}
+
 </div>
+
 

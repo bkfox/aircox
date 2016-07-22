@@ -34,21 +34,21 @@
 
 {% block page_nav_extras %}
 {% if page.program.active %}
-{% with object_list=page.next_diffs %}
+{% with object_list=page.next %}
 {% if object_list %}
 <div>
     <h2>{% trans "Next Diffusions" %}</h2>
-    {% include "cms/list.html" %}
+    {% include "cms/snippets/list.html" %}
 </div>
 {% endif %}
 {% endwith %}
 {% endif %}{# program.active #}
 
-{% with object_list=page.prev_diffs %}
+{% with object_list=page.prev %}
 {% if object_list %}
 <div>
     <h2>{% trans "Previous Diffusions" %}</h2>
-    {% include "cms/list.html" %}
+    {% include "cms/snippets/list.html" %}
 </div>
 {% endif %}
 {% endwith %}

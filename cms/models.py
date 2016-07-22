@@ -1,3 +1,6 @@
+import datetime
+import re
+from enum import Enum, IntEnum
 
 from django.db import models
 from django.contrib.contenttypes.models import ContentType
@@ -30,7 +33,24 @@ from taggit.models import TaggedItemBase
 import bleach
 
 import aircox.programs.models as programs
+import aircox.controllers.models as controllers
 import aircox.cms.settings as settings
+
+
+class ListItem:
+    """
+    Generic normalized element to add item in lists that are not based
+    on Publication.
+    """
+    title = ''
+    summary = ''
+    url = ''
+    cover = None
+    date = None
+
+    def __init__(self, **kwargs):
+        self.__dict__.update(kwargs)
+        self.specific = self
 
 
 @register_setting
@@ -38,8 +58,7 @@ class WebsiteSettings(BaseSetting):
     logo = models.ForeignKey(
         'wagtailimages.Image',
         verbose_name = _('logo'),
-        null=True, blank=True,
-        on_delete=models.SET_NULL,
+        null=True, blank=True, on_delete=models.SET_NULL,
         related_name='+',
         help_text = _('logo of the website'),
     )
@@ -91,8 +110,10 @@ class WebsiteSettings(BaseSetting):
         verbose_name = _('website settings')
 
 
-class RelatedLink(Orderable):
-    parent = ParentalKey('Publication', related_name='related_links')
+#
+#   Base
+#
+class BaseRelatedLink(Orderable):
     url = models.URLField(
         _('url'),
         help_text = _('URL of the link'),
@@ -112,6 +133,9 @@ class RelatedLink(Orderable):
         help_text = _('text to display of the link'),
     )
 
+    class Meta:
+        abstract = True
+
     panels = [
         FieldPanel('url'),
         FieldRowPanel([
@@ -121,6 +145,9 @@ class RelatedLink(Orderable):
     ]
 
 
+#
+# Publications
+#
 @register_snippet
 class Comment(models.Model):
     publication = models.ForeignKey(
@@ -169,6 +196,9 @@ class Comment(models.Model):
             self.make_safe()
         return super().save(*args, **kwargs)
 
+
+class RelatedLink(BaseRelatedLink):
+    parent = ParentalKey('Publication', related_name='related_links')
 
 class PublicationTag(TaggedItemBase):
     content_object = ParentalKey('Publication', related_name='tagged_items')
@@ -248,80 +278,6 @@ class Publication(Page):
             published = True,
         ).order_by('-date')
 
-    @classmethod
-    def get_queryset(cl, request, *args,
-                     thread = None, context = {},
-                     **kwargs):
-        """
-        Return a queryset from the request's GET parameters. Context
-        can be used to update relative informations.
-
-        Parameters:
-        * type:     ['program','diffusion','event'] type of the publication
-        * tag:      tag to search for
-        * search:   query to search in the publications
-        * thread:   children of the thread passed in arguments only
-        * order:    ['asc','desc'] sort ordering
-        * page:     page number
-
-        Context's fields:
-        * list_type:        type of the items in the list (as Page subclass)
-        * tag_query:        tag searched for
-        * search_query:     search terms
-        * thread_query:     thread
-        * paginator:        paginator object
-        """
-        if 'thread' in request.GET and thread:
-            qs = self.get_children()
-            context['thread_query'] = thread
-        else:
-            qs = cl.objects.all()
-        qs = qs.not_in_menu().live()
-
-        # type
-        type = request.GET.get('type')
-        if type == 'program':
-            qs = qs.type(ProgramPage)
-            context['list_type'] = ProgramPage
-        elif type == 'diffusion':
-            qs = qs.type(DiffusionPage)
-            context['list_type'] = DiffusionPage
-        elif type == 'event':
-            qs = qs.type(EventPage)
-            context['list_type'] = EventPage
-
-        # filter by tag
-        tag = request.GET.get('tag')
-        if tag:
-            context['tag_query'] = tag
-            qs = qs.filter(tags__name = tag)
-
-        # search
-        search = request.GET.get('search')
-        if search:
-            context['search_query'] = search
-            qs = qs.search(search)
-
-        # ordering
-        order = request.GET.get('order')
-        if order not in ('asc','desc'):
-            order = 'desc'
-        qs = qs.order_by(
-            ('-' if order == 'desc' else '') + 'first_published_at'
-        )
-
-        qs = self.get_queryset(request, *args, context, **kwargs)
-        if qs:
-            paginator = Paginator(qs, 30)
-            try:
-                qs = paginator.page('page')
-            except PageNotAnInteger:
-                qs = paginator.page(1)
-            except EmptyPage:
-                qs = parginator.page(paginator.num_pages)
-            context['paginator'] = paginator
-        return qs
-
     def get_context(self, request, *args, **kwargs):
         from aircox.cms.forms import CommentForm
         context = super().get_context(request, *args, **kwargs)
@@ -333,7 +289,7 @@ class Publication(Page):
             context['comment_form'] = CommentForm()
 
         if view == 'list':
-            context['object_list'] = self.get_queryset(
+            context['object_list'] = ListPage.get_queryset(
                 request, *args, context = context, thread = self, **kwargs
             )
         return context
@@ -366,6 +322,7 @@ class ProgramPage(Publication):
     program = models.ForeignKey(
         programs.Program,
         verbose_name = _('program'),
+        related_name = 'page',
         on_delete=models.SET_NULL,
         blank=True, null=True,
     )
@@ -403,20 +360,22 @@ class ProgramPage(Publication):
                     ),
                     cover = self.cover,
                     live = True,
+                    date = diff.start,
                 )
-            diff.page_.date = diff.start
         return [
             diff.page_ for diff in diffs if diff.page_.live
         ]
 
-    def next_diffs(self):
+    @property
+    def next(self):
         now = tz.now()
         diffs = programs.Diffusion.objects \
                     .filter(end__gte = now, program = self.program) \
                     .order_by('start').prefetch_related('page')
         return self.diffs_to_page(diffs)
 
-    def prev_diffs(self):
+    @property
+    def prev(self):
         now = tz.now()
         diffs = programs.Diffusion.objects \
                     .filter(end__lte = now, program = self.program) \
@@ -470,6 +429,32 @@ class DiffusionPage(Publication):
     ] + Publication.content_panels + [
         InlinePanel('tracks', label=_('Tracks'))
     ]
+
+    @classmethod
+    def as_item(cl, diff):
+        """
+        Return a DiffusionPage or ListItem from a Diffusion
+        """
+        if diff.page.all().count():
+            item = diff.page.live().first()
+        else:
+            item = ListItem(
+                title = '{}, {}'.format(
+                    diff.program.name, diff.date.strftime('%d %B %Y')
+                ),
+                cover = (diff.program.page.count() and \
+                            diff.program.page.first().cover) or '',
+                live = True,
+                date = diff.start,
+            )
+
+        if diff.initial:
+            item.info = _('Rerun of %(date)s') % {
+                'date': diff.initial.start.strftime('%A %d')
+            }
+        diff.css_class = 'diffusion'
+
+        return item
 
     def save(self, *args, **kwargs):
         if self.diffusion:
@@ -526,6 +511,260 @@ class EventPage(Publication):
     def save(self, *args, **kwargs):
         self.first_published_at = self.start
         super().save(*args, **kwargs)
+
+
+#
+# Indexes
+#
+class BaseDateList(models.Model):
+    nav_days = models.SmallIntegerField(
+        _('navigation days count'),
+        default = 7,
+        help_text = _('number of days to display in the navigation header '
+                      'when we use dates')
+    )
+    nav_per_week = models.BooleanField(
+        _('navigation per week'),
+        default = False,
+        help_text = _('if selected, show dates navigation per weeks instead '
+                      'of show days equally around the current date')
+    )
+
+    @staticmethod
+    def str_to_date(date):
+        """
+        Parse a string and return a regular date or None.
+        Format is either "YYYY/MM/DD" or "YYYY-MM-DD" or "YYYYMMDD"
+        """
+        try:
+            exp = r'(?P<year>[0-9]{4})(-|\/)?(?P<month>[0-9]{1,2})(-|\/)?' \
+                  r'(?P<day>[0-9]{1,2})'
+            date = re.match(exp, date).groupdict()
+            return datetime.date(
+                year = int(date['year']), month = int(date['month']),
+                day = int(date['day'])
+            )
+        except:
+            return None
+
+    def get_date_context(self, date, date_max = None):
+        """
+        Return a dict that can be added to the context to be used by
+        a date_list.
+        """
+        if not date:
+            date = tz.now().today()
+
+        if date_max:
+            date = min(date, date_max)
+
+        # dates
+        if date_max == date:
+            first = self.nav_days - 1
+        elif self.nav_per_week:
+            first = date.weekday()
+        else:
+            first = int((self.nav_days - 1) / 2)
+        first = date - tz.timedelta(days = first)
+        dates = [ first + tz.timedelta(days=i)
+                    for i in range(0, self.nav_days) ]
+
+        # next/prev weeks/date bunch
+        next = date + tz.timedelta(days=self.nav_days)
+        prev = date - tz.timedelta(days=self.nav_days)
+
+        if date_max:
+            dates = [ date for date in dates if date <= date_max ]
+            next = min(next, date_max)
+            if next in dates:
+                next = None
+            prev = min(prev, date_max)
+
+        # context dict
+        return {
+            'nav_dates': {
+                'date': date,
+                'next': next,
+                'prev': prev,
+                'dates': dates,
+            }
+        }
+
+    class Meta:
+        abstract = True
+
+
+class ListPage(Page):
+    """
+    Page for simple lists, query is done though request' GET fields.
+    Look at get_queryset for more information.
+    """
+    summary = models.TextField(
+        _('summary'),
+        blank = True, null = True,
+        help_text = _('some short description if you want to, just for fun'),
+    )
+
+    @classmethod
+    def get_queryset(cl, request, *args,
+                     thread = None, context = {},
+                     **kwargs):
+        """
+        Return a queryset from the request's GET parameters. Context
+        can be used to update relative informations.
+
+        This function can be used by other views if needed
+
+        Parameters:
+        * type:     ['program','diffusion','event'] type of the publication
+        * tag:      tag to search for
+        * search:   query to search in the publications
+        * thread:   children of the thread passed in arguments only
+        * order:    ['asc','desc'] sort ordering
+        * page:     page number
+
+        Context's fields:
+        * object_list:      the final queryset
+        * list_type:        type of the items in the list (as Page subclass)
+        * tag_query:        tag searched for
+        * search_query:     search terms
+        * thread_query:     thread
+        * paginator:        paginator object
+        """
+        if 'thread' in request.GET and thread:
+            qs = thread.get_children().not_in_menu()
+            context['thread_query'] = thread
+        else:
+            qs = Publication.objects.all()
+        qs = qs.live()
+
+        # ordering
+        order = request.GET.get('order')
+        if order not in ('asc','desc'):
+            order = 'desc'
+        qs = qs.order_by(
+            ('-' if order == 'desc' else '') + 'first_published_at'
+        )
+
+        # type
+        type = request.GET.get('type')
+        if type == 'program':
+            qs = qs.type(ProgramPage)
+            context['list_type'] = ProgramPage
+        elif type == 'diffusion':
+            qs = qs.type(DiffusionPage)
+            context['list_type'] = DiffusionPage
+        elif type == 'event':
+            qs = qs.type(EventPage)
+            context['list_type'] = EventPage
+
+        # filter by tag
+        tag = request.GET.get('tag')
+        if tag:
+            context['tag_query'] = tag
+            qs = qs.filter(tags__name = tag)
+
+        # search
+        search = request.GET.get('search')
+        if search:
+            context['search_query'] = search
+            qs = qs.search(search)
+
+        # paginator
+        if qs:
+            paginator = Paginator(qs, 30)
+            try:
+                qs = paginator.page('page')
+            except PageNotAnInteger:
+                qs = paginator.page(1)
+            except EmptyPage:
+                qs = parginator.page(paginator.num_pages)
+            context['paginator'] = paginator
+        context['object_list'] = qs
+        return qs
+
+    def get_context(self, request, *args, **kwargs):
+        context = super().get_context(request, *args, **kwargs)
+        qs = self.get_queryset(request, context=context)
+        context['object_list'] = qs
+        return context
+
+
+class LogsPage(BaseDateList,Page):
+    summary = models.TextField(
+        _('summary'),
+        blank = True, null = True,
+        help_text = _('some short description if you want to, just for fun'),
+    )
+    station = models.ForeignKey(
+        controllers.Station,
+        verbose_name = _('station'),
+        null = True,
+        on_delete=models.SET_NULL,
+        help_text = _('(required for logs) the station on which the logs '
+                      'happened')
+    )
+    max_days = models.IntegerField(
+        _('maximum days'),
+        default=15,
+        help_text = _('maximum days in the past allowed to be shown. '
+                      '0 means no limit')
+    )
+
+
+    content_panels = [
+        FieldPanel('title'),
+        MultiFieldPanel([
+            FieldPanel('station'),
+            FieldPanel('max_days'),
+        ], heading=_('Configuration')),
+    ]
+
+
+    def as_item(cl, log):
+        """
+        Return a log object as a DiffusionPage or ListItem.
+        Supports: Log/Track, Diffusion
+        """
+        if type(log) == programs.Diffusion:
+            return DiffusionPage.as_item(log)
+        return ListItem(
+            title = '{artist} -- {title}'.format(
+                artist = log.related.artist,
+                title = log.related.title,
+            ),
+            summary = log.related.info,
+            date = log.date,
+            info = '♫',
+            css_class = 'track'
+        )
+
+    def get_queryset(self, request, context):
+        if 'date' in request.GET:
+            date = request.GET.get('date')
+            date = self.str_to_date(date)
+
+            if date and self.max_days:
+                date = max(
+                    tz.now().date() - tz.timedelta(days=self.max_days),
+                    date
+                )
+        else:
+            date = tz.now().date()
+        context.update(self.get_date_context(date, date_max=tz.now().date()))
+
+        r = []
+        for date in context['nav_dates']['dates']:
+            logs = self.station.get_on_air(date)
+            logs = [ self.as_item(log) for log in logs ]
+            r.append((date, logs))
+        return r
+
+    def get_context(self, request, *args, **kwargs):
+        context = super().get_context(request, *args, **kwargs)
+        qs = self.get_queryset(request, context)
+        context['object_list'] = qs
+        return context
 
 
 #

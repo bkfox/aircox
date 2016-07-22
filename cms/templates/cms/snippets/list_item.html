@@ -1,15 +1,28 @@
+{% comment %}
+Configurable item to be put in a list. Support standard Publication or
+ListItem instance.
+
+Options:
+* item: item to render. Fields: title, summary, cover, url, date, info, css_class
+* list_date_format: format passed to the date filter instead of default one
+{% endcomment %}
+
 {% load wagtailimages_tags %}
 
-<a {% if item.url %}href="{{ item.url }}" {% endif %}class="item page_item">
+<a {% if item.url %}href="{{ item.url }}" {% endif %}
+    class="item page_item{% if item.css_class %}{{ item.css_class }}{% endif %}">
     {% image item.cover fill-64x64 class="cover item_cover" %}
     <h3>{{ item.title }}</h3>
-    <div class="summary">{{ item.summary }}</div>
-    {% if not item.show_in_menus %}
-    {% if item.date %}
+    {% if item.summary %}<div class="summary">{{ item.summary }}</div>{% endif %}
+    {% if not item.show_in_menus and item.date %}
+    {% with date_format=list_date_format|default:'l d F, H:i' %}
     <time datetime="{{ item.date }}">
-        {{ item.date|date:'l d F, H:i' }}
+        {{ item.date|date:date_format }}
     </time>
+    {% endwith %}
     {% endif %}
+    {% if item.info %}
+    <span class="info">{{ item.info|safe }}</span>
     {% endif %}
 </a>
 
