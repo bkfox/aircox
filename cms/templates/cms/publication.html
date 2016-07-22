@@ -56,9 +56,9 @@
                     {{ page.owner }}
                 {% endif %}
             </div>
-            <time datetime="{{ page.first_published_at }}">
+            <time datetime="{{ page.specific.date }}">
                 {% trans "Published on " %}
-                {{ page.first_published_at|date:'l d F, H:i' }}
+                {{ page.specific.date|date:'l d F, H:i' }}
             </time>
 
             <div class="tags">

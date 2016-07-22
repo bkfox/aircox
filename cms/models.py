@@ -145,6 +145,173 @@ class BaseRelatedLink(Orderable):
     ]
 
 
+class BaseList(models.Model):
+    """
+    Generic list
+    """
+    class DateFilter(IntEnum):
+        none = 0x00
+        previous = 0x01
+        next = 0x02
+        before_related = 0x03,
+        after_related = 0x04,
+
+    filter_date = models.SmallIntegerField(
+        verbose_name = _('filter by date'),
+        choices = [ (int(y), _(x.replace('_', ' ')))
+                        for x,y in DateFilter.__members__.items() ],
+        blank = True, null = True,
+    )
+    filter_model = models.ForeignKey(
+        ContentType,
+        verbose_name = _('filter by type'),
+        blank = True, null = True,
+        help_text = _('if set, select only elements that are of this type'),
+        limit_choices_to = {
+            'publication__isnull': False,
+        }
+    )
+    filter_related = models.ForeignKey(
+        'Publication',
+        verbose_name = _('filter by a related publication'),
+        blank = True, null = True,
+        help_text = _('if set, select children or siblings of this publication'),
+    )
+    related_sibling = models.BooleanField(
+        verbose_name = _('related is a sibling'),
+        default = False,
+        help_text = _('if selected select related publications that are '
+                      'siblings of this one'),
+    )
+    sort_asc = models.BooleanField(
+        verbose_name = _('order ascending'),
+        default = True,
+        help_text = _('if selected sort list in the ascending order by date')
+    )
+
+    @classmethod
+    def get_base_queryset(cl, filter_date = None, filter_model = None,
+                            filter_related = None, related_siblings = None,
+                            sort_asc = True):
+        """
+        Get queryset based on the arguments. This class is intended to be
+        reusable by other classes if needed.
+        """
+        # model
+        if filter_model:
+            qs = filter_model.objects.all()
+        else:
+            qs = Publication.objects.all()
+        qs = qs.live().not_in_menu()
+
+        # related
+        if filter_related:
+            if related_siblings:
+                qs = qs.sibling_of(filter_related)
+            else:
+                qs = qs.descendant_of(filter_related)
+
+            date = filter_related.date
+            if filter_date == cl.DateFilter.before_related:
+                qs = qs.filter(date__lt = date)
+            elif filter_date == cl.DateFilter.after_related:
+                qs = qs.filter(date__gte = date)
+        # date
+        else:
+            date = tz.now()
+            if filter_date == cl.DateFilter.previous:
+                qs = qs.filter(date__lt = date)
+            elif filter_date == cl.DateFilter.next:
+                qs = qs.filter(date__gte = date)
+
+        # sort
+        if sort_asc:
+            return qs.order_by('date', 'pk')
+        return qs.order_by('-date', '-pk')
+
+
+class BaseDatedList(models.Model):
+    """
+    List that display items per days. Renders a navigation menu on the
+    top.
+    """
+    nav_days = models.SmallIntegerField(
+        _('navigation days count'),
+        default = 7,
+        help_text = _('number of days to display in the navigation header '
+                      'when we use dates')
+    )
+    nav_per_week = models.BooleanField(
+        _('navigation per week'),
+        default = False,
+        help_text = _('if selected, show dates navigation per weeks instead '
+                      'of show days equally around the current date')
+    )
+
+    class Meta:
+        abstract = True
+
+    panels = [
+        MultiFieldPanel([
+            FieldPanel('nav_days'),
+            FieldPanel('nav_per_week'),
+        ], heading=_('Navigation')),
+    ]
+
+    @staticmethod
+    def str_to_date(date):
+        """
+        Parse a string and return a regular date or None.
+        Format is either "YYYY/MM/DD" or "YYYY-MM-DD" or "YYYYMMDD"
+        """
+        try:
+            exp = r'(?P<year>[0-9]{4})(-|\/)?(?P<month>[0-9]{1,2})(-|\/)?' \
+                  r'(?P<day>[0-9]{1,2})'
+            date = re.match(exp, date).groupdict()
+            return datetime.date(
+                year = int(date['year']), month = int(date['month']),
+                day = int(date['day'])
+            )
+        except:
+            return None
+
+    def get_nav_dates(self, date):
+        """
+        Return a list of dates availables for the navigation
+        """
+        if self.nav_per_week:
+            first = date.weekday()
+        else:
+            first = int((self.nav_days - 1) / 2)
+        first = date - tz.timedelta(days = first)
+        return [ first + tz.timedelta(days=i)
+                    for i in range(0, self.nav_days) ]
+
+    def get_date_context(self, date):
+        """
+        Return a dict that can be added to the context to be used by
+        a date_list.
+        """
+        today = tz.now().today()
+        if not date:
+            date = today
+
+        # next/prev weeks/date bunch
+        dates = self.get_nav_dates(date)
+        next = date + tz.timedelta(days=self.nav_days)
+        prev = date - tz.timedelta(days=self.nav_days)
+
+        # context dict
+        return {
+            'nav_dates': {
+                'date': date,
+                'next': next,
+                'prev': prev,
+                'dates': dates,
+            }
+        }
+
+
 #
 # Publications
 #
@@ -205,8 +372,13 @@ class PublicationTag(TaggedItemBase):
 
 
 class Publication(Page):
-    order_field = 'first_published_at'
+    order_field = 'date'
 
+    date = models.DateTimeField(
+        _('date'),
+        blank = True, null = True,
+        auto_now_add = True,
+    )
     publish_as = models.ForeignKey(
         'ProgramPage',
         verbose_name = _('publish as program'),
@@ -254,7 +426,7 @@ class Publication(Page):
             FieldPanel('summary'),
             FieldPanel('tags'),
             FieldPanel('focus'),
-        ]),
+        ], heading=_('Content')),
         InlinePanel('related_links', label=_('Links'))
     ] + Page.promote_panels
     settings_panels = Page.settings_panels + [
@@ -263,13 +435,9 @@ class Publication(Page):
     ]
 
     @property
-    def date(self):
-        return self.first_published_at
-
-    @property
     def recents(self):
-        return self.get_children().not_in_menu() \
-                   .order_by('-first_published_at')
+        return self.get_children().type(Publication).not_in_menu().live() \
+                   .order_by('-publication__date')
 
     @property
     def comments(self):
@@ -277,6 +445,11 @@ class Publication(Page):
             publication = self,
             published = True,
         ).order_by('-date')
+
+    def save(self, *args, **kwargs):
+        if not self.date and self.first_published_at:
+            self.date = self.first_published_at
+        super().save(*args, **kwargs)
 
     def get_context(self, request, *args, **kwargs):
         from aircox.cms.forms import CommentForm
@@ -314,7 +487,6 @@ class Publication(Page):
                 messages.error(
                     request, settings.comment_error_message, fail_silently=True
                 )
-
         return super().serve(request)
 
 
@@ -458,7 +630,7 @@ class DiffusionPage(Publication):
 
     def save(self, *args, **kwargs):
         if self.diffusion:
-            self.first_published_at = self.diffusion.start
+            self.date = self.diffusion.start
         super().save(*args, **kwargs)
 
 class EventPageQuerySet(PageQuerySet):
@@ -509,7 +681,7 @@ class EventPage(Publication):
     ]
 
     def save(self, *args, **kwargs):
-        self.first_published_at = self.start
+        self.date = self.start
         super().save(*args, **kwargs)
 
 
@@ -529,7 +701,7 @@ class ListPage(Page):
 
     @classmethod
     def get_queryset(cl, request, *args,
-                     thread = None, context = {},
+                     related = None, context = {},
                      **kwargs):
         """
         Return a queryset from the request's GET parameters. Context
@@ -538,59 +710,45 @@ class ListPage(Page):
         This function can be used by other views if needed
 
         Parameters:
-        * type:     ['program','diffusion','event'] type of the publication
+        * model:    ['program','diffusion','event'] type of the publication
+        * asc:      if present, sort ascending instead of descending
+        * related:  children of the thread passed in arguments only
+        * siblings: sibling of the related instead of children
         * tag:      tag to search for
         * search:   query to search in the publications
-        * thread:   children of the thread passed in arguments only
-        * order:    ['asc','desc'] sort ordering
         * page:     page number
 
         Context's fields:
         * object_list:      the final queryset
-        * list_type:        type of the items in the list (as Page subclass)
-        * tag_query:        tag searched for
-        * search_query:     search terms
-        * thread_query:     thread
+        * list_selector:    dict of { 'tag_query', 'search_query' } plus
+                            arguments passed to BaseList.get_base_queryset
         * paginator:        paginator object
         """
-        if 'thread' in request.GET and thread:
-            qs = thread.get_children().not_in_menu()
-            context['thread_query'] = thread
-        else:
-            qs = Publication.objects.all()
-        qs = qs.live()
+        model = request.GET.get('model')
 
-        # ordering
-        order = request.GET.get('order')
-        if order not in ('asc','desc'):
-            order = 'desc'
-        qs = qs.order_by(
-            ('-' if order == 'desc' else '') + 'first_published_at'
-        )
-
-        # type
-        type = request.GET.get('type')
-        if type == 'program':
-            qs = qs.type(ProgramPage)
-            context['list_type'] = ProgramPage
-        elif type == 'diffusion':
-            qs = qs.type(DiffusionPage)
-            context['list_type'] = DiffusionPage
-        elif type == 'event':
-            qs = qs.type(EventPage)
-            context['list_type'] = EventPage
+        kwargs = {
+            'filter_model': ProgramPage if model == 'program' else \
+                            DiffusionPage if model == 'diffusion' else \
+                            EventPage if model == 'event' else None,
+            'filter_related': 'related' in request.GET and related,
+            'related_siblings': 'siblings' in request.GET,
+            'sort_asc': 'asc' in request.GET,
+        }
+        qs = BaseList.get_base_queryset(**kwargs)
 
         # filter by tag
         tag = request.GET.get('tag')
         if tag:
-            context['tag_query'] = tag
+            kwargs['tag_query'] = tag
             qs = qs.filter(tags__name = tag)
 
         # search
         search = request.GET.get('search')
         if search:
-            context['search_query'] = search
+            kwargs['search_query'] = search
             qs = qs.search(search)
+
+        context['list_selector'] = kwargs
 
         # paginator
         if qs:
@@ -610,84 +768,6 @@ class ListPage(Page):
         qs = self.get_queryset(request, context=context)
         context['object_list'] = qs
         return context
-
-
-class BaseDatedList(models.Model):
-    nav_days = models.SmallIntegerField(
-        _('navigation days count'),
-        default = 7,
-        help_text = _('number of days to display in the navigation header '
-                      'when we use dates')
-    )
-    nav_per_week = models.BooleanField(
-        _('navigation per week'),
-        default = False,
-        help_text = _('if selected, show dates navigation per weeks instead '
-                      'of show days equally around the current date')
-    )
-
-    class Meta:
-        abstract = True
-
-    panels = [
-        MultiFieldPanel([
-            FieldPanel('nav_days'),
-            FieldPanel('nav_per_week'),
-        ], heading=_('Navigation')),
-    ]
-
-    @staticmethod
-    def str_to_date(date):
-        """
-        Parse a string and return a regular date or None.
-        Format is either "YYYY/MM/DD" or "YYYY-MM-DD" or "YYYYMMDD"
-        """
-        try:
-            exp = r'(?P<year>[0-9]{4})(-|\/)?(?P<month>[0-9]{1,2})(-|\/)?' \
-                  r'(?P<day>[0-9]{1,2})'
-            date = re.match(exp, date).groupdict()
-            return datetime.date(
-                year = int(date['year']), month = int(date['month']),
-                day = int(date['day'])
-            )
-        except:
-            return None
-
-    def get_nav_dates(self, date):
-        """
-        Return a list of dates availables for the navigation
-        """
-        if self.nav_per_week:
-            first = date.weekday()
-        else:
-            first = int((self.nav_days - 1) / 2)
-        first = date - tz.timedelta(days = first)
-        return [ first + tz.timedelta(days=i)
-                    for i in range(0, self.nav_days) ]
-
-    def get_date_context(self, date):
-        """
-        Return a dict that can be added to the context to be used by
-        a date_list.
-        """
-        today = tz.now().today()
-        if not date:
-            date = today
-
-        # next/prev weeks/date bunch
-        dates = self.get_nav_dates(date)
-        next = date + tz.timedelta(days=self.nav_days)
-        prev = date - tz.timedelta(days=self.nav_days)
-
-        # context dict
-        return {
-            'nav_dates': {
-                'date': date,
-                'next': next,
-                'prev': prev,
-                'dates': dates,
-            }
-        }
 
 
 class DatedListPage(BaseDatedList,Page):
@@ -863,6 +943,7 @@ class Menu(ClusterableModel):
 
 @register_snippet
 class MenuItem(models.Model):
+    menu = ParentalKey(Menu, related_name='menu_items')
     real_type = models.CharField(
         max_length=32,
         blank = True, null = True,
@@ -878,7 +959,6 @@ class MenuItem(models.Model):
         blank = True, null = True,
         help_text=_('menu container\'s "class" attribute')
     )
-    menu = ParentalKey(Menu, related_name='menu_items')
 
     panels = [
         MultiFieldPanel([
