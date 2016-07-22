@@ -2,10 +2,12 @@ import datetime
 import re
 from enum import Enum, IntEnum
 
+
 from django.db import models
 from django.contrib.contenttypes.models import ContentType
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.utils import timezone as tz
+from django.utils.text import slugify
 from django.utils.translation import ugettext as _, ugettext_lazy
 
 from wagtail.wagtailcore.models import Page, Orderable
@@ -49,7 +51,16 @@ class ListItem:
 class BaseRelatedLink(Orderable):
     url = models.URLField(
         _('url'),
+        null=True, blank=True,
         help_text = _('URL of the link'),
+    )
+    page = models.ForeignKey(
+        'wagtailcore.Page',
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='+',
+        help_text = _('Use a page instead of a URL')
     )
     icon = models.ForeignKey(
         'wagtailimages.Image',
@@ -59,8 +70,8 @@ class BaseRelatedLink(Orderable):
         related_name='+',
         help_text = _('icon to display before the url'),
     )
-    title = models.CharField(
-        _('title'),
+    text = models.CharField(
+        _('text'),
         max_length = 64,
         null = True, blank=True,
         help_text = _('text to display of the link'),
@@ -70,11 +81,12 @@ class BaseRelatedLink(Orderable):
         abstract = True
 
     panels = [
-        FieldPanel('url'),
-        FieldRowPanel([
-            FieldPanel('title'),
+        MultiFieldPanel([
+            FieldPanel('text'),
             ImageChooserPanel('icon'),
-        ]),
+            FieldPanel('url'),
+            PageChooserPanel('page'),
+        ], heading=_('link'))
     ]
 
 
@@ -101,7 +113,8 @@ class BaseList(models.Model):
         blank = True, null = True,
         help_text = _('if set, select only elements that are of this type'),
         limit_choices_to = {
-            'publication__isnull': False,
+            'model__in': ('publication','programpage','diffusionpage',
+                          'eventpage'),
         }
     )
     filter_related = models.ForeignKey(
@@ -122,6 +135,18 @@ class BaseList(models.Model):
         help_text = _('if selected sort list in the ascending order by date')
     )
 
+    panels = [
+        MultiFieldPanel([
+            FieldPanel('filter_model'),
+            FieldPanel('filter_related'),
+            FieldPanel('related_sibling'),
+        ], heading=_('filters')),
+        MultiFieldPanel([
+            FieldPanel('filter_date'),
+            FieldPanel('sort_asc'),
+        ], heading=_('sorting'))
+    ]
+
     class Meta:
         abstract = True
 
@@ -138,7 +163,7 @@ class BaseList(models.Model):
             qs = filter_model.objects.all()
         else:
             qs = Publication.objects.all()
-        qs = qs.live().not_in_menu()
+        qs = qs.live().not_in_section()
 
         # related
         if filter_related:
@@ -232,7 +257,7 @@ class BaseList(models.Model):
 
 class BaseDatedList(models.Model):
     """
-    List that display items per days. Renders a navigation menu on the
+    List that display items per days. Renders a navigation section on the
     top.
     """
     nav_days = models.SmallIntegerField(
@@ -316,29 +341,32 @@ class BaseDatedList(models.Model):
 # Sections
 #
 @register_snippet
-class Menu(ClusterableModel):
+class Section(ClusterableModel):
     name = models.CharField(
         _('name'),
         max_length=32,
         blank = True, null = True,
-        help_text=_('name of this menu (not displayed)'),
+        help_text=_('name of this section (not displayed)'),
     )
     css_class = models.CharField(
         _('CSS class'),
         max_length=64,
         blank = True, null = True,
-        help_text=_('menu container\'s "class" attribute')
+        help_text=_('section container\'s "class" attribute')
     )
     related = models.ForeignKey(
         ContentType,
         blank = True, null = True,
-        help_text=_('this menu is displayed only for this model')
+        help_text=_('this section is displayed only for this model'),
+        #limit_choices_to = {
+        #    'page__isnull': False
+        #}
     )
     position = models.CharField(
         _('position'),
         max_length=16,
         blank = True, null = True,
-        help_text = _('name of the template block in which the menu must '
+        help_text = _('name of the template block in which the section must '
                       'be set'),
     )
 
@@ -351,34 +379,22 @@ class Menu(ClusterableModel):
             FieldPanel('related'),
             FieldPanel('position'),
         ], heading=_('Position')),
-        InlinePanel('menu_items', label=_('menu items')),
+        InlinePanel('section_items', label=_('section items')),
     ]
 
+    def __str__(self):
+        return '{}: {}'.format(self.__class__.__name__, self.name or self.pk)
 
-@register_snippet
-class MenuItem(models.Model):
-    menu = ParentalKey(Menu, related_name='menu_items')
-    real_type = models.CharField(
-        max_length=32,
-        blank = True, null = True,
-    )
-    title = models.CharField(
-        _('title'),
-        max_length=32,
-        blank = True, null = True,
-    )
-    css_class = models.CharField(
-        _('CSS class'),
-        max_length=64,
-        blank = True, null = True,
-        help_text=_('menu container\'s "class" attribute')
-    )
 
+
+class SectionItemItem(Orderable):
+    section = ParentalKey(Section, related_name='section_items')
+    item = models.ForeignKey(
+        'SectionItem',
+        verbose_name=_('item')
+    )
     panels = [
-        MultiFieldPanel([
-            FieldPanel('name'),
-            FieldPanel('css_class'),
-        ], heading=_('General')),
+        SnippetChooserPanel('item'),
     ]
 
     def specific(self):
@@ -390,11 +406,77 @@ class MenuItem(models.Model):
             return self
         return getattr(self, self.real_type)
 
-    def save(self, make_safe = True, *args, **kwargs):
-        if type(self) != MenuItem and not self.real_type:
-            self.real_type = type(self).__name__.lower()
+    def save(self, *args, **kwargs):
+        #if type(self) != SectionItem and not self.real_type:
+        #    self.real_type = type(self).__name__.lower()
         return super().save(*args, **kwargs)
 
+    def __str__(self):
+        return '{}: {}'.format(self.__class__.__name__, self.title or self.pk)
+
+
+@register_snippet
+class SectionItem(models.Model):
+    real_type = models.CharField(
+        max_length=32,
+        blank = True, null = True,
+    )
+    title = models.CharField(
+        _('title'),
+        max_length=32,
+        blank = True, null = True,
+    )
+    show_title = models.BooleanField(
+        _('show title'),
+        default = False,
+        help_text=_('if set show a title at the head of the section'),
+    )
+    css_class = models.CharField(
+        _('CSS class'),
+        max_length=64,
+        blank = True, null = True,
+        help_text=_('section container\'s "class" attribute')
+    )
+    panels = [
+        MultiFieldPanel([
+            FieldPanel('title'),
+            FieldPanel('show_title'),
+            FieldPanel('css_class'),
+        ], heading=_('General')),
+    ]
+
+    def __str__(self):
+        return '{}: {}'.format(self.__class__.__name__, self.title or self.pk)
+
+
+@register_snippet
+class SectionText(SectionItem):
+    body = RichTextField()
+    panels = SectionItem.panels + [
+        FieldPanel('body'),
+    ]
+
+
+@register_snippet
+class SectionImage(SectionItem):
+    image = models.ForeignKey(
+        'wagtailimages.Image',
+        verbose_name = _('image'),
+        related_name='+',
+    )
+    panels = SectionItem.panels + [
+        ImageChooserPanel('image'),
+    ]
+
+
+@register_snippet
+class SectionLink(BaseRelatedLink,SectionItem):
+    panels = SectionItem.panels + BaseRelatedLink.panels
+
+
+@register_snippet
+class SectionPublicationList(BaseList,SectionItem):
+    panels = SectionItem.panels + BaseList.panels
 
 
 

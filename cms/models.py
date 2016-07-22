@@ -196,6 +196,10 @@ class Publication(Page):
         blank=True
     )
 
+    class Meta:
+        verbose_name = _('Publication')
+        verbose_name_plural = _('Publication')
+
     content_panels = Page.content_panels + [
         FieldPanel('body', classname="full")
     ]
@@ -616,6 +620,8 @@ class TimetablePage(DatedListPage):
             items = [ DiffusionPage.as_item(item) for item in items ]
             diffs.append((date, items))
         return diffs
+
+
 
 
 
