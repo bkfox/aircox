@@ -354,14 +354,6 @@ class Section(ClusterableModel):
         blank = True, null = True,
         help_text=_('section container\'s "class" attribute')
     )
-    related = models.ForeignKey(
-        ContentType,
-        blank = True, null = True,
-        help_text=_('this section is displayed only for this model'),
-        #limit_choices_to = {
-        #    'page__isnull': False
-        #}
-    )
     position = models.CharField(
         _('position'),
         max_length=16,
@@ -374,11 +366,8 @@ class Section(ClusterableModel):
         MultiFieldPanel([
             FieldPanel('name'),
             FieldPanel('css_class'),
-        ], heading=_('General')),
-        MultiFieldPanel([
-            FieldPanel('related'),
             FieldPanel('position'),
-        ], heading=_('Position')),
+        ], heading=_('General')),
         InlinePanel('section_items', label=_('section items')),
     ]
 
@@ -389,27 +378,23 @@ class Section(ClusterableModel):
 
 class SectionItemItem(Orderable):
     section = ParentalKey(Section, related_name='section_items')
+    related = models.ForeignKey(
+        ContentType,
+        blank = True, null = True,
+        help_text=_('this section is displayed only for this model'),
+        limit_choices_to = {
+            'model__in': ('publication','programpage','diffusionpage',
+                          'eventpage'),
+        }
+    )
     item = models.ForeignKey(
         'SectionItem',
         verbose_name=_('item')
     )
     panels = [
         SnippetChooserPanel('item'),
+        FieldPanel('related'),
     ]
-
-    def specific(self):
-        """
-        Return a downcasted version of the post if it is from another
-        model, or itself
-        """
-        if not self.real_type or type(self) != Post:
-            return self
-        return getattr(self, self.real_type)
-
-    def save(self, *args, **kwargs):
-        #if type(self) != SectionItem and not self.real_type:
-        #    self.real_type = type(self).__name__.lower()
-        return super().save(*args, **kwargs)
 
     def __str__(self):
         return '{}: {}'.format(self.__class__.__name__, self.title or self.pk)
@@ -445,8 +430,26 @@ class SectionItem(models.Model):
         ], heading=_('General')),
     ]
 
+    def specific(self):
+        """
+        Return a downcasted version of the post if it is from another
+        model, or itself
+        """
+        if not self.real_type or type(self) != Post:
+            return self
+        return getattr(self, self.real_type)
+
+    def save(self, *args, **kwargs):
+        if type(self) != SectionItem and not self.real_type:
+            self.real_type = type(self).__name__.lower()
+        return super().save(*args, **kwargs)
+
+
     def __str__(self):
-        return '{}: {}'.format(self.__class__.__name__, self.title or self.pk)
+        return '{}: {}'.format(
+            (self.real_type or 'section item').replace('section','section '),
+            self.title or self.pk
+        )
 
 
 @register_snippet
@@ -471,12 +474,30 @@ class SectionImage(SectionItem):
 
 @register_snippet
 class SectionLink(BaseRelatedLink,SectionItem):
+    """
+    Can either be used standalone or in a SectionLinkList
+    """
+    parent = ParentalKey('SectionLinkList', related_name='links',
+                         blank=True, null=True)
     panels = SectionItem.panels + BaseRelatedLink.panels
 
 
 @register_snippet
+class SectionLinkList(SectionItem,ClusterableModel):
+    panels = SectionItem.panels + [
+        InlinePanel('links', label=_('links'))
+    ]
+
+
+@register_snippet
 class SectionPublicationList(BaseList,SectionItem):
-    panels = SectionItem.panels + BaseList.panels
+    focus_available = models.BooleanField(
+        _('focus available'),
+        default = False,
+        help_text = _('if true, highlight the first focused article found')
+    )
+    panels = SectionItem.panels + [ FieldPanel('focus_available') ] +\
+             BaseList.panels
 
 
 
