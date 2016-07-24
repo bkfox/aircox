@@ -790,6 +790,7 @@ class SectionList(ListBase, SectionItem):
         context = super().get_context(request, page, *args, **kwargs)
 
         qs = self.get_queryset()
+        qs = qs.live()
         if self.focus_available:
             focus = qs.type(Publication).filter(focus = True).first()
             if focus:

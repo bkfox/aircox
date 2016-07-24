@@ -39,28 +39,31 @@ class Command (BaseCommand):
                 logger.warning('no default program page for this website: skip')
                 continue
 
-            logger.info('start syncing programs...')
-
+            # programs
+            logger.info('Programs...')
             parent = settings.default_program_parent_page
-            for program in Program.objects.all():
-                if program.page.count():
-                    continue
-
+            qs = Program.objects.filter(
+                active = True,
+                stream__isnull = True,
+                page__isnull = True,
+            )
+            for program in qs:
                 logger.info('- ' + program.name)
                 page = ProgramPage(
                     program = program,
                     title = program.name,
-                    live = False
+                    live = False,
                 )
                 parent.add_child(instance = page)
 
-            logger.info('start syncing diffusions...')
-
-            min_date = tz.now().date() - tz.timedelta(days = 20)
-            for diffusion in Diffusion.objects.filter(start__gt = min_date):
-                if diffusion.page.count() or diffusion.initial:
-                    continue
-
+            # diffusions
+            logger.info('Diffusions...')
+            qs = Diffusion.objects.filter(
+                start__gt = tz.now().date() - tz.timedelta(days = 20),
+                page__isnull = True,
+                initial__isnull = True
+            )
+            for diffusion in qs:
                 if not diffusion.program.page.count():
                     if not hasattr(diffusion.program, '__logged_diff_error'):
                         logger.warning(
@@ -74,7 +77,9 @@ class Command (BaseCommand):
 
                 logger.info('- ' + str(diffusion))
                 try:
-                    page = DiffusionPage.from_diffusion(diffusion)
+                    page = DiffusionPage.from_diffusion(
+                        diffusion, live = False
+                    )
                     diffusion.program.page.first().add_child(instance = page)
                 except:
                     import sys
