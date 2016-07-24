@@ -33,21 +33,11 @@ This file is used as a reminder, can be used as crappy documentation too.
         - config generation and sound diffusion
 
 - cms:
-    - update documentation:
-        - cms.script
-        - cms.exposure; make it right, see nomenclature, + docstring
-        - cms.actions;
-    - admin cms
-        -> sections/actions and django decorator?
-        -> enhance calendar with possible actions?
-
-- website:
-    - article list with the focus
+    - command to sync programs with cms's
     - player:
         - mixcloud
         - remove from playing playlist -> stop
-    - date_by_list:
-        - sections' url
+    - filter choices on DiffusionPage and ProgramPage related objects
 
 # Long term TODO
 - automatic cancel of passed diffusion based on logs?

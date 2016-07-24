@@ -5,6 +5,7 @@ from enum import IntEnum
 from django.db import models
 from django.utils.translation import ugettext as _, ugettext_lazy
 from django.utils import timezone as tz
+from django.utils.functional import cached_property
 from django.core.urlresolvers import reverse
 from django.template.loader import render_to_string
 from django.contrib.contenttypes.models import ContentType
@@ -195,7 +196,7 @@ class ListBase(models.Model):
         reusable by other classes if needed.
         """
         from aircox.cms.models import Publication
-        related = self.related and self.related.specific()
+        related = self.related and self.related.specific
 
         # model
         if self.model:
@@ -487,7 +488,7 @@ class Section(ClusterableModel):
 
     def render(self, request, page = None, *args, **kwargs):
         return ''.join([
-            place.item.specific().render(request, page, *args, **kwargs)
+            place.item.specific.render(request, page, *args, **kwargs)
             for place in self.places.all()
         ])
 
@@ -573,6 +574,7 @@ class SectionItem(models.Model,metaclass=SectionItemMeta):
         ], heading=_('General')),
     ]
 
+    @cached_property
     def specific(self):
         """
         Return a downcasted version of the post if it is from another

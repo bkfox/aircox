@@ -510,11 +510,6 @@ class Program(Nameable):
         default = True,
         help_text = _('if not set this program is no longer active')
     )
-    public = models.BooleanField(
-        _('public'),
-        default = True,
-        help_text = _('information are available to the public')
-    )
 
     @property
     def path(self):

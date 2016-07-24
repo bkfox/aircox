@@ -36,6 +36,10 @@ from aircox.cms.sections import *
 
 @register_setting
 class WebsiteSettings(BaseSetting):
+    # TODO: #Station assign a website to a programs.model.station when it will
+    #   exist. Update all dependent code such as signal handling
+
+    # general website information
     logo = models.ForeignKey(
         'wagtailimages.Image',
         verbose_name = _('logo'),
@@ -51,6 +55,8 @@ class WebsiteSettings(BaseSetting):
         related_name='+',
         help_text = _('favicon for the website'),
     )
+
+    # comments
     accept_comments = models.BooleanField(
         default = True,
         help_text = _('publish comments automatically without verifying'),
@@ -75,6 +81,31 @@ class WebsiteSettings(BaseSetting):
         help_text = _('message to display there is an error an incomplete form.'),
     )
 
+    auto_create = models.BooleanField(
+        _('automatic publications'),
+        default = False,
+        help_text = _(
+            'Create automatically new publications for new programs and '
+            'diffusions in the timetable. If set, please complete other '
+            'options of this panel'
+        )
+    )
+    default_program_parent_page = ParentalKey(
+        Page,
+        verbose_name = _('default program parent page'),
+        blank = True, null = True,
+        help_text = _(
+            'Default parent page for program\'s pages. It is used to assign '
+            'a page to the publication of a newly created program and can '
+            'be changed later'
+        ),
+        limit_choices_to = lambda: {
+            'show_in_menus': True,
+            'publication__isnull': False,
+        },
+    )
+
+
     panels = [
         ImageChooserPanel('logo'),
         ImageChooserPanel('favicon'),
@@ -84,7 +115,11 @@ class WebsiteSettings(BaseSetting):
             FieldPanel('comment_success_message'),
             FieldPanel('comment_wait_message'),
             FieldPanel('comment_error_message'),
-        ], heading = _('Comments'))
+        ], heading = _('Comments')),
+        MultiFieldPanel([
+            FieldPanel('auto_create'),
+            FieldPanel('default_program_parent_page'),
+        ], heading = _('Programs and controls')),
     ]
 
     class Meta:
@@ -373,11 +408,6 @@ class DiffusionPage(Publication):
         related_name = 'page',
         on_delete=models.SET_NULL,
         null=True,
-        limit_choices_to = lambda: {
-            'initial__isnull': True,
-            'start__gt': tz.now() - tz.timedelta(days=10),
-            'start__lt': tz.now() + tz.timedelta(days=10),
-        }
     )
 
     class Meta:
@@ -390,30 +420,39 @@ class DiffusionPage(Publication):
         InlinePanel('tracks', label=_('Tracks'))
     ]
 
+
+    @classmethod
+    def from_diffusion(cl, diff, model = None, **kwargs):
+        model = model or cl
+        model_kwargs = {
+            'diffusion': diff,
+            'title': '{}, {}'.format(
+                diff.program.name, tz.localtime(diff.date).strftime('%d %B %Y')
+            ),
+            'cover': (diff.program.page.count() and \
+                        diff.program.page.first().cover) or None,
+            'date': diff.start,
+        }
+        model_kwargs.update(kwargs)
+        r = model(**model_kwargs)
+        return r
+
     @classmethod
     def as_item(cl, diff):
         """
-        Return a DiffusionPage or ListItem from a Diffusion
+        Return a DiffusionPage or ListItem from a Diffusion.
         """
         if diff.page.all().count():
             item = diff.page.all().first()
         else:
-            item = ListItem(
-                title = '{}, {}'.format(
-                    diff.program.name, diff.date.strftime('%d %B %Y')
-                ),
-                cover = (diff.program.page.count() and \
-                            diff.program.page.first().cover) or '',
-                live = True,
-                date = diff.start,
-            )
+            item = cl.from_diffusion(diff, ListItem)
+            item.live = True
 
         if diff.initial:
             item.info = _('Rerun of %(date)s') % {
                 'date': diff.initial.start.strftime('%A %d')
             }
         diff.css_class = 'diffusion'
-
         return item
 
     def save(self, *args, **kwargs):
