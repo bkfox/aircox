@@ -4,14 +4,19 @@ ListItem instance.
 
 Options:
 * item: item to render. Fields: title, summary, cover, url, date, info, css_class
-* list_date_format: format passed to the date filter instead of default one
+* item_date_format: format passed to the date filter instead of default one
+* item_big_cover: cover should is big instead of thumbnail (width: 600)
 {% endcomment %}
 
 {% load wagtailimages_tags %}
 
 <a {% if item.url %}href="{{ item.url }}" {% endif %}
     class="item page_item{% if item.css_class %}{{ item.css_class }}{% endif %}">
-    {% image item.cover fill-64x64 class="cover item_cover" %}
+    {% if item_big_cover %}
+        {% image item.cover max-600 class="cover item_cover" %}
+    {% else %}
+        {% image item.cover fill-64x64 class="cover item_cover" %}
+    {% endif %}
     <h3>{{ item.title }}</h3>
     {% if item.summary %}<div class="summary">{{ item.summary }}</div>{% endif %}
     {% if not item.show_in_menus and item.date %}

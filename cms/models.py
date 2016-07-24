@@ -396,7 +396,7 @@ class DiffusionPage(Publication):
         Return a DiffusionPage or ListItem from a Diffusion
         """
         if diff.page.all().count():
-            item = diff.page.live().first()
+            item = diff.page.all().first()
         else:
             item = ListItem(
                 title = '{}, {}'.format(
@@ -493,7 +493,7 @@ class ListPage(Page):
 
     def get_context(self, request, *args, **kwargs):
         context = super().get_context(request, *args, **kwargs)
-        qs = ListBase.get_queryset_from_request(request, context=context)
+        qs = ListBase.from_request(request, context=context)
         context['object_list'] = qs
         return context
 

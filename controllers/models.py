@@ -14,7 +14,7 @@ sources that are used to generate the audio stream:
 import os
 import datetime
 import logging
-from enum import Enum, IntEnum
+from enum import IntEnum
 
 from django.db import models
 from django.contrib.contenttypes.fields import GenericForeignKey

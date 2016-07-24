@@ -1,7 +1,7 @@
 from django import template
-from django.db.models import Q
+from django.utils.safestring import mark_safe
 
-import aircox.cms.sections as sections
+from aircox.cms.sections import Section
 
 register = template.Library()
 
@@ -13,21 +13,15 @@ def around(page_num, n):
     return range(page_num-n, page_num+n+1)
 
 @register.simple_tag(takes_context=True)
-def render_section(position = None, section = None, context = None):
+def render_sections(context, position = None):
     """
-    If section is not given, render all sections at the given
-    position (filter out base on page models' too, cf. Section.model).
+    Render all sections at the given position (filter out base on page
+    models' too, cf. Section.model).
     """
     request = context.get('request')
     page = context.get('page')
-
-    if section:
-        return section.render(request, page=page)
-
-    sections = Section.objects \
-        .filter( Q(model__isnull = True) | Q(model = type(page)) ) \
-        .filter(position = position)
-    return '\n'.join(
-        section.render(request, page=page) for section in sections
-    )
+    return mark_safe(''.join(
+        section.render(request, page=page)
+        for section in Section.get_sections_at(position, page)
+    ))
 

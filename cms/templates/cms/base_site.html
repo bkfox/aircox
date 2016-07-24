@@ -1,7 +1,11 @@
 {% load staticfiles %}
 {% load i18n %}
+
 {% load wagtailimages_tags %}
 {% load wagtailsettings_tags %}
+
+{% load aircox_cms %}
+
 {% get_settings %}
 
 <html>
@@ -26,7 +30,7 @@
 
         <div class="middle">
             <nav class="left">
-                <img src="{{ settings.cms.WebsiteSettings.logo.file.url }}" class="logo">
+                {% render_sections position="menu_left" %}
             </nav>
 
             <main>

@@ -1,3 +1,16 @@
+This file is used as a reminder, can be used as crappy documentation too.
+
+# conventions
+## coding style
+* name of classes relative to a class:
+    - metaclass: `class_name + 'Meta'`
+    - base classes: `class_name + 'Base'`
+
+## aircox.cms
+* icons: cropped to 32x32
+* cover in list items: cropped 64x64
+
+
 
 # TODO:
 - general:

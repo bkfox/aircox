@@ -26,7 +26,7 @@
     {% if day == nav_dates.date %}class="today"{% endif %}>
     {# you might like to hide it by default -- this more for sections #}
     <h2>{{ day|date:'l d F' }}</h2>
-    {% with object_list=list list_date_format="H:i" %}
+    {% with object_list=list item_date_format="H:i" %}
     {% for item in list %}
     {% include "cms/snippets/list_item.html" %}
     {% endfor %}

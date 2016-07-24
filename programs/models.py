@@ -2,7 +2,7 @@ import datetime
 import os
 import shutil
 import logging
-from enum import Enum, IntEnum
+from enum import IntEnum
 
 from django.db import models
 from django.template.defaultfilters import slugify

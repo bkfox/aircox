@@ -1,0 +1,8 @@
+<div class="section_item {{ self.css_class }}">
+    {% block title %}
+    {% if self.show_title %}<h2>{{ self.title }}</h2>{% endif %}
+    {% endblock %}
+    {% block content %}{{ content|safe }}{% endblock %}
+</div>
+
+
