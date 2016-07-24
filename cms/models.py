@@ -143,7 +143,7 @@ class Comment(models.Model):
         return super().save(*args, **kwargs)
 
 
-class RelatedLink(BaseRelatedLink):
+class RelatedLink(RelatedLinkBase):
     parent = ParentalKey('Publication', related_name='related_links')
 
 class PublicationTag(TaggedItemBase):
@@ -487,14 +487,18 @@ class ListPage(Page):
         help_text = _('add an extra description for this list')
     )
 
+    class Meta:
+        verbose_name = _('List')
+        verbose_name_plural = _('List')
+
     def get_context(self, request, *args, **kwargs):
         context = super().get_context(request, *args, **kwargs)
-        qs = BaseList.get_queryset_from_request(request, context=context)
+        qs = ListBase.get_queryset_from_request(request, context=context)
         context['object_list'] = qs
         return context
 
 
-class DatedListPage(BaseDatedList,Page):
+class DatedListPage(DatedListBase,Page):
     body = RichTextField(
         _('body'),
         blank = True, null = True,
@@ -509,7 +513,7 @@ class DatedListPage(BaseDatedList,Page):
             FieldPanel('title'),
             FieldPanel('body'),
         ], heading=_('Content')),
-    ] + BaseDatedList.panels
+    ] + DatedListBase.panels
 
     def get_queryset(self, request, context):
         """
@@ -554,7 +558,11 @@ class LogsPage(DatedListPage):
                       '0 means no limit')
     )
 
-    content_panels = BaseDatedList.panels + [
+    class Meta:
+        verbose_name = _('Logs')
+        verbose_name_plural = _('Logs')
+
+    content_panels = DatedListBase.panels + [
         MultiFieldPanel([
             FieldPanel('station'),
             FieldPanel('age_max'),
@@ -612,6 +620,7 @@ class TimetablePage(DatedListPage):
 
     class Meta:
         verbose_name = _('Timetable')
+        verbose_name_plural = _('Timetable')
 
     def get_queryset(self, request, context):
         diffs = []
