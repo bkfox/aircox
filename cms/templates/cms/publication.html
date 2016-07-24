@@ -17,7 +17,9 @@
 {% else %}
 {# detail view #}
     <div class="content">
+        {% if page.cover %}
         <img class="cover" src="{{ page.cover.file.url }}">
+        {% endif %}
         <div class="body">
         {{ page.body|richtext}}
         </div>
@@ -54,7 +56,7 @@
                     {% include "cms/snippets/list_item.html" %}
                     {% endwith %}
                 {% else %}
-                    {{ page.owner }}
+                    {{ page.owner|default:'' }}
                 {% endif %}
             </div>
             <time datetime="{{ page.specific.date }}">
