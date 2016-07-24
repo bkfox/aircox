@@ -552,9 +552,11 @@ class SectionItem(models.Model,metaclass=SectionItemMeta):
     is_related = models.BooleanField(
         _('is related'),
         default = False,
-        help_text=_('if set, section is related to the current publication. '
-                    'e.g rendering a list related to it instead of to all '
-                    'publications'),
+        help_text=_(
+            'if set, section is related to the page being processed '
+            'e.g rendering a list of links will use thoses of the '
+            'publication instead of an assigned one.'
+        )
     )
     css_class = models.CharField(
         _('CSS class'),
@@ -567,11 +569,9 @@ class SectionItem(models.Model,metaclass=SectionItemMeta):
             FieldPanel('title'),
             FieldPanel('show_title'),
             FieldPanel('css_class'),
+            FieldPanel('is_related'),
         ], heading=_('General')),
     ]
-
-    def model_name(self):
-        return self.__class__.__name__.lower()
 
     def specific(self):
         """
@@ -586,6 +586,11 @@ class SectionItem(models.Model,metaclass=SectionItemMeta):
         if type(self) != SectionItem and not self.real_type:
             self.real_type = type(self).__name__.lower()
         return super().save(*args, **kwargs)
+
+
+    def related_page_attr(self, page, attr):
+        return self.is_related and hasattr(page, attr) \
+                and getattr(page, attr)
 
     def get_context(self, request, page, *args, **kwargs):
         """
@@ -650,6 +655,11 @@ class SectionImage(SectionItem):
         'wagtailimages.Image',
         verbose_name = _('image'),
         related_name='+',
+        blank=True, null=True,
+        help_text=_(
+            'If this item is related to the current page, this image will '
+            'be used only when the page has not a cover'
+        )
     )
     width = models.SmallIntegerField(
         _('width'),
@@ -680,7 +690,10 @@ class SectionImage(SectionItem):
     def get_context(self, request, page, *args, **kwargs):
         context = super().get_context(request, page, *args, **kwargs)
 
-        image = self.image
+        image = self.related_page_attr(page, 'cover') or self.image
+        if not image:
+            return context
+
         if self.width or self.height:
             filter_spec = \
                 'width-{}'.format(self.width) if not self.height else \
@@ -721,15 +734,16 @@ class SectionLinkList(SectionItem, ClusterableModel):
     Note: assign the link's class to the <a> tag if there is some.
     """
     panels = SectionItem.panels + [
-        InlinePanel('links', label=_('links'))
+        InlinePanel('links', label=_('links'), help_text=_(
+            'If the list is related to the current page, theses links '
+            'will be used when there is no links found for this publication'
+        ))
     ]
 
     def get_context(self, request, page, *args, **kwargs):
         context = super().get_context(*args, **kwargs)
-        links = \
-            self.links if not self.is_related else \
-            page.related_links if hasattr(page, 'related_links') else \
-            None
+
+        links = self.related_page_attr(page, 'related_link') or self.links
         context['object_list'] = links
         return context
 
@@ -790,6 +804,5 @@ class SectionList(ListBase, SectionItem):
             context['url'] = self.to_url(
                 list_page = self.is_related and page
             )
-
         return context
 
