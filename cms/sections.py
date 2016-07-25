@@ -703,10 +703,7 @@ class SectionImage(SectionRelativeItem):
     )
 
     panels = SectionItem.panels + [
-        MultiFieldPanel([
-            ImageChooserPanel('image'),
-            FieldPanel('image'),
-        ], heading=_('Source')),
+        ImageChooserPanel('image'),
         MultiFieldPanel([
             FieldPanel('width'),
             FieldPanel('height'),
