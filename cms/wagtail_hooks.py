@@ -74,7 +74,7 @@ class DiffusionsMenu(GenericMenu):
     def get_queryset(self):
         return programs.Diffusion.objects.filter(
             type = programs.Diffusion.Type.normal,
-            start__contains = tz.now().date() + tz.timedelta(days=2),
+            start__contains = tz.now().date(),
         ).order_by('start')
 
     def get_title(self, item):

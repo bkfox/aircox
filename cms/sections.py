@@ -32,6 +32,10 @@ from modelcluster.fields import ParentalKey
 from modelcluster.tags import ClusterTaggableManager
 from taggit.models import TaggedItemBase
 
+# aircox
+import aircox.programs.models as programs
+
+
 
 def related_pages_filter(reset_cache=False):
     """
@@ -398,12 +402,12 @@ class DatedListBase(models.Model):
         return [ first + tz.timedelta(days=i)
                     for i in range(0, self.nav_days) ]
 
-    def get_date_context(self, date):
+    def get_date_context(self, date = None):
         """
         Return a dict that can be added to the context to be used by
         a date_list.
         """
-        today = tz.now().today()
+        today = tz.now().date()
         if not date:
             date = today
 
@@ -808,4 +812,42 @@ class SectionList(ListBase, SectionItem):
                 list_page = self.is_related and page
             )
         return context
+
+
+@register_snippet
+class SectionTimetable(SectionItem,DatedListBase):
+    panels = SectionItem.panels + DatedListBase.panels
+
+    def get_queryset(self, context):
+        from aircox.cms.models import DiffusionPage
+        diffs = []
+        for date in context['nav_dates']['dates']:
+            items = programs.Diffusion.objects.get_at(date).order_by('start')
+            items = [ DiffusionPage.as_item(item) for item in items ]
+            diffs.append((date, items))
+        return diffs
+
+    def get_context(self, request, page, *args, **kwargs):
+        context = super().get_context(request, page, *args, **kwargs)
+        context.update(self.get_date_context())
+        context['object_list'] = self.get_queryset(context)
+        return context
+
+
+@register_snippet
+class SectionLogs(SectionItem):
+    count = models.SmallIntegerField(
+        _('count'),
+        default = 5,
+        help_text = _('number of items to display in the list'),
+    )
+
+    panels = SectionItem.panels + [
+        FieldPanel('count'),
+    ]
+
+    def get_context(self, request, page, *args, **kwargs):
+        pass
+
+
 

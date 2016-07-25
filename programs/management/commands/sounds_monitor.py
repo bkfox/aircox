@@ -127,7 +127,7 @@ class SoundInfo:
         if not os.path.exists(path):
             return
 
-        old = Track.get_for(object = sound)
+        old = Track.objects.get_for(object = sound)
         if old:
             return
 

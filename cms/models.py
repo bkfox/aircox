@@ -648,7 +648,7 @@ class LogsPage(DatedListPage):
 
         logs = []
         for date in context['nav_dates']['dates']:
-            items = self.station.get_on_air(date)
+            items = self.station.on_air(date = date)
             items = [ self.as_item(item) for item in items ]
             logs.append((date, items))
         return logs

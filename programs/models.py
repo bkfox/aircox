@@ -45,6 +45,29 @@ def date_or_default(date, no_time = False):
     return date
 
 
+class RelatedManager(models.Manager):
+    def get_for(self, object = None, model = None):
+        """
+        Return a queryset that filter on the given object or model(s)
+
+        * object: if given, use its type and pk; match on models only.
+        * model: one model or an iterable of models
+        """
+        if not model and object:
+            model = type(object)
+
+        if hasattr(model, '__iter__'):
+            model = [ ContentType.objects.get_for_model(m).id
+                        for m in model ]
+            qs = self.filter(related_type__pk__in = model)
+        else:
+            model = ContentType.objects.get_for_model(model)
+            qs = self.filter(related_type__pk = model.id)
+        if object:
+            qs = qs.filter(related_id = object.pk)
+        return qs
+
+
 class Related(models.Model):
     """
     Add a field "related" of type GenericForeignKey, plus utilities.
@@ -60,28 +83,7 @@ class Related(models.Model):
         'related_type', 'related_id',
     )
 
-    @classmethod
-    def get_for(cl, object = None, model = None):
-        """
-        Return a queryset that filter on the given object or model(s)
-
-        * object: if given, use its type and pk; match on models only.
-        * model: one model or list of models
-        """
-        if not model and object:
-            model = type(object)
-
-        if type(model) in (list, tuple):
-            model = [ ContentType.objects.get_for_model(m).id
-                        for m in model ]
-            qs = cl.objects.filter(related_type__pk__in = model)
-        else:
-            model = ContentType.objects.get_for_model(model)
-            qs = cl.objects.filter(related_type__pk = model.id)
-
-        if object:
-            qs = qs.filter(related_id = object.pk)
-        return qs
+    objects = RelatedManager()
 
     class Meta:
         abstract = True

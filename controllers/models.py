@@ -150,7 +150,7 @@ class Station(programs.Nameable):
         * archive: if false, exclude log of diffusion's archives from
             the queryset;
         """
-        qs = Log.get_for(model = models) \
+        qs = Log.objects.get_for(model = models) \
                 .filter(station = self, type = Log.Type.play)
         if not archives and self.dealer:
             qs = qs.exclude(
@@ -161,45 +161,66 @@ class Station(programs.Nameable):
             )
         return qs.order_by('date')
 
-    def get_on_air(self, date = None):
+
+    @staticmethod
+    def __mix_logs_and_diff(diffs, logs, count = 0):
         """
-        Return a list of what should have normally been on air at the
-        given date, ordered descending on the diffusion time
+        Mix together logs and diffusion items ordering by their date.
+        Diffs and Logs are assumed to be ordered by -date, and so is
+        the resulting list
+        """
+        # we fill a list with diff and retrieve logs that happened between
+        # each to put them too there
+        items = []
+        diff_ = None
+        for diff in diffs:
+            logs_ = \
+                logs.filter(date__gt = diff.end, date__lt = diff_.start) \
+                    if diff_ else logs.filter(date__gt = diff.end)
+            diff_ = diff
+            items.extends(logs_)
+            items.append(diff)
+            if count and len(items) >= count:
+                break
+
+        if diff_ and not count or len(items) <= count:
+            logs_ = logs.filter(date__lt = diff_.end)
+            items.extend(logs_)
+
+        return items[:count] if count else items
+
+
+    def on_air(self, date = None, count = 0):
+        """
+        Return a list of what happened on air, based on logs and
+        diffusions informations. The list is sorted by -date.
+
+        * date: only for what happened on this date;
+        * count: number of items to retrieve if not zero;
+
+        Be careful with what you which for: the result is a plain list.
 
         The list contains:
-        - track logs: for the streamed programs;
-        - diffusion: for the scheduled diffusions;
+        * track logs: for the streamed programs;
+        * diffusion: for the scheduled diffusions;
         """
-        # TODO: argument to get sound instead of tracks
+        # FIXME: as an iterator?
+        # TODO argument to get sound instead of tracks
+        # TODO #Station
         date = date or tz.now().date()
         if date > datetime.date.today():
             return []
 
-        logs = Log.get_for(model = programs.Track) \
-                    .filter(date__contains = date) \
-                    .order_by('date')
-        diffs = programs.Diffusion.objects.get_at(date) \
-                    .filter(type = programs.Diffusion.Type.normal) \
-                    .order_by('start')
-
-        # mix up
-        items = []
-        prev_diff = None
-        for diff in diffs:
-            logs_ = logs.filter(date__gt = prev_diff.end,
-                                date__lt = diff.start) \
-                    if prev_diff else \
-                    logs.filter(date__lt = diff.start)
-            prev_diff = diff
-            items.extend(logs_)
-            items.append(diff)
-
-        # last logs
-        if prev_diff:
-            logs_ = logs.filter(date__gt = prev_diff.end)
-            items.extend(logs_)
-        return reversed(items)
-
+        logs = Log.objects.get_for(model = programs.Track) \
+                  .filter(station = self) \
+                  .order_by('-date')
+        diffs = programs.Diffusion.objects \
+                    .filter(type = Diffusion.Type.normal) \
+                    .order_by('-date')
+        if date:
+            logs = logs.filter(date__contains = date)
+            diffs = diffs.get_at(date)
+        return self.__mix_logs_and_diff(diffs, logs, count)
 
 
     def save(self, make_sources = True, *args, **kwargs):

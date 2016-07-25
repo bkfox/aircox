@@ -66,7 +66,7 @@ class Monitor:
         if not current_sound or not current_source:
             return
 
-        log = Log.get_for(model = programs.Sound) \
+        log = Log.objects.get_for(model = programs.Sound) \
                     .filter(station = self.station).order_by('date').last()
 
         # only streamed
@@ -92,11 +92,11 @@ class Monitor:
         Log tracks for the given sound (for streamed programs); Called by
         self.trace
         """
-        logs = Log.get_for(model = programs.Track) \
+        logs = Log.objects.get_for(model = programs.Track) \
                   .filter(pk__gt = log.pk)
         logs = [ log.related_id for log in logs ]
 
-        tracks = programs.Track.get_for(object = log.related) \
+        tracks = programs.Track.objects.get_for(object = log.related) \
                                .filter(in_seconds = True)
         if tracks and len(tracks) == len(logs):
             return
