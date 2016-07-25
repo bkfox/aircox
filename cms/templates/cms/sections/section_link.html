@@ -4,7 +4,7 @@
 {% block content %}
 {% with link=self.as_dict %}
 <a href="{{ link.url }}">
-    {% if link.icon %}{% image link.icon fill-32x32 class="icon" %}{% endif %}
+    {% if link.icon %}{% image link.icon fill-32x32 class="icon link_icon" height='' width='' %}{% endif %}
     {{ link.text }}
 </a>
 {% endwith %}

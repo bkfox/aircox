@@ -6,7 +6,7 @@
     {% with link=item.as_dict %}
     <a href="{{ link.url }}"
         {% if item.css_class %}class="{{ item.css_class }}"{% endif %}>
-        {% if link.icon %}{% image link.icon fill-32x32 class="icon" %}{% endif %}
+        {% if link.icon %}{% image link.icon fill-24x24 class="icon" %}{% endif %}
         {{ link.text }}
     </a>
     {% endwith %}

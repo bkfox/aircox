@@ -1,0 +1,104 @@
+/**
+ *  Define rules for the default layouts, and some useful classes
+ */
+body {
+    margin: 0em;
+    padding: 0em;
+}
+
+h1, h2, h3, h4, h5 {
+    margin: 0.4em 0em;
+}
+
+
+/** classes: flex **/
+.flex_row {
+    display: -webkit-flex;
+    display: flex;
+    -webkit-flex-direction: row;
+    flex-direction: row;
+}
+
+.flex_column {
+    display: -webkit-flex;
+    display: flex;
+    -webkit-flex-direction: column;
+    flex-direction: column;
+}
+
+.flex_row > .flex_item,
+.flex_column > .flex_item {
+    -webkit-flex: auto;
+    flex: auto;
+}
+
+
+/** content: list & items **/
+.list {
+    width: 100%;
+    padding: 0.4em;
+}
+
+.list_item {
+    width: inherit;
+    margin: 0.4em 0;
+}
+
+.list_item > *:not(:last-child) {
+    margin-right: 0.4em;
+}
+
+.list_item img.cover.big {
+    display: block;
+}
+
+.list_item img.cover.small {
+    margin-right: 0.4em;
+    border-radius: 0.4em;
+    float: left;
+    min-height: 64px;
+}
+
+
+/** content: date list **/
+.date_list nav {
+    text-align:center;
+}
+
+    .date_list nav a {
+        display: inline-block;
+        width: 4em;
+    }
+
+    .date_list nav a[selected] {
+        color: #007EDF;
+        border-bottom: 0.2em #007EDF dotted;
+    }
+
+.date_list ul:not([selected]) {
+    display: none;
+}
+
+.date_list ul:target {
+    display: block;
+}
+
+    .date_list h2 {
+        display: none;
+    }
+
+.date_list_item .cover.small {
+    width: 64px;
+    margin: 0.4em;
+}
+
+.date_list_item h3 {
+    width: 100%;
+}
+
+
+/** content: publication **/
+
+
+
+

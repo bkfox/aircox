@@ -1,0 +1,43 @@
+{% comment %}
+Configurable item to be put in a dated list. Work like list_item, the layout
+is just a bit different.
+{% endcomment %}
+
+{% load wagtailimages_tags %}
+
+<a {% if item.url %}href="{{ item.url }}" {% endif %}
+    class="list_item date_list_item {% if not item_big_cover %}flex_row {% endif %}{% if item.css_class %}{{ item.css_class }}{% endif %}">
+
+    {% if not item.show_in_menus and item.date and item_date_format != '' %}
+    {% with date_format=item_date_format|default_if_none:'l d F, H:i' %}
+    <time datetime="{{ item.date }}">
+        {{ item.date|date:date_format }}
+    </time>
+    {% endwith %}
+    {% endif %}
+
+    {% if item_big_cover %}
+        {% image item.cover max-640x480 class="cover big" height="" width="" %}
+    {% elif item.cover %}
+        {% image item.cover fill-64x64 class="cover small" %}
+    {% else %}
+        <div class="cover small"></div>
+    {% endif %}
+
+    <div class="flex_item">
+        <h3>{{ item.title }}</h3>
+
+        {% if item.summary %}<div class="summary">{{ item.summary }}</div>{% endif %}
+
+        {% if item.info %}
+        <span class="info">{{ item.info|safe }}</span>
+        {% endif %}
+
+        {% if item.extra %}
+        <div class="extra"></div>
+        {% endif %}
+    </div>
+
+</a>
+
+

@@ -1,0 +1,27 @@
+{% extends "cms/sections/section_item.html" %}
+{% load i18n %}
+
+<div class="meta">
+    <div class="author">
+        {% if page.publish_as %}
+            {% trans "Published by" %}
+            {% with item=page.publish_as item_date_format='' %}
+            {% include "cms/snippets/list_item.html" %}
+            {% endwith %}
+        {% elif page.owner %}
+            {% trans "Published by" %}
+            {{ page.owner }}
+        {% endif %}
+    </div>
+    <time datetime="{{ page.specific.date }}">
+        {% trans "Published on " %}
+        {{ page.specific.date|date:'l d F, H:i' }}
+    </time>
+    <div class="tags">
+    {% for tag in page.tags.all %}
+     {# <a href="{% pageurl page.blog_index %}?tag={{ tag }}">{{ tag }}</a> #}
+     {{ tag }}
+    {% endfor %}
+    </div>
+</div>
+

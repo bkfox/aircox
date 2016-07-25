@@ -33,25 +33,29 @@ This file is used as a reminder, can be used as crappy documentation too.
         - config generation and sound diffusion
 
 - cms:
-    - command to sync programs with cms's
     - player:
         - mixcloud
         - remove from playing playlist -> stop
     - filter choices on DiffusionPage and ProgramPage related objects
 
+
 # Long term TODO
-- automatic cancel of passed diffusion based on logs?
-    - archives can be set afterwards for rerun, so check must be done
-        at the same time we monitor
-- sounds monitor: max_size of path, take in account
-- logs: archive functionnality
-- track stats for diffusions
 - debug/prod configuration
-- player support diffusions with multiple archive files
-- view as grid
-- actions -> noscript case, think of accessibility
-- comments -> remove/edit by the author
-- integrate logs for tracks + in on air
-- rename controllers.Station into controllers.Streamer -> keep Station for sth else
+
+programs:
+    - sounds monitor: max_size of path, take in account
+
+controllers:
+    - automatic cancel of passed diffusion based on logs?
+        - archives can be set afterwards for rerun, so check must be done
+            at the same time we monitor
+    - logs: archive functionnality
+    - tools:
+        - track stats for diffusions
+    - rename controllers.Station into controllers.Streamer -> keep Station for sth else
+
+cms:
+    - player support diffusions with multiple archive files
+    - comments -> remove/edit by the author
 
 

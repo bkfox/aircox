@@ -40,20 +40,22 @@ class WebsiteSettings(BaseSetting):
     #   exist. Update all dependent code such as signal handling
 
     # general website information
-    logo = models.ForeignKey(
-        'wagtailimages.Image',
-        verbose_name = _('logo'),
-        null=True, blank=True, on_delete=models.SET_NULL,
-        related_name='+',
-        help_text = _('logo of the website'),
-    )
-    favicon = models.ForeignKey(
-        'wagtailimages.Image',
+    favicon = models.ImageField(
         verbose_name = _('favicon'),
         null=True, blank=True,
-        on_delete=models.SET_NULL,
-        related_name='+',
-        help_text = _('favicon for the website'),
+        help_text = _('small logo for the website displayed in the browser'),
+    )
+    tags = models.CharField(
+        _('tags'),
+        max_length=256,
+        null=True, blank=True,
+        help_text = _('tags describing the website; used for referencing'),
+    )
+    description = models.CharField(
+        _('public description'),
+        max_length=256,
+        null=True, blank=True,
+        help_text = _('public description of the website; used for referencing'),
     )
 
     # comments
@@ -107,8 +109,11 @@ class WebsiteSettings(BaseSetting):
 
 
     panels = [
-        ImageChooserPanel('logo'),
-        ImageChooserPanel('favicon'),
+        MultiFieldPanel([
+            FieldPanel('favicon'),
+            FieldPanel('tags'),
+            FieldPanel('description'),
+        ], heading=_('promotion')),
         MultiFieldPanel([
             FieldPanel('allow_comments'),
             FieldPanel('accept_comments'),
@@ -252,7 +257,8 @@ class Publication(Page):
         FieldPanel('allow_comments'),
     ]
     search_fields = [
-        index.SearchField('body'),
+        index.SearchField('title', partial_match=True),
+        index.SearchField('body', partial_match=True),
         index.FilterField('live'),
         index.FilterField('show_in_menus'),
     ]
@@ -285,7 +291,7 @@ class Publication(Page):
             context['comment_form'] = CommentForm()
 
         if view == 'list':
-            context['object_list'] = ListPage.get_queryset(
+            context['object_list'] = ListBase.from_request(
                 request, context = context, related = self
             )
         return context
@@ -448,17 +454,24 @@ class DiffusionPage(Publication):
             item = cl.from_diffusion(diff, ListItem)
             item.live = True
 
+        item.info = []
         if diff.initial:
-            item.info = _('Rerun of %(date)s') % {
+            item.info.append(_('Rerun of %(date)s') % {
                 'date': diff.initial.start.strftime('%A %d')
-            }
-        diff.css_class = 'diffusion'
+            })
+        if diff.type == diff.Type.canceled:
+            item.info.append(_('Cancelled'))
+        item.info = '; '.join(item.info)
+
+        item.date = diff.start
+        item.css_class = 'diffusion'
         return item
 
     def save(self, *args, **kwargs):
         if self.diffusion:
             self.date = self.diffusion.start
         super().save(*args, **kwargs)
+
 
 class EventPageQuerySet(PageQuerySet):
     def upcoming(self):
@@ -587,8 +600,7 @@ class LogsPage(DatedListPage):
         verbose_name = _('station'),
         null = True,
         on_delete=models.SET_NULL,
-        help_text = _('(required for logs) the station on which the logs '
-                      'happened')
+        help_text = _('(required) the station on which the logs happened')
     )
     age_max = models.IntegerField(
         _('maximum age'),
@@ -607,24 +619,6 @@ class LogsPage(DatedListPage):
             FieldPanel('age_max'),
         ], heading=_('Configuration')),
     ]
-
-    def as_item(cl, log):
-        """
-        Return a log object as a DiffusionPage or ListItem.
-        Supports: Log/Track, Diffusion
-        """
-        if type(log) == programs.Diffusion:
-            return DiffusionPage.as_item(log)
-        return ListItem(
-            title = '{artist} -- {title}'.format(
-                artist = log.related.artist,
-                title = log.related.title,
-            ),
-            summary = log.related.info,
-            date = log.date,
-            info = '♫',
-            css_class = 'track'
-        )
 
     def get_nav_dates(self, date):
         """
@@ -648,8 +642,8 @@ class LogsPage(DatedListPage):
 
         logs = []
         for date in context['nav_dates']['dates']:
-            items = self.station.on_air(date = date)
-            items = [ self.as_item(item) for item in items ]
+            items = [ SectionLogsList.as_item(item)
+                        for item in self.station.on_air(date = date) ]
             logs.append((date, items))
         return logs
 

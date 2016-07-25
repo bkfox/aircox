@@ -20,6 +20,7 @@ from django.db import models
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.utils.translation import ugettext as _, ugettext_lazy
+from django.utils import timezone as tz
 
 import aircox.programs.models as programs
 from aircox.programs.utils import to_timedelta
@@ -176,14 +177,15 @@ class Station(programs.Nameable):
         for diff in diffs:
             logs_ = \
                 logs.filter(date__gt = diff.end, date__lt = diff_.start) \
-                    if diff_ else logs.filter(date__gt = diff.end)
+                    if diff_ else \
+                logs.filter(date__gt = diff.end)
             diff_ = diff
-            items.extends(logs_)
+            items.extend(logs_)
             items.append(diff)
             if count and len(items) >= count:
                 break
 
-        if diff_ and not count or len(items) <= count:
+        if diff_ and (not count or len(items) <= count):
             logs_ = logs.filter(date__lt = diff_.end)
             items.extend(logs_)
 
@@ -207,19 +209,22 @@ class Station(programs.Nameable):
         # FIXME: as an iterator?
         # TODO argument to get sound instead of tracks
         # TODO #Station
-        date = date or tz.now().date()
-        if date > datetime.date.today():
+        if date and date > datetime.date.today():
             return []
 
         logs = Log.objects.get_for(model = programs.Track) \
                   .filter(station = self) \
                   .order_by('-date')
-        diffs = programs.Diffusion.objects \
-                    .filter(type = Diffusion.Type.normal) \
-                    .order_by('-date')
+
         if date:
             logs = logs.filter(date__contains = date)
-            diffs = diffs.get_at(date)
+            diffs = programs.Diffusion.objects.get_at(date)
+        else:
+            diffs = programs.Diffusion.objects
+
+        diffs = diffs.filter(type = programs.Diffusion.Type.normal) \
+                     .filter(start__lte = tz.now()) \
+                     .order_by('-start')
         return self.__mix_logs_and_diff(diffs, logs, count)
 
 

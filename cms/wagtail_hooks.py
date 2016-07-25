@@ -45,6 +45,31 @@ class GenericMenu(Menu):
         return self._registered_menu_items
 
 
+class DiffusionsMenu(GenericMenu):
+    """
+    Menu to display diffusions of today
+    """
+    def get_queryset(self):
+        return programs.Diffusion.objects.filter(
+            type = programs.Diffusion.Type.normal,
+            start__contains = tz.now().date(),
+        ).order_by('start')
+
+    def get_title(self, item):
+        return item.program.name
+
+    def get_parent(self, item):
+        return item.program.page.first()
+
+
+@hooks.register('register_admin_menu_item')
+def register_programs_menu_item():
+    return SubmenuMenuItem(
+        _('Today\'s Diffusions'), DiffusionsMenu(),
+        classnames='icon icon-folder-open-inverse', order=10
+    )
+
+
 class ProgramsMenu(GenericMenu):
     """
     Menu to display all active programs.
@@ -67,36 +92,12 @@ class ProgramsMenu(GenericMenu):
         return settings.default_program_parent_page
 
 
-class DiffusionsMenu(GenericMenu):
-    """
-    Menu to display diffusions of today
-    """
-    def get_queryset(self):
-        return programs.Diffusion.objects.filter(
-            type = programs.Diffusion.Type.normal,
-            start__contains = tz.now().date(),
-        ).order_by('start')
-
-    def get_title(self, item):
-        return item.program.name
-
-    def get_parent(self, item):
-        return item.program.page.first()
-
 
 @hooks.register('register_admin_menu_item')
 def register_programs_menu_item():
     return SubmenuMenuItem(
         _('Programs'), ProgramsMenu(),
-        classnames='icon icon-folder-open-inverse', order=100
-    )
-
-
-@hooks.register('register_admin_menu_item')
-def register_programs_menu_item():
-    return SubmenuMenuItem(
-        _('Today\'s Diffusions'), DiffusionsMenu(),
-        classnames='icon icon-folder-open-inverse', order=100
+        classnames='icon icon-folder-open-inverse', order=10
     )
 
 

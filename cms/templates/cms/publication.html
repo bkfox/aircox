@@ -1,7 +1,10 @@
 {% extends "cms/base_site.html" %}
 {% load i18n %}
+
 {% load wagtailcore_tags %}
 {% load wagtailimages_tags %}
+
+{% load aircox_cms %}
 
 {% block content %}
 {% if object_list %}
@@ -18,75 +21,21 @@
 {# detail view #}
     <div class="content">
         {% if page.cover %}
-        <img class="cover" src="{{ page.cover.file.url }}">
+        {% image page.cover max-600x480 class="cover" height="" width="" %}
         {% endif %}
-        <div class="body">
+        <section class="body">
         {{ page.body|richtext}}
+        {% block content_extras %}{% endblock %}
+        </section>
+
+        <div class="post_content">
+        {% render_sections position="post_content" %}
         </div>
 
-        {% block content_extras %}
-        {% endblock %}
-
-        {% if page.related_links.all %}
-        <ul class="related">
-            <h3>{% trans "Related links" %}</h3>
-            {% for link in page.related_links.all %}
-            <li>
-                <a href="{{ link.url }}">
-                {% if link.icon %}{% image link.icon fill-size-32x32 %}{% endif %}
-                {{ link.title|default:link.url }}
-                </a>
-            </li>
-            {% endfor %}
-        </ul>
-        {% endif %}
-
-        <div class="comments">
+        <section class="comments">
         {% include "cms/snippets/comments.html" %}
-        </div>
+        </section>
     </div>
-
-    {% block page_nav %}
-    <nav class="page_nav">
-        {% block metadata %}
-        <div class="meta">
-            <div class="author">
-                {% if page.publish_as %}
-                    {% with page.publish_as as item %}
-                    {% include "cms/snippets/list_item.html" %}
-                    {% endwith %}
-                {% else %}
-                    {{ page.owner|default:'' }}
-                {% endif %}
-            </div>
-            <time datetime="{{ page.specific.date }}">
-                {% trans "Published on " %}
-                {{ page.specific.date|date:'l d F, H:i' }}
-            </time>
-
-            <div class="tags">
-            {% for tag in page.tags.all %}
-             {# <a href="{% pageurl page.blog_index %}?tag={{ tag }}">{{ tag }}</a> #}
-             {{ tag }}
-            {% endfor %}
-            </div>
-        </div>
-        {% endblock %}
-
-        {% block page_nav_extras %}
-        {% endblock %}
-
-        {% if page.recents %}
-        <div>
-            <h2>{% trans "Last Publications" %}</h2>
-            {% with object_list=page.recents %}
-            {% include "cms/snippets/list.html" %}
-            {% endwith %}
-            {# TODO: url to complete list of publications #}
-        </div>
-        {% endif %}
-    </nav>
-    {% endblock %}
 {% endif %}
 {% endblock %}
 

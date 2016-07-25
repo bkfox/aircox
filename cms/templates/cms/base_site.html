@@ -10,6 +10,14 @@
 
 <html>
     <head>
+        <meta charset="utf-8">
+        <meta name="application-name" content="aircox-cms">
+        <meta name="description" content="{{ settings.cms.WebsiteSettings.description }}">
+        <meta name="keywords" content="{{ page.tags.all|default:settings.cms.WebsiteSettings.tags }}">
+
+        {% with favicon=settings.cms.WebsiteSettings.favicon %}
+            <link rel="icon" href="{{ favicon.url }}" />
+        {% endwith %}
         {% block css %}
             <link rel="stylesheet" href="{% static 'cms/css/layout.css' %}" type="text/css" />
             <link rel="stylesheet" href="{% static 'cms/css/theme.css' %}" type="text/css" />
@@ -21,19 +29,19 @@
     </head>
     <body>
         <div class="top">
-            <nav>
-                <a href="">Grille Horaire</a>
-                <a href="">Programmes</a>
-                <a href="">Contact</a>
-            </nav>
+            {% render_sections position="top" %}
         </div>
 
-        <div class="middle">
-            <nav class="left">
-                {% render_sections position="menu_left" %}
+        <header class="header">
+            {% render_sections position="header" %}
+        </header>
+
+        <div class="page flex_row">
+            <nav class="page_left flex_item">
+                {% render_sections position="page_left" %}
             </nav>
 
-            <main>
+            <main class="flex_item">
             {% if messages %}
             <ul class="messages">
                 {% for message in messages %}
@@ -50,6 +58,14 @@
             {% block content %}
             {% endblock %}
             </main>
+
+            <nav class="page_right flex_item">
+                {% render_sections position="page_right" %}
+            </nav>
         </div>
+
+        <footer class="footer">
+            {% render_sections position="footer" %}
+        </footer>
     </body>
 </html>

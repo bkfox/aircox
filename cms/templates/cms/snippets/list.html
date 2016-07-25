@@ -1,15 +1,19 @@
+{% comment %}
+Options:
+- list_css_class: extra class for the main list container
+- list_paginator: paginator object to display pagination at the bottom;
+{% endcomment %}
+
 {% load i18n %}
 {% load aircox_cms %}
 
 
-<div class="list">
-<ul>
+<ul class="list {{ list_css_class|default:'' }}">
 {% for page in object_list %}
 {% with item=page.specific %}
 {% include "cms/snippets/list_item.html" %}
 {% endwith %}
 {% endfor %}
-</ul>
 
 {# we use list_paginator to avoid conflicts when there are multiple lists #}
 {% if list_paginator and list_paginator.num_pages > 1 %}
@@ -54,6 +58,6 @@
 </nav>
 {% endif %}
 
-</div>
+</ul>
 
 

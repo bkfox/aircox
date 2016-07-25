@@ -34,7 +34,7 @@ from taggit.models import TaggedItemBase
 
 # aircox
 import aircox.programs.models as programs
-
+import aircox.controllers.models as controllers
 
 
 def related_pages_filter(reset_cache=False):
@@ -102,6 +102,11 @@ class RelatedLinkBase(Orderable):
         related_name='+',
         help_text = _('icon to display before the url'),
     )
+    # icon = models.ImageField(
+    #    verbose_name = _('icon'),
+    #    null=True, blank=True,
+    #    help_text = _('icon to display before the url'),
+    #)
     text = models.CharField(
         _('text'),
         max_length = 64,
@@ -327,7 +332,9 @@ class ListBase(models.Model):
         search = request.GET.get('search')
         if search:
             kwargs['terms'] = search
+            print(search, qs)
             qs = qs.search(search)
+            print(qs.count())
 
         set('list_selector', kwargs)
 
@@ -534,7 +541,6 @@ class SectionItemMeta(models.base.ModelBase):
                     cl.template = 'cms/sections/section_item.html'
         return cl
 
-
 @register_snippet
 class SectionItem(models.Model,metaclass=SectionItemMeta):
     """
@@ -554,15 +560,6 @@ class SectionItem(models.Model,metaclass=SectionItemMeta):
         default = False,
         help_text=_('if set show a title at the head of the section'),
     )
-    is_related = models.BooleanField(
-        _('is related'),
-        default = False,
-        help_text=_(
-            'if set, section is related to the page being processed '
-            'e.g rendering a list of links will use thoses of the '
-            'publication instead of an assigned one.'
-        )
-    )
     css_class = models.CharField(
         _('CSS class'),
         max_length=64,
@@ -574,7 +571,6 @@ class SectionItem(models.Model,metaclass=SectionItemMeta):
             FieldPanel('title'),
             FieldPanel('show_title'),
             FieldPanel('css_class'),
-            FieldPanel('is_related'),
         ], heading=_('General')),
     ]
 
@@ -593,12 +589,7 @@ class SectionItem(models.Model,metaclass=SectionItemMeta):
             self.real_type = type(self).__name__.lower()
         return super().save(*args, **kwargs)
 
-
-    def related_page_attr(self, page, attr):
-        return self.is_related and hasattr(page, attr) \
-                and getattr(page, attr)
-
-    def get_context(self, request, page, *args, **kwargs):
+    def get_context(self, request, page):
         """
         Default context attributes:
         * self: section being rendered
@@ -636,6 +627,33 @@ class SectionItem(models.Model,metaclass=SectionItemMeta):
             self.title or self.pk
         )
 
+class SectionRelativeItem(SectionItem):
+    is_related = models.BooleanField(
+        _('is related'),
+        default = False,
+        help_text=_(
+            'if set, section is related to the page being processed '
+            'e.g rendering a list of links will use thoses of the '
+            'publication instead of an assigned one.'
+        )
+    )
+
+    class Meta:
+        abstract=True
+
+    panels = SectionItem.panels.copy()
+    panels[-1] = MultiFieldPanel(
+        panels[-1].children + [ FieldPanel('is_related') ],
+        heading = panels[-1].heading
+    )
+
+    def related_attr(self, page, attr):
+        """
+        Return an attribute from the given page if self.is_related,
+        otherwise retrieve the attribute from self.
+        """
+        return self.is_related and hasattr(page, attr) \
+                and getattr(page, attr)
 
 @register_snippet
 class SectionText(SectionItem):
@@ -644,14 +662,14 @@ class SectionText(SectionItem):
         FieldPanel('body'),
     ]
 
-    def get_context(self, request, page, *args, **kwargs):
+    def get_context(self, request, page):
         from wagtail.wagtailcore.rich_text import expand_db_html
-        context = super().get_context(request, page, *args, **kwargs)
+        context = super().get_context(request, page)
         context['content'] = expand_db_html(self.body)
         return context
 
 @register_snippet
-class SectionImage(SectionItem):
+class SectionImage(SectionRelativeItem):
     class ResizeMode(IntEnum):
         max = 0x00
         min = 0x01
@@ -685,7 +703,10 @@ class SectionImage(SectionItem):
     )
 
     panels = SectionItem.panels + [
-        ImageChooserPanel('image'),
+        MultiFieldPanel([
+            ImageChooserPanel('image'),
+            FieldPanel('image'),
+        ], heading=_('Source')),
         MultiFieldPanel([
             FieldPanel('width'),
             FieldPanel('height'),
@@ -693,21 +714,25 @@ class SectionImage(SectionItem):
         ], heading=_('Resizing'))
     ]
 
-    def get_context(self, request, page, *args, **kwargs):
-        context = super().get_context(request, page, *args, **kwargs)
+    def get_filter(self):
+        return \
+            'original' if not (self.height or self.width) else \
+            'width-{}'.format(self.width) if not self.height else \
+            'height-{}'.format(self.height) if not self.width else \
+            '{}-{}x{}'.format(
+                self.get_resize_mode_display(),
+                self.width, self.height
+            )
 
-        image = self.related_page_attr(page, 'cover') or self.image
+    def get_context(self, request, page):
+        context = super().get_context(request, page)
+
+        image = self.related_attr(page, 'cover') or self.image
         if not image:
             return context
 
         if self.width or self.height:
-            filter_spec = \
-                'width-{}'.format(self.width) if not self.height else \
-                'height-{}'.format(self.height) if not self.width else \
-                '{}-{}x{}'.format(
-                    self.get_resize_mode_display(),
-                    self.width, self.height
-                )
+            filter_spec = self.get_filter()
             filter_spec = (image.id, filter_spec)
             url = reverse(
                 'wagtailimages_serve',
@@ -732,7 +757,7 @@ class SectionLink(RelatedLinkBase, SectionItem):
 
 
 @register_snippet
-class SectionLinkList(SectionItem, ClusterableModel):
+class SectionLinkList(SectionRelativeItem, ClusterableModel):
     """
     Render a list of links. If related to the current page, print
     the page's links otherwise, the assigned link list.
@@ -746,16 +771,15 @@ class SectionLinkList(SectionItem, ClusterableModel):
         ))
     ]
 
-    def get_context(self, request, page, *args, **kwargs):
-        context = super().get_context(*args, **kwargs)
-
-        links = self.related_page_attr(page, 'related_link') or self.links
-        context['object_list'] = links
+    def get_context(self, request, page):
+        context = super().get_context(request, page)
+        links = self.related_attr(page, 'related_link') or self.links
+        context['object_list'] = links.all()
         return context
 
 
 @register_snippet
-class SectionList(ListBase, SectionItem):
+class SectionList(ListBase, SectionRelativeItem):
     """
     This one is quite badass, but needed: render a list of pages
     using given parameters (cf. ListBase).
@@ -789,18 +813,17 @@ class SectionList(ListBase, SectionItem):
         ], heading=_('Rendering')),
     ] + ListBase.panels
 
-    def get_context(self, request, page, *args, **kwargs):
+    def get_context(self, request, page):
         from aircox.cms.models import Publication
-        context = super().get_context(request, page, *args, **kwargs)
+        context = super().get_context(request, page)
 
         qs = self.get_queryset()
         qs = qs.live()
         if self.focus_available:
             focus = qs.type(Publication).filter(focus = True).first()
             if focus:
-                focus.css_class = \
-                    focus.css_class + ' focus' if focus.css_class else 'focus'
-                qs = qs.exclude(focus.page)
+                focus.css_class = 'focus'
+                qs = qs.exclude(pk = focus.pk)
         else:
             focus = None
         pages = qs[:self.count - (focus != None)]
@@ -815,7 +838,64 @@ class SectionList(ListBase, SectionItem):
 
 
 @register_snippet
+class SectionLogsList(SectionItem):
+    station = models.ForeignKey(
+        controllers.Station,
+        verbose_name = _('station'),
+        null = True,
+        on_delete=models.SET_NULL,
+        help_text = _('(required) the station on which the logs happened')
+    )
+    count = models.SmallIntegerField(
+        _('count'),
+        default = 5,
+        help_text = _('number of items to display in the list (max 100)'),
+    )
+
+    class Meta:
+        verbose_name = _('list of logs')
+        verbose_name_plural = _('lists of logs')
+
+    panels = SectionItem.panels + [
+        FieldPanel('station'),
+        FieldPanel('count'),
+    ]
+
+    @staticmethod
+    def as_item(log):
+        """
+        Return a log object as a DiffusionPage or ListItem.
+        Supports: Log/Track, Diffusion
+        """
+        from aircox.cms.models import DiffusionPage
+        if type(log) == programs.Diffusion:
+            return DiffusionPage.as_item(log)
+        return ListItem(
+            title = '{artist} -- {title}'.format(
+                artist = log.related.artist,
+                title = log.related.title,
+            ),
+            summary = log.related.info,
+            date = log.date,
+            info = '♫',
+            css_class = 'track'
+        )
+
+    def get_context(self, request, page):
+        context = super().get_context(request, page)
+        context['object_list'] = [
+            self.as_item(item)
+            for item in self.station.on_air(count = min(self.count, 100))
+        ]
+        return context
+
+
+@register_snippet
 class SectionTimetable(SectionItem,DatedListBase):
+    class Meta:
+        verbose_name = _('timetable')
+        verbose_name_plural = _('timetable')
+
     panels = SectionItem.panels + DatedListBase.panels
 
     def get_queryset(self, context):
@@ -827,27 +907,48 @@ class SectionTimetable(SectionItem,DatedListBase):
             diffs.append((date, items))
         return diffs
 
-    def get_context(self, request, page, *args, **kwargs):
-        context = super().get_context(request, page, *args, **kwargs)
+    def get_context(self, request, page):
+        context = super().get_context(request, page)
         context.update(self.get_date_context())
         context['object_list'] = self.get_queryset(context)
         return context
 
 
 @register_snippet
-class SectionLogs(SectionItem):
-    count = models.SmallIntegerField(
-        _('count'),
-        default = 5,
-        help_text = _('number of items to display in the list'),
+class SectionPublicationInfo(SectionItem):
+    class Meta:
+        verbose_name = _('section with publication\'s info')
+        verbose_name = _('sections with publication\'s info')
+
+@register_snippet
+class SectionSearchField(SectionItem):
+    page = models.ForeignKey(
+        'cms.ListPage',
+        verbose_name = _('search page'),
+        blank = True, null = True,
+        help_text=_('page used to display the results'),
+    )
+    default_text = models.CharField(
+        _('default text'),
+        max_length=32,
+        default=_('search'),
+        help_text=_('text to display when the search field is empty'),
     )
 
+    class Meta:
+        verbose_name = _('search field')
+        verbose_name_plural = _('search fields')
+
     panels = SectionItem.panels + [
-        FieldPanel('count'),
+        PageChooserPanel('page'),
+        FieldPanel('default_text'),
     ]
 
-    def get_context(self, request, page, *args, **kwargs):
-        pass
-
-
+    def get_context(self, request, page):
+        from aircox.cms.models import ListPage
+        context = super().get_context(request, page)
+        list_page = self.page or ListPage.objects.live().first()
+        context['list_page'] = list_page
+        print(context, self.template)
+        return context
 
