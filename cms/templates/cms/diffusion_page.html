@@ -30,6 +30,17 @@
     </ul>
 </div>
 
+{% with podcasts=self.get_podcasts %}
+{% if podcasts %}
+<div class="podcasts list">
+    <h2>{% trans "Podcasts" %}</h2>
+    {% for item in podcasts %}
+    {% include 'cms/snippets/sound_list_item.html' %}
+    {% endfor %}
+</div>
+{% endif %}
+{% endwith %}
+
 {# TODO: podcasts #}
 {% endblock %}
 

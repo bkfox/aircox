@@ -121,6 +121,7 @@ class Sound(Nameable):
         other = 0x00,
         archive = 0x01,
         excerpt = 0x02,
+        removed = 0x03,
 
     diffusion = models.ForeignKey(
         'Diffusion',
@@ -156,11 +157,6 @@ class Sound(Nameable):
         _('modification time'),
         blank = True, null = True,
         help_text = _('last modification date and time'),
-    )
-    removed = models.BooleanField(
-        _('removed'),
-        default = False,
-        help_text = _('this sound has been removed from filesystem'),
     )
     good_quality = models.BooleanField(
         _('good quality'),
@@ -204,15 +200,21 @@ class Sound(Nameable):
         needed (do not save). Return True if there was changes.
         """
         if not self.file_exists():
-            if self.removed:
+            if self.type == self.Type.removed:
                 return
             logger.info('sound %s: has been removed', self.path)
-            self.removed = True
+            self.type = self.Type.removed
             return True
 
-        old_removed = self.removed
-        self.removed = False
+        # not anymore removed
+        changed = False
+        if self.type == self.Type.removed and self.program:
+            changed = True
+            self.type = self.Type.archive \
+                if self.path.startswith(self.program.archives_path) else \
+                    self.Type.excerpt
 
+        # check mtime -> reset quality if changed (assume file changed)
         mtime = self.get_mtime()
         if self.mtime != mtime:
             self.mtime = mtime
@@ -220,7 +222,7 @@ class Sound(Nameable):
             logger.info('sound %s: m_time has changed. Reset quality info',
                         self.path)
             return True
-        return old_removed != self.removed
+        return changed
 
     def check_perms(self):
         """
@@ -529,6 +531,18 @@ class Program(Nameable):
         os.makedirs(path, exist_ok = True)
         return os.path.exists(path)
 
+    @property
+    def archives_path(self):
+        return os.path.join(
+            self.path, settings.AIRCOX_SOUND_ARCHIVES_SUBDIR
+        )
+
+    @property
+    def excerpts_path(self):
+        return os.path.join(
+            self.path, settings.AIRCOX_SOUND_ARCHIVES_SUBDIR
+        )
+
     def find_schedule(self, date):
         """
         Return the first schedule that matches a given date.
@@ -684,8 +698,15 @@ class Diffusion(models.Model):
         ordered by path.
         """
         sounds = self.initial.sound_set if self.initial else self.sound_set
-        return sounds.filter(type = Sound.Type.archive, removed = False). \
-                      order_by('path')
+        return sounds.filter(type = Sound.Type.archive).order_by('path')
+
+    def get_excerpts(self):
+        """
+        Return a list of available archives sounds for the given episode,
+        ordered by path.
+        """
+        sounds = self.initial.sound_set if self.initial else self.sound_set
+        return sounds.filter(type = Sound.Type.excerpt).order_by('path')
 
     def is_date_in_range(self, date = None):
         """

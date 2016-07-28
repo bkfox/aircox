@@ -51,8 +51,8 @@ PlayerPlaylist.prototype = {
     items: undefined,
 
     find: function(stream) {
-        return this.items.find(function(v) {
-            return v.stream == item;
+        return this.items.find(function(stream_) {
+            return stream_ == stream;
         });
     },
 

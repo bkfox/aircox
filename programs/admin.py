@@ -26,7 +26,7 @@ class StreamInline(admin.TabularInline):
     extra = 1
 
 class SoundInline(admin.TabularInline):
-    fields = ['type', 'path', 'duration']
+    fields = ['type', 'path', 'duration','public']
     # readonly_fields = fields
     model = Sound
     extra = 0
@@ -66,11 +66,11 @@ class TrackInline(GenericTabularInline):
 class SoundAdmin(NameableAdmin):
     fields = None
     list_display = ['id', 'name', 'duration', 'type', 'mtime',
-                    'public', 'good_quality', 'removed']
+                    'public', 'good_quality']
     fieldsets = [
         (None, { 'fields': NameableAdmin.fields + ['path', 'type', 'diffusion'] } ),
         (None, { 'fields': ['embed', 'duration', 'public', 'mtime'] }),
-        (None, { 'fields': ['removed', 'good_quality' ] } )
+        (None, { 'fields': ['good_quality' ] } )
     ]
     readonly_fields = ('path', 'duration',)
     inlines = [TrackInline]

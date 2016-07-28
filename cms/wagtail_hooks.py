@@ -66,7 +66,7 @@ class DiffusionsMenu(GenericMenu):
 def register_programs_menu_item():
     return SubmenuMenuItem(
         _('Today\'s Diffusions'), DiffusionsMenu(),
-        classnames='icon icon-folder-open-inverse', order=10
+        classnames='icon icon-folder-open-inverse', order=101
     )
 
 
@@ -97,7 +97,7 @@ class ProgramsMenu(GenericMenu):
 def register_programs_menu_item():
     return SubmenuMenuItem(
         _('Programs'), ProgramsMenu(),
-        classnames='icon icon-folder-open-inverse', order=10
+        classnames='icon icon-folder-open-inverse', order=102
     )
 
 

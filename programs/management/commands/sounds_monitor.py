@@ -157,7 +157,7 @@ class SoundInfo:
         diffusion = diffusion[0]
 
         logger.info('diffusion %s mathes to sound -> %s', str(diffusion),
-                    sound.path)
+                    self.sound.path)
         self.sound.diffusion = diffusion
         if save:
             self.sound.save()
@@ -201,7 +201,7 @@ class MonitorHandler(PatternMatchingEventHandler):
         sound = Sound.objects.filter(path = event.src_path)
         if sound:
             sound = sound[0]
-            sound.removed = True
+            sound.type = sound.Type.removed
             sound.save()
 
     def on_moved(self, event):
@@ -296,7 +296,6 @@ class Command(BaseCommand):
 
         # sounds in directory
         for path in os.listdir(subdir):
-            print(path)
             path = os.path.join(subdir, path)
             if not path.endswith(settings.AIRCOX_SOUND_FILE_EXT):
                 continue
@@ -319,21 +318,23 @@ class Command(BaseCommand):
         import aircox.programs.management.commands.sounds_quality_check \
                 as quality_check
 
-        sounds = Sound.objects.filter(good_quality = False)
+        # get available sound files
+        sounds = Sound.objects.filter(good_quality = False) \
+                      .exclude(type = Sound.Type.removed)
         if check:
             self.check_sounds(sounds)
-            files = [ sound.path for sound in sounds
-                        if not sound.removed and os.path.exists(sound.path) ]
-        else:
-            files = [ sound.path for sound in sounds.filter(removed = False)
-                        if os.path.exists(sound.path) ]
 
+        files = [ sound.path for sound in sounds
+                    if os.path.exists(sound.path) ]
+
+        # check quality
         logger.info('quality check...',)
         cmd = quality_check.Command()
         cmd.handle( files = files,
                     **settings.AIRCOX_SOUND_QUALITY )
 
-        logger.info('update database')
+        # update stats
+        logger.info('update stats in database')
         def update_stats(sound_info, sound):
             stats = sound_info.get_file_stats()
             if stats:

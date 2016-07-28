@@ -418,6 +418,11 @@ class DiffusionPage(Publication):
             'initial__isnull': True,
         },
     )
+    publish_archive = models.BooleanField(
+        _('publish archive'),
+        default = False,
+        help_text = _('publish the podcast of the complete diffusion'),
+    )
 
     class Meta:
         verbose_name = _('Diffusion')
@@ -425,10 +430,10 @@ class DiffusionPage(Publication):
 
     content_panels = [
         FieldPanel('diffusion'),
+        FieldPanel('publish_archive'),
     ] + Publication.content_panels + [
         InlinePanel('tracks', label=_('Tracks')),
     ]
-
 
     @classmethod
     def from_diffusion(cl, diff, model = None, **kwargs):
@@ -470,9 +475,50 @@ class DiffusionPage(Publication):
         item.css_class = 'diffusion'
         return item
 
+    def get_archive(self):
+        if not self.publish_archive:
+            return
+
+        sound = self.diffusion.get_archives() \
+                    .filter(public = True).first()
+        if sound:
+            sound.detail_url = self.detail_url
+        return sound
+
+    def get_podcasts(self):
+        """
+        Return a list of podcasts, with archive as the first item of the
+        list when available.
+        """
+        podcasts = []
+        archive = self.get_archive()
+        if archive:
+            podcasts.append(archive)
+
+        qs = self.diffusion.get_excerpts().filter(public = True)
+        podcasts.extend(qs[:])
+        for podcast in podcasts:
+            podcast.detail_url = self.url
+        return podcasts
+
+
     def save(self, *args, **kwargs):
+        # TODO: update public attribute of the archive + podcasts  check if live
         if self.diffusion:
             self.date = self.diffusion.start
+
+            # update podcasts' attributes
+            for podcast in self.diffusion.sound_set \
+                    .exclude(type = programs.Sound.Type.removed):
+                publish = self.live and self.publish_archive \
+                    if podcast.type == podcast.Type.archive else self.live
+
+                if podcast.public != publish:
+                    podcast.public = publish
+                    podcast.save()
+
+
+
         super().save(*args, **kwargs)
 
 

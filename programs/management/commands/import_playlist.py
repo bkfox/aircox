@@ -79,7 +79,7 @@ class Importer:
                 position = position,
             )
 
-            track.in_seconds = pos_in_secs
+            track.in_seconds = in_seconds
             track.info = self.__get(line, 'info')
             tags = self.__get(line, 'tags')
             if tags:
