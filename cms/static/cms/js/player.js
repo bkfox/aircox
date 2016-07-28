@@ -78,6 +78,9 @@ PlayerPlaylist.prototype = {
         item.querySelector('.action.remove').addEventListener(
             'click', function(event) { self.remove(sound); }, false
         );
+        item.addEventListener('click', function(event) {
+            self.player.select(sound, true)
+        }, false);
 
         (container || this.playlist).appendChild(item);
         this.items.push(sound);
@@ -218,6 +221,11 @@ Player.prototype = {
         sound.item.removeAttribute('selected');
     },
 
+    __mime_type: function(path) {
+        ext = path.substr(path.lastIndexOf('.')+1);
+        return 'audio/' + ext;
+    },
+
     select: function(sound, play = true) {
         if(this.sound)
             this.unselect(this.sound);
@@ -225,20 +233,17 @@ Player.prototype = {
         this.audio.pause();
 
         // if stream is a list, use <source>
-        if(sound.stream.splice) {
-            this.audio.src="";
-
-            var sources = this.audio.querySelectorAll('source');
-            for(var i in sources)
-                this.audio.removeChild(sources[i]);
-
-            for(var i in sound.stream) {
-                var source = document.createElement('source');
-                source.src = sound.stream[i];
-            }
+        var sources = this.audio.querySelectorAll('source');
+        for(var i = 0; i < sources.length; i++) {
+            this.audio.removeChild(sources[i]);
         }
-        else
-            this.audio.src = sound.stream;
+
+        sources = sound.stream.splice ? sound.stream : [ sound.stream ];
+        for(var i = 0; i < sources.length; i++) {
+            var source = document.createElement('source');
+            source.src = sources[i];
+            this.audio.appendChild(source);
+        }
         this.audio.load();
 
         this.sound = sound;

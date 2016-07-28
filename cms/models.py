@@ -476,7 +476,10 @@ class DiffusionPage(Publication):
         return item
 
     def get_archive(self):
-        if not self.publish_archive:
+        """
+        Return the diffusion's archive as podcast
+        """
+        if not self.publish_archive or not self.diffusion:
             return
 
         sound = self.diffusion.get_archives() \
@@ -501,10 +504,9 @@ class DiffusionPage(Publication):
             podcast.detail_url = self.url
         return podcasts
 
-
     def save(self, *args, **kwargs):
-        # TODO: update public attribute of the archive + podcasts  check if live
         if self.diffusion:
+            # sync date
             self.date = self.diffusion.start
 
             # update podcasts' attributes

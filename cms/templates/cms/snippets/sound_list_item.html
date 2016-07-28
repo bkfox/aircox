@@ -4,7 +4,7 @@
 <a class="list_item sound" onclick="player.playlist.add(new Sound(
         title='{{ item.name|escape }}',
         detail='{{ item.detail_url }}',
-        stream='{% static item.path %}'));">
+        stream='{{ item.url }}'));">
     <h3>{{ item.name }}</h3>
     <span class="info">
         {{ duration.date|date:'H:i:s' }}
