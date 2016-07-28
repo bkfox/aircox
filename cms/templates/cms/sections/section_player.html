@@ -1,0 +1,61 @@
+{% extends 'cms/sections/section_item.html' %}
+
+{% load staticfiles %}
+{% load i18n %}
+
+
+{% block content %}
+<style>
+
+
+
+</style>
+<div id="player">
+    <div class="box">
+        <audio preload="metadata">
+            {% trans "Your browser does not support the <code>audio</code> element." %}
+            {% for stream in streams %}
+            <source src="{{ stream }}" />
+            {% endfor %}
+        </audio>
+
+        <button class="play" onclick="Player.play()"
+          title="{% trans "play/pause" %}"></button>
+
+        <h3 class="title">{{ self.live_title }}</h3>
+
+        <div>
+            <div class="info duration"></div>
+            <progress value="0" max="1"></progress>
+
+            <input type="checkbox" class="single" id="player_single_mode">
+            <label for="player_single_mode"></label>
+        </div>
+    </div>
+    <div class="playlist">
+        <li class='item' style="display: none;">
+            <h2 class="title">{{ self.live_title }}</h2>
+            <div class="info duration"></div>
+            <div class="actions">
+                <a class="action detail" title="{% trans "more informations" %}">➔</a>
+                <a class="action remove" title="{% trans "remove this sound" %}">✖</a>
+            </div>
+        </li>
+    </div>
+    <div class='item on_air'>
+        <h2 class="title"></h2>
+        <a class="url">➔</a>
+    </div>
+</div>
+
+<script>
+var player = new Player('player');
+player.playlist.add(new Sound('{{ self.live_title }}', '', [
+    {% for stream in streams %}'{{ stream }}',{% endfor %}
+]));
+
+</script>
+{% endblock %}
+
+
+

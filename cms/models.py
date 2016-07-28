@@ -414,6 +414,9 @@ class DiffusionPage(Publication):
         related_name = 'page',
         on_delete=models.SET_NULL,
         null=True,
+        limit_choices_to = {
+            'initial__isnull': True,
+        },
     )
 
     class Meta:
@@ -423,7 +426,7 @@ class DiffusionPage(Publication):
     content_panels = [
         FieldPanel('diffusion'),
     ] + Publication.content_panels + [
-        InlinePanel('tracks', label=_('Tracks'))
+        InlinePanel('tracks', label=_('Tracks')),
     ]
 
 

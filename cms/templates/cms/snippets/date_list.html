@@ -1,27 +1,5 @@
 {% load i18n %}
 
-<script>
-    /// Function used to select a panel on a tab selection.
-    /// The tab should be at max level -2 of the main container
-    /// The panel must have a class "panel"
-    function select_tab(target) {
-        parent = target.parentNode.parentNode;
-
-        var date = target.dataset.date;
-        panel = parent.querySelector('.panel[data-date="' + date + '"]');
-
-        // unselect
-        qs = parent.querySelectorAll('*[selected]');
-        for(var i = 0; i < qs.length; i++)
-            if(qs[i].dataset.date != date)
-                qs[i].removeAttribute('selected');
-
-        console.log(panel, target, date);
-        panel.setAttribute('selected', 'true');
-        target.setAttribute('selected', 'true');
-    }
-</script>
-
 {# FIXME: get current complete URL #}
 <div class="list date_list">
 {% if nav_dates %}
@@ -31,7 +9,7 @@
     {% endif %}
 
     {% for day in nav_dates.dates %}
-    <a onclick="select_tab(this);" data-date="day_{{day|date:"Y-m-d"}}"
+    <a onclick="select_tab(this, '.panel[data-date=\'{{day|date:"Y-m-d"}}\']');"
         {% if day == nav_dates.date %}selected{% endif %}
         class="tab {% if day == nav_dates.date %}today{% endif %}">
         {{ day|date:'D. d' }}
@@ -47,7 +25,7 @@
 {% for day, list in object_list %}
 <ul class="panel {% if day == nav_dates.date %}class="today"{% endif %}"
     {% if day == nav_dates.date %}selected{% endif %}
-    data-date="day_{{day|date:"Y-m-d"}}">
+    data-date="{{day|date:"Y-m-d"}}">
     {# you might like to hide it by default -- this more for sections #}
     <h2>{{ day|date:'l d F' }}</h2>
     {% with object_list=list item_date_format="H:i" %}

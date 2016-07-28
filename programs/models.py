@@ -1,4 +1,5 @@
 import datetime
+import calendar
 import os
 import shutil
 import logging
@@ -400,6 +401,18 @@ class Schedule(models.Model):
         date = date_or_default(date, True).replace(day=1)
         freq = self.frequency
 
+        # last of the month
+        if freq == Schedule.Frequency.last:
+            date = date.replace(day=calendar.monthrange(date.year, date.month)[1])
+
+            # end of month before the wanted weekday: move one week back
+            if date.weekday() < self.date.weekday():
+                date -= datetime.timedelta(days = 7)
+
+            delta = self.date.weekday() - date.weekday()
+            date += datetime.timedelta(days = delta)
+            return [self.normalize(date)]
+
         # move to the first day of the month that matches the schedule's weekday
         # check on SO#3284452 for the formula
         first_weekday = date.weekday()
@@ -408,19 +421,9 @@ class Schedule(models.Model):
                                     - first_weekday + sched_weekday)
         month = date.month
 
-        # last of the month
-        if freq == Schedule.Frequency.last:
-            date += tz.timedelta(days = 4 * 7)
-            next_date = date + tz.timedelta(days = 7)
-            if next_date.month == month:
-                date = next_date
-            return [self.normalize(date)]
-
         dates = []
         if freq == Schedule.Frequency.one_on_two:
-            # NOTE previous algorithm was based on the week number, but this
-            # approach is wrong because number of weeks in a year can be
-            # 52 or 53. This also clashes with the first week of the year.
+            # check date base on a diff of dates base on a 14 days delta
             diff = as_date(date, False) - as_date(self.date, False)
             if diff.days % 14:
                 date += tz.timedelta(days = 7)
@@ -445,36 +448,31 @@ class Schedule(models.Model):
         If exclude_saved, exclude all diffusions that are yet in the database.
         """
         dates = self.dates_of_month(date)
-        saved = Diffusion.objects.filter(start__in = dates,
-                                         program = self.program)
         diffusions = []
 
-        duration = utils.to_timedelta(self.duration)
-
         # existing diffusions
-        for item in saved:
+        for item in Diffusion.objects.filter(
+                program = self.program, start__in = dates):
             if item.start in dates:
                 dates.remove(item.start)
             if not exclude_saved:
                 diffusions.append(item)
 
-        # others
-        for date in dates:
-            first_date = date
-            if self.initial:
-                first_date -= self.date - self.initial.date
-
-            first_diffusion = Diffusion.objects.filter(start = first_date,
-                                                       program = self.program)
-            first_diffusion = first_diffusion[0] if first_diffusion.count() \
-                              else None
-            diffusions.append(Diffusion(
-                                 program = self.program,
-                                 type = Diffusion.Type.unconfirmed,
-                                 initial = first_diffusion if self.initial else None,
-                                 start = date,
-                                 end = date + duration,
-                             ))
+        # new diffusions
+        duration = utils.to_timedelta(self.duration)
+        if self.initial:
+            delta = self.date - self.initial.date
+        diffusions += [
+            Diffusion(
+                program = self.program,
+                type = Diffusion.Type.unconfirmed,
+                initial = \
+                    Diffusion.objects.filter(start = date - delta).first() \
+                        if self.initial else None,
+                start = date,
+                end = date + duration,
+            ) for date in dates
+        ]
         return diffusions
 
     def __str__(self):

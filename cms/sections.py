@@ -890,8 +890,8 @@ class SectionLogsList(SectionItem):
 @register_snippet
 class SectionTimetable(SectionItem,DatedListBase):
     class Meta:
-        verbose_name = _('timetable')
-        verbose_name_plural = _('timetable')
+        verbose_name = _('Section: Timetable')
+        verbose_name_plural = _('Sections: Timetable')
 
     panels = SectionItem.panels + DatedListBase.panels
 
@@ -914,8 +914,8 @@ class SectionTimetable(SectionItem,DatedListBase):
 @register_snippet
 class SectionPublicationInfo(SectionItem):
     class Meta:
-        verbose_name = _('section with publication\'s info')
-        verbose_name = _('sections with publication\'s info')
+        verbose_name = _('Section: publication\'s info')
+        verbose_name_plural = _('Sections: publication\'s info')
 
 @register_snippet
 class SectionSearchField(SectionItem):
@@ -933,8 +933,8 @@ class SectionSearchField(SectionItem):
     )
 
     class Meta:
-        verbose_name = _('search field')
-        verbose_name_plural = _('search fields')
+        verbose_name = _('Section: search field')
+        verbose_name_plural = _('Sections: search field')
 
     panels = SectionItem.panels + [
         PageChooserPanel('page'),
@@ -946,6 +946,32 @@ class SectionSearchField(SectionItem):
         context = super().get_context(request, page)
         list_page = self.page or ListPage.objects.live().first()
         context['list_page'] = list_page
-        print(context, self.template)
         return context
+
+
+@register_snippet
+class SectionPlayer(SectionItem):
+    live_title = models.CharField(
+        _('live title'),
+        max_length = 32,
+        help_text = _('text to display when it plays live'),
+    )
+    streams = models.TextField(
+        _('audio streams'),
+        help_text = _('one audio stream per line'),
+    )
+
+    class Meta:
+        verbose_name = _('Section: Player')
+
+    panels = SectionItem.panels + [
+        FieldPanel('live_title'),
+        FieldPanel('streams'),
+    ]
+
+    def get_context(self, request, page):
+        context = super().get_context(request, page)
+        context['streams'] = self.streams.split('\r\n')
+        return context
+
 
