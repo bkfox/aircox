@@ -61,6 +61,12 @@ class StationController(plugins.StationController):
         except:
             self.current_source = None
 
+    def skip(self):
+        """
+        Skip a given source. If no source, use master.
+        """
+        self._send(self.station.id_, '.skip')
+
 
 class SourceController(plugins.SourceController):
     rid = None
@@ -86,7 +92,7 @@ class SourceController(plugins.SourceController):
         """
         Skip a given source. If no source, use master.
         """
-        self._send(self.source.slug, '.skip')
+        self._send(self.source.id_, '.skip')
 
     def fetch(self):
         data = self._send(self.source.id_, '.get', parse = True)

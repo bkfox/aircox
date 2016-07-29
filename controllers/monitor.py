@@ -192,7 +192,6 @@ class Monitor:
         diff = programs.Diffusion.objects.get_at(now).filter(
             type = programs.Diffusion.Type.normal,
             sound__type = programs.Sound.Type.archive,
-            sound__removed = False,
             **args
         ).distinct().order_by('start').first()
         return (diff, diff and diff.playlist or [])

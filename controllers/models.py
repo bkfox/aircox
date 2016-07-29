@@ -81,6 +81,10 @@ class Station(programs.Nameable):
         return sources
 
     @property
+    def all_sources(self):
+        return self.get_sources(dealer = True)
+
+    @property
     def stream_sources(self):
         return self.get_sources(type = Source.Type.stream)
 
@@ -351,7 +355,6 @@ class Source(programs.Nameable):
             self.controller.playlist = [ sound.path for sound in
                 programs.Sound.objects.filter(
                     type = programs.Sound.Type.archive,
-                    removed = False,
                     path__startswith = program.path
                 )
             ]

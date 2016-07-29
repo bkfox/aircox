@@ -154,7 +154,8 @@ class StationController:
         """
         Skip the current sound on the station
         """
-        pass
+        if self.current_source:
+            self.current_source.controller.skip()
 
 
 class SourceController:
