@@ -30,75 +30,75 @@ Applications:
 ### settings.py
 Base configuration:
 
-    ```python
-    INSTALLED_APPS = (
-        # dependencies
-        'wagtail.wagtailforms',
-        'wagtail.wagtailredirects',
-        'wagtail.wagtailembeds',
-        'wagtail.wagtailsites',
-        'wagtail.wagtailusers',
-        'wagtail.wagtailsnippets',
-        'wagtail.wagtaildocs',
-        'wagtail.wagtailimages',
-        'wagtail.wagtailsearch',
-        'wagtail.wagtailadmin',
-        'wagtail.wagtailcore',
-        'wagtail.contrib.settings',
-        'taggit',
-        'honeypot',
+```python
+INSTALLED_APPS = (
+    # dependencies
+    'wagtail.wagtailforms',
+    'wagtail.wagtailredirects',
+    'wagtail.wagtailembeds',
+    'wagtail.wagtailsites',
+    'wagtail.wagtailusers',
+    'wagtail.wagtailsnippets',
+    'wagtail.wagtaildocs',
+    'wagtail.wagtailimages',
+    'wagtail.wagtailsearch',
+    'wagtail.wagtailadmin',
+    'wagtail.wagtailcore',
+    'wagtail.contrib.settings',
+    'taggit',
+    'honeypot',
 
+    # ...
+
+    # aircox
+    'aircox.programs',
+    'aircox.controllers',
+    'aircox.cms',
+)
+
+MIDDLEWARE_CLASSES = (
+    # ...
+    'wagtail.wagtailcore.middleware.SiteMiddleware',
+    'wagtail.wagtailredirects.middleware.RedirectMiddleware',
+)
+
+TEMPLATES = [
+    {
         # ...
-
-        # aircox
-        'aircox.programs',
-        'aircox.controllers',
-        'aircox.cms',
-    )
-
-    MIDDLEWARE_CLASSES = (
-        # ...
-        'wagtail.wagtailcore.middleware.SiteMiddleware',
-        'wagtail.wagtailredirects.middleware.RedirectMiddleware',
-    )
-
-    TEMPLATES = [
-        {
-            # ...
-            'OPTIONS': {
-                'context_processors': (
-                    # ...
-                    'wagtail.contrib.settings.context_processors.settings',
-                ),
-            },
+        'OPTIONS': {
+            'context_processors': (
+                # ...
+                'wagtail.contrib.settings.context_processors.settings',
+            ),
         },
-    ]
+    },
+]
 
-    # define your wagtail site name
-    WAGTAIL_SITE_NAME = 'My Radio'
-    ```
+# define your wagtail site name
+WAGTAIL_SITE_NAME = 'My Radio'
+```
 
 To enable logging:
 
-    ```python
-    LOGGING = {
-        # ...
-        'loggers': {
-            'aircox.core': {
-                'handlers': ['console'],
-                'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
-            },
-            'aircox.test': {
-                'handlers': ['console'],
-                'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
-            },
-            'aircox.tools': {
-                'handlers': ['console'],
-                'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
-            },
+```python
+LOGGING = {
+    # ...
+    'loggers': {
+        'aircox.core': {
+            'handlers': ['console'],
+            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
         },
-    }
-    ```
+        'aircox.test': {
+            'handlers': ['console'],
+            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
+        },
+        'aircox.tools': {
+            'handlers': ['console'],
+            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
+        },
+    },
+}
+```
 
 Each application have a `settings.py` that defines options that can be reused in application's `settings.py` file.
 
