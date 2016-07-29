@@ -1,7 +1,8 @@
 import json
 
 from django.views.generic.base import View, TemplateResponseMixin
-from django.http import HttpResponse
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.http import HttpResponse, Http404
 from django.shortcuts import render
 from django.utils.translation import ugettext as _, ugettext_lazy
 from django.utils import timezone as tz
@@ -21,7 +22,6 @@ class Stations:
         self.fetch_timeout = tz.now() + tz.timedelta(seconds = 5)
         for station in self.stations:
             station.prepare(fetch = True)
-
 
 stations = Stations()
 
@@ -73,9 +73,9 @@ def on_air(request):
     return HttpResponse(json.dumps(last))
 
 
-
-
-class Monitor(View,TemplateResponseMixin):
+# TODO:
+#   - login url
+class Monitor(View,TemplateResponseMixin,LoginRequiredMixin):
     template_name = 'aircox/controllers/monitor.html'
 
     def get_context_data(self, **kwargs):
@@ -83,11 +83,17 @@ class Monitor(View,TemplateResponseMixin):
         return { 'stations': stations.stations }
 
     def get (self, request = None, **kwargs):
+        if not request.user.is_active:
+            return Http404()
+
         self.request = request
         context = self.get_context_data(**kwargs)
         return render(request, self.template_name, context)
 
     def post (self, request = None, **kwargs):
+        if not request.user.is_active:
+            return Http404()
+
         if not 'action' in request.POST:
             return HttpResponse('')
 
