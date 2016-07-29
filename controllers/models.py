@@ -28,7 +28,7 @@ import aircox.controllers.settings as settings
 from aircox.controllers.plugins.plugins import Plugins
 
 
-logger = logging.getLogger('aircox.controllers')
+logger = logging.getLogger('aircox.core')
 
 Plugins.discover()
 

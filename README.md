@@ -16,13 +16,91 @@ Platform to manage a radio, schedules, website, and so on. We use the power of g
 * **cms**: defines models and templates to generate a website connected to Aircox;
 
 ## Installation
-For now, we provide only applications availables under the aircox directory. Create a django project, and add the aircox applications directory.
+### Dependencies
+Python modules:
+* `django-taggits`: `aircox.programs`, `aircox.cms`
+* `watchdog`: `aircox.programs` (used for files monitoring)
+* `wagtail`: `aircox.cms`
+* `django-honeypot`: `aircox.cms`
+* `dateutils`: `aircox.programs` (used for tests)
 
-Later we would provide a package, but now we have other priorities.
+Applications:
+* `liquidsoap`: `aircox.controllers` (generation of the audio streams)
 
-Dependencies:
-* wagtail (cms)
-* honeypot (cms)
-* taggit (cms, programs)
+### settings.py
+Base configuration:
+
+    ```python
+    INSTALLED_APPS = (
+        # dependencies
+        'wagtail.wagtailforms',
+        'wagtail.wagtailredirects',
+        'wagtail.wagtailembeds',
+        'wagtail.wagtailsites',
+        'wagtail.wagtailusers',
+        'wagtail.wagtailsnippets',
+        'wagtail.wagtaildocs',
+        'wagtail.wagtailimages',
+        'wagtail.wagtailsearch',
+        'wagtail.wagtailadmin',
+        'wagtail.wagtailcore',
+        'wagtail.contrib.settings',
+        'taggit',
+        'honeypot',
+
+        # ...
+
+        # aircox
+        'aircox.programs',
+        'aircox.controllers',
+        'aircox.cms',
+    )
+
+    MIDDLEWARE_CLASSES = (
+        # ...
+        'wagtail.wagtailcore.middleware.SiteMiddleware',
+        'wagtail.wagtailredirects.middleware.RedirectMiddleware',
+    )
+
+    TEMPLATES = [
+        {
+            # ...
+            'OPTIONS': {
+                'context_processors': (
+                    # ...
+                    'wagtail.contrib.settings.context_processors.settings',
+                ),
+            },
+        },
+    ]
+
+    # define your wagtail site name
+    WAGTAIL_SITE_NAME = 'My Radio'
+    ```
+
+To enable logging:
+
+    ```python
+    LOGGING = {
+        # ...
+        'loggers': {
+            'aircox.core': {
+                'handlers': ['console'],
+                'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
+            },
+            'aircox.test': {
+                'handlers': ['console'],
+                'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
+            },
+            'aircox.tools': {
+                'handlers': ['console'],
+                'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
+            },
+        },
+    }
+    ```
+
+Each application have a `settings.py` that defines options that can be reused in application's `settings.py` file.
+
 
 

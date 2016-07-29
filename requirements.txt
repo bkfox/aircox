@@ -1,7 +1,7 @@
 Django>=1.9a1
 django-taggit>=0.12.1
-django-suit>=0.2.15
-django-autocomplete-light>=2.2.8
-easy-thumbnails>=2.2
 watchdog>=0.8.3
+wagtail>=1.5.3
+django-honeypot>=0.5.0
+dateutils>=0.6.6
 
