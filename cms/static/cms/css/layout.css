@@ -10,8 +10,33 @@ h1, h2, h3, h4, h5 {
     margin: 0.4em 0em;
 }
 
+ul {
+    margin: 0em;
+}
 
-/** classes: flex **/
+
+/** classes **/
+.float_right {
+    float: right;
+}
+
+.float_left {
+    float: left;
+}
+
+
+.icon {
+    max-width: 2em;
+    max-height: 2em;
+    vertical-align: middle;
+}
+
+.small_icon {
+    max-height: 1.5em;
+    vertical-align: middle;
+}
+
+
 .flex_row {
     display: -webkit-flex;
     display: flex;
@@ -33,14 +58,40 @@ h1, h2, h3, h4, h5 {
 }
 
 
+/** content: menus **/
+nav.menu {
+    padding: 0.4em;
+}
+
+.menu.top {
+    padding: 0.2em;
+    height: 2.5em;
+    margin-bottom: 1em;
+}
+    .menu.top * {
+        vertical-align: middle;
+    }
+
+    .menu.top > section {
+        display: inline-block;
+    }
+
+.page_left > section,
+.page_right > section {
+    margin-bottom: 1em;
+}
+
+
 /** content: list & items **/
 .list {
     width: 100%;
+}
+
+ul.list {
     padding: 0.4em;
 }
 
 .list_item {
-    width: inherit;
     margin: 0.4em 0;
 }
 
@@ -57,6 +108,11 @@ h1, h2, h3, h4, h5 {
     border-radius: 0.4em;
     float: left;
     min-height: 64px;
+}
+
+.list_item > * {
+    margin: 0em 0.2em;
+    vertical-align: middle;
 }
 
 
@@ -94,11 +150,182 @@ h1, h2, h3, h4, h5 {
 
 .date_list_item h3 {
     width: 100%;
+    margin-top: 0em;
 }
 
 
-/** content: publication **/
+/** content: comments **/
+.comments form input:not([type=checkbox]),
+.comments form textarea {
+    display: inline-block;
+    width: 100%;
+    max-height: 6em;
+    margin: 0.2em 0em;
+    padding: 0.2em;
+}
 
+.comments form input[type=checkbox],
+.comments form button[type=submit] {
+    vertical-align:bottom;
+    margin: 0.2em 0em;
+    text-align: center;
+}
+
+.comments form button[type=submit] {
+    float: right;
+}
+
+.comments form #show_more:not(:checked) ~ .extra {
+    display: none;
+}
+
+.comments label[for="show_more"] {
+    font-size: 0.8em;
+}
+
+
+
+.comments ul {
+    margin-top: 2.5em;
+}
+
+.comment {
+    list-style: none;
+    border: 1px #818181 dotted;
+    margin: 0.4em 0em;
+}
+
+    .comment .metadata {
+        font-size: 0.9em;
+    }
+
+    .comment time {
+        float: right;
+    }
+
+/** content: player **/
+.player {
+    width: 20em;
+}
+
+    .player:not([seekable]) > .controls {
+        display: none;
+    }
+
+
+.player .controls > * {
+    margin: 0em 0.2em;
+}
+
+    .player .controls .single {
+        display: none;
+    }
+
+        .player .controls .single + label {
+            display: inline-block;
+            font-size: 1em;
+            padding: 0.1em;
+            width: 1.5em;
+            height: 1.0em;
+            text-align: center;
+            box-shadow: inset 0em 0em 0.1em #818181;
+        }
+
+        .player .controls .single:not(:checked) + label {
+            border-left: 2px #818181 solid;
+            color: black;
+        }
+
+        .player .controls .single:checked + label {
+            border-right: 2px #818181 solid;
+        }
+
+.player .on_air a:not([href]), .on_air a[href=""] {
+    display: none;
+}
+
+.player .playlist .item {
+    margin: 0em;
+    padding: 0.2em 0.4em;
+    height: 1em;
+    cursor: pointer;
+}
+
+    .player .playlist .item:hover {
+        color: #007EDF;
+    }
+
+    .player .item > * {
+        vertical-align: middle;
+    }
+
+    .player .playlist .item .actions {
+        display: none;
+    }
+
+    .player .playlist .item:hover .actions {
+        display: inline-block;
+    }
+
+    .player .playlist .item .info {
+        float: right;
+        width: 2em;
+        display: inline-block;
+    }
+
+    .player .item:not([selected]) .button {
+        display: none;
+    }
+
+.player .item[selected] {
+    height: auto;
+    font-size: 1.1em;
+}
+
+.player .button {
+    display: inline-block;
+    cursor: pointer;
+    height: 2.0em;
+    background: none;
+    border: none;
+    font-size: 1.4em;
+}
+
+    .player .button > img {
+        max-height: 2.0em;
+    }
+
+    .player:not([state]) .button > img:not(.play),
+    .player[state="paused"] .button > img:not(.play),
+    .player[state="playing"] .button > img:not(.pause),
+    .player[state="loading"] .button > img:not(.loading)
+    {
+        display: none;
+    }
+
+    .player[state="loading"] .box .button > img.loading {
+        animation-duration: 2s;
+        animation-iteration-count: infinite;
+        animation-name: rotate;
+        animation-timing-function: linear;
+    }
+
+    @keyframes rotate {
+        from {
+            transform: rotate(0deg);
+        }
+
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+
+/** content: page **/
+main .body ~ section:not(.comments) {
+    width: calc(50% - 1em);
+    float: left;
+}
 
 
 

@@ -1,8 +1,10 @@
 {% extends "cms/sections/section_item.html" %}
 
 {% block content %}
-{% with item_date_format="H:i" list_css_class="date_list" %}
-{% include "cms/snippets/list.html" %}
+{% with item_date_format="H:i" list_css_class="date_list" list_no_cover=True %}
+{% for item in object_list %}
+{% include "cms/snippets/date_list_item.html" %}
+{% endfor %}
 {% endwith %}
 {% endblock %}
 

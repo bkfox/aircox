@@ -1,9 +1,11 @@
 {% extends "cms/sections/section_item.html" %}
 {% load i18n %}
+{% load static %}
 
 {% block content %}
 <form action="{{ list_page.url }}" method="GET">
-    <input type="text" name="search" placeholder="{{ self.text }}">
+    <img src="{% static "cms/images/search.png" %}" class="icon"/>
+    <input type="text" name="search" placeholder="{{ self.default_text }}">
     <input type="submit" style="display: none;">
 </form>
 {% endblock %}

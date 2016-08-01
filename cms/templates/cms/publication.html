@@ -25,8 +25,9 @@
         {% endif %}
         <section class="body">
         {{ page.body|richtext}}
-        {% block content_extras %}{% endblock %}
         </section>
+
+        {% block content_extras %}{% endblock %}
 
         <div class="post_content">
         {% render_sections position="post_content" %}

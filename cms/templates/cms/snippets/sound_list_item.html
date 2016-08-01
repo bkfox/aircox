@@ -1,13 +1,22 @@
 {% load static %}
 
 {# TODO: complete archive podcast -> info #}
-<a class="list_item sound" onclick="player.playlist.add(new Sound(
+<div class="list_item sound">
+<a onclick="player.select(player.playlist.add(new Sound(
         title='{{ item.name|escape }}',
         detail='{{ item.detail_url }}',
-        stream='{{ item.url }}'));">
-    <h3>{{ item.name }}</h3>
+        duration={{ item.duration|date:"H*3600+i*60+s" }},
+        streams='{{ item.url }}')));" class="flex_row">
+    <img src="{% static "cms/images/listen.png" %}" class="icon"/>
+    <h3 class="flex_item">{{ item.name }}</h3>
+
     <span class="info">
-        {{ duration.date|date:'H:i:s' }}
+        {% if item.duration.hour > 0 %}
+        {{ item.duration|date:'H:i:s' }}
+        {% else %}
+        {{ item.duration|date:'i:s' }}
+        {% endif %}
     </span>
 </a>
+</div>
 

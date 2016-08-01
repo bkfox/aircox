@@ -4,7 +4,7 @@
 {% block content_extras %}
 {% with tracks=page.tracks.all %}
 {% if tracks %}
-<div class="playlist">
+<section class="playlist">
     <h2>{% trans "Playlist" %}</h2>
     <ul>
         {% for track in tracks %}
@@ -14,11 +14,11 @@
         </li>
         {% endfor %}
     </ul>
-</div>
+</section>
 {% endif %}
 {% endwith %}
 
-<div class="dates">
+<section class="dates">
     <h2>{% trans "Dates of diffusion" %}</h2>
     <ul>
         {% with diffusion=page.diffusion %}
@@ -28,16 +28,16 @@
         {% endfor %}
         {% endwith %}
     </ul>
-</div>
+</section>
 
 {% with podcasts=self.get_podcasts %}
 {% if podcasts %}
-<div class="podcasts list">
+<section class="podcasts list">
     <h2>{% trans "Podcasts" %}</h2>
     {% for item in podcasts %}
     {% include 'cms/snippets/sound_list_item.html' %}
     {% endfor %}
-</div>
+</section>
 {% endif %}
 {% endwith %}
 

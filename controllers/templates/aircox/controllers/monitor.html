@@ -49,17 +49,14 @@ section.station {
 
 </style>
 <script>
-// HERE
-
 var Monitor = {
     get_token: function () {
         return document.cookie.replace(/.*csrftoken=([^;]+)(;.*|$)/, '$1');
     },
 
     post: function(station, action) {
-        params = 'station=' + station + '&&action=' + action;
-
-        req = new XMLHttpRequest()
+        var params = 'station=' + station + '&&action=' + action;
+        var req = new XMLHttpRequest()
         req.open('POST', '{% url 'controllers.monitor' %}', false);
         req.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
         req.setRequestHeader("Content-length", params.length);
@@ -74,7 +71,7 @@ var Monitor = {
     },
 
     update: function(timeout) {
-        req = new XMLHttpRequest()
+        var req = new XMLHttpRequest()
         req.open('GET', '{% url 'controllers.monitor' %}', true);
         req.onreadystatechange = function() {
             if(req.readyState != 4 || (req.status != 200 && req.status != 0))
@@ -88,7 +85,9 @@ var Monitor = {
                 doc.querySelector('#stations').innerHTML;
 
             if(timeout)
-                window.setTimeout(function() { Monitor.update(timeout);}, 5000);
+                window.setTimeout(
+                    function() { Monitor.update(timeout);}, timeout
+                );
         };
         req.send();
     },

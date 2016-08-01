@@ -1,5 +1,10 @@
 {% load i18n %}
+{% load static %}
 {% load honeypot %}
+
+{% if comment_form or page.comments %}
+<h2><img src="{% static "cms/images/comments.png" %}" class="icon">{% trans "Comments" %}</h2>
+{% endif %}
 
 {% if comment_form %}
 {% with comment_form as form %}
@@ -30,7 +35,10 @@
 </div>
 </form>
 
-<ul>
+{% endwith %}
+{% endif %}
+
+<ul class="list">
     {% for comment in page.comments %}
     <li class="comment">
         <div class="metadata">
@@ -44,9 +52,4 @@
     </li>
     {% endfor %}
 </ul>
-
-{% endwith %}
-{% endif %}
-
-
 

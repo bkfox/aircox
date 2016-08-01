@@ -31,7 +31,7 @@ Store.prototype = {
     set: function(key, data) {
         key = this.prefix + '.' + key;
         if(data == undefined) {
-            localStorage.removeItem(prefix);
+            localStorage.removeItem(this.prefix);
             return;
         }
         localStorage.setItem(key, JSON.stringify(data))

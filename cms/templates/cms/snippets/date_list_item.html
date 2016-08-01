@@ -16,12 +16,14 @@ is just a bit different.
     {% endwith %}
     {% endif %}
 
+    {% if not list_no_cover %}
     {% if item_big_cover %}
         {% image item.cover max-640x480 class="cover big" height="" width="" %}
     {% elif item.cover %}
         {% image item.cover fill-64x64 class="cover small" %}
     {% else %}
         <div class="cover small"></div>
+    {% endif %}
     {% endif %}
 
     <div class="flex_item">

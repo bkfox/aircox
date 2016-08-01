@@ -31,7 +31,7 @@
         <title>{{ page.title }}</title>
     </head>
     <body>
-        <div class="top">
+        <div class="menu top">
             {% render_sections position="top" %}
         </div>
 
@@ -40,7 +40,7 @@
         </header>
 
         <div class="page flex_row">
-            <nav class="page_left flex_item">
+            <nav class="menu page_left flex_item">
                 {% render_sections position="page_left" %}
             </nav>
 
@@ -62,7 +62,7 @@
             {% endblock %}
             </main>
 
-            <nav class="page_right flex_item">
+            <nav class="menu page_right flex_item">
                 {% render_sections position="page_right" %}
             </nav>
         </div>
