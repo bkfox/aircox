@@ -54,8 +54,11 @@ var Monitor = {
         return document.cookie.replace(/.*csrftoken=([^;]+)(;.*|$)/, '$1');
     },
 
-    post: function(station, action) {
+    post: function(station, source, action) {
         var params = 'station=' + station + '&&action=' + action;
+        if(source)
+            params += '&&source=' + source;
+
         var req = new XMLHttpRequest()
         req.open('POST', '{% url 'controllers.monitor' %}', false);
         req.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
@@ -66,8 +69,8 @@ var Monitor = {
         this.update();
     },
 
-    skip: function(station) {
-        this.post(station, 'skip');
+    skip: function(station, source) {
+        this.post(station, source, 'skip');
     },
 
     update: function(timeout) {
@@ -110,6 +113,8 @@ Monitor.update(1000);
             <div class="source{% if source == station.controller.current_source %} current{% endif %}">
                 <span class="name">{{ source.name }}</span>
                 <span class="file">{{ source.controller.current_sound }}</span>
+                <button onclick="Monitor.skip('{{ station.name }}','{{ source.name }}');">
+                    {% trans "skip" %}</button>
             </div>
             {% endif %}
             {% endfor %}

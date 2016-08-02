@@ -591,7 +591,7 @@ class Program(Nameable):
 
 
 class DiffusionManager(models.Manager):
-    def get_at(self, date = None):
+    def get_at(self, date = None, next = False):
         """
         Return a queryset of diffusions that have the given date
         in their range.
@@ -606,9 +606,12 @@ class DiffusionManager(models.Manager):
                 models.Q(end__contains = date)
             )
 
+        if not next:
+            return self.filter(start__lte = date, end__gte = date) \
+                       .order_by('start')
+
         return self.filter(
             models.Q(start__lte = date, end__gte = date) |
-            # FIXME: should not be here?
             models.Q(start__gte = date),
         ).order_by('start')
 

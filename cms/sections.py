@@ -530,9 +530,10 @@ class SectionItemMeta(models.base.ModelBase):
 
         cl = super().__new__(cls, name, bases, attrs)
         if not 'template' in attrs:
+            cl.snake_name = camelcase_to_underscore(name)
             cl.template = '{}/sections/{}.html'.format(
                 cl._meta.app_label,
-                camelcase_to_underscore(name),
+                cl.snake_name,
             )
             if name != 'SectionItem':
                 try:

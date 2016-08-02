@@ -87,7 +87,8 @@ main {
     }
 
     main .content img.cover {
-       width: 100%;
+       width: calc(100% + 2em);
+       margin-left: -1em;
     }
 
 

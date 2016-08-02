@@ -76,6 +76,11 @@ nav.menu {
         display: inline-block;
     }
 
+    .menu.top a {
+        display: inline-block;
+        margin: 0.2em 1em;
+    }
+
 .page_left > section,
 .page_right > section {
     margin-bottom: 1em;
@@ -326,6 +331,5 @@ main .body ~ section:not(.comments) {
     width: calc(50% - 1em);
     float: left;
 }
-
 
 

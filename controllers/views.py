@@ -94,7 +94,7 @@ class Monitor(View,TemplateResponseMixin,LoginRequiredMixin):
         if not request.user.is_active:
             return Http404()
 
-        if not 'action' in request.POST:
+        if not ('action' or 'station') in request.POST:
             return HttpResponse('')
 
         POST = request.POST
@@ -107,8 +107,22 @@ class Monitor(View,TemplateResponseMixin,LoginRequiredMixin):
             return HttpResponse('')
         station.prepare(fetch=True)
 
+        source = None
+        if 'source' in POST:
+            source = station.source_set.filter(name = POST['source']) \
+                            .first()
+            if not source and POST['source'] == station.dealer.name:
+                source = station.dealer
+
+            if source:
+                source.prepare()
+
         if station and action == 'skip':
-            station.controller.skip()
+            if source:
+                print('skip ', source)
+                source.controller.skip()
+            else:
+                station.controller.skip()
 
         return HttpResponse('')
 

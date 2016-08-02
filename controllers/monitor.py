@@ -27,7 +27,6 @@ class Monitor:
     """
 
     def __init__(self, station, **kwargs):
-        Log.objects.all().delete()
         self.station = station
         self.__dict__.update(kwargs)
 
@@ -169,7 +168,7 @@ class Monitor:
         )
         sounds = [
             sound.related.path for sound in sounds
-            if not sound.related.removed
+            if sound.related.type != programs.Sound.Type.removed
         ]
 
         return (
@@ -229,8 +228,6 @@ class Monitor:
         if next_diff and not dealer.controller.active and \
                 next_diff.start <= now:
             dealer.controller.active = True
-            for source in station.get_sources():
-                source.controller.skip()
             self.log(
                 type = Log.Type.play,
                 source = dealer.id_,
