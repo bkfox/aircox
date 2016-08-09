@@ -24,6 +24,9 @@ ul {
     float: left;
 }
 
+.small {
+    font-size: 0.8em;
+}
 
 .icon {
     max-width: 2em;
@@ -67,9 +70,11 @@ nav.menu {
     padding: 0.2em;
     height: 2.5em;
     margin-bottom: 1em;
+    background-color: white;
+    box-shadow: 0em 0em 0.2em black;
 }
     .menu.top * {
-        vertical-align: middle;
+        vertical-align: bottom;
     }
 
     .menu.top > section {
@@ -80,6 +85,10 @@ nav.menu {
         display: inline-block;
         margin: 0.2em 1em;
     }
+
+.page_left, .page_right {
+    max-width: 16em;
+}
 
 .page_left > section,
 .page_right > section {
@@ -118,6 +127,12 @@ ul.list {
 .list_item > * {
     margin: 0em 0.2em;
     vertical-align: middle;
+}
+
+
+.list nav {
+    text-align: center;
+    font-size: 0.9em;
 }
 
 
@@ -188,8 +203,6 @@ ul.list {
     font-size: 0.8em;
 }
 
-
-
 .comments ul {
     margin-top: 2.5em;
 }
@@ -208,19 +221,23 @@ ul.list {
         float: right;
     }
 
+
 /** content: player **/
 .player {
-    width: 20em;
 }
 
-    .player:not([seekable]) > .controls {
+    .player:not([seekable]) > .controls > .progress {
         display: none;
     }
 
 
-.player .controls > * {
-    margin: 0em 0.2em;
+.player .controls {
+    margin-top: 1em;
+    text-align: right;
 }
+    .player .controls > * {
+        margin: 0em 0.2em;
+    }
 
     .player .controls .single {
         display: none;
@@ -245,14 +262,9 @@ ul.list {
             border-right: 2px #818181 solid;
         }
 
-.player .on_air a:not([href]), .on_air a[href=""] {
-    display: none;
-}
-
 .player .playlist .item {
     margin: 0em;
     padding: 0.2em 0.4em;
-    height: 1em;
     cursor: pointer;
 }
 
@@ -266,25 +278,20 @@ ul.list {
 
     .player .playlist .item .actions {
         display: none;
+        font-size: 0.9em;
     }
 
     .player .playlist .item:hover .actions {
-        display: inline-block;
+        display: inline;
     }
 
-    .player .playlist .item .info {
-        float: right;
-        width: 2em;
-        display: inline-block;
-    }
-
-    .player .item:not([selected]) .button {
-        display: none;
-    }
 
 .player .item[selected] {
-    height: auto;
-    font-size: 1.1em;
+    border-left: 1px #007EDF solid;
+    font-size: 1.0em;
+}
+
+.player .item:not([selected]) {
 }
 
 .player .button {
@@ -300,36 +307,33 @@ ul.list {
         max-height: 2.0em;
     }
 
-    .player:not([state]) .button > img:not(.play),
-    .player[state="paused"] .button > img:not(.play),
-    .player[state="playing"] .button > img:not(.pause),
-    .player[state="loading"] .button > img:not(.loading)
+
+    .player:not([state]) .item[selected] .button > img:not(.play),
+    .player[state="paused"] .item[selected] .button > img:not(.play),
+    .player[state="playing"] .item[selected] .button > img:not(.pause),
+    .player[state="loading"] .item[selected] .button > img:not(.loading)
     {
         display: none;
     }
 
-    .player[state="loading"] .box .button > img.loading {
-        animation-duration: 2s;
-        animation-iteration-count: infinite;
-        animation-name: rotate;
-        animation-timing-function: linear;
+    .player .item:not([selected]) .button > img.play {
+        display: block;
+    }
+    .player .item:not([selected]) .button > img:not(.play) {
+        display: none;
     }
 
-    @keyframes rotate {
-        from {
-            transform: rotate(0deg);
-        }
 
-        to {
-            transform: rotate(360deg);
-        }
-    }
+.player .list_item.live:hover .actions {
+    display: none;
+}
 
 
 /** content: page **/
 main .body ~ section:not(.comments) {
     width: calc(50% - 1em);
-    float: left;
+    vertical-align: top;
+    display: inline-block;
 }
 
 

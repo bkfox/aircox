@@ -67,8 +67,13 @@
             </nav>
         </div>
 
+        {% block footer %}
         <footer class="footer">
             {% render_sections position="footer" %}
+            <div class="small">Propulsed by
+                <a href="https://github.com/bkfox/aircox">Aircox</a>
+            </div>
         </footer>
+        {% endblock %}
     </body>
 </html>

@@ -268,38 +268,6 @@ class Sound(Nameable):
         verbose_name_plural = _('Sounds')
 
 
-class Stream(models.Model):
-    """
-    When there are no program scheduled, it is possible to play sounds
-    in order to avoid blanks. A Stream is a Program that plays this role,
-    and whose linked to a Stream.
-
-    All sounds that are marked as good and that are under the related
-    program's archive dir are elligible for the sound's selection.
-    """
-    program = models.ForeignKey(
-        'Program',
-        verbose_name = _('related program'),
-    )
-    delay = models.TimeField(
-        _('delay'),
-        blank = True, null = True,
-        help_text = _('delay between two sound plays')
-    )
-    begin = models.TimeField(
-        _('begin'),
-        blank = True, null = True,
-        help_text = _('used to define a time range this stream is'
-                      'played')
-    )
-    end = models.TimeField(
-        _('end'),
-        blank = True, null = True,
-        help_text = _('used to define a time range this stream is'
-                      'played')
-    )
-
-
 class Schedule(models.Model):
     """
     A Schedule defines time slots of programs' diffusions. It can be an initial
@@ -634,6 +602,38 @@ class DiffusionManager(models.Manager):
         return self.filter(
             end__lte = date,
         ).order_by('start')
+
+
+class Stream(models.Model):
+    """
+    When there are no program scheduled, it is possible to play sounds
+    in order to avoid blanks. A Stream is a Program that plays this role,
+    and whose linked to a Stream.
+
+    All sounds that are marked as good and that are under the related
+    program's archive dir are elligible for the sound's selection.
+    """
+    program = models.ForeignKey(
+        'Program',
+        verbose_name = _('related program'),
+    )
+    delay = models.TimeField(
+        _('delay'),
+        blank = True, null = True,
+        help_text = _('delay between two sound plays')
+    )
+    begin = models.TimeField(
+        _('begin'),
+        blank = True, null = True,
+        help_text = _('used to define a time range this stream is'
+                      'played')
+    )
+    end = models.TimeField(
+        _('end'),
+        blank = True, null = True,
+        help_text = _('used to define a time range this stream is'
+                      'played')
+    )
 
 
 class Diffusion(models.Model):

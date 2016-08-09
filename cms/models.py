@@ -31,6 +31,7 @@ import aircox.programs.models as programs
 import aircox.controllers.models as controllers
 import aircox.cms.settings as settings
 
+from aircox.cms.utils import image_url
 from aircox.cms.sections import *
 
 
@@ -163,6 +164,15 @@ class Comment(models.Model):
         _('comment'),
     )
 
+
+    def __str__(self):
+        # Translators: text shown in the comments list (in admin)
+        return _('{date}, {author}: {content}...').format(
+                author = self.author,
+                date = self.date.strftime('%d %A %Y, %H:%M'),
+                content = self.content[:128]
+        )
+
     def make_safe(self):
         self.author = bleach.clean(self.author, tags=[])
         if self.email:
@@ -262,6 +272,15 @@ class Publication(Page):
         index.FilterField('live'),
         index.FilterField('show_in_menus'),
     ]
+
+
+    @property
+    def icon(self):
+        return image_url(self.cover, 'fill-64x64')
+
+    @property
+    def small_icon(self):
+        return image_url(self.cover, 'fill-32x32')
 
     @property
     def recents(self):
@@ -390,10 +409,8 @@ class Track(programs.Track,Orderable):
     diffusion = ParentalKey('DiffusionPage',
                             related_name='tracks')
     panels = [
-        FieldRowPanel([
-            FieldPanel('artist'),
-            FieldPanel('title'),
-        ]),
+        FieldPanel('artist'),
+        FieldPanel('title'),
         FieldPanel('tags'),
         FieldPanel('info'),
     ]
@@ -428,12 +445,14 @@ class DiffusionPage(Publication):
         verbose_name = _('Diffusion')
         verbose_name_plural = _('Diffusions')
 
-    content_panels = [
-        FieldPanel('diffusion'),
-        FieldPanel('publish_archive'),
-    ] + Publication.content_panels + [
+    content_panels = Publication.content_panels + [
         InlinePanel('tracks', label=_('Tracks')),
     ]
+
+    promote_panels = [
+        # FieldPanel('diffusion'),
+        FieldPanel('publish_archive'),
+    ] + Publication.promote_panels
 
     @classmethod
     def from_diffusion(cl, diff, model = None, **kwargs):
@@ -518,8 +537,6 @@ class DiffusionPage(Publication):
                 if podcast.public != publish:
                     podcast.public = publish
                     podcast.save()
-
-
 
         super().save(*args, **kwargs)
 

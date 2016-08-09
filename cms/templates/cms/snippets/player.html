@@ -1,0 +1,45 @@
+{% load staticfiles %}
+{% load i18n %}
+
+<audio preload="metadata">
+    {% trans "Your browser does not support the <code>audio</code> element." %}
+    {% for stream in streams %}
+    <source src="{{ stream }}" />
+    {% endfor %}
+</audio>
+
+<div class="playlist">
+    <li class='item list_item flex_row' style="display: none;">
+        <div class="button">
+            <img src="{% static "cms/images/play.png" %}" class="play"
+                title="{% trans "play" %}" />
+            <img src="{% static "cms/images/pause.png" %}" class="pause"
+                title="{% trans "pause" %}" />
+            <img src="{% static "cms/images/loading.png" %}" class="loading"
+                title="{% trans "loading..." %}" />
+        </div>
+
+        <div class="flex_item">
+            <h3 class="title flex_item">{{ self.live_title }}</h3>
+            <div class="content flex_row">
+                <span class="info duration flex_item"></span>
+                <span class="actions">
+                    <a class="action detail" title="{% trans "more informations" %}">➔</a>
+                    <a class="action remove" title="{% trans "remove this sound" %}">✖</a>
+                </span>
+            </div>
+        </div>
+    </li>
+</div>
+
+<div class="controls">
+    <span class="progress">
+        <span class="info duration"></span>
+        <progress class="flex_item progress" value="0" max="1"></progress>
+    </span>
+
+    <input type="checkbox" class="single" id="player_single_mode">
+    <label for="player_single_mode" class="info"
+        title="{% trans "enable and disable single mode" %}">↻</label>
+</div>
+

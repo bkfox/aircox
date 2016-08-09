@@ -64,7 +64,7 @@ def on_air(request):
 
         last = {
             'type': 'diffusion',
-            'title': publication.title if publication else last.program.name,
+            'title': last.program.name,
             'date': last.start,
             'url': publication.specific.url if publication else None,
         }

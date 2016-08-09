@@ -221,19 +221,18 @@ class ListBase(models.Model):
             else:
                 qs = qs.descendant_of(related)
 
-            date = self.related.date if hasattr('date', related) else \
+            date = self.related.date if hasattr(related, 'date') else \
                     self.related.first_published_at
             if self.date_filter == self.DateFilter.before_related:
                 qs = qs.filter(date__lt = date)
             elif self.date_filter == self.DateFilter.after_related:
                 qs = qs.filter(date__gte = date)
         # date
-        else:
-            date = tz.now()
-            if self.date_filter == self.DateFilter.previous:
-                qs = qs.filter(date__lt = date)
-            elif self.date_filter == self.DateFilter.next:
-                qs = qs.filter(date__gte = date)
+        date = tz.now()
+        if self.date_filter == self.DateFilter.previous:
+            qs = qs.filter(date__lt = date)
+        elif self.date_filter == self.DateFilter.next:
+            qs = qs.filter(date__gte = date)
 
         # sort
         if self.asc:
@@ -332,9 +331,7 @@ class ListBase(models.Model):
         search = request.GET.get('search')
         if search:
             kwargs['terms'] = search
-            print(search, qs)
             qs = qs.search(search)
-            print(qs.count())
 
         set('list_selector', kwargs)
 
@@ -342,7 +339,7 @@ class ListBase(models.Model):
         if qs:
             paginator = Paginator(qs, 30)
             try:
-                qs = paginator.page('page')
+                qs = paginator.page(request.GET.get('page') or 1)
             except PageNotAnInteger:
                 qs = paginator.page(1)
             except EmptyPage:
@@ -803,7 +800,7 @@ class SectionList(ListBase, SectionRelativeItem):
                       'list. If empty, does not print an address'),
     )
 
-    panels = SectionItem.panels + [
+    panels = SectionRelativeItem.panels + [
         MultiFieldPanel([
         FieldPanel('focus_available'),
         FieldPanel('count'),
@@ -814,6 +811,9 @@ class SectionList(ListBase, SectionRelativeItem):
     def get_context(self, request, page):
         from aircox.cms.models import Publication
         context = super().get_context(request, page)
+
+        if self.is_related:
+            self.related = page
 
         qs = self.get_queryset()
         qs = qs.live()

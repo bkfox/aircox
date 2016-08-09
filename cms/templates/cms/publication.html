@@ -6,23 +6,30 @@
 
 {% load aircox_cms %}
 
+{% if not object_list %}
+{% block title %}
+<h1 class="detail_title">{{ page.title }}</h1>
+{% endblock %}
+{% endif %}
+
 {% block content %}
 {% if object_list %}
 {# list view #}
-    <div class="body summary">
+    <section class="body summary">
     {{ page.summary }}
     <a href="?" class="go_back">{% trans "Go back to the publication" %}</a>
-    </div>
+    </section>
 
     {% with list_paginator=paginator %}
     {% include "cms/snippets/list.html" %}
     {% endwith %}
 {% else %}
 {# detail view #}
+    {% if page.cover %}
+    {% image page.cover max-600x480 class="detail_cover cover" height="" width="" %}
+    {% endif %}
+
     <div class="content">
-        {% if page.cover %}
-        {% image page.cover max-600x480 class="cover" height="" width="" %}
-        {% endif %}
         <section class="body">
         {{ page.body|richtext}}
         </section>

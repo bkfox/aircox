@@ -18,11 +18,13 @@ function duration_str(seconds) {
 }
 
 
-function Sound(title, detail, duration, streams) {
+function Sound(title, detail, duration, streams, cover, on_air) {
     this.title = title;
     this.detail = detail;
     this.duration = duration;
     this.streams = streams.splice ? streams.sort() : [streams];
+    this.cover = cover;
+    this.on_air = on_air;
 }
 
 Sound.prototype = {
@@ -30,25 +32,60 @@ Sound.prototype = {
     detail: '',
     streams: undefined,
     duration: undefined,
-    on_air_url: undefined,
+    cover: undefined,
+    on_air: false,
 
     item: undefined,
 
     get seekable() {
         return this.duration != undefined;
     },
+
+    make_item: function(playlist, base_item) {
+        if(this.item)
+            return;
+
+        var item = base_item.cloneNode(true);
+        item.removeAttribute('style');
+
+        item.querySelector('.title').innerHTML = this.title;
+        if(this.seekable)
+            item.querySelector('.duration').innerHTML =
+                duration_str(this.duration);
+        if(this.detail)
+            item.querySelector('.detail').href = this.detail;
+        if(playlist.player.show_cover && this.cover)
+            item.querySelector('img.play').src = this.cover;
+
+        item.sound = this;
+        this.item = item;
+
+        // events
+        var self = this;
+        item.querySelector('.action.remove').addEventListener(
+            'click', function(event) { playlist.remove(self); }, false
+        );
+
+        item.addEventListener('click', function(event) {
+            if(event.target.className.indexOf('action') != -1)
+                return;
+            playlist.select(self, true)
+        }, false);
+    },
 }
 
 
-function PlayerPlaylist(player) {
+function Playlist(player) {
     this.player = player;
     this.playlist = player.player.querySelector('.playlist');
     this.item_ = player.player.querySelector('.playlist .item');
     this.sounds = []
 }
 
-PlayerPlaylist.prototype = {
+Playlist.prototype = {
+    on_air: undefined,
     sounds: undefined,
+    sound: undefined,
 
     /// Find a sound by its streams, and return it if found
     find: function(streams) {
@@ -71,30 +108,12 @@ PlayerPlaylist.prototype = {
         if(sound_)
             return sound_;
 
-        var item = this.item_.cloneNode(true);
-        item.removeAttribute('style');
+        if(sound.on_air)
+            this.on_air = sound;
 
-        item.querySelector('.title').innerHTML = sound.title;
-        if(sound.seekable)
-            item.querySelector('.duration').innerHTML =
-                duration_str(sound.duration);
-        if(sound.detail)
-            item.querySelector('.detail').href = sound.detail;
+        sound.make_item(this, this.item_);
+        (container || this.playlist).appendChild(sound.item);
 
-        item.sound = sound;
-        sound.item = item;
-
-        var self = this;
-        item.querySelector('.action.remove').addEventListener(
-            'click', function(event) { self.remove(sound); }, false
-        );
-        item.addEventListener('click', function(event) {
-            if(event.target.className.indexOf('action') != -1)
-                return;
-            self.player.select(sound, true)
-        }, false);
-
-        (container || this.playlist).appendChild(item);
         this.sounds.push(sound);
         this.save();
         return sound;
@@ -106,8 +125,61 @@ PlayerPlaylist.prototype = {
             this.sounds.splice(index,1);
         this.playlist.removeChild(sound.item);
         this.save();
+
+        this.player.stop()
+        this.next(false);
     },
 
+    select: function(sound, play = true) {
+        this.player.playlist = this;
+        if(this.sound == sound) {
+            if(play)
+                this.player.play();
+            return;
+        }
+
+        if(this.sound)
+            this.unselect(this.sound);
+        this.sound = sound;
+
+        // audio
+        this.player.load_sound(this.sound);
+
+        // attributes
+        var container = this.player.player;
+        sound.item.setAttribute('selected', 'true');
+
+        if(!sound.on_air)
+            sound.item.querySelector('.content').insertBefore(
+                this.player.progress.item,
+                sound.item.querySelector('.content .duration')
+            )
+
+        if(sound.seekable)
+            container.setAttribute('seekable', 'true');
+        else
+            container.removeAttribute('seekable');
+
+        // play
+        if(play)
+            this.player.play();
+    },
+
+    unselect: function(sound) {
+        sound.item.removeAttribute('selected');
+    },
+
+    next: function(play = true) {
+        var index = this.sounds.indexOf(this.sound);
+        if(index < 0)
+            return;
+
+        index++;
+        if(index < this.sounds.length)
+            this.select(this.sounds[index]);
+    },
+
+    // storage
     save: function() {
         var list = [];
         for(var i in this.sounds) {
@@ -124,7 +196,7 @@ PlayerPlaylist.prototype = {
         for(var i in list) {
             var sound = list[i];
             sound = new Sound(sound.title, sound.detail, sound.duration,
-                              sound.streams)
+                              sound.streams, sound.cover, sound.on_air)
             this.add(sound, container)
         }
         this.playlist.appendChild(container);
@@ -132,53 +204,67 @@ PlayerPlaylist.prototype = {
 }
 
 
-function Player(id) {
-    this.store = new Store('player');
+function Player(id, on_air_url, show_cover) {
+    this.id = id;
+    this.on_air_url = on_air_url;
+    this.show_cover = show_cover;
+
+    this.store = new Store('player_' + id);
 
     // html sounds
     this.player = document.getElementById(id);
     this.audio = this.player.querySelector('audio');
     this.on_air = this.player.querySelector('.on_air');
+    this.progress = {
+        item: this.player.querySelector('.controls .progress'),
+        bar: this.player.querySelector('.controls .progress progress'),
+        duration: this.player.querySelector('.controls .progress .duration')
+    }
+    console.log(this.progress)
+
     this.controls = {
-        duration: this.player.querySelector('.controls .duration'),
-        progress: this.player.querySelector('progress'),
         single: this.player.querySelector('input.single'),
     }
 
-    this.playlist = new PlayerPlaylist(this);
+    this.playlist = new Playlist(this);
     this.playlist.load();
 
     this.init_events();
     this.load();
+
+    this.update_on_air();
 }
 
 Player.prototype = {
     /// current item being played
     sound: undefined,
+    on_air_url: undefined,
 
     init_events: function() {
         var self = this;
 
         function time_from_progress(event) {
-            bounding = self.controls.progress.getBoundingClientRect()
+            bounding = self.progress.bar.getBoundingClientRect()
             offset = (event.clientX - bounding.left);
             return offset * self.audio.duration / bounding.width;
         }
 
         function update_info() {
-            var controls = self.controls;
+            var progress = self.progress;
+            var pos = self.audio.currentTime;
+
             // progress
             if(!self.sound || !self.sound.seekable ||
-                    self.audio.duration == Infinity) {
-                controls.duration.innerHTML = '';
-                controls.progress.value = 0;
+                    !pos || self.audio.duration == Infinity)
+            {
+                progress.duration.innerHTML = '';
+                progress.bar.value = 0;
                 return;
             }
 
-            var pos = self.audio.currentTime;
-            controls.progress.value = pos;
-            controls.progress.max = self.audio.duration;
-            controls.duration.innerHTML = duration_str(pos);
+            progress.bar.value = pos;
+            progress.bar.max = self.audio.duration;
+            progress.duration.innerHTML = duration_str(pos);
         }
 
         // audio
@@ -207,7 +293,7 @@ Player.prototype = {
         }, false);
 
         // progress
-        progress = this.controls.progress;
+        progress = this.progress.bar;
         progress.addEventListener('click', function(event) {
             player.audio.currentTime = time_from_progress(event);
         }, false);
@@ -215,43 +301,55 @@ Player.prototype = {
         progress.addEventListener('mouseout', update_info, false);
 
         progress.addEventListener('mousemove', function(event) {
-            if(self.audio.duration == Infinity)
+            if(self.audio.duration == Infinity || isNaN(self.audio.duration))
                return;
 
             var pos = time_from_progress(event);
-            self.controls.duration.innerHTML = duration_str(pos);
+            self.progress.duration.innerHTML = duration_str(pos);
         }, false);
     },
 
-    update_on_air: function(url) {
-        if(!url) {
-            // TODO HERE
-        }
+    update_on_air: function() {
+        if(!this.on_air_url)
+            return;
 
         var self = this;
+        window.setTimeout(function() {
+            self.update_on_air();
+        }, 60*1000);
+
+        if(!this.playlist.on_air)
+            return;
+
         var req = new XMLHttpRequest();
-        req.open('GET', url, true);
+        req.open('GET', this.on_air_url, true);
         req.onreadystatechange = function() {
-            if(req.readyState != 4 || (req.status != 200 && req.status != 0))
+            if(req.readyState != 4 || (req.status != 200 &&
+                    req.status != 0))
                 return;
 
             var data = JSON.parse(req.responseText)
-            if(data.type == 'track') {
-                self.on_air.querySelector('.info').innerHTML = '♫';
-                self.on_air.querySelector('.title') =
-                    (data.artist || '') + ' — ' + (data.title);
-                self.on_air.querySelector('.url').removeAttribute('href');
-            }
-            else {
-                self.on_air.querySelector('.info').innerHTML = '';
-                self.on_air.querySelector('.title').innerHTML = data.title;
-                self.on_air.querySelector('.url').setAttribute('href', data.url);
-            }
+            if(data.type == 'track')
+                data = {
+                    title: '♫' + (data.artist ? data.artist + ' — ' : '') +
+                           data.title,
+                    url: ''
+                }
+            else
+                data = {
+                    title: data.title,
+                    info: '',
+                    url: data.url
+                }
 
-            if(timeout)
-                window.setTimeout(function() {
-                    self.update_on_air(url);
-                }, 60*1000);
+            var on_air = self.playlist.on_air;
+            on_air = on_air.item.querySelector('.content');
+
+            if(data.url)
+                on_air.innerHTML =
+                    '<a href="' + data.url + '">' + data.title + '</a>';
+            else
+                on_air.innerHTML = data.title;
         };
         req.send();
     },
@@ -263,78 +361,44 @@ Player.prototype = {
             this.audio.pause();
     },
 
-    unselect: function(sound) {
-        sound.item.removeAttribute('selected');
-    },
-
     __mime_type: function(path) {
         ext = path.substr(path.lastIndexOf('.')+1);
         return 'audio/' + ext;
     },
 
-    select: function(sound, play = true) {
-        if(this.sound == sound) {
-            if(play)
-                this.play();
-            return;
-        }
+    load_sound: function(sound) {
+        var audio = this.audio;
+        audio.pause();
 
-        if(this.sound)
-            this.unselect(this.sound);
-
-        this.audio.pause();
-
-        // streams as <source>
-        var sources = this.audio.querySelectorAll('source');
-        for(var i = 0; i < sources.length; i++) {
-            this.audio.removeChild(sources[i]);
-        }
+        var sources = audio.querySelectorAll('source');
+        for(var i = 0; i < sources.length; i++)
+            audio.removeChild(sources[i]);
 
         streams = sound.streams;
         for(var i = 0; i < streams.length; i++) {
             var source = document.createElement('source');
             source.src = streams[i];
             source.type = this.__mime_type(source.src);
-            this.audio.appendChild(source);
+            audio.appendChild(source);
         }
-        this.audio.load();
-
-        // attributes
-        this.sound = sound;
-        sound.item.setAttribute('selected', 'true');
-
-        if(sound.seekable)
-            this.player.setAttribute('seekable', 'true');
-        else
-            this.player.removeAttribute('seekable');
-
-        // play
-        if(play)
-            this.play();
-    },
-
-    next: function() {
-        var index = this.playlist.sounds.indexOf(this.sound);
-        if(index < 0)
-            return;
-
-        index++;
-        if(index < this.playlist.sounds.length)
-            this.select(this.playlist.sounds[index], true);
+        audio.load();
     },
 
     save: function() {
+        // TODO: move stored sound into playlist
         this.store.set('player', {
             single: this.controls.single.checked,
-            sound: this.sound && this.sound.streams,
+            sound: this.playlist.sound && this.playlist.sound.streams,
         });
     },
 
     load: function() {
         var data = this.store.get('player');
+        if(!data)
+            return;
         this.controls.single.checked = data.single;
         if(data.sound)
-            this.sound = this.playlist.find(data.sound);
+            this.playlist.sound = this.playlist.find(data.sound);
     },
 }
 

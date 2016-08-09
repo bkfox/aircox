@@ -26,10 +26,10 @@ This file is used as a reminder, can be used as crappy documentation too.
 
 - controllers :
     - models to template -> note
+    - input stream
     - streamed program disable -> remote control on liquidsoap
     - tests:
         - monitor
-        - check when a played sound has a temp blank
         - config generation and sound diffusion
 
 - cms:

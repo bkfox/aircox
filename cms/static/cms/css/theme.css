@@ -50,6 +50,7 @@ time {
 
 .info {
     font-size: 0.9em;
+    padding: 0.1em;
     color: #007EDF;
 }
 
@@ -81,14 +82,69 @@ main {
     box-shadow: 0em 0em 0.2em black;
 }
 
-    main h1 {
-        margin: 0em;
+    main h1:not(.detail_title) {
         margin: 0em 0em 0.4em 0em;
     }
 
-    main .content img.cover {
+
+    main h1.detail_title {
+        margin: 0em;
+        padding: 0.2em;
+        position: relative;
+        left: -0.7em;
+        width: 80%;
+        background-color: rgba(255,255,255,0.8);
+    }
+
+    main img.detail_cover {
        width: calc(100% + 2em);
+       margin-top: -3.3em;
        margin-left: -1em;
     }
+
+
+
+/** player **/
+.player[state='playing'] .item[selected] .button > img {
+    animation-duration: 4s;
+    animation-iteration-count: infinite;
+    animation-name: blink;
+}
+
+
+@keyframes blink {
+    from {
+        opacity: 1.0;
+    }
+
+    50% {
+        opacity: 0.3;
+    }
+
+    to {
+        opacity: 1.0;
+    }
+}
+
+
+.player[state="loading"] .item[selected] .button > img.loading {
+    animation-duration: 2s;
+    animation-iteration-count: infinite;
+    animation-name: rotate;
+    animation-timing-function: linear;
+}
+
+@keyframes rotate {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+
+
 
 

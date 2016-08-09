@@ -62,7 +62,7 @@ class Command (BaseCommand):
                 start__gt = tz.now().date() - tz.timedelta(days = 20),
                 page__isnull = True,
                 initial__isnull = True
-            )
+            ).exclude(type = Diffusion.Type.unconfirmed)
             for diffusion in qs:
                 if not diffusion.program.page.count():
                     if not hasattr(diffusion.program, '__logged_diff_error'):

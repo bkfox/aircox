@@ -1,22 +1,37 @@
 {% load static %}
+{% load i18n %}
 
 {# TODO: complete archive podcast -> info #}
-<div class="list_item sound">
-<a onclick="player.select(player.playlist.add(new Sound(
+<script>
+function add_sound_{{ item.id }}(event) {
+    var sound = new Sound(
         title='{{ item.name|escape }}',
         detail='{{ item.detail_url }}',
         duration={{ item.duration|date:"H*3600+i*60+s" }},
-        streams='{{ item.url }}')));" class="flex_row">
+        streams='{{ item.url }}',
+        {% if page and page.cover %}cover='{{ page.icon }}'{% endif %}
+    );
+
+    sound = player.playlist.add(sound);
+
+    if(event.target.dataset.action != 'add')
+        player.select(sound, true);
+}
+</script>
+
+<a class="list_item sound flex_row" onclick="add_sound_{{ item.id }}(event)">
     <img src="{% static "cms/images/listen.png" %}" class="icon"/>
     <h3 class="flex_item">{{ item.name }}</h3>
 
-    <span class="info">
+    <time class="info">
         {% if item.duration.hour > 0 %}
         {{ item.duration|date:'H:i:s' }}
         {% else %}
         {{ item.duration|date:'i:s' }}
         {% endif %}
-    </span>
+    </time>
+
+    <img src="{% static "cms/images/add.png" %}" class="icon"
+         data-action='add' alt="{% trans "add this sound to the playlist" %}"/>
 </a>
-</div>
 
