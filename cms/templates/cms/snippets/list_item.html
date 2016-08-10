@@ -29,7 +29,7 @@ Options:
 
         {% if item.summary %}<div class="summary">{{ item.summary }}</div>{% endif %}
         {% if not item.show_in_menus and item.date and item_date_format != '' %}
-        {% with date_format=item_date_format|default_if_none:'l d F, H:i' %}
+        {% with date_format=item_date_format|default:'l d F, H:i' %}
         <time datetime="{{ item.date }}">
             {{ item.date|date:date_format }}
         </time>

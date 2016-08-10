@@ -58,7 +58,13 @@ class WebsiteSettings(BaseSetting):
         null=True, blank=True,
         help_text = _('public description of the website; used for referencing'),
     )
-
+    list_page = models.ForeignKey(
+        'cms.GenericPage',
+        verbose_name = _('page for lists'),
+        help_text=_('page used to display the results of a search and other '
+                    'lists'),
+        related_name= 'list_page'
+    )
     # comments
     accept_comments = models.BooleanField(
         default = True,
@@ -108,12 +114,12 @@ class WebsiteSettings(BaseSetting):
         },
     )
 
-
     panels = [
         MultiFieldPanel([
             FieldPanel('favicon'),
             FieldPanel('tags'),
             FieldPanel('description'),
+            FieldPanel('list_page'),
         ], heading=_('promotion')),
         MultiFieldPanel([
             FieldPanel('allow_comments'),
@@ -250,13 +256,16 @@ class Publication(Page):
         verbose_name = _('Publication')
         verbose_name_plural = _('Publication')
 
-    content_panels = Page.content_panels + [
-        FieldPanel('body', classname="full")
+    content_panels = [
+        MultiFieldPanel([
+            FieldPanel('title'),
+            FieldPanel('body', classname='full'),
+            FieldPanel('summary'),
+        ], heading=_('Content'))
     ]
     promote_panels = [
         MultiFieldPanel([
             ImageChooserPanel('cover'),
-            FieldPanel('summary'),
             FieldPanel('tags'),
             FieldPanel('focus'),
         ], heading=_('Content')),
@@ -273,6 +282,12 @@ class Publication(Page):
         index.FilterField('show_in_menus'),
     ]
 
+    @property
+    def url(self):
+        if not self.live:
+            parent = self.get_parent().specific
+            return parent and parent.url
+        return super().url
 
     @property
     def icon(self):
@@ -482,6 +497,7 @@ class DiffusionPage(Publication):
             item.live = True
 
         item.info = []
+        # Translators: informations about a diffusion
         if diff.initial:
             item.info.append(_('Rerun of %(date)s') % {
                 'date': diff.initial.start.strftime('%A %d')
@@ -541,62 +557,10 @@ class DiffusionPage(Publication):
         super().save(*args, **kwargs)
 
 
-class EventPageQuerySet(PageQuerySet):
-    def upcoming(self):
-        now = tz.now().date()
-        return self.filter(start_date__gte=now)
-
-
-class EventPage(Publication):
-    order_field = 'start'
-
-    start = models.DateTimeField(
-        _('start'),
-        help_text = _('when it happens'),
-    )
-    end = models.DateTimeField(
-        _('end'),
-        blank = True, null = True,
-    )
-    place = models.TextField(
-        _('place'),
-        help_text = _('address where the event takes place'),
-    )
-    price = models.CharField(
-        _('price'),
-        max_length=64,
-        blank = True, null = True,
-        help_text = _('price of the event'),
-    )
-    info = models.TextField(
-        _('info'),
-        blank = True, null = True,
-        help_text = _('additional information'),
-    )
-
-    objects = PageManager.from_queryset(EventPageQuerySet)
-
-    class Meta:
-        verbose_name = _('Event')
-        verbose_name_plural = _('Events')
-
-    content_panels = Publication.content_panels + [
-        FieldRowPanel([
-            FieldPanel('start'),
-            FieldPanel('end'),
-        ]),
-        FieldPanel('place'),
-    ]
-
-    def save(self, *args, **kwargs):
-        self.date = self.start
-        super().save(*args, **kwargs)
-
-
 #
-# Lists
+# Other type of pages
 #
-class ListPage(Page):
+class GenericPage(Page):
     """
     Page for simple lists, query is done though request' GET fields.
     Look at get_queryset for more information.
@@ -606,15 +570,34 @@ class ListPage(Page):
         blank = True, null = True,
         help_text = _('add an extra description for this list')
     )
+    list_from_request = models.BooleanField(
+        _('list from the request'),
+        default = False,
+        help_text = _(
+            'if set, the page print a list based on the request made by '
+            'the website visitor, and its title will be adapted to this '
+            'request. Can be usefull for search pages, etc. and should '
+            'only be set on one page.'
+        )
+    )
+
+    content_panels = [
+        MultiFieldPanel([
+            FieldPanel('title'),
+            FieldPanel('body'),
+            FieldPanel('list_from_request'),
+        ], heading=_('Content'))
+    ]
 
     class Meta:
-        verbose_name = _('List')
-        verbose_name_plural = _('List')
+        verbose_name = _('Generic Page')
+        verbose_name_plural = _('Generic Page')
 
     def get_context(self, request, *args, **kwargs):
         context = super().get_context(request, *args, **kwargs)
-        qs = ListBase.from_request(request, context=context)
-        context['object_list'] = qs
+        if self.list_from_request:
+            qs = ListBase.from_request(request, context=context)
+            context['object_list'] = qs
         return context
 
 

@@ -43,7 +43,7 @@ h2 * { vertical-align: middle; }
 
 
 /** info **/
-time {
+time, .tags {
     font-size: 0.9em;
     color: #616161;
 }
@@ -54,6 +54,7 @@ time {
     color: #007EDF;
 }
 
+
 a {
     cursor: pointer;
     text-decoration: none;
@@ -62,6 +63,10 @@ a {
 
 a:hover {
     color: #007EDF;
+}
+
+a:hover > .small_icon {
+    box-shadow: 0em 0em 0.1em #007EDF;
 }
 
 
@@ -79,29 +84,52 @@ a:hover {
 main {
     background-color: rgba(255,255,255,0.9);
     padding: 1em;
+    margin: 0em 2em;
     box-shadow: 0em 0em 0.2em black;
+    width: 60%;
 }
 
-    main h1:not(.detail_title) {
+
+    main:not(.detail) h1 {
         margin: 0em 0em 0.4em 0em;
     }
 
+main.detail {
+    padding: 0em;
+}
 
-    main h1.detail_title {
+    main.detail > .content {
+        padding: 1em;
+    }
+
+    main.detail > header {
+        padding: 0em;
         margin: 0em;
-        padding: 0.2em;
+    }
+
+    main.detail > header h1.title {
         position: relative;
-        left: -0.7em;
-        width: 80%;
+        width: calc(70% - 0.8em);
+        margin: 0em;
+        margin-bottom: -2em;
+        padding: 0.4em;
         background-color: rgba(255,255,255,0.8);
     }
 
-    main img.detail_cover {
-       width: calc(100% + 2em);
-       margin-top: -3.3em;
-       margin-left: -1em;
+    main.detail > header img.cover {
+       width: 70%;
+       display: inline-block;
     }
 
+    main.detail header .summary {
+       display: inline-block;
+       padding: 1em;
+       width: calc(20% - 2em);
+       vertical-align: top;
+       font-size: 1.2em;
+       font-weight: bold;
+       background-color: white;
+    }
 
 
 /** player **/

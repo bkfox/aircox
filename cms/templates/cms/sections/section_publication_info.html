@@ -1,11 +1,13 @@
 {% extends "cms/sections/section_item.html" %}
 {% load i18n %}
+{% load static %}
+
+{% load wagtailsettings_tags %}
 
 {% block content %}
 <div class="meta">
     <div class="author">
         {% if page.publish_as %}
-            {% trans "Published by" %}
             {% with item=page.publish_as item_date_format='' %}
             {% include "cms/snippets/list_item.html" %}
             {% endwith %}
@@ -14,15 +16,44 @@
             {{ page.owner }}
         {% endif %}
     </div>
-    <time datetime="{{ page.specific.date }}">
-        {% trans "Published on " %}
-        {{ page.specific.date|date:'l d F, H:i' }}
+    {% with page_date=page.specific.date %}
+    {% if page_date %}
+    <time datetime="{{ page_date }}">
+        <b>{% trans "Published on " %}</b>
+        {{ page_date|date:'l d F, H:i' }}
     </time>
-    <div class="tags">
-    {% for tag in page.tags.all %}
-     {# <a href="{% pageurl page.blog_index %}?tag={{ tag }}">{{ tag }}</a> #}
-     {{ tag }}
-    {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    {% with list_page=settings.cms.WebsiteSettings.list_page %}
+    {% if list_page %}
+    <div class="tags"><b>{% trans "Tags" %}</b>
+        {% for tag in page.tags.all %}
+        <a href="{{ list_page }}?tag={{ tag }}">{{ tag }}</a>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <div class="share">
+        <img src="{% static "cms/images/share.png" %}" alt="{% trans "Share" %}"
+                class="small_icon">
+        <a href="mailto:?&body={{ page.full_url|urlencode }}"
+                target="new">
+            <img src="{% static "cms/images/mail.png" %}" alt="Mail" class="small_icon">
+        </a>
+        <a href="https://www.facebook.com/sharer/sharer.php?u={{ page.full_url|urlencode }}"
+                target="new">
+            <img src="{% static "cms/images/facebook.png" %}" alt="Facebook" class="small_icon">
+        </a>
+        <a href="https://twitter.com/intent/tweet?text={{ page.full_url|urlencode }}"
+                target="new">
+            <img src="{% static "cms/images/twitter.png" %}" alt="Twitter" class="small_icon">
+        </a>
+        <a href="https://plus.google.com/share?url={{ page.full_url|urlencode }}"
+                target="new">
+            <img src="{% static "cms/images/gplus.png" %}" alt="Google Plus" class="small_icon">
+        </a>
     </div>
 </div>
 {% endblock %}

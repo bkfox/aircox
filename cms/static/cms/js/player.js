@@ -220,7 +220,6 @@ function Player(id, on_air_url, show_cover) {
         bar: this.player.querySelector('.controls .progress progress'),
         duration: this.player.querySelector('.controls .progress .duration')
     }
-    console.log(this.progress)
 
     this.controls = {
         single: this.player.querySelector('input.single'),
@@ -359,6 +358,11 @@ Player.prototype = {
             this.audio.play();
         else
             this.audio.pause();
+    },
+
+    stop: function() {
+        this.audio.pause();
+        this.player.removeAttribute('state');
     },
 
     __mime_type: function(path) {

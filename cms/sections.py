@@ -163,13 +163,15 @@ class ListBase(models.Model):
         ContentType,
         verbose_name = _('filter by type'),
         blank = True, null = True,
+        on_delete=models.SET_NULL,
         help_text = _('if set, select only elements that are of this type'),
         limit_choices_to = related_pages_filter,
     )
     related = models.ForeignKey(
         Page,
-        verbose_name = _('filter by a related publication'),
+        verbose_name = _('filter by a related page'),
         blank = True, null = True,
+        on_delete=models.SET_NULL,
         help_text = _('if set, select children or siblings related to this page'),
     )
     siblings = models.BooleanField(
@@ -184,6 +186,9 @@ class ListBase(models.Model):
         help_text = _('if selected sort list in the ascending order by date')
     )
 
+    class Meta:
+        abstract = True
+
     panels = [
         MultiFieldPanel([
             FieldPanel('model'),
@@ -196,8 +201,6 @@ class ListBase(models.Model):
         ], heading=_('sorting'))
     ]
 
-    class Meta:
-        abstract = True
 
     def get_queryset(self):
         """
@@ -245,7 +248,7 @@ class ListBase(models.Model):
         to override values of self or add some to the parameters.
 
         If there is related field use it to get the page, otherwise use the
-        given list_page or the first ListPage it finds.
+        given list_page or the first GenericPage it finds.
         """
         import aircox.cms.models as models
 
@@ -259,7 +262,7 @@ class ListBase(models.Model):
         params.update(kwargs)
 
         page = params.get('related') or list_page or \
-                models.ListPage.objects.all().first()
+                models.GenericPage.objects.all().first()
 
         if params.get('related'):
             params['related'] = True
@@ -465,6 +468,12 @@ class Section(ClusterableModel):
                     'page or publication is of this type'),
         limit_choices_to = related_pages_filter,
     )
+    page = models.ForeignKey(
+        Page,
+        verbose_name = _('page'),
+        blank = True, null = True,
+        help_text=_('this section is displayed only on this page'),
+    )
 
     panels = [
         MultiFieldPanel([
@@ -494,9 +503,9 @@ class Section(ClusterableModel):
             )
         return qs
 
-    def render(self, request, page = None, *args, **kwargs):
+    def render(self, request, page = None, context = None, *args, **kwargs):
         return ''.join([
-            place.item.specific.render(request, page, *args, **kwargs)
+            place.item.specific.render(request, page, context, *args, **kwargs)
             for place in self.places.all()
         ])
 
@@ -596,6 +605,7 @@ class SectionItem(models.Model,metaclass=SectionItemMeta):
 
         Other context attributes usable in the default template:
         * content: **safe string** set as content of the section
+        * hide: DO NOT render the section, render only an empty string
         """
         return {
             'self': self,
@@ -603,7 +613,7 @@ class SectionItem(models.Model,metaclass=SectionItemMeta):
             'request': request,
         }
 
-    def render(self, request, page, *args, **kwargs):
+    def render(self, request, page, context, *args, **kwargs):
         """
         Render the section. Page is the current publication being rendered.
 
@@ -614,10 +624,13 @@ class SectionItem(models.Model,metaclass=SectionItemMeta):
         that can have a context attribute 'content' that is used to render
         content.
         """
-        return render_to_string(
-            self.template,
-            self.get_context(request, *args, page=page, **kwargs)
-        )
+        context_ = self.get_context(request, *args, page=page, **kwargs)
+        if context:
+            context_.update(context)
+
+        if context.get('hide'):
+            return ''
+        return render_to_string(self.template, context_)
 
     def __str__(self):
         return '{}: {}'.format(
@@ -824,6 +837,10 @@ class SectionList(ListBase, SectionRelativeItem):
                 qs = qs.exclude(pk = focus.pk)
         else:
             focus = None
+
+        if not qs.count():
+            return { 'hide': True }
+
         pages = qs[:self.count - (focus != None)]
 
         context['focus'] = focus
@@ -920,12 +937,6 @@ class SectionPublicationInfo(SectionItem):
 
 @register_snippet
 class SectionSearchField(SectionItem):
-    page = models.ForeignKey(
-        'cms.ListPage',
-        verbose_name = _('search page'),
-        blank = True, null = True,
-        help_text=_('page used to display the results'),
-    )
     default_text = models.CharField(
         _('default text'),
         max_length=32,
@@ -938,15 +949,12 @@ class SectionSearchField(SectionItem):
         verbose_name_plural = _('Sections: search field')
 
     panels = SectionItem.panels + [
-        PageChooserPanel('page'),
         FieldPanel('default_text'),
     ]
 
     def get_context(self, request, page):
-        from aircox.cms.models import ListPage
+        from aircox.cms.models import GenericPage
         context = super().get_context(request, page)
-        list_page = self.page or ListPage.objects.live().first()
-        context['list_page'] = list_page
         return context
 
 

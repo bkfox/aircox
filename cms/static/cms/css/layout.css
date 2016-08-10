@@ -336,4 +336,12 @@ main .body ~ section:not(.comments) {
     display: inline-block;
 }
 
+.meta > .share {
+    margin-top: 0.8em;
+}
+
+.meta .author .summary {
+    display: none;
+}
+
 

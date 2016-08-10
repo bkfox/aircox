@@ -44,7 +44,7 @@
                 {% render_sections position="page_left" %}
             </nav>
 
-            <main class="flex_item">
+            <main class="flex_item {% if not object_list %}detail{% endif %}">
             {% if messages %}
             <ul class="messages">
                 {% for message in messages %}
@@ -55,9 +55,12 @@
             </ul>
             {% endif %}
 
+            <header>
             {% block title %}
             <h1>{{ page.title }}</h1>
             {% endblock %}
+            </header>
+
             {% block content %}
             {% endblock %}
             </main>
@@ -70,7 +73,7 @@
         {% block footer %}
         <footer class="footer">
             {% render_sections position="footer" %}
-            <div class="small">Propulsed by
+            <div class="small float_right">Propulsed by
                 <a href="https://github.com/bkfox/aircox">Aircox</a>
             </div>
         </footer>

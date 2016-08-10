@@ -21,7 +21,9 @@ def render_sections(context, position = None):
     request = context.get('request')
     page = context.get('page')
     return mark_safe(''.join(
-        section.render(request, page=page)
+        section.render(request, page=page, context = {
+            'settings': context.get('settings')
+        })
         for section in Section.get_sections_at(position, page)
     ))
 

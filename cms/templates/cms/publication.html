@@ -8,9 +8,22 @@
 
 {% if not object_list %}
 {% block title %}
-<h1 class="detail_title">{{ page.title }}</h1>
+<h1 class="title">{{ page.title }}</h1>
+
+{% if page.cover %}
+{% image page.cover max-600x480 class="cover" height="" width="" %}
+{% endif %}
+
+<section class="summary">
+    {% if page.summary %}
+        {{ page.summary }}
+    {% else %}
+        {{ page.body|richtext|truncatewords:32 }}
+    {% endif %}
+</section>
 {% endblock %}
 {% endif %}
+
 
 {% block content %}
 {% if object_list %}
@@ -25,25 +38,21 @@
     {% endwith %}
 {% else %}
 {# detail view #}
-    {% if page.cover %}
-    {% image page.cover max-600x480 class="detail_cover cover" height="" width="" %}
-    {% endif %}
+<div class="content">
+    <section class="body">
+    {{ page.body|richtext}}
+    </section>
 
-    <div class="content">
-        <section class="body">
-        {{ page.body|richtext}}
-        </section>
+    {% block content_extras %}{% endblock %}
 
-        {% block content_extras %}{% endblock %}
-
-        <div class="post_content">
-        {% render_sections position="post_content" %}
-        </div>
-
-        <section class="comments">
-        {% include "cms/snippets/comments.html" %}
-        </section>
+    <div class="post_content">
+    {% render_sections position="post_content" %}
     </div>
+
+    <section class="comments">
+    {% include "cms/snippets/comments.html" %}
+    </section>
+</div>
 {% endif %}
 {% endblock %}
 
