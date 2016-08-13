@@ -9,6 +9,8 @@ Options:
 * item_big_cover: cover should is big instead of thumbnail (width: 600)
 {% endcomment %}
 
+{% load static %}
+
 {% load wagtailimages_tags %}
 
 <a {% if item.url %}href="{{ item.url }}" {% endif %}
@@ -27,11 +29,15 @@ Options:
         <span class="info">{{ item.info|safe }}</span>
         {% endif %}
 
-        {% if item.summary %}<div class="summary">{{ item.summary }}</div>{% endif %}
         {% if not item.show_in_menus and item.date and item_date_format != '' %}
         {% with date_format=item_date_format|default:'l d F, H:i' %}
         <time datetime="{{ item.date }}">
+            {% if item.diffusion %}
+            <img src="{% static "cms/images/clock.png" %}" class="small_icon">
+            {{ item.diffusion.start|date:date_format }}
+            {% else %}
             {{ item.date|date:date_format }}
+            {% endif %}
         </time>
         {% endwith %}
         {% endif %}

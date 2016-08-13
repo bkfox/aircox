@@ -117,18 +117,19 @@ main.detail {
     }
 
     main.detail > header img.cover {
-       width: 70%;
-       display: inline-block;
+        width: 70%;
+        vertical-align: middle;
+        display: inline-block;
     }
 
     main.detail header .summary {
-       display: inline-block;
-       padding: 1em;
-       width: calc(20% - 2em);
-       vertical-align: top;
-       font-size: 1.2em;
-       font-weight: bold;
-       background-color: white;
+        display: inline-block;
+        padding: 1em;
+        width: calc(20% - 2em);
+        vertical-align: middle;
+        font-size: 1.2em;
+        font-weight: bold;
+        background-color: white;
     }
 
 

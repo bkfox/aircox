@@ -407,6 +407,7 @@ class ProgramPage(Publication):
         diffs = programs.Diffusion.objects \
                     .filter(end__gte = now, program = self.program) \
                     .order_by('start').prefetch_related('page')
+        print(diffs)
         return self.diffs_to_page(diffs)
 
     @property
@@ -490,8 +491,10 @@ class DiffusionPage(Publication):
         """
         Return a DiffusionPage or ListItem from a Diffusion.
         """
-        if diff.page.all().count():
-            item = diff.page.all().first()
+        initial = diff.initial or diff
+
+        if initial.page.all().count():
+            item = initial.page.all().first()
         else:
             item = cl.from_diffusion(diff, ListItem)
             item.live = True
@@ -713,8 +716,5 @@ class TimetablePage(DatedListPage):
             items = [ DiffusionPage.as_item(item) for item in items ]
             diffs.append((date, items))
         return diffs
-
-
-
 
 

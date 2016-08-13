@@ -1,6 +1,10 @@
 {% load static %}
 {% load i18n %}
 
+{% if item.embed %}
+
+
+{% else %}
 {# TODO: complete archive podcast -> info #}
 <script>
 function add_sound_{{ item.id }}(event) {
@@ -34,4 +38,5 @@ function add_sound_{{ item.id }}(event) {
     <img src="{% static "cms/images/add.png" %}" class="icon"
          data-action='add' alt="{% trans "add this sound to the playlist" %}"/>
 </a>
+{% endif %}
 

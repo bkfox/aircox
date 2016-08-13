@@ -499,7 +499,8 @@ class Section(ClusterableModel):
                 models.Q(model__isnull = True) |
                 models.Q(
                     model = ContentType.objects.get_for_model(page).pk
-                )
+                ) |
+                models.Q(page = page)
             )
         return qs
 

@@ -18,7 +18,7 @@
     {% if page.summary %}
         {{ page.summary }}
     {% else %}
-        {{ page.body|richtext|truncatewords:32 }}
+        {{ page.body|richtext|truncatewords:24 }}
     {% endif %}
 </section>
 {% endblock %}

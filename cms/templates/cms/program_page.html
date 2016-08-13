@@ -7,7 +7,7 @@
 {# TODO message if program is no more active #}
 
 {% block content_extras %}
-<div class="schedule">
+<section class="schedule">
 {% if page.program.active %}
     <h2>{% trans "Schedule" %}</h2>
     <ul>
@@ -29,32 +29,6 @@
 {% else %}
     <div class="warning">{% trans "This program is no longer active" %}</div>
 {% endif %}
-</div>
+</section>
 {% endblock %}
-
-{% block page_nav_extras %}
-{% if page.program.active %}
-{% with object_list=page.next %}
-{% if object_list %}
-<div>
-    <h2>{% trans "Next Diffusions" %}</h2>
-    {% include "cms/snippets/list.html" %}
-</div>
-{% endif %}
-{% endwith %}
-{% endif %}{# program.active #}
-
-{% with object_list=page.prev %}
-{% if object_list %}
-<div>
-    <h2>{% trans "Previous Diffusions" %}</h2>
-    {% include "cms/snippets/list.html" %}
-</div>
-{% endif %}
-{% endwith %}
-
-
-
-{% endblock %}
-
 

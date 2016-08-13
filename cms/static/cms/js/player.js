@@ -66,6 +66,20 @@ Sound.prototype = {
             'click', function(event) { playlist.remove(self); }, false
         );
 
+        item.querySelector('.action.add').addEventListener(
+            'click', function(event) {
+                player.playlist.add(new Sound(
+                    title = self.title,
+                    detail = self.detail,
+                    duration = self.duration,
+                    streams = self.streams,
+                    cover = self.cover,
+                    on_air = self.on_air
+                ));
+            }, false
+        );
+
+
         item.addEventListener('click', function(event) {
             if(event.target.className.indexOf('action') != -1)
                 return;
@@ -315,7 +329,7 @@ Player.prototype = {
         var self = this;
         window.setTimeout(function() {
             self.update_on_air();
-        }, 60*1000);
+        }, 60*2000);
 
         if(!this.playlist.on_air)
             return;

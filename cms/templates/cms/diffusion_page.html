@@ -40,16 +40,25 @@
         <script>
         var podcasts = new Player('player_diff_{{ page.id }}', undefined, true)
         {% for item in podcasts %}
-        podcasts.playlist.add(new Sound(
-            title='{{ item.name|escape }}',
-            detail='{{ item.detail_url }}',
-            duration={{ item.duration|date:"H*3600+i*60+s" }},
-            streams='{{ item.url }}',
-            {% if page and page.cover %}cover='{{ page.icon }}',{% endif %}
-            undefined
-        ));
+        {% if not item.embed %}
+            podcasts.playlist.add(new Sound(
+                title='{{ item.name|escape }}',
+                detail='{{ item.detail_url }}',
+                duration={{ item.duration|date:"H*3600+i*60+s" }},
+                streams='{{ item.url }}',
+                {% if page and page.cover %}cover='{{ page.icon }}',{% endif %}
+                undefined
+            ));
+        {% endif %}
         {% endfor %}
         </script>
+        <p>
+        {% for item in podcasts %}
+        {% if item.embed %}
+        {{ item.embed|safe }}
+        {% endif %}
+        {% endfor %}
+        </p>
     </div>
 </section>
 {% endif %}

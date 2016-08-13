@@ -1,0 +1,821 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2016-08-11 17:07+0200\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: cms/forms.py:17
+msgid "your name"
+msgstr ""
+
+#: cms/forms.py:20
+msgid "your email (optional)"
+msgstr ""
+
+#: cms/forms.py:23
+msgid "your website (optional)"
+msgstr ""
+
+#: cms/forms.py:26
+msgid "your comment"
+msgstr ""
+
+#: cms/forms.py:39
+msgid "You are a bot, that is not cool"
+msgstr ""
+
+#: cms/forms.py:42
+msgid "No publication found for this comment"
+msgstr ""
+
+#: cms/models.py:45
+msgid "favicon"
+msgstr ""
+
+#: cms/models.py:47
+msgid "small logo for the website displayed in the browser"
+msgstr ""
+
+#: cms/models.py:50 cms/models.py:250
+msgid "tags"
+msgstr ""
+
+#: cms/models.py:53
+msgid "tags describing the website; used for referencing"
+msgstr ""
+
+#: cms/models.py:56
+msgid "public description"
+msgstr ""
+
+#: cms/models.py:59
+msgid "public description of the website; used for referencing"
+msgstr ""
+
+#: cms/models.py:63
+msgid "page for lists"
+msgstr ""
+
+#: cms/models.py:64
+msgid "page used to display the results of a search and other lists"
+msgstr ""
+
+#: cms/models.py:71 cms/models.py:75
+msgid "publish comments automatically without verifying"
+msgstr ""
+
+#: cms/models.py:78
+msgid "success message"
+msgstr ""
+
+#: cms/models.py:79
+msgid "Your comment has been successfully posted!"
+msgstr ""
+
+#: cms/models.py:80
+msgid "message to display when a post has been posted"
+msgstr ""
+
+#: cms/models.py:83
+msgid "waiting message"
+msgstr ""
+
+#: cms/models.py:84
+msgid "Your comment is awaiting for approval."
+msgstr ""
+
+#: cms/models.py:85
+msgid "message to display when a post waits to be reviewed"
+msgstr ""
+
+#: cms/models.py:88
+msgid "error message"
+msgstr ""
+
+#: cms/models.py:89
+msgid "We could not save your message. Please correct the error(s) below."
+msgstr ""
+
+#: cms/models.py:90
+msgid "message to display there is an error an incomplete form."
+msgstr ""
+
+#: cms/models.py:94
+msgid "automatic publications"
+msgstr ""
+
+#: cms/models.py:97
+msgid ""
+"Create automatically new publications for new programs and diffusions in the "
+"timetable. If set, please complete other options of this panel"
+msgstr ""
+
+#: cms/models.py:104
+msgid "default program parent page"
+msgstr ""
+
+#: cms/models.py:107
+msgid ""
+"Default parent page for program's pages. It is used to assign a page to the "
+"publication of a newly created program and can be changed later"
+msgstr ""
+
+#: cms/models.py:123
+msgid "promotion"
+msgstr ""
+
+#: cms/models.py:130 cms/templates/cms/snippets/comments.html:6
+msgid "Comments"
+msgstr ""
+
+#: cms/models.py:134
+msgid "Programs and controls"
+msgstr ""
+
+#: cms/models.py:138
+msgid "website settings"
+msgstr ""
+
+#: cms/models.py:150
+msgid "public"
+msgstr ""
+
+#: cms/models.py:154
+msgid "author"
+msgstr ""
+
+#: cms/models.py:158 cms/models.py:366
+msgid "email"
+msgstr ""
+
+#: cms/models.py:162
+msgid "website"
+msgstr ""
+
+#: cms/models.py:166 cms/models.py:213
+msgid "date"
+msgstr ""
+
+#: cms/models.py:170
+msgid "comment"
+msgstr ""
+
+#. Translators: text shown in the comments list (in admin)
+#: cms/models.py:176
+#, python-brace-format
+msgid "{date}, {author}: {content}..."
+msgstr ""
+
+#: cms/models.py:219
+msgid "publish as program"
+msgstr ""
+
+#: cms/models.py:222
+msgid "use this program as the author of the publication"
+msgstr ""
+
+#: cms/models.py:225
+msgid "focus"
+msgstr ""
+
+#: cms/models.py:227
+msgid "the publication is highlighted;"
+msgstr ""
+
+#: cms/models.py:230 cms/models.py:232
+msgid "allow comments"
+msgstr ""
+
+#: cms/models.py:238
+msgid "cover"
+msgstr ""
+
+#: cms/models.py:242
+msgid "image to use as cover of the publication"
+msgstr ""
+
+#: cms/models.py:245
+msgid "summary"
+msgstr ""
+
+#: cms/models.py:247
+msgid "summary of the publication"
+msgstr ""
+
+#: cms/models.py:256 cms/models.py:257
+msgid "Publication"
+msgstr ""
+
+#: cms/models.py:264 cms/models.py:271 cms/models.py:592 cms/models.py:621
+msgid "Content"
+msgstr ""
+
+#: cms/models.py:272
+msgid "Links"
+msgstr ""
+
+#: cms/models.py:359
+msgid "program"
+msgstr ""
+
+#: cms/models.py:369
+msgid "email is public"
+msgstr ""
+
+#: cms/models.py:371
+msgid "the email addess is accessible to the public"
+msgstr ""
+
+#: cms/models.py:375
+msgid "Program"
+msgstr ""
+
+#: cms/models.py:376 cms/wagtail_hooks.py:20 cms/wagtail_hooks.py:177
+msgid "Programs"
+msgstr ""
+
+#: cms/models.py:446
+msgid "diffusion"
+msgstr ""
+
+#: cms/models.py:455
+msgid "publish archive"
+msgstr ""
+
+#: cms/models.py:457
+msgid "publish the podcast of the complete diffusion"
+msgstr ""
+
+#: cms/models.py:461
+msgid "Diffusion"
+msgstr ""
+
+#: cms/models.py:462 cms/wagtail_hooks.py:28
+msgid "Diffusions"
+msgstr ""
+
+#: cms/models.py:465
+msgid "Tracks"
+msgstr ""
+
+#: cms/models.py:505
+#, python-format
+msgid "Rerun of %(date)s"
+msgstr ""
+
+#: cms/models.py:509
+msgid "Cancelled"
+msgstr ""
+
+#: cms/models.py:572 cms/models.py:609
+msgid "body"
+msgstr ""
+
+#: cms/models.py:574 cms/models.py:611
+msgid "add an extra description for this list"
+msgstr ""
+
+#: cms/models.py:577
+msgid "list from the request"
+msgstr ""
+
+#: cms/models.py:580
+msgid ""
+"if set, the page print a list based on the request made by the website "
+"visitor, and its title will be adapted to this request. Can be usefull for "
+"search pages, etc. and should only be set on one page."
+msgstr ""
+
+#: cms/models.py:596 cms/models.py:597
+msgid "Generic Page"
+msgstr ""
+
+#: cms/models.py:654 cms/sections.py:860
+msgid "station"
+msgstr ""
+
+#: cms/models.py:657 cms/sections.py:863
+msgid "(required) the station on which the logs happened"
+msgstr ""
+
+#: cms/models.py:660
+msgid "maximum age"
+msgstr ""
+
+#: cms/models.py:662
+msgid "maximum days in the past allowed to be shown. 0 means no limit"
+msgstr ""
+
+#: cms/models.py:667 cms/models.py:668
+msgid "Logs"
+msgstr ""
+
+#: cms/models.py:674
+msgid "Configuration"
+msgstr ""
+
+#: cms/models.py:709 cms/models.py:710
+msgid "Timetable"
+msgstr ""
+
+#: cms/sections.py:85
+msgid "url"
+msgstr ""
+
+#: cms/sections.py:87
+msgid "URL of the link"
+msgstr ""
+
+#: cms/sections.py:95
+msgid "Use a page instead of a URL"
+msgstr ""
+
+#: cms/sections.py:99
+msgid "icon"
+msgstr ""
+
+#: cms/sections.py:103
+msgid "icon to display before the url"
+msgstr ""
+
+#: cms/sections.py:111
+msgid "text"
+msgstr ""
+
+#: cms/sections.py:114
+msgid "text to display of the link"
+msgstr ""
+
+#: cms/sections.py:126
+msgid "link"
+msgstr ""
+
+#: cms/sections.py:157
+msgid "filter by date"
+msgstr ""
+
+#: cms/sections.py:164
+msgid "filter by type"
+msgstr ""
+
+#: cms/sections.py:167
+msgid "if set, select only elements that are of this type"
+msgstr ""
+
+#: cms/sections.py:172
+msgid "filter by a related page"
+msgstr ""
+
+#: cms/sections.py:175
+msgid "if set, select children or siblings related to this page"
+msgstr ""
+
+#: cms/sections.py:178
+msgid "select siblings of related"
+msgstr ""
+
+#: cms/sections.py:180
+msgid "if selected select related publications that are siblings of this one"
+msgstr ""
+
+#: cms/sections.py:184
+msgid "ascending order"
+msgstr ""
+
+#: cms/sections.py:186
+msgid "if selected sort list in the ascending order by date"
+msgstr ""
+
+#: cms/sections.py:197
+msgid "filters"
+msgstr ""
+
+#: cms/sections.py:201
+msgid "sorting"
+msgstr ""
+
+#: cms/sections.py:361
+msgid "navigation days count"
+msgstr ""
+
+#: cms/sections.py:363
+msgid "number of days to display in the navigation header when we use dates"
+msgstr ""
+
+#: cms/sections.py:367
+msgid "navigation per week"
+msgstr ""
+
+#: cms/sections.py:369
+msgid ""
+"if selected, show dates navigation per weeks instead of show days equally "
+"around the current date"
+msgstr ""
+
+#: cms/sections.py:380
+msgid "Navigation"
+msgstr ""
+
+#: cms/sections.py:451
+msgid "name"
+msgstr ""
+
+#: cms/sections.py:454
+msgid "name of this section (not displayed)"
+msgstr ""
+
+#: cms/sections.py:457
+msgid "position"
+msgstr ""
+
+#: cms/sections.py:460
+msgid "name of the template block in which the section must be set"
+msgstr ""
+
+#: cms/sections.py:465
+msgid "model"
+msgstr ""
+
+#: cms/sections.py:467
+msgid ""
+"this section is displayed only when the current page or publication is of "
+"this type"
+msgstr ""
+
+#: cms/sections.py:473
+msgid "page"
+msgstr ""
+
+#: cms/sections.py:475
+msgid "this section is displayed only on this page"
+msgstr ""
+
+#: cms/sections.py:483 cms/sections.py:582
+msgid "General"
+msgstr ""
+
+#: cms/sections.py:484
+msgid "Section Items"
+msgstr ""
+
+#: cms/sections.py:518
+msgid "item"
+msgstr ""
+
+#: cms/sections.py:562
+msgid "title"
+msgstr ""
+
+#: cms/sections.py:567
+msgid "show title"
+msgstr ""
+
+#: cms/sections.py:569
+msgid "if set show a title at the head of the section"
+msgstr ""
+
+#: cms/sections.py:572
+msgid "CSS class"
+msgstr ""
+
+#: cms/sections.py:575
+msgid "section container's \"class\" attribute"
+msgstr ""
+
+#: cms/sections.py:644
+msgid "is related"
+msgstr ""
+
+#: cms/sections.py:647
+msgid ""
+"if set, section is related to the page being processed e.g rendering a list "
+"of links will use thoses of the publication instead of an assigned one."
+msgstr ""
+
+#: cms/sections.py:692
+msgid "image"
+msgstr ""
+
+#: cms/sections.py:696
+msgid ""
+"If this item is related to the current page, this image will be used only "
+"when the page has not a cover"
+msgstr ""
+
+#: cms/sections.py:701
+msgid "width"
+msgstr ""
+
+#: cms/sections.py:703
+msgid "if set and > 0, set a maximum width for the image"
+msgstr ""
+
+#: cms/sections.py:706
+msgid "height"
+msgstr ""
+
+#: cms/sections.py:708
+msgid "if set 0 and > 0, set a maximum height for the image"
+msgstr ""
+
+#: cms/sections.py:711
+msgid "resize mode"
+msgstr ""
+
+#: cms/sections.py:714
+msgid "if the image is resized, set the resizing mode"
+msgstr ""
+
+#: cms/sections.py:723
+msgid "Resizing"
+msgstr ""
+
+#: cms/sections.py:777
+msgid "links"
+msgstr ""
+
+#: cms/sections.py:778
+msgid ""
+"If the list is related to the current page, theses links will be used when "
+"there is no links found for this publication"
+msgstr ""
+
+#: cms/sections.py:800
+msgid "focus available"
+msgstr ""
+
+#: cms/sections.py:802
+msgid "if true, highlight the first focused article found"
+msgstr ""
+
+#: cms/sections.py:805 cms/sections.py:866
+msgid "count"
+msgstr ""
+
+#: cms/sections.py:807
+msgid "number of items to display in the list"
+msgstr ""
+
+#: cms/sections.py:810
+msgid "text of the url"
+msgstr ""
+
+#: cms/sections.py:813
+msgid ""
+"use this text to display an URL to the complete list. If empty, does not "
+"print an address"
+msgstr ""
+
+#: cms/sections.py:822
+msgid "Rendering"
+msgstr ""
+
+#: cms/sections.py:868
+msgid "number of items to display in the list (max 100)"
+msgstr ""
+
+#: cms/sections.py:872
+msgid "list of logs"
+msgstr ""
+
+#: cms/sections.py:873
+msgid "lists of logs"
+msgstr ""
+
+#: cms/sections.py:912
+msgid "Section: Timetable"
+msgstr ""
+
+#: cms/sections.py:913
+msgid "Sections: Timetable"
+msgstr ""
+
+#: cms/sections.py:936
+msgid "Section: publication's info"
+msgstr ""
+
+#: cms/sections.py:937
+msgid "Sections: publication's info"
+msgstr ""
+
+#: cms/sections.py:942
+msgid "default text"
+msgstr ""
+
+#: cms/sections.py:944
+msgid "search"
+msgstr ""
+
+#: cms/sections.py:945
+msgid "text to display when the search field is empty"
+msgstr ""
+
+#: cms/sections.py:949
+msgid "Section: search field"
+msgstr ""
+
+#: cms/sections.py:950
+msgid "Sections: search field"
+msgstr ""
+
+#: cms/sections.py:965
+msgid "live title"
+msgstr ""
+
+#: cms/sections.py:967
+msgid "text to display when it plays live"
+msgstr ""
+
+#: cms/sections.py:970
+msgid "audio streams"
+msgstr ""
+
+#: cms/sections.py:971
+msgid "one audio stream per line"
+msgstr ""
+
+#: cms/sections.py:975
+msgid "Section: Player"
+msgstr ""
+
+#: cms/templates/cms/diffusion_page.html:8
+msgid "Playlist"
+msgstr ""
+
+#: cms/templates/cms/diffusion_page.html:22
+msgid "Dates of diffusion"
+msgstr ""
+
+#: cms/templates/cms/diffusion_page.html:36
+msgid "Podcasts"
+msgstr ""
+
+#: cms/templates/cms/event_page.html:6
+msgid "Practical information"
+msgstr ""
+
+#: cms/templates/cms/event_page.html:10
+msgid "Date"
+msgstr ""
+
+#: cms/templates/cms/event_page.html:13
+msgid "Place"
+msgstr ""
+
+#: cms/templates/cms/event_page.html:15
+msgid "Price"
+msgstr ""
+
+#: cms/templates/cms/generic_page.html:16
+#, python-format
+msgid "Search in publications for <i>%(terms)s</i>"
+msgstr ""
+
+#: cms/templates/cms/generic_page.html:20
+#, python-format
+msgid ""
+"\n"
+"        Related to <a href=\"%(url)s\">%(title)s</a>"
+msgstr ""
+
+#: cms/templates/cms/generic_page.html:24
+msgid "All the publications"
+msgstr ""
+
+#: cms/templates/cms/generic_page.html:41
+msgid "More about it"
+msgstr ""
+
+#: cms/templates/cms/program_page.html:12
+msgid "Schedule"
+msgstr ""
+
+#: cms/templates/cms/program_page.html:18
+#, python-format
+msgid ""
+"\n"
+"                %(day)s %(start)s until %(end)s, %(frequency)s\n"
+"            "
+msgstr ""
+
+#: cms/templates/cms/program_page.html:24
+msgid "Rerun"
+msgstr ""
+
+#: cms/templates/cms/program_page.html:30
+msgid "This program is no longer active"
+msgstr ""
+
+#: cms/templates/cms/publication.html:33
+msgid "Go back to the publication"
+msgstr ""
+
+#: cms/templates/cms/sections/section_publication_info.html:15
+msgid "Published by"
+msgstr ""
+
+#: cms/templates/cms/sections/section_publication_info.html:22
+msgid "Published on "
+msgstr ""
+
+#: cms/templates/cms/sections/section_publication_info.html:30
+msgid "Tags"
+msgstr ""
+
+#: cms/templates/cms/sections/section_publication_info.html:39
+msgid "Share"
+msgstr ""
+
+#: cms/templates/cms/snippets/comments.html:21
+msgid "show more options"
+msgstr ""
+
+#: cms/templates/cms/snippets/comments.html:34
+msgid "Post!"
+msgstr ""
+
+#: cms/templates/cms/snippets/date_list.html:8
+msgid "previous days"
+msgstr ""
+
+#: cms/templates/cms/snippets/date_list.html:20
+msgid "next days"
+msgstr ""
+
+#: cms/templates/cms/snippets/list.html:24
+msgid "previous page"
+msgstr ""
+
+#: cms/templates/cms/snippets/list.html:54
+msgid "next page"
+msgstr ""
+
+#: cms/templates/cms/snippets/player.html:5
+msgid "Your browser does not support the <code>audio</code> element."
+msgstr ""
+
+#: cms/templates/cms/snippets/player.html:15
+msgid "play"
+msgstr ""
+
+#: cms/templates/cms/snippets/player.html:17
+msgid "pause"
+msgstr ""
+
+#: cms/templates/cms/snippets/player.html:19
+msgid "loading..."
+msgstr ""
+
+#: cms/templates/cms/snippets/player.html:27
+msgid "add to the player"
+msgstr ""
+
+#: cms/templates/cms/snippets/player.html:28
+msgid "more informations"
+msgstr ""
+
+#: cms/templates/cms/snippets/player.html:29
+msgid "remove this sound"
+msgstr ""
+
+#: cms/templates/cms/snippets/player.html:44
+msgid "enable and disable single mode"
+msgstr ""
+
+#: cms/templates/cms/snippets/sound_list_item.html:39
+msgid "add this sound to the playlist"
+msgstr ""
+
+#: cms/wagtail_hooks.py:36
+msgid "Schedules"
+msgstr ""
+
+#: cms/wagtail_hooks.py:44
+msgid "Streams"
+msgstr ""
+
+#: cms/wagtail_hooks.py:51
+msgid "Advanced"
+msgstr ""
+
+#: cms/wagtail_hooks.py:60
+msgid "Sounds"
+msgstr ""
+
+#: cms/wagtail_hooks.py:145
+msgid "Today's Diffusions"
+msgstr ""

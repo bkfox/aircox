@@ -26,7 +26,7 @@
     {% endwith %}
 
     {% with list_page=settings.cms.WebsiteSettings.list_page %}
-    {% if list_page %}
+    {% if list_page and page.tags.count %}
     <div class="tags"><b>{% trans "Tags" %}</b>
         {% for tag in page.tags.all %}
         <a href="{{ list_page }}?tag={{ tag }}">{{ tag }}</a>
