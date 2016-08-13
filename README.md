@@ -21,8 +21,11 @@ Python modules:
 * `django-taggits`: `aircox.programs`, `aircox.cms`
 * `watchdog`: `aircox.programs` (used for files monitoring)
 * `wagtail`: `aircox.cms`
+* `django-extends`: `aircox.cms`
 * `django-honeypot`: `aircox.cms`
+* `bleach`: 'aircox.cms` (comments sanitization)
 * `dateutils`: `aircox.programs` (used for tests)
+* `Pillow`: `aircox.cms`
 
 Applications:
 * `liquidsoap`: `aircox.controllers` (generation of the audio streams)
