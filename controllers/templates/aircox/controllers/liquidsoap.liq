@@ -43,7 +43,8 @@ A stream is a source that:
 - is interactive
 {% endcomment %}
 def stream (id, file) =
-    s = playlist(id = '#{id}_playlist', mode = "random", file)
+    s = playlist(id = '#{id}_playlist', mode = "random", reload_mode='watch',
+                 file)
     interactive_source(id, s)
 end
 {% endblock %}

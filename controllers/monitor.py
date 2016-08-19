@@ -25,6 +25,14 @@ class Monitor:
     Time in seconds before a diffusion that have archives is cancelled
     because it has not been played.
     """
+    sync_timeout = 60*10
+    """
+    Time in minuts before all stream playlists are checked and updated
+    """
+    sync_next = None
+    """
+    Datetime of the next sync
+    """
 
     def __init__(self, station, **kwargs):
         self.station = station
@@ -44,6 +52,7 @@ class Monitor:
             return
 
         self.trace()
+        self.sync_playlists()
         self.handle()
 
     def log(self, **kwargs):
@@ -111,6 +120,22 @@ class Monitor:
                     date = pos,
                     related = track
                 )
+
+    def sync_playlists(self):
+        """
+        Synchronize updated playlists
+        """
+        now = tz.now()
+        if self.sync_next and self.sync_next < now:
+            return
+
+        self.sync_next = now + tz.timedelta(seconds = self.sync_timeout)
+
+        for source in self.station.stream_sources:
+            playlist = [ sound.path for sound in
+                            source.program.sound_set.all().order_by('path') ]
+            if playlist != source.controller.playlist:
+                source.controller.playlist = playlist
 
     def trace_canceled(self):
         """

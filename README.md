@@ -25,7 +25,7 @@ Python modules:
 * `django-honeypot`: `aircox.cms`
 * `bleach`: 'aircox.cms` (comments sanitization)
 * `dateutils`: `aircox.programs` (used for tests)
-* `Pillow`: `aircox.cms`
+* `Pillow`: `aircox.cms` (needed by `wagtail`)
 
 Applications:
 * `liquidsoap`: `aircox.controllers` (generation of the audio streams)

@@ -291,6 +291,8 @@ class Command(BaseCommand):
         if not program.ensure_dir(subdir):
             return
 
+        sound_kwargs['program'] = program
+
         subdir = os.path.join(program.path, subdir)
         sounds = []
 

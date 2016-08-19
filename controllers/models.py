@@ -170,7 +170,9 @@ class Station(programs.Nameable):
     @staticmethod
     def __mix_logs_and_diff(diffs, logs, count = 0):
         """
-        Mix together logs and diffusion items ordering by their date.
+        Mix together logs and diffusion items of the same day,
+        ordered by their date.
+
         Diffs and Logs are assumed to be ordered by -date, and so is
         the resulting list
         """
@@ -189,10 +191,15 @@ class Station(programs.Nameable):
             if count and len(items) >= count:
                 break
 
-        if diff_ and (not count or len(items) <= count):
-            logs_ = logs.filter(date__lt = diff_.end)
-            items.extend(logs_)
+        if diff_:
+            if count and len(items) >= count:
+                return items[:count]
 
+            logs_ = logs.filter(date__lt = diff_.end)
+        else:
+            logs_ = logs.all()
+
+        items.extend(logs_)
         return items[:count] if count else items
 
 
@@ -305,7 +312,8 @@ class Source(programs.Nameable):
     program = models.ForeignKey(
         programs.Program,
         verbose_name = _('related program'),
-        blank = True, null = True
+        blank = True, null = True,
+        limit_choices_to = { 'stream__isnull': False },
     )
     url = models.TextField(
         _('url'),
@@ -355,7 +363,7 @@ class Source(programs.Nameable):
             self.controller.playlist = [ sound.path for sound in
                 programs.Sound.objects.filter(
                     type = programs.Sound.Type.archive,
-                    path__startswith = program.path
+                    program = program,
                 )
             ]
             return

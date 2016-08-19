@@ -123,11 +123,17 @@ class Sound(Nameable):
         excerpt = 0x02,
         removed = 0x03,
 
+    program = models.ForeignKey(
+        'Program',
+        verbose_name = _('program'),
+        blank = True, null = True,
+        help_text = _('program related to it'),
+    )
     diffusion = models.ForeignKey(
         'Diffusion',
         verbose_name = _('diffusion'),
         blank = True, null = True,
-        help_text = _('this is set for scheduled programs')
+        help_text = _('initial diffusion related it')
     )
     type = models.SmallIntegerField(
         verbose_name = _('type'),

@@ -37,14 +37,6 @@ class DiffusionInline(admin.StackedInline):
     extra = 0
     fields = ['type', 'start', 'end']
 
-# from suit.admin import SortableTabularInline, SortableModelAdmin
-#class TrackInline(SortableTabularInline):
-#    fields = ['artist', 'name', 'tags', 'position']
-#    form = TrackForm
-#    model = Track
-#    sortable = 'position'
-#    extra = 10
-
 class NameableAdmin(admin.ModelAdmin):
     fields = [ 'name' ]
 
@@ -58,7 +50,7 @@ class TrackInline(GenericTabularInline):
     ct_fk_field = 'related_id'
     model = Track
     extra = 0
-    fields = ('artist', 'title', 'tags', 'info', 'position')
+    fields = ('artist', 'title', 'info', 'position')
     readonly_fields = ('position',)
 
 
@@ -68,7 +60,8 @@ class SoundAdmin(NameableAdmin):
     list_display = ['id', 'name', 'duration', 'type', 'mtime',
                     'public', 'good_quality']
     fieldsets = [
-        (None, { 'fields': NameableAdmin.fields + ['path', 'type', 'diffusion'] } ),
+        (None, { 'fields': NameableAdmin.fields +
+                           ['path', 'type', 'program', 'diffusion'] } ),
         (None, { 'fields': ['embed', 'duration', 'public', 'mtime'] }),
         (None, { 'fields': ['good_quality' ] } )
     ]
