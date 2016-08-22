@@ -5,6 +5,8 @@ import atexit
 
 from django.template.loader import render_to_string
 
+import aircox.programs.models as programs
+
 class Plugins(type):
     registry = {}
 
@@ -192,12 +194,15 @@ class SourceController:
         """
         Current playlist on the Source, list of paths to play
         """
+        self.fetch()
         return self.__playlist
 
     @playlist.setter
     def playlist(self, value):
-        self.__playlist = value
-        self.push()
+        value = sorted(value)
+        if value != self.__playlist:
+            self.__playlist = value
+            self.push()
 
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
@@ -205,6 +210,10 @@ class SourceController:
         if not self.path:
             self.path = os.path.join(self.source.station.path,
                                      self.source.slug + '.m3u')
+            self.from_file()
+
+        if not self.__playlist:
+            self.from_db()
 
     def skip(self):
         """
@@ -225,7 +234,7 @@ class SourceController:
         """
         os.makedirs(os.path.dirname(self.path), exist_ok = True)
         with open(self.path, 'w') as file:
-            file.write('\n'.join(self.playlist or []))
+            file.write('\n'.join(self.__playlist or []))
 
     def activate(self, value = True):
         """
@@ -234,6 +243,46 @@ class SourceController:
         """
         pass
 
+    def from_db(self, diffusion = None, program = None):
+        """
+        Load a playlist to the controller from the database. If diffusion or
+        program is given use it, otherwise, try with self.program if exists, or
+        (if URI, self.url).
+
+        A playlist from a program uses all its available archives.
+        """
+        if diffusion:
+            self.playlist = diffusion.playlist
+            return
+
+        source = self.source
+        program = program or source.program
+        if program:
+            self.playlist = [ sound.path for sound in
+                programs.Sound.objects.filter(
+                    type = programs.Sound.Type.archive,
+                    program = program,
+                )
+            ]
+            return
+
+        if source.type == source.Type.file and source.url:
+            self.playlist = [ self.url ]
+            return
+
+    def from_file(self, path = None):
+        """
+        Load a playlist from the given file (if not, use the
+        controller's one
+        """
+        path = path or self.path
+        if not os.path.exists(path):
+            return
+
+        with open(path, 'r') as file:
+            self.__playlist = file.read()
+            self.__playlist = self.__playlist.split('\n') \
+                                if self.__playlist else []
 
 class Monitor:
     station = None

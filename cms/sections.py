@@ -884,6 +884,7 @@ class SectionLogsList(SectionItem):
         Supports: Log/Track, Diffusion
         """
         from aircox.cms.models import DiffusionPage
+        print(log, type(log))
         if type(log) == programs.Diffusion:
             return DiffusionPage.as_item(log)
         return ListItem(

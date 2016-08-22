@@ -344,7 +344,7 @@ Player.prototype = {
             var data = JSON.parse(req.responseText)
             if(data.type == 'track')
                 data = {
-                    title: '♫' + (data.artist ? data.artist + ' — ' : '') +
+                    title: '♫ ' + (data.artist ? data.artist + ' — ' : '') +
                            data.title,
                     url: ''
                 }

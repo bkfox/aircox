@@ -22,7 +22,6 @@ controllers:
     - logs: archive functionnality
     - tools:
         - track stats for diffusions
-    - rename controllers.Station into controllers.Streamer -> keep Station for sth else
 
 cms:
     - player support diffusions with multiple archive files

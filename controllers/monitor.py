@@ -44,8 +44,6 @@ class Monitor:
         """
         if not self.controller:
             self.station.prepare()
-            for stream in self.station.stream_sources:
-                stream.load_playlist()
         self.controller = self.station.controller
 
         if not self.controller.ready():
@@ -78,12 +76,13 @@ class Monitor:
                     .filter(station = self.station).order_by('date').last()
 
         # only streamed
-        if log and not log.related.diffusion:
+        if log and (log.related and not log.related.diffusion):
             self.trace_sound_tracks(log)
 
         # TODO: expiration
         if log and (log.source == current_source.id_ and \
-                    log.related.path == current_sound):
+                log.related and
+                log.related.path == current_sound):
             return
 
         sound = programs.Sound.objects.filter(path = current_sound)
@@ -133,9 +132,8 @@ class Monitor:
 
         for source in self.station.stream_sources:
             playlist = [ sound.path for sound in
-                            source.program.sound_set.all().order_by('path') ]
-            if playlist != source.controller.playlist:
-                source.controller.playlist = playlist
+                            source.program.sound_set.all() ]
+            source.controller.playlist = playlist
 
     def trace_canceled(self):
         """

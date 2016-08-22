@@ -407,7 +407,6 @@ class ProgramPage(Publication):
         diffs = programs.Diffusion.objects \
                     .filter(end__gte = now, program = self.program) \
                     .order_by('start').prefetch_related('page')
-        print(diffs)
         return self.diffs_to_page(diffs)
 
     @property

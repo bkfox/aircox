@@ -180,7 +180,7 @@ class Station(programs.Nameable):
         # each to put them too there
         items = []
         diff_ = None
-        for diff in diffs:
+        for diff in diffs.order_by('-start'):
             logs_ = \
                 logs.filter(date__gt = diff.end, date__lt = diff_.start) \
                     if diff_ else \
@@ -194,7 +194,6 @@ class Station(programs.Nameable):
         if diff_:
             if count and len(items) >= count:
                 return items[:count]
-
             logs_ = logs.filter(date__lt = diff_.end)
         else:
             logs_ = logs.all()
@@ -211,6 +210,7 @@ class Station(programs.Nameable):
         * date: only for what happened on this date;
         * count: number of items to retrieve if not zero;
 
+        If date is not specified, count MUST be set to a non-zero value.
         Be careful with what you which for: the result is a plain list.
 
         The list contains:
@@ -220,6 +220,9 @@ class Station(programs.Nameable):
         # FIXME: as an iterator?
         # TODO argument to get sound instead of tracks
         # TODO #Station
+        if not date and not count:
+            raise ValueError('at least one argument must be set')
+
         if date and date > datetime.date.today():
             return []
 
@@ -234,8 +237,7 @@ class Station(programs.Nameable):
             diffs = programs.Diffusion.objects
 
         diffs = diffs.filter(type = programs.Diffusion.Type.normal) \
-                     .filter(start__lte = tz.now()) \
-                     .order_by('-start')
+                     .filter(start__lte = tz.now())
         return self.__mix_logs_and_diff(diffs, logs, count)
 
 
@@ -345,33 +347,6 @@ class Source(programs.Nameable):
         if fetch:
             self.controller.fetch()
 
-    def load_playlist(self, diffusion = None, program = None):
-        """
-        Load a playlist to the controller. If diffusion or program is
-        given use it, otherwise, try with self.program if exists, or
-        (if URI, self.value).
-
-        A playlist from a program uses all archives available for the
-        program.
-        """
-        if diffusion:
-            self.controller.playlist = diffusion.playlist
-            return
-
-        program = program or self.program
-        if program:
-            self.controller.playlist = [ sound.path for sound in
-                programs.Sound.objects.filter(
-                    type = programs.Sound.Type.archive,
-                    program = program,
-                )
-            ]
-            return
-
-        if self.type == self.Type.file and self.value:
-            self.controller.playlist = [ self.value ]
-            return
-
     def save(self, *args, **kwargs):
         if self.type in (self.Type.file, self.Type.fallback) and \
                 not self.url:
@@ -462,7 +437,7 @@ class Log(programs.Related):
     )
     date = models.DateTimeField(
         _('date'),
-        auto_now_add=True,
+        default=tz.now,
     )
     comment = models.CharField(
         _('comment'),
