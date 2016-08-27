@@ -169,7 +169,6 @@ ul.list {
 }
 
 .date_list_item h3 {
-    width: 100%;
     margin-top: 0em;
 }
 
@@ -344,6 +343,15 @@ main .body ~ section:not(.comments) {
 
 .meta .author .summary {
     display: none;
+}
+
+
+/** content: others **/
+.list_item.track .title {
+    display: inline;
+    font-style: italic;
+    font-weight: normal;
+    font-size: 0.9em;
 }
 
 
