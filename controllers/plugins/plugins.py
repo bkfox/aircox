@@ -267,7 +267,7 @@ class SourceController:
             return
 
         if source.type == source.Type.file and source.url:
-            self.playlist = [ self.url ]
+            self.playlist = [ source.url ]
             return
 
     def from_file(self, path = None):
