@@ -55,8 +55,8 @@ end
 
 {% block config %}
 set("server.socket", true)
-set("server.socket.path", "{{ station.controller.socket_path }}")
-set("log.file.path", "{{ station.controller.station.path }}/liquidsoap.log")
+set("server.socket.path", "{{ station.streamer.socket_path }}")
+set("log.file.path", "{{ station.path }}/liquidsoap.log")
 {% for key, value in settings.AIRCOX_LIQUIDSOAP_SET.items %}
 set("{{ key|safe }}", {{ value|safe }})
 {% endfor %}
@@ -68,17 +68,9 @@ set("{{ key|safe }}", {{ value|safe }})
 
 {% block sources %}
 live = fallback([
-    {% for source in station.file_sources %}
-    {% with controller=source.controller %}
-    interactive_source(
-        '{{ source.id_ }}', single("{{ source.url }}"), active=false
-    ),
-    {% endwith %}
-    {% endfor %}
-
-    {% with source=station.dealer controller=station.dealer.controller %}
-    interactive_source('{{ source.id_ }}',
-        playlist.once(reload_mode='watch', "{{ controller.path }}"),
+    {% with source=station.dealer %}
+    interactive_source('{{ source.id }}',
+        playlist.once(reload_mode='watch', "{{ source.path }}"),
         active=false
     ),
     {% endwith %}
@@ -87,28 +79,24 @@ live = fallback([
 
 stream = fallback([
     rotate([
-        {% for source in station.stream_sources %}
-        {% with controller=source.controller stream=source.controller.stream %}
+        {% for source in station.sources %}
+        {% if source != station.dealer %}
+        {% with stream=source.stream %}
             {% if stream.delay %}
             delay({{ stream.delay }}.,
-                  stream("{{ source.id_ }}", "{{ controller.path }}")),
+                  stream("{{ source.id }}", "{{ source.path }}")),
             {% elif stream.begin and stream.end %}
             at({ {{stream.begin}}-{{stream.end}} },
-               stream("{{ source.id_ }}", "{{ controller.path }}")),
+               stream("{{ source.id }}", "{{ source.path }}")),
             {% elif not stream %}
-            stream("{{ source.id_ }}", "{{ controller.path }}"),
+            stream("{{ source.id }}", "{{ source.path }}"),
             {% endif %}
         {% endwith %}
+        {% endif %}
         {% endfor %}
     ]),
 
-    {% for source in station.fallback_sources %}
-    {% with controller=source.controller %}
-    single("{{ source.value }}"),
-    {% endwith %}
-    {% endfor %}
-
-    blank(id="blank_fallback", duration=0.1),
+    blank(id="blank", duration=0.1),
 ])
 
 {% endblock %}
@@ -130,8 +118,8 @@ end
 
 
 {% block station %}
-{{ station.id_ }} = interactive_source (
-    "{{ station.id_ }}",
+{{ station.streamer.id }} = interactive_source (
+    "{{ station.streamer.id }}",
     fallback(
         track_sensitive=false,
         transitions=[to_live,to_stream],
@@ -147,9 +135,9 @@ end
 
 
 {% block outputs %}
-{% for output in station.outputs %}
+{% for output in station.output_set.all %}
 output.{{ output.get_type_display }}(
-    {{ station.id_ }},
+    {{ station.streamer.id }},
     {% if controller.settings %},
     {{ output.settings }}
     {% endif %}

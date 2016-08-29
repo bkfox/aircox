@@ -46,6 +46,9 @@ def date_or_default(date, no_time = False):
     return date
 
 
+#
+# Abstracts
+#
 class RelatedManager(models.Manager):
     def get_for(self, object = None, model = None):
         """
@@ -112,166 +115,344 @@ class Nameable(models.Model):
         abstract = True
 
 
-class Sound(Nameable):
+#
+# Station related classes
+#
+class Station(Nameable):
     """
-    A Sound is the representation of a sound file that can be either an excerpt
-    or a complete archive of the related diffusion.
+    Represents a radio station, to which multiple programs are attached
+    and that is used as the top object for everything.
+
+    A Station holds controllers for the audio stream generation too.
+    Theses are set up when needed (at the first access to these elements)
+    then cached.
     """
-    class Type(IntEnum):
-        other = 0x00,
-        archive = 0x01,
-        excerpt = 0x02,
-        removed = 0x03,
-
-    program = models.ForeignKey(
-        'Program',
-        verbose_name = _('program'),
-        blank = True, null = True,
-        help_text = _('program related to it'),
-    )
-    diffusion = models.ForeignKey(
-        'Diffusion',
-        verbose_name = _('diffusion'),
-        blank = True, null = True,
-        help_text = _('initial diffusion related it')
-    )
-    type = models.SmallIntegerField(
-        verbose_name = _('type'),
-        choices = [ (int(y), _(x)) for x,y in Type.__members__.items() ],
-        blank = True, null = True
-    )
-    path = models.FilePathField(
-        _('file'),
-        path = settings.AIRCOX_PROGRAMS_DIR,
-        match = r'(' + '|'.join(settings.AIRCOX_SOUND_FILE_EXT) \
-                                    .replace('.', r'\.') + ')$',
-        recursive = True,
-        blank = True, null = True,
-        max_length = 256
-    )
-    embed = models.TextField(
-        _('embed HTML code'),
-        blank = True, null = True,
-        help_text = _('HTML code used to embed a sound from external plateform'),
-    )
-    duration = models.TimeField(
-        _('duration'),
-        blank = True, null = True,
-        help_text = _('duration of the sound'),
-    )
-    mtime = models.DateTimeField(
-        _('modification time'),
-        blank = True, null = True,
-        help_text = _('last modification date and time'),
-    )
-    good_quality = models.BooleanField(
-        _('good quality'),
-        default = False,
-        help_text = _('sound\'s quality is okay')
-    )
-    public = models.BooleanField(
-        _('public'),
-        default = False,
-        help_text = _('the sound is accessible to the public')
+    path = models.CharField(
+        _('path'),
+        help_text = _('path to the working directory'),
+        max_length = 256,
+        blank = True,
     )
 
-    def get_mtime(self):
-        """
-        Get the last modification date from file
-        """
-        mtime = os.stat(self.path).st_mtime
-        mtime = tz.datetime.fromtimestamp(mtime)
-        # db does not store microseconds
-        mtime = mtime.replace(microsecond = 0)
-        return tz.make_aware(mtime, tz.get_current_timezone())
+    #
+    # Controllers
+    #
+    __sources = None
+    __dealer = None
+    __streamer = None
 
-    def url(self):
+    @property
+    def sources(self):
         """
-        Return an url to the stream
+        Audio sources, dealer included
         """
-        # path = self._meta.get_field('path').path
-        path = self.path.replace(main_settings.MEDIA_ROOT, '', 1)
-        #path = self.path.replace(path, '', 1)
-        return main_settings.MEDIA_URL + '/' + path
+        # force streamer creation
+        streamer = self.streamer
 
-    def file_exists(self):
-        """
-        Return true if the file still exists
-        """
-        return os.path.exists(self.path)
+        if not self.__sources:
+            import aircox.programs.controllers as controllers
+            self.__sources = [
+                controllers.Source(station = self, program = program)
+                for program in Program.objects.filter(stream__isnull = False)
+            ] + [ self.dealer ]
+        return self.__sources
 
-    def check_on_file(self):
-        """
-        Check sound file info again'st self, and update informations if
-        needed (do not save). Return True if there was changes.
-        """
-        if not self.file_exists():
-            if self.type == self.Type.removed:
-                return
-            logger.info('sound %s: has been removed', self.path)
-            self.type = self.Type.removed
-            return True
+    @property
+    def dealer(self):
+        # force streamer creation
+        streamer = self.streamer
 
-        # not anymore removed
-        changed = False
-        if self.type == self.Type.removed and self.program:
-            changed = True
-            self.type = self.Type.archive \
-                if self.path.startswith(self.program.archives_path) else \
-                    self.Type.excerpt
+        if not self.__dealer:
+            import aircox.programs.controllers as controllers
+            self.__dealer = controllers.Source(station = self)
+        return self.__dealer
 
-        # check mtime -> reset quality if changed (assume file changed)
-        mtime = self.get_mtime()
-        if self.mtime != mtime:
-            self.mtime = mtime
-            self.good_quality = False
-            logger.info('sound %s: m_time has changed. Reset quality info',
-                        self.path)
-            return True
-        return changed
-
-    def check_perms(self):
+    @property
+    def streamer(self):
         """
-        Check permissions and update them if this is activated
+        Audio controller for the station
         """
-        if not settings.AIRCOX_SOUND_AUTO_CHMOD or \
-                self.removed or not os.path.exists(self.path):
-            return
+        if not self.__streamer:
+            import aircox.programs.controllers as controllers
+            self.__streamer = controllers.Streamer(station = self)
+        return self.__streamer
 
-        flags = settings.AIRCOX_SOUND_CHMOD_FLAGS[self.public]
-        try:
-            os.chmod(self.path, flags)
-        except PermissionError as err:
-            logger.error(
-                'cannot set permissions {} to file {}: {}'.format(
-                    self.flags[self.public],
-                    self.path, err
-                )
+    def get_played(self, models, archives = True):
+        """
+        Return a queryset with log of played elements on this station,
+        of the given models, ordered by date ascending.
+
+        * models: a model or a list of models
+        * archives: if false, exclude log of diffusion's archives from
+            the queryset;
+        """
+        qs = Log.objects.get_for(model = models) \
+                .filter(station = self, type = Log.Type.play)
+        if not archives and self.dealer:
+            qs = qs.exclude(
+                source = self.dealer.id,
+                related_type = ContentType.objects.get_for_model(Sound)
+            )
+        return qs.order_by('date')
+
+    @staticmethod
+    def __mix_logs_and_diff(diffs, logs, count = 0):
+        """
+        Mix together logs and diffusion items of the same day,
+        ordered by their date.
+
+        Diffs and Logs are assumed to be ordered by -date, and so is
+        the resulting list
+        """
+        # we fill a list with diff and retrieve logs that happened between
+        # each to put them too there
+        items = []
+        diff_ = None
+        for diff in diffs.order_by('-start'):
+            logs_ = \
+                logs.filter(date__gt = diff.end, date__lt = diff_.start) \
+                    if diff_ else \
+                logs.filter(date__gt = diff.end)
+            diff_ = diff
+            items.extend(logs_)
+            items.append(diff)
+            if count and len(items) >= count:
+                break
+
+        if diff_:
+            if count and len(items) >= count:
+                return items[:count]
+            logs_ = logs.filter(date__lt = diff_.end)
+        else:
+            logs_ = logs.all()
+
+        items.extend(logs_)
+        return items[:count] if count else items
+
+    def on_air(self, date = None, count = 0):
+        """
+        Return a list of what happened on air, based on logs and
+        diffusions informations. The list is sorted by -date.
+
+        * date: only for what happened on this date;
+        * count: number of items to retrieve if not zero;
+
+        If date is not specified, count MUST be set to a non-zero value.
+        Be careful with what you which for: the result is a plain list.
+
+        The list contains:
+        * track logs: for the streamed programs;
+        * diffusion: for the scheduled diffusions;
+        """
+        # FIXME: as an iterator?
+        # TODO argument to get sound instead of tracks
+        if not date and not count:
+            raise ValueError('at least one argument must be set')
+
+        if date and date > datetime.date.today():
+            return []
+
+        logs = Log.objects.get_for(model = Track) \
+                  .filter(station = self) \
+                  .order_by('-date')
+
+        if date:
+            logs = logs.filter(date__contains = date)
+            diffs = Diffusion.objects.get_at(date)
+        else:
+            diffs = Diffusion.objects
+
+        diffs = diffs.filter(station = self) \
+                     .filter(type = Diffusion.Type.normal) \
+                     .filter(start__lte = tz.now())
+        return self.__mix_logs_and_diff(diffs, logs, count)
+
+    def save(self, make_sources = True, *args, **kwargs):
+        if not self.path:
+            self.path = os.path.join(
+                settings.AIRCOX_CONTROLLERS_WORKING_DIR,
+                self.slug
             )
 
-    def __check_name(self):
-        if not self.name and self.path:
-            # FIXME: later, remove date?
-            self.name = os.path.basename(self.path)
-            self.name = os.path.splitext(self.name)[0]
-            self.name = self.name.replace('_', ' ')
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.__check_name()
-
-    def save(self, check = True, *args, **kwargs):
-        if check:
-            self.check_on_file()
-        self.__check_name()
         super().save(*args, **kwargs)
 
-    def __str__(self):
-        return '/'.join(self.path.split('/')[-3:])
 
-    class Meta:
-        verbose_name = _('Sound')
-        verbose_name_plural = _('Sounds')
+class Program(Nameable):
+    """
+    A Program can either be a Streamed or a Scheduled program.
+
+    A Streamed program is used to generate non-stop random playlists when there
+    is not scheduled diffusion. In such a case, a Stream is used to describe
+    diffusion informations.
+
+    A Scheduled program has a schedule and is the one with a normal use case.
+
+    Renaming a Program rename the corresponding directory to matches the new
+    name if it does not exists.
+    """
+    station = models.ForeignKey(
+        Station,
+        verbose_name = _('station'),
+    )
+    active = models.BooleanField(
+        _('active'),
+        default = True,
+        help_text = _('if not set this program is no longer active')
+    )
+
+    @property
+    def path(self):
+        """
+        Return the path to the programs directory
+        """
+        return os.path.join(settings.AIRCOX_PROGRAMS_DIR,
+                            self.slug + '_' + str(self.id) )
+
+    def ensure_dir(self, subdir = None):
+        """
+        Make sur the program's dir exists (and optionally subdir). Return True
+        if the dir (or subdir) exists.
+        """
+        path = os.path.join(self.path, subdir) if subdir else \
+               self.path
+        os.makedirs(path, exist_ok = True)
+        return os.path.exists(path)
+
+    @property
+    def archives_path(self):
+        return os.path.join(
+            self.path, settings.AIRCOX_SOUND_ARCHIVES_SUBDIR
+        )
+
+    @property
+    def excerpts_path(self):
+        return os.path.join(
+            self.path, settings.AIRCOX_SOUND_ARCHIVES_SUBDIR
+        )
+
+    def find_schedule(self, date):
+        """
+        Return the first schedule that matches a given date.
+        """
+        schedules = Schedule.objects.filter(program = self)
+        for schedule in schedules:
+            if schedule.match(date, check_time = False):
+                return schedule
+
+    def __init__(self, *kargs, **kwargs):
+        super().__init__(*kargs, **kwargs)
+        if self.name:
+            self.__original_path = self.path
+
+    def save(self, *kargs, **kwargs):
+        super().save(*kargs, **kwargs)
+        if hasattr(self, '__original_path') and \
+                self.__original_path != self.path and \
+                os.path.exists(self.__original_path) and \
+                not os.path.exists(self.path):
+            logger.info('program #%s\'s name changed to %s. Change dir name',
+                        self.id, self.name)
+            shutil.move(self.__original_path, self.path)
+
+            sounds = Sounds.objects.filter(path__startswith = self.__original_path)
+            for sound in sounds:
+                sound.path.replace(self.__original_path, self.path)
+                sound.save()
+
+    @classmethod
+    def get_from_path(cl, path):
+        """
+        Return a Program from the given path. We assume the path has been
+        given in a previous time by this model (Program.path getter).
+        """
+        path = path.replace(settings.AIRCOX_PROGRAMS_DIR, '')
+        while path[0] == '/': path = path[1:]
+        while path[-1] == '/': path = path[:-2]
+        if '/' in path:
+            path = path[:path.index('/')]
+
+        path = path.split('_')
+        path = path[-1]
+        qs = cl.objects.filter(id = int(path))
+        return qs[0] if qs else None
+
+
+class DiffusionManager(models.Manager):
+    def get_at(self, date = None, next = False):
+        """
+        Return a queryset of diffusions that have the given date
+        in their range.
+
+        If date is a datetime.date object, check only against the
+        date.
+        """
+        date = date or tz.now()
+        if not issubclass(type(date), datetime.datetime):
+            return self.filter(
+                models.Q(start__contains = date) | \
+                models.Q(end__contains = date)
+            )
+
+        if not next:
+            return self.filter(start__lte = date, end__gte = date) \
+                       .order_by('start')
+
+        return self.filter(
+            models.Q(start__lte = date, end__gte = date) |
+            models.Q(start__gte = date),
+        ).order_by('start')
+
+    def get_after(self, date = None):
+        """
+        Return a queryset of diffusions that happen after the given
+        date.
+        """
+        date = date_or_default(date)
+        return self.filter(
+            start__gte = date,
+        ).order_by('start')
+
+    def get_before(self, date):
+        """
+        Return a queryset of diffusions that finish before the given
+        date.
+        """
+        date = date_or_default(date)
+        return self.filter(
+            end__lte = date,
+        ).order_by('start')
+
+
+class Stream(models.Model):
+    """
+    When there are no program scheduled, it is possible to play sounds
+    in order to avoid blanks. A Stream is a Program that plays this role,
+    and whose linked to a Stream.
+
+    All sounds that are marked as good and that are under the related
+    program's archive dir are elligible for the sound's selection.
+    """
+    program = models.ForeignKey(
+        Program,
+        verbose_name = _('related program'),
+    )
+    delay = models.TimeField(
+        _('delay'),
+        blank = True, null = True,
+        help_text = _('delay between two sound plays')
+    )
+    begin = models.TimeField(
+        _('begin'),
+        blank = True, null = True,
+        help_text = _('used to define a time range this stream is'
+                      'played')
+    )
+    end = models.TimeField(
+        _('end'),
+        blank = True, null = True,
+        help_text = _('used to define a time range this stream is'
+                      'played')
+    )
 
 
 class Schedule(models.Model):
@@ -296,7 +477,7 @@ class Schedule(models.Model):
         one_on_two = 0b100000
 
     program = models.ForeignKey(
-        'Program',
+        Program,
         verbose_name = _('related program'),
     )
     date = models.DateTimeField(_('date'))
@@ -468,180 +649,6 @@ class Schedule(models.Model):
         verbose_name_plural = _('Schedules')
 
 
-class Program(Nameable):
-    """
-    A Program can either be a Streamed or a Scheduled program.
-
-    A Streamed program is used to generate non-stop random playlists when there
-    is not scheduled diffusion. In such a case, a Stream is used to describe
-    diffusion informations.
-
-    A Scheduled program has a schedule and is the one with a normal use case.
-
-    Renaming a Program rename the corresponding directory to matches the new
-    name if it does not exists.
-    """
-    active = models.BooleanField(
-        _('active'),
-        default = True,
-        help_text = _('if not set this program is no longer active')
-    )
-
-    @property
-    def path(self):
-        """
-        Return the path to the programs directory
-        """
-        return os.path.join(settings.AIRCOX_PROGRAMS_DIR,
-                            self.slug + '_' + str(self.id) )
-
-    def ensure_dir(self, subdir = None):
-        """
-        Make sur the program's dir exists (and optionally subdir). Return True
-        if the dir (or subdir) exists.
-        """
-        path = os.path.join(self.path, subdir) if subdir else \
-               self.path
-        os.makedirs(path, exist_ok = True)
-        return os.path.exists(path)
-
-    @property
-    def archives_path(self):
-        return os.path.join(
-            self.path, settings.AIRCOX_SOUND_ARCHIVES_SUBDIR
-        )
-
-    @property
-    def excerpts_path(self):
-        return os.path.join(
-            self.path, settings.AIRCOX_SOUND_ARCHIVES_SUBDIR
-        )
-
-    def find_schedule(self, date):
-        """
-        Return the first schedule that matches a given date.
-        """
-        schedules = Schedule.objects.filter(program = self)
-        for schedule in schedules:
-            if schedule.match(date, check_time = False):
-                return schedule
-
-    def __init__(self, *kargs, **kwargs):
-        super().__init__(*kargs, **kwargs)
-        if self.name:
-            self.__original_path = self.path
-
-    def save(self, *kargs, **kwargs):
-        super().save(*kargs, **kwargs)
-        if hasattr(self, '__original_path') and \
-                self.__original_path != self.path and \
-                os.path.exists(self.__original_path) and \
-                not os.path.exists(self.path):
-            logger.info('program #%s\'s name changed to %s. Change dir name',
-                        self.id, self.name)
-            shutil.move(self.__original_path, self.path)
-
-            sounds = Sounds.objects.filter(path__startswith = self.__original_path)
-            for sound in sounds:
-                sound.path.replace(self.__original_path, self.path)
-                sound.save()
-
-    @classmethod
-    def get_from_path(cl, path):
-        """
-        Return a Program from the given path. We assume the path has been
-        given in a previous time by this model (Program.path getter).
-        """
-        path = path.replace(settings.AIRCOX_PROGRAMS_DIR, '')
-        while path[0] == '/': path = path[1:]
-        while path[-1] == '/': path = path[:-2]
-        if '/' in path:
-            path = path[:path.index('/')]
-
-        path = path.split('_')
-        path = path[-1]
-        qs = cl.objects.filter(id = int(path))
-        return qs[0] if qs else None
-
-
-class DiffusionManager(models.Manager):
-    def get_at(self, date = None, next = False):
-        """
-        Return a queryset of diffusions that have the given date
-        in their range.
-
-        If date is a datetime.date object, check only against the
-        date.
-        """
-        date = date or tz.now()
-        if not issubclass(type(date), datetime.datetime):
-            return self.filter(
-                models.Q(start__contains = date) | \
-                models.Q(end__contains = date)
-            )
-
-        if not next:
-            return self.filter(start__lte = date, end__gte = date) \
-                       .order_by('start')
-
-        return self.filter(
-            models.Q(start__lte = date, end__gte = date) |
-            models.Q(start__gte = date),
-        ).order_by('start')
-
-    def get_after(self, date = None):
-        """
-        Return a queryset of diffusions that happen after the given
-        date.
-        """
-        date = date_or_default(date)
-        return self.filter(
-            start__gte = date,
-        ).order_by('start')
-
-    def get_before(self, date):
-        """
-        Return a queryset of diffusions that finish before the given
-        date.
-        """
-        date = date_or_default(date)
-        return self.filter(
-            end__lte = date,
-        ).order_by('start')
-
-
-class Stream(models.Model):
-    """
-    When there are no program scheduled, it is possible to play sounds
-    in order to avoid blanks. A Stream is a Program that plays this role,
-    and whose linked to a Stream.
-
-    All sounds that are marked as good and that are under the related
-    program's archive dir are elligible for the sound's selection.
-    """
-    program = models.ForeignKey(
-        'Program',
-        verbose_name = _('related program'),
-    )
-    delay = models.TimeField(
-        _('delay'),
-        blank = True, null = True,
-        help_text = _('delay between two sound plays')
-    )
-    begin = models.TimeField(
-        _('begin'),
-        blank = True, null = True,
-        help_text = _('used to define a time range this stream is'
-                      'played')
-    )
-    end = models.TimeField(
-        _('end'),
-        blank = True, null = True,
-        help_text = _('used to define a time range this stream is'
-                      'played')
-    )
-
-
 class Diffusion(models.Model):
     """
     A Diffusion is an occurrence of a Program that is scheduled on the
@@ -669,7 +676,7 @@ class Diffusion(models.Model):
 
     # common
     program = models.ForeignKey (
-        'Program',
+        Program,
         verbose_name = _('program'),
     )
     # specific
@@ -759,6 +766,168 @@ class Diffusion(models.Model):
         )
 
 
+class Sound(Nameable):
+    """
+    A Sound is the representation of a sound file that can be either an excerpt
+    or a complete archive of the related diffusion.
+    """
+    class Type(IntEnum):
+        other = 0x00,
+        archive = 0x01,
+        excerpt = 0x02,
+        removed = 0x03,
+
+    program = models.ForeignKey(
+        Program,
+        verbose_name = _('program'),
+        blank = True, null = True,
+        help_text = _('program related to it'),
+    )
+    diffusion = models.ForeignKey(
+        'Diffusion',
+        verbose_name = _('diffusion'),
+        blank = True, null = True,
+        help_text = _('initial diffusion related it')
+    )
+    type = models.SmallIntegerField(
+        verbose_name = _('type'),
+        choices = [ (int(y), _(x)) for x,y in Type.__members__.items() ],
+        blank = True, null = True
+    )
+    path = models.FilePathField(
+        _('file'),
+        path = settings.AIRCOX_PROGRAMS_DIR,
+        match = r'(' + '|'.join(settings.AIRCOX_SOUND_FILE_EXT) \
+                                    .replace('.', r'\.') + ')$',
+        recursive = True,
+        blank = True, null = True,
+        max_length = 256
+    )
+    embed = models.TextField(
+        _('embed HTML code'),
+        blank = True, null = True,
+        help_text = _('HTML code used to embed a sound from external plateform'),
+    )
+    duration = models.TimeField(
+        _('duration'),
+        blank = True, null = True,
+        help_text = _('duration of the sound'),
+    )
+    mtime = models.DateTimeField(
+        _('modification time'),
+        blank = True, null = True,
+        help_text = _('last modification date and time'),
+    )
+    good_quality = models.BooleanField(
+        _('good quality'),
+        default = False,
+        help_text = _('sound\'s quality is okay')
+    )
+    public = models.BooleanField(
+        _('public'),
+        default = False,
+        help_text = _('the sound is accessible to the public')
+    )
+
+    def get_mtime(self):
+        """
+        Get the last modification date from file
+        """
+        mtime = os.stat(self.path).st_mtime
+        mtime = tz.datetime.fromtimestamp(mtime)
+        # db does not store microseconds
+        mtime = mtime.replace(microsecond = 0)
+        return tz.make_aware(mtime, tz.get_current_timezone())
+
+    def url(self):
+        """
+        Return an url to the stream
+        """
+        # path = self._meta.get_field('path').path
+        path = self.path.replace(main_settings.MEDIA_ROOT, '', 1)
+        #path = self.path.replace(path, '', 1)
+        return main_settings.MEDIA_URL + '/' + path
+
+    def file_exists(self):
+        """
+        Return true if the file still exists
+        """
+        return os.path.exists(self.path)
+
+    def check_on_file(self):
+        """
+        Check sound file info again'st self, and update informations if
+        needed (do not save). Return True if there was changes.
+        """
+        if not self.file_exists():
+            if self.type == self.Type.removed:
+                return
+            logger.info('sound %s: has been removed', self.path)
+            self.type = self.Type.removed
+            return True
+
+        # not anymore removed
+        changed = False
+        if self.type == self.Type.removed and self.program:
+            changed = True
+            self.type = self.Type.archive \
+                if self.path.startswith(self.program.archives_path) else \
+                    self.Type.excerpt
+
+        # check mtime -> reset quality if changed (assume file changed)
+        mtime = self.get_mtime()
+        if self.mtime != mtime:
+            self.mtime = mtime
+            self.good_quality = False
+            logger.info('sound %s: m_time has changed. Reset quality info',
+                        self.path)
+            return True
+        return changed
+
+    def check_perms(self):
+        """
+        Check file permissions and update it if the sound is public
+        """
+        if not settings.AIRCOX_SOUND_AUTO_CHMOD or \
+                self.removed or not os.path.exists(self.path):
+            return
+
+        flags = settings.AIRCOX_SOUND_CHMOD_FLAGS[self.public]
+        try:
+            os.chmod(self.path, flags)
+        except PermissionError as err:
+            logger.error(
+                'cannot set permissions {} to file {}: {}'.format(
+                    self.flags[self.public],
+                    self.path, err
+                )
+            )
+
+    def __check_name(self):
+        if not self.name and self.path:
+            # FIXME: later, remove date?
+            self.name = os.path.basename(self.path)
+            self.name = os.path.splitext(self.name)[0]
+            self.name = self.name.replace('_', ' ')
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.__check_name()
+
+    def save(self, check = True, *args, **kwargs):
+        if check:
+            self.check_on_file()
+        self.__check_name()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return '/'.join(self.path.split('/')[-3:])
+
+    class Meta:
+        verbose_name = _('Sound')
+        verbose_name_plural = _('Sounds')
+
+
 class Track(Related):
     """
     Track of a playlist of an object. The position can either be expressed
@@ -802,5 +971,135 @@ class Track(Related):
     class Meta:
         verbose_name = _('Track')
         verbose_name_plural = _('Tracks')
+
+
+#
+# Controls and audio output
+#
+
+# FIXME HERE
+#       + station -> played, on_air and others
+class Output (models.Model):
+    """
+    Represent an audio output for the audio stream generation.
+    You might want to take a look to LiquidSoap's documentation
+    for the Jack, Alsa, and Icecast ouptuts.
+    """
+    class Type(IntEnum):
+        jack = 0x00
+        alsa = 0x01
+        icecast = 0x02
+
+    station = models.ForeignKey(
+        Station,
+        verbose_name = _('station'),
+    )
+    type = models.SmallIntegerField(
+        _('type'),
+        # we don't translate the names since it is project names.
+        choices = [ (int(y), x) for x,y in Type.__members__.items() ],
+    )
+    active = models.BooleanField(
+        _('active'),
+        default = True,
+        help_text = _('this output is active')
+    )
+    settings = models.TextField(
+        _('output settings'),
+        help_text = _('list of comma separated params available; '
+                      'this is put in the output config as raw code; '
+                      'plugin related'),
+        blank = True, null = True
+    )
+
+
+class Log(Related):
+    """
+    Log sounds and diffusions that are played on the station.
+
+    This only remember what has been played on the outputs, not on each
+    track; Source designate here which source is responsible of that.
+    """
+    class Type(IntEnum):
+        stop = 0x00
+        """
+        Source has been stopped (only when there is no more sound)
+        """
+        play = 0x01
+        """
+        Source has been started/changed and is running related_object
+        If no related_object is available, comment is used to designate
+        the sound.
+        """
+        load = 0x02
+        """
+        Source starts to be preload related_object
+        """
+        other = 0x03
+        """
+        Other log
+        """
+
+    type = models.SmallIntegerField(
+        verbose_name = _('type'),
+        choices = [ (int(y), _(x)) for x,y in Type.__members__.items() ],
+        blank = True, null = True,
+    )
+    station = models.ForeignKey(
+        Station,
+        verbose_name = _('station'),
+        help_text = _('station on which the event occured'),
+    )
+    source = models.CharField(
+        # we use a CharField to avoid loosing logs information if the
+        # source is removed
+        _('source'),
+        max_length=64,
+        help_text = _('source id that make it happen on the station'),
+        blank = True, null = True,
+    )
+    date = models.DateTimeField(
+        _('date'),
+        default=tz.now,
+    )
+    comment = models.CharField(
+        _('comment'),
+        max_length = 512,
+        blank = True, null = True,
+    )
+
+    @property
+    def end(self):
+        """
+        Calculated end using self.related informations
+        """
+        if self.related_type == Diffusion:
+            return self.related.end
+        if self.related_type == Sound:
+            return self.date + to_timedelta(self.duration)
+        return self.date
+
+    def is_expired(self, date = None):
+        """
+        Return True if the log is expired. Note that it only check
+        against the date, so it is still possible that the expiration
+        occured because of a Stop or other source.
+        """
+        date = date_or_default(date)
+        return self.end < date
+
+    def print(self):
+        logger.info('log #%s: %s%s',
+            str(self),
+            self.comment or '',
+            ' -- {} #{}'.format(self.related_type, self.related_id)
+                if self.related else ''
+        )
+
+    def __str__(self):
+        return '#{} ({}, {})'.format(
+                self.pk, self.date.strftime('%Y/%m/%d %H:%M'), self.source
+        )
+
 
 

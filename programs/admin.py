@@ -171,3 +171,23 @@ class TrackAdmin(admin.ModelAdmin):
     list_display = ['id', 'title', 'artist', 'position', 'in_seconds', 'related']
 
 
+
+# TODO: sort & redo
+class OutputInline(admin.StackedInline):
+    model = Output
+    extra = 0
+
+@admin.register(Station)
+class StationAdmin(admin.ModelAdmin):
+    inlines = [ OutputInline ]
+
+@admin.register(Log)
+class LogAdmin(admin.ModelAdmin):
+    list_display = ['id', 'date', 'station', 'source', 'type', 'comment', 'related']
+    list_filter = ['date', 'source', 'related_type']
+
+admin.site.register(Output)
+
+
+
+

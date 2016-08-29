@@ -57,5 +57,7 @@ ensure('AIRCOX_IMPORT_PLAYLIST_CSV_DELIMITER', ';')
 ensure('AIRCOX_IMPORT_PLAYLIST_CSV_TEXT_QUOTE', '"')
 
 
+# Controllers working directory
+ensure('AIRCOX_CONTROLLERS_WORKING_DIR', '/tmp/aircox')
 
 

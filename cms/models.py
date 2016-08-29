@@ -28,7 +28,6 @@ from taggit.models import TaggedItemBase
 import bleach
 
 import aircox.programs.models as programs
-import aircox.controllers.models as controllers
 import aircox.cms.settings as settings
 
 from aircox.cms.utils import image_url
@@ -649,7 +648,7 @@ class LogsPage(DatedListPage):
     template = 'cms/dated_list_page.html'
 
     station = models.ForeignKey(
-        controllers.Station,
+        programs.Station,
         verbose_name = _('station'),
         null = True,
         on_delete=models.SET_NULL,

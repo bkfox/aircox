@@ -34,7 +34,6 @@ from taggit.models import TaggedItemBase
 
 # aircox
 import aircox.programs.models as programs
-import aircox.controllers.models as controllers
 
 
 def related_pages_filter(reset_cache=False):
@@ -856,7 +855,7 @@ class SectionList(ListBase, SectionRelativeItem):
 @register_snippet
 class SectionLogsList(SectionItem):
     station = models.ForeignKey(
-        controllers.Station,
+        programs.Station,
         verbose_name = _('station'),
         null = True,
         on_delete=models.SET_NULL,
