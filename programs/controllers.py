@@ -190,6 +190,8 @@ class Source:
     """
     Related source
     """
+    name = 'dealer'
+
     path = ''
     """
     Path to the Source's playlist file. Optional.
@@ -226,6 +228,8 @@ class Source:
         self.connector = self.station.streamer.connector
         self.__dict__.update(kwargs)
         self.__init_playlist()
+        if self.program:
+            self.name = self.program.name
 
     #
     # Playlist

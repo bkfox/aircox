@@ -141,30 +141,27 @@ class Station(Nameable):
     __dealer = None
     __streamer = None
 
+    def __prepare(self):
+        import aircox.programs.controllers as controllers
+        if not self.__streamer:
+            self.__streamer = controllers.Streamer(station = self)
+            self.__dealer = controllers.Source(station = self)
+            self.__sources = [
+                controllers.Source(station = self, program = program)
+                for program in Program.objects.filter(stream__isnull = False)
+            ] + [ self.__dealer ]
+
     @property
     def sources(self):
         """
         Audio sources, dealer included
         """
-        # force streamer creation
-        streamer = self.streamer
-
-        if not self.__sources:
-            import aircox.programs.controllers as controllers
-            self.__sources = [
-                controllers.Source(station = self, program = program)
-                for program in Program.objects.filter(stream__isnull = False)
-            ] + [ self.dealer ]
+        self.__prepare()
         return self.__sources
 
     @property
     def dealer(self):
-        # force streamer creation
-        streamer = self.streamer
-
-        if not self.__dealer:
-            import aircox.programs.controllers as controllers
-            self.__dealer = controllers.Source(station = self)
+        self.__prepare()
         return self.__dealer
 
     @property
@@ -172,9 +169,7 @@ class Station(Nameable):
         """
         Audio controller for the station
         """
-        if not self.__streamer:
-            import aircox.programs.controllers as controllers
-            self.__streamer = controllers.Streamer(station = self)
+        self.__prepare()
         return self.__streamer
 
     def get_played(self, models, archives = True):
@@ -262,7 +257,7 @@ class Station(Nameable):
         else:
             diffs = Diffusion.objects
 
-        diffs = diffs.filter(station = self) \
+        diffs = diffs.filter(program__station = self) \
                      .filter(type = Diffusion.Type.normal) \
                      .filter(start__lte = tz.now())
         return self.__mix_logs_and_diff(diffs, logs, count)

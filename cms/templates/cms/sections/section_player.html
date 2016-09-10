@@ -7,7 +7,7 @@
 </div>
 
 <script>
-var player = new Player('player', '{% url 'controllers.on_air' %}');
+var player = new Player('player', '{% url 'aircox.on_air' %}');
 var sound = player.playlist.add(
     new Sound(
         '{{ self.live_title }}',
