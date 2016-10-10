@@ -58,7 +58,7 @@ class WebsiteSettings(BaseSetting):
         help_text = _('public description of the website; used for referencing'),
     )
     list_page = models.ForeignKey(
-        'cms.GenericPage',
+        'aircox_cms.GenericPage',
         verbose_name = _('page for lists'),
         help_text=_('page used to display the results of a search and other '
                     'lists'),

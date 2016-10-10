@@ -73,7 +73,12 @@ Each application have a `settings.py` that defines extra options that can be red
 Create the database if needed, and generate the tables:
 
 ```bash
+# apply dependencies' migrations
+./manage.py makemigrations
+# create the database
 ./manage.py migrate --fake-initial
+# create a super-user (needed in order to access the administration)
+./manage.py createsuperuser
 ```
 
 You must then configure the programs, schedules and audio streams. Start the
@@ -85,6 +90,14 @@ server from this directory:
 
 You can access to the django admin interface at `http://127.0.0.1:8000/admin`
 and to the cms interface at `http://127.0.0.1:8000/cms/`.
+
+From the admin interface:
+* create a Station
+* create all the Programs and complete their Schedules
+* defines Outputs for the streamer (look at Liquidsoap documentation for
+  more information on how to configure it)
+
+TODO: cms related documentation here
 
 Once the configuration is okay, you must start the *controllers monitor*,
 that creates configuration file for the audio streams using the new information

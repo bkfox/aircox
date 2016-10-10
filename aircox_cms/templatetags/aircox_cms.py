@@ -1,7 +1,7 @@
 from django import template
 from django.utils.safestring import mark_safe
 
-from aircox.cms.sections import Section
+from aircox_cms.sections import Section
 
 register = template.Library()
 
