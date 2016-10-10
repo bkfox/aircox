@@ -1,0 +1,125 @@
+{% load i18n %}
+
+<style>
+section.station {
+    padding: 0.4em;
+    font-size: 0.9em;
+}
+
+    section.station header {
+        margin: 0.4em 0em;
+    }
+
+    section.station header > * {
+        margin: 0em 0.2em;
+    }
+
+        section.station h1 {
+            display: inline;
+            margin: 0px;
+            font-size: 1.4em;
+        }
+
+        section.station button {
+            float: right;
+        }
+
+    section.station .sources {
+        border: 1px grey solid;
+    }
+
+    section.station .source {
+        margin: 0.2em 0em;
+    }
+
+        section.station .name {
+            display: inline-block;
+            width: 10em;
+        }
+
+        section.station .file {
+            color: #007EDF;
+        }
+
+    section.station .source.current:before {
+        content: '▶';
+        color: red;
+        margin: 0em 1em;
+    }
+
+</style>
+<script>
+var Monitor = {
+    get_token: function () {
+        return document.cookie.replace(/.*csrftoken=([^;]+)(;.*|$)/, '$1');
+    },
+
+    post: function(station, source, action) {
+        var params = 'station=' + station + '&&action=' + action;
+        if(source)
+            params += '&&source=' + source;
+
+        var req = new XMLHttpRequest()
+        req.open('POST', '{% url 'aircox.monitor' %}', false);
+        req.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+        req.setRequestHeader("Content-length", params.length);
+        req.setRequestHeader("Connection", "close");
+        req.setRequestHeader("X-CSRFToken", this.get_token());
+        req.send(params);
+        this.update();
+    },
+
+    skip: function(station, source) {
+        this.post(station, source, 'skip');
+    },
+
+    update: function(timeout) {
+        var req = new XMLHttpRequest()
+        req.open('GET', '{% url 'aircox.monitor' %}', true);
+        req.onreadystatechange = function() {
+            if(req.readyState != 4 || (req.status != 200 && req.status != 0))
+                return;
+
+            var doc = document.implementation.createHTMLDocument('xhr')
+                              .documentElement;
+            doc.innerHTML = req.responseText;
+
+            document.getElementById('stations').innerHTML =
+                doc.querySelector('#stations').innerHTML;
+
+            if(timeout)
+                window.setTimeout(
+                    function() { Monitor.update(timeout);}, timeout
+                );
+        };
+        req.send();
+    },
+}
+
+Monitor.update(1000);
+</script>
+
+<div id='stations'>
+    {% for station in stations %}
+    <section class="station">
+        <header>
+        <h1>{{ station.name }}</h1>
+        <button onclick="Monitor.skip('{{ station.name }}');">{% trans "skip" %}</button>
+        <button onclick="Monitor.update();">{% trans "update" %}</button>
+        </header>
+        <div class="sources">
+            {% for source in station.all_sources %}
+            {% if source.controller.current_sound %}
+            <div class="source{% if source == station.controller.current_source %} current{% endif %}">
+                <span class="name">{{ source.name }}</span>
+                <span class="file">{{ source.controller.current_sound }}</span>
+                <button onclick="Monitor.skip('{{ station.name }}','{{ source.name }}');">
+                    {% trans "skip" %}</button>
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+    </section>
+    {% endfor %}
+</div>
+

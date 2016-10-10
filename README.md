@@ -2,18 +2,39 @@
 
 Platform to manage a radio, schedules, website, and so on. We use the power of great tools like Django or Liquidsoap.
 
-## Current features
-* **streams**: multiple random music streams when no program is played. We also can specify a time range and frequency;
+This project is distributed under GPL version 3. More information in the LICENSE file, except for some files whose license is indicated.
+
+
+## Features
+* **streams**: multiple random music streams when no program is played. We also can specify a time range and frequency for each;
 * **diffusions**: generate diffusions time slot for programs that have schedule informations. Check for conflicts and rerun.
 * **liquidsoap**: create a configuration to use liquidsoap as a stream generator. Also provides interface and control to it;
 * **sounds**: each programs have a folder where sounds can be put, that will be detected by the system. Quality can be check and reported for later use. Later, we plan to have uploaders to external plateforms. Sounds can be defined as excerpts or as archives.
 * **cms**: application that can be used as basis for website (we use Wagtail; if you don't want it this application is not required to make everything run);
 * **log**: keep a trace of every played/loaded sounds on the stream generator.
 
-## Applications
-* **programs**: managing stations, programs, schedules and diffusions. This is the core application, that handle most of the work;
-* **controllers**: interface with external stream generators. For the moment only support [Liquidsoap](http://liquidsoap.fm/). Generate configuration files, trigger scheduled diffusions and so on;
-* **cms**: defines models and templates to generate a website connected to Aircox;
+
+## Architecture
+Aircox is a complete Django project, that includes multiple Django's applications (if you don't know what it is, it is just like modules). There are somes scripts that can be used for deployment.
+
+**For the moment it is assumed that the application is installed in `/srv/apps/aircox`**, and that you have installed all the dependencies for aircox (external applications and python modules)
+
+### Applications
+* **aircox**: managing stations, programs, schedules and diffusions + interfaces with the stream generator (for the moment only support [Liquidsoap](http://liquidsoap.fm/)). This is the core application, that handle most of the work: diffusions generation, conflicts checks, creates configuration files for the controllers, monitors scheduled diffusions, etc, etc.
+* **aircox_cms**: defines models and templates to generate a website connected to Aircox;
+
+### Scripts
+There are script/config file for various programs. You can copy and paste them,
+or even link them in their correct directory. For the moment there are scripts
+for:
+
+* cron: daily cron configuration for the generation of the diffusions
+* supervisorctl: audio stream generation, website, sounds monitoring
+* nginx: sampe config file (must be adapted)
+
+The scripts are written with  a combination of `cron`, `supervisord`, `nginx`
+and `gunicorn` in mind.
+
 
 ## Installation
 ### Dependencies
@@ -26,84 +47,57 @@ Python modules:
 * `bleach`: 'aircox.cms` (comments sanitization)
 * `dateutils`: `aircox.programs` (used for tests)
 * `Pillow`: `aircox.cms` (needed by `wagtail`)
+* Django's required database modules
 
-Applications:
-* `liquidsoap`: `aircox.controllers` (generation of the audio streams)
+External applications:
+* `liquidsoap`: `aircox` (generation of the audio streams)
+* `sox`: `aircox` (check sounds quality and metadatas)
+* note there might be external dependencies for python's Pillow too
+* sqlite, mysql or any database library that you need to run a database, that is supported by python
 
-### settings.py
-Base configuration:
 
-```python
-INSTALLED_APPS = (
-    # dependencies
-    'wagtail.wagtailforms',
-    'wagtail.wagtailredirects',
-    'wagtail.wagtailembeds',
-    'wagtail.wagtailsites',
-    'wagtail.wagtailusers',
-    'wagtail.wagtailsnippets',
-    'wagtail.wagtaildocs',
-    'wagtail.wagtailimages',
-    'wagtail.wagtailsearch',
-    'wagtail.wagtailadmin',
-    'wagtail.wagtailcore',
-    'wagtail.contrib.settings',
-    'taggit',
-    'honeypot',
+### Configuration
+You must write a settings.py file in the `instance` directory (you can just
+copy and paste `instance/sample_settings.py`.
 
-    # ...
+You also want to redefine the following variable (required by Wagtail for the CMS):
 
-    # aircox
-    'aircox.programs',
-    'aircox.controllers',
-    'aircox.cms',
-)
-
-MIDDLEWARE_CLASSES = (
-    # ...
-    'wagtail.wagtailcore.middleware.SiteMiddleware',
-    'wagtail.wagtailredirects.middleware.RedirectMiddleware',
-)
-
-TEMPLATES = [
-    {
-        # ...
-        'OPTIONS': {
-            'context_processors': (
-                # ...
-                'wagtail.contrib.settings.context_processors.settings',
-            ),
-        },
-    },
-]
-
-# define your wagtail site name
-WAGTAIL_SITE_NAME = 'My Radio'
+```
+WAGTAIL_SITE_NAME = 'Aircox'
 ```
 
-To enable logging:
+Each application have a `settings.py` that defines extra options that can be redefined in this file. Look in their respective directories for more informations.
 
-```python
-LOGGING = {
-    # ...
-    'loggers': {
-        'aircox.core': {
-            'handlers': ['console'],
-            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
-        },
-        'aircox.test': {
-            'handlers': ['console'],
-            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
-        },
-        'aircox.tools': {
-            'handlers': ['console'],
-            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
-        },
-    },
-}
+
+### Installation and first run
+Create the database if needed, and generate the tables:
+
+```bash
+./manage.py migrate --fake-initial
 ```
 
-Each application have a `settings.py` that defines options that can be reused in application's `settings.py` file.
+You must then configure the programs, schedules and audio streams. Start the
+server from this directory:
 
+```bash
+./manage.py runserver
+```
+
+You can access to the django admin interface at `http://127.0.0.1:8000/admin`
+and to the cms interface at `http://127.0.0.1:8000/cms/`.
+
+Once the configuration is okay, you must start the *controllers monitor*,
+that creates configuration file for the audio streams using the new information
+and that run the appropriate application (note that you dont need to restart it
+after adding a program that is based on schedules).
+
+If you use supervisord and our script with it, you can use the services defined
+in it instead of running commands manually.
+
+
+Note: later we want to provide an installation script in order to make your life easy.
+
+## More informations
+There are extra informations in `aircox/README.md` and `aircox_cms/README.md` files.
 
 

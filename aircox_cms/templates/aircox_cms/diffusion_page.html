@@ -1,0 +1,68 @@
+{% extends "aircox_cms/publication.html" %}
+{% load i18n %}
+
+{% block content_extras %}
+{% with tracks=page.tracks.all %}
+{% if tracks %}
+<section class="playlist">
+    <h2>{% trans "Playlist" %}</h2>
+    <ul>
+        {% for track in tracks %}
+        <li><span class="artist">{{ track.artist }}</span>
+            <span class="title">{{ track.title }}</span>
+            {% if track.info %} <span class="info">{{ track.info }}</span>{% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+</section>
+{% endif %}
+{% endwith %}
+
+<section class="dates">
+    <h2>{% trans "Dates of diffusion" %}</h2>
+    <ul>
+        {% with diffusion=page.diffusion %}
+        <li>{{ diffusion.date|date:"l d F Y, H:i" }}</li>
+        {% for diffusion in diffusion.diffusion_set.all %}
+        <li>{{ diffusion.date|date:"l d F Y, H:i" }}</li>
+        {% endfor %}
+        {% endwith %}
+    </ul>
+</section>
+
+{% with podcasts=self.get_podcasts %}
+{% if podcasts %}
+<section class="podcasts list">
+    <h2>{% trans "Podcasts" %}</h2>
+    <div id="player_diff_{{ page.id }}" class="player">
+        {% include 'aircox_cms/snippets/player.html' %}
+
+        <script>
+        var podcasts = new Player('player_diff_{{ page.id }}', undefined, true)
+        {% for item in podcasts %}
+        {% if not item.embed %}
+            podcasts.playlist.add(new Sound(
+                title='{{ item.name|escape }}',
+                detail='{{ item.detail_url }}',
+                duration={{ item.duration|date:"H*3600+i*60+s" }},
+                streams='{{ item.url }}',
+                {% if page and page.cover %}cover='{{ page.icon }}',{% endif %}
+                undefined
+            ));
+        {% endif %}
+        {% endfor %}
+        </script>
+        <p>
+        {% for item in podcasts %}
+        {% if item.embed %}
+        {{ item.embed|safe }}
+        {% endif %}
+        {% endfor %}
+        </p>
+    </div>
+</section>
+{% endif %}
+{% endwith %}
+{% endblock %}
+
+

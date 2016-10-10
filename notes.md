@@ -6,9 +6,17 @@ This file is used as a reminder, can be used as crappy documentation too.
     - metaclass: `class_name + 'Meta'`
     - base classes: `class_name + 'Base'`
 
+* import and naming:
+    - the imported "models" file in the same application is named "models"
+    - the imported "models" file from another application is named with the application's name
+    - to avoid conflict:
+        - django's settings can be named "main_settings"
+
 ## aircox.cms
 * icons: cropped to 32x32
 * cover in list items: cropped 64x64
+
+
 
 # Long term TODO
 - debug/prod configuration
@@ -26,5 +34,20 @@ controllers:
 cms:
     - player support diffusions with multiple archive files
     - comments -> remove/edit by the author
+
+# Instance's TODO
+- menu_top .sections:
+    - display inline block
+    - search on the right
+- lists > items style
+- logo: url
+- comments / more info (perhaps using the thing like the player)
+- footer url to aircox's repo + admin
+- styling cal (a.today colored)
+
+- init of post related models
+    -> date is not formatted
+    -> missing image?
+
 
 

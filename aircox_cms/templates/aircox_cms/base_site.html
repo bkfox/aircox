@@ -1,0 +1,82 @@
+{% load staticfiles %}
+{% load i18n %}
+
+{% load wagtailimages_tags %}
+{% load wagtailsettings_tags %}
+
+{% load aircox_cms %}
+
+{% get_settings %}
+
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="application-name" content="aircox-cms">
+        <meta name="description" content="{{ settings.cms.WebsiteSettings.description }}">
+        <meta name="keywords" content="{{ page.tags.all|default:settings.cms.WebsiteSettings.tags }}">
+
+        {% with favicon=settings.cms.WebsiteSettings.favicon %}
+            <link rel="icon" href="{{ favicon.url }}" />
+        {% endwith %}
+        {% block css %}
+            <link rel="stylesheet" href="{% static 'aircox_cms/css/layout.css' %}" type="text/css" />
+            <link rel="stylesheet" href="{% static 'aircox_cms/css/theme.css' %}" type="text/css" />
+
+            {% block css_extras %}{% endblock %}
+        {% endblock %}
+
+        <script src="{% static 'aircox_cms/js/utils.js' %}"></script>
+        <script src="{% static 'aircox_cms/js/player.js' %}"></script>
+
+        <title>{{ page.title }}</title>
+    </head>
+    <body>
+        <div class="menu top">
+            {% render_sections position="top" %}
+        </div>
+
+        <header class="header">
+            {% render_sections position="header" %}
+        </header>
+
+        <div class="page flex_row">
+            <nav class="menu page_left flex_item">
+                {% render_sections position="page_left" %}
+            </nav>
+
+            <main class="flex_item {% if not object_list %}detail{% endif %}">
+            {% if messages %}
+            <ul class="messages">
+                {% for message in messages %}
+                    <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>
+                    {{ message }}
+                    </li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+
+            <header>
+            {% block title %}
+            <h1>{{ page.title }}</h1>
+            {% endblock %}
+            </header>
+
+            {% block content %}
+            {% endblock %}
+            </main>
+
+            <nav class="menu page_right flex_item">
+                {% render_sections position="page_right" %}
+            </nav>
+        </div>
+
+        {% block footer %}
+        <footer class="footer">
+            {% render_sections position="footer" %}
+            <div class="small float_right">Propulsed by
+                <a href="https://github.com/bkfox/aircox">Aircox</a>
+            </div>
+        </footer>
+        {% endblock %}
+    </body>
+</html>

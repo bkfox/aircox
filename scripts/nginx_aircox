@@ -1,0 +1,27 @@
+# Sample configuration file for Nginx.
+#
+# The binding is done to a Gunicorn's instance (cf. supervisor scripts),
+# on local port 8042 # and assumes that static files are in
+# /srv/apps/aircox/static.
+#
+# You want to change the server_name and static location to suit your needs
+#
+server {
+    server_name aircox.somewhere.net;
+    listen 80;
+
+    location / {
+        proxy_pass http://127.0.0.1:8042/;
+        proxy_read_timeout 300;
+        proxy_redirect off;
+        proxy_buffering off;
+        proxy_store off;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+
+    location /static/ {
+        alias /srv/apps/aircox/static/ ;
+    }
+}
+

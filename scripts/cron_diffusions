@@ -1,0 +1,8 @@
+#! /bin/sh
+
+# aircox daily tasks:
+# - diffusions monitoring for the current month
+/srv/apps/aircox/manage.py diffusions_monitor --update --clean --check
+# - diffusions monitoring for the next month
+/srv/apps/aircox/manage.py diffusions_monitor --update --next-month
+

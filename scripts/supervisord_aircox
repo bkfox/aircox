@@ -1,0 +1,44 @@
+; Supervisor sample config file for Aircox.
+;
+; It assumes that the instance is installed in the directory
+; "/srv/apps/aircox". It requires Gunicorn in order to run the
+; WSGI server.
+;
+; * aircox_server: WSGI server instance using Gunicorn for production;
+;       Note that it does not serve static files.
+; * aircox_sounds_monitor: sounds scanning, monitoring, quality-check,
+;       and synchronisation with the database.
+; * aircox_controllers: audio stream generation and monitoring; create
+;       config and playlists, and run the required programs.
+;       note: must be restarted after changes in controller's sources.
+;
+
+[program:aircox_server]
+command = gunicorn --bind 127.0.0.1:8042 instance.wsgi:application
+directory = /srv/apps/aircox
+user = aircox
+autostart = true
+autorestart = true
+stdout_logfile = /srv/apps/aircox/logs/server.log
+redirect_stderr = true
+environment=AIRCOX_DEBUG="False"
+
+[program:aircox_sounds_monitor]
+command = /srv/apps/aircox/manage.py sounds_monitor -qsm
+directory = /srv/apps/aircox
+user = aircox
+autostart = true
+autorestart = true
+stdout_logfile = /srv/apps/aircox/logs/sounds_monitor.log
+redirect_stderr = true
+
+[program:aircox_controllers]
+command = /srv/apps/aircox/manage.py controllers -crm
+directory = /srv/apps/aircox
+user = aircox
+autostart = true
+autorestart = true
+stdout_logfile = /srv/apps/aircox/logs/controllers.log
+redirect_stderr = true
+
+
