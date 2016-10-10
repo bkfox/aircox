@@ -699,12 +699,12 @@ class SectionImage(SectionRelativeItem):
     width = models.SmallIntegerField(
         _('width'),
         blank=True, null=True,
-        help_text=_('if set and > 0, set a maximum width for the image'),
+        help_text=_('if set and > 0, sets a maximum width for the image'),
     )
     height = models.SmallIntegerField(
         _('height'),
         blank=True, null=True,
-        help_text=_('if set 0 and > 0, set a maximum height for the image'),
+        help_text=_('if set 0 and > 0, sets a maximum height for the image'),
     )
     resize_mode = models.SmallIntegerField(
         verbose_name = _('resize mode'),
