@@ -12,8 +12,8 @@
     <head>
         <meta charset="utf-8">
         <meta name="application-name" content="aircox-cms">
-        <meta name="description" content="{{ settings.cms.WebsiteSettings.description }}">
-        <meta name="keywords" content="{{ page.tags.all|default:settings.cms.WebsiteSettings.tags }}">
+        <meta name="description" content="{{ settings.aircox_cms.WebsiteSettings.description }}">
+        <meta name="keywords" content="{{ page.tags.all|default:settings.aircox_cms.WebsiteSettings.tags }}">
 
         {% with favicon=settings.cms.WebsiteSettings.favicon %}
             <link rel="icon" href="{{ favicon.url }}" />

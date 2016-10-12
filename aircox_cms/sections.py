@@ -176,8 +176,10 @@ class ListBase(models.Model):
     siblings = models.BooleanField(
         verbose_name = _('select siblings of related'),
         default = False,
-        help_text = _('if selected select related publications that are '
-                      'siblings of this one'),
+        help_text = _(
+            'if checked, related publications are siblings instead of '
+            'the children.'
+        ),
     )
     asc = models.BooleanField(
         verbose_name = _('ascending order'),
@@ -199,7 +201,6 @@ class ListBase(models.Model):
             FieldPanel('asc'),
         ], heading=_('sorting'))
     ]
-
 
     def get_queryset(self):
         """
@@ -223,8 +224,8 @@ class ListBase(models.Model):
             else:
                 qs = qs.descendant_of(related)
 
-            date = self.related.date if hasattr(related, 'date') else \
-                    self.related.first_published_at
+            date = related.date if hasattr(related, 'date') else \
+                    related.first_published_at
             if self.date_filter == self.DateFilter.before_related:
                 qs = qs.filter(date__lt = date)
             elif self.date_filter == self.DateFilter.after_related:
@@ -247,7 +248,7 @@ class ListBase(models.Model):
         to override values of self or add some to the parameters.
 
         If there is related field use it to get the page, otherwise use the
-        given list_page or the first GenericPage it finds.
+        given list_page or the first DynamicListPage it finds.
         """
         import aircox_cms.models as models
 
@@ -261,7 +262,7 @@ class ListBase(models.Model):
         params.update(kwargs)
 
         page = params.get('related') or list_page or \
-                models.GenericPage.objects.all().first()
+                models.DynamicListPage.objects.all().first()
 
         if params.get('related'):
             params['related'] = True
@@ -483,9 +484,6 @@ class Section(ClusterableModel):
         InlinePanel('places', label=_('Section Items')),
     ]
 
-    def __str__(self):
-        return '{}: {}'.format(self.__class__.__name__, self.name or self.pk)
-
     @classmethod
     def get_sections_at (cl, position, page = None):
         """
@@ -503,21 +501,39 @@ class Section(ClusterableModel):
             )
         return qs
 
+    def add_item(self, item):
+        """
+        Add an item to the section. Automatically save the item and
+        create the corresponding SectionPlace.
+        """
+        # TODO: arbitrary position; Orderable.sort_order?
+        item.save()
+        place, created = SectionPlace.objects.get_or_create(
+            section = self,
+            item = item,
+        )
+
     def render(self, request, page = None, context = None, *args, **kwargs):
         return ''.join([
             place.item.specific.render(request, page, context, *args, **kwargs)
             for place in self.places.all()
         ])
 
+    def __str__(self):
+        return '{}: {}'.format(self.__class__.__name__, self.name or self.pk)
+
 
 class SectionPlace(Orderable):
     section = ParentalKey(Section, related_name='places')
     item = models.ForeignKey(
         'SectionItem',
-        verbose_name=_('item')
+        verbose_name=_('item'),
     )
 
     panels = [ SnippetChooserPanel('item'), ]
+
+    class Meta:
+        unique_together = ('section', 'item')
 
     def __str__(self):
         return '{}: {}'.format(self.__class__.__name__, self.title or self.pk)
@@ -954,7 +970,8 @@ class SectionSearchField(SectionItem):
     ]
 
     def get_context(self, request, page):
-        from aircox_cms.models import GenericPage
+        # FIXME ?????
+        from aircox_cms.models import DynamicListPage
         context = super().get_context(request, page)
         return context
 

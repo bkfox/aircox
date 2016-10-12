@@ -292,7 +292,7 @@ class Program(Nameable):
     active = models.BooleanField(
         _('active'),
         default = True,
-        help_text = _('if not set this program is no longer active')
+        help_text = _('if not checked this program is no longer active')
     )
 
     @property

@@ -33,11 +33,22 @@ import aircox_cms.settings as settings
 from aircox_cms.utils import image_url
 from aircox_cms.sections import *
 
+import aircox_cms.signals
+
 
 @register_setting
 class WebsiteSettings(BaseSetting):
-    # TODO: #Station assign a website to a aircox.models.model.station when it will
-    #   exist. Update all dependent code such as signal handling
+    station = models.OneToOneField(
+        aircox.models.Station,
+        verbose_name = _('aircox station'),
+        related_name = 'website_settings',
+        unique = True,
+        blank = True, null = True,
+        help_text = _(
+            'refers to an Aircox\'s station; it is used to make the link '
+            'between the website and Aircox'
+        ),
+    )
 
     # general website information
     favicon = models.ImageField(
@@ -58,11 +69,12 @@ class WebsiteSettings(BaseSetting):
         help_text = _('public description of the website; used for referencing'),
     )
     list_page = models.ForeignKey(
-        'aircox_cms.GenericPage',
+        'aircox_cms.DynamicListPage',
         verbose_name = _('page for lists'),
         help_text=_('page used to display the results of a search and other '
                     'lists'),
-        related_name= 'list_page'
+        related_name= 'list_page',
+        blank = True, null = True,
     )
     # comments
     accept_comments = models.BooleanField(
@@ -76,36 +88,50 @@ class WebsiteSettings(BaseSetting):
     comment_success_message = models.TextField(
         _('success message'),
         default = _('Your comment has been successfully posted!'),
-        help_text = _('message to display when a post has been posted'),
+        help_text = _(
+            'message displayed when a comment has been successfully posted'
+        ),
     )
     comment_wait_message = models.TextField(
         _('waiting message'),
         default = _('Your comment is awaiting for approval.'),
-        help_text = _('message to display when a post waits to be reviewed'),
+        help_text = _(
+            'message displayed when a comment has been sent, but waits for '
+            ' website administrators\' approval.'
+        ),
     )
     comment_error_message = models.TextField(
         _('error message'),
         default = _('We could not save your message. Please correct the error(s) below.'),
-        help_text = _('message to display there is an error an incomplete form.'),
+        help_text = _(
+            'message displayed when the form of the comment has been '
+            ' submitted but there is an error, such as an incomplete field'
+        ),
     )
 
-    auto_create = models.BooleanField(
-        _('automatic publications'),
+    sync = models.BooleanField(
+        _('synchronize with Aircox'),
         default = False,
         help_text = _(
-            'Create automatically new publications for new programs and '
-            'diffusions in the timetable. If set, please complete other '
-            'options of this panel'
+            'create publication for each object added to an Aircox\'s '
+            'station; for example when there is a new program, or '
+            'when a diffusion has been added to the timetable. Note: '
+            'it does not concern the Station themselves.'
+            # /doc/ the page is saved but not pubished -- this must be
+            # done manually, when the user edit it.
         )
     )
-    default_program_parent_page = ParentalKey(
+    default_programs_page = ParentalKey(
         Page,
-        verbose_name = _('default program parent page'),
+        verbose_name = _('default programs page'),
         blank = True, null = True,
         help_text = _(
-            'Default parent page for program\'s pages. It is used to assign '
-            'a page to the publication of a newly created program and can '
-            'be changed later'
+            'when a new program is saved and a publication is created, '
+            'put this publication as a child of this page. If no page '
+            'has been specified, try to put it as the child of the '
+            'website\'s root page (otherwise, do not create the page).'
+            # /doc/ (technicians, admin): if the page has not been created,
+            # it still can be created using the `programs_to_cms` command.
         ),
         limit_choices_to = lambda: {
             'show_in_menus': True,
@@ -119,7 +145,7 @@ class WebsiteSettings(BaseSetting):
             FieldPanel('tags'),
             FieldPanel('description'),
             FieldPanel('list_page'),
-        ], heading=_('promotion')),
+        ], heading=_('Promotion')),
         MultiFieldPanel([
             FieldPanel('allow_comments'),
             FieldPanel('accept_comments'),
@@ -128,8 +154,8 @@ class WebsiteSettings(BaseSetting):
             FieldPanel('comment_error_message'),
         ], heading = _('Comments')),
         MultiFieldPanel([
-            FieldPanel('auto_create'),
-            FieldPanel('default_program_parent_page'),
+            FieldPanel('sync'),
+            FieldPanel('default_programs_page'),
         ], heading = _('Programs and controls')),
     ]
 
@@ -559,46 +585,38 @@ class DiffusionPage(Publication):
 
 
 #
-# Other type of pages
+# Others types of pages
 #
-class GenericPage(Page):
+class DynamicListPage(Page):
     """
-    Page for simple lists, query is done though request' GET fields.
-    Look at get_queryset for more information.
+    Displays a list of publications using query passed by the url.
+    This can be used for search/tags page, and generally only one
+    page is used per website.
+
+    If a title is given, use it instead of the generated one.
     """
+    # FIXME/TODO: title in template <title></title>
     body = RichTextField(
         _('body'),
         blank = True, null = True,
         help_text = _('add an extra description for this list')
-    )
-    list_from_request = models.BooleanField(
-        _('list from the request'),
-        default = False,
-        help_text = _(
-            'if set, the page print a list based on the request made by '
-            'the website visitor, and its title will be adapted to this '
-            'request. Can be usefull for search pages, etc. and should '
-            'only be set on one page.'
-        )
     )
 
     content_panels = [
         MultiFieldPanel([
             FieldPanel('title'),
             FieldPanel('body'),
-            FieldPanel('list_from_request'),
         ], heading=_('Content'))
     ]
 
     class Meta:
-        verbose_name = _('Generic Page')
-        verbose_name_plural = _('Generic Page')
+        verbose_name = _('Dynamic List Page')
+        verbose_name_plural = _('Dynamic List Pages')
 
     def get_context(self, request, *args, **kwargs):
         context = super().get_context(request, *args, **kwargs)
-        if self.list_from_request:
-            qs = ListBase.from_request(request, context=context)
-            context['object_list'] = qs
+        qs = ListBase.from_request(request, context=context)
+        context['object_list'] = qs
         return context
 
 
@@ -647,6 +665,7 @@ class DatedListPage(DatedListBase,Page):
 class LogsPage(DatedListPage):
     template = 'aircox_cms/dated_list_page.html'
 
+    # TODO: make it a property that automatically select the station
     station = models.ForeignKey(
         aircox.models.Station,
         verbose_name = _('station'),

@@ -41,7 +41,7 @@ class Command (BaseCommand):
 
             # programs
             logger.info('Programs...')
-            parent = settings.default_program_parent_page
+            parent = settings.default_programs_page
             qs = Program.objects.filter(
                 active = True,
                 stream__isnull = True,

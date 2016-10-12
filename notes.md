@@ -18,13 +18,16 @@ This file is used as a reminder, can be used as crappy documentation too.
 
 
 
-# Long term TODO
-- debug/prod configuration
+# To discuss / To think
+- aircox_cms.signals: handle renaming of the program if the article's title has
+    not been changed -> need to cache of the title at __init__
+- ensure per station website for all generated publications
+- aircox_cms: remove "station" fields when it is possible in the pages & sections
 
+
+# Long term TODO
 programs:
     - sounds monitor: max_size of path, take in account
-
-controllers:
     - archives can be set afterwards for rerun, so check must be done
         at the same time we monitor
     - logs: archive functionnality

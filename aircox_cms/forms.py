@@ -4,7 +4,7 @@ from django.core.exceptions import ValidationError
 
 from honeypot.decorators import verify_honeypot_value
 
-import aircox.cms.models as models
+import aircox_cms.models as models
 
 
 class CommentForm(forms.ModelForm):

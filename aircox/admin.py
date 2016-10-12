@@ -82,7 +82,7 @@ class ProgramAdmin(NameableAdmin):
     schedule.short_description = _("Schedule")
 
     list_display = ('id', 'name', 'active', 'schedule')
-    fields = NameableAdmin.fields + [ 'active' ]
+    fields = NameableAdmin.fields + [ 'active', 'station' ]
     # TODO list_display
     inlines = [ ScheduleInline, StreamInline ]
 
