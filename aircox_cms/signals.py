@@ -1,4 +1,4 @@
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, pre_delete
 from django.dispatch import receiver
 from django.utils.translation import ugettext as _, ugettext_lazy
 from django.contrib.contenttypes.models import ContentType
@@ -130,5 +130,36 @@ def program_post_saved(sender, instance, created, *args, **kwargs):
         )
     )
     parent.add_child(instance = page)
+
+@receiver(pre_delete, sender=aircox.Program)
+def program_post_deleted(sender, instance, *args, **kwargs):
+    if not instance.page or (
+            instance.page.first().body or
+            Page.objects.descendant_of(instance).count()
+            ):
+        return
+    instance.page.delete()
+
+
+@receiver(post_save, sender=aircox.Diffusion)
+def diffusion_post_saved(sender, instance, created, *args, **kwargs):
+    import aircox_cms.models as models
+    # TODO/FIXME:   what about confirmed/unconfirmed;
+    #               what about delete when not confirmed?
+    if not created or instance.page.count():
+        return
+
+    page = models.DiffusionPage.from_diffusion(
+        instance, live = False
+    )
+    instance.program.page.first().add_child(
+        instance = page
+    )
+
+@receiver(pre_delete, sender=aircox.Program)
+def diffusion_post_deleted(sender, instance, *args, **kwargs):
+    if not instance.page or instance.page.first().body:
+        return
+    instance.page.delete()
 
 

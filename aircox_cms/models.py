@@ -384,6 +384,7 @@ class ProgramPage(Publication):
         verbose_name = _('program'),
         related_name = 'page',
         on_delete=models.SET_NULL,
+        unique = True,
         blank=True, null=True,
     )
     # rss = models.URLField()
@@ -469,8 +470,11 @@ class DiffusionPage(Publication):
         aircox.models.Diffusion,
         verbose_name = _('diffusion'),
         related_name = 'page',
-        on_delete=models.SET_NULL,
+        unique = True,
         null=True,
+        # not blank because we enforce the connection to a diffusion
+        #   (still users always tend to break sth)
+        on_delete=models.SET_NULL,
         limit_choices_to = {
             'initial__isnull': True,
         },
