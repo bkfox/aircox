@@ -6,6 +6,8 @@ from django.contrib.contenttypes.models import ContentType
 from wagtail.wagtailcore.models import Page, Site
 
 import aircox.models as aircox
+import aircox_cms.models as models
+import aircox_cms.sections as sections
 import aircox_cms.utils as utils
 
 # on a new diffusion
@@ -16,16 +18,12 @@ def station_post_saved(sender, instance, created, *args, **kwargs):
     Create the basis for the website: set up settings and pages
     that are common.
     """
-    from aircox_cms.models import \
-            WebsiteSettings, Publication, ProgramPage, \
-            TimetablePage, DynamicListPage, LogsPage
-    import aircox_cms.sections as sections
     if not created:
         return
 
     root_page = Page.objects.get(id=1)
 
-    homepage = Publication(
+    homepage = models.Publication(
         title = instance.name,
         slug = instance.slug,
         body = _(
@@ -46,7 +44,7 @@ def station_post_saved(sender, instance, created, *args, **kwargs):
     site.save()
 
     # settings
-    website_settings = WebsiteSettings(
+    website_settings = models.WebsiteSettings(
         site = site,
         station = instance,
         description = _("The website of the {name} radio").format(
@@ -57,13 +55,13 @@ def station_post_saved(sender, instance, created, *args, **kwargs):
     )
 
     # timetable
-    timetable = TimetablePage(
+    timetable = models.TimetablePage(
         title = _('Timetable'),
     )
     homepage.add_child(instance = timetable)
 
     # list page (search, terms)
-    list_page = DynamicListPage(
+    list_page = models.DynamicListPage(
         # title is dynamic: no need to specify
         title = _('Search'),
     )
@@ -71,7 +69,7 @@ def station_post_saved(sender, instance, created, *args, **kwargs):
     website_settings.list_page = list_page
 
     # programs' page: list of programs in a section
-    programs = Publication(
+    programs = models.Publication(
         title = _('Programs'),
     )
     homepage.add_child(instance = programs)
@@ -93,7 +91,7 @@ def station_post_saved(sender, instance, created, *args, **kwargs):
     website_settings.sync = True
 
     # logs (because it is a cool feature)
-    logs = LogsPage(
+    logs = models.LogsPage(
         title = _('Previously on air'),
         station = instance,
     )
@@ -106,7 +104,6 @@ def station_post_saved(sender, instance, created, *args, **kwargs):
 
 @receiver(post_save, sender=aircox.Program)
 def program_post_saved(sender, instance, created, *args, **kwargs):
-    import aircox_cms.models as models
     if not created or instance.page.count():
         return
 
@@ -131,10 +128,11 @@ def program_post_saved(sender, instance, created, *args, **kwargs):
     )
     parent.add_child(instance = page)
 
+
 @receiver(pre_delete, sender=aircox.Program)
 def program_post_deleted(sender, instance, *args, **kwargs):
-    if not instance.page or (
-            instance.page.first().body or
+    if not instance.page.count() or (
+            instance.page.first().specific.body or
             Page.objects.descendant_of(instance).count()
             ):
         return
@@ -143,9 +141,6 @@ def program_post_deleted(sender, instance, *args, **kwargs):
 
 @receiver(post_save, sender=aircox.Diffusion)
 def diffusion_post_saved(sender, instance, created, *args, **kwargs):
-    import aircox_cms.models as models
-    # TODO/FIXME:   what about confirmed/unconfirmed;
-    #               what about delete when not confirmed?
     if not created or instance.page.count():
         return
 
@@ -158,7 +153,7 @@ def diffusion_post_saved(sender, instance, created, *args, **kwargs):
 
 @receiver(pre_delete, sender=aircox.Program)
 def diffusion_post_deleted(sender, instance, *args, **kwargs):
-    if not instance.page or instance.page.first().body:
+    if not instance.page.count() or instance.page.first().specific.body:
         return
     instance.page.delete()
 

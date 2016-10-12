@@ -33,8 +33,6 @@ import aircox_cms.settings as settings
 from aircox_cms.utils import image_url
 from aircox_cms.sections import *
 
-import aircox_cms.signals
-
 
 @register_setting
 class WebsiteSettings(BaseSetting):

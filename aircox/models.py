@@ -294,6 +294,11 @@ class Program(Nameable):
         default = True,
         help_text = _('if not checked this program is no longer active')
     )
+    sync = models.BooleanField(
+        _('syncronise'),
+        default = True,
+        help_text = _('update later diffusions according to schedule changes')
+    )
 
     @property
     def path(self):
@@ -503,6 +508,24 @@ class Schedule(models.Model):
         help_text = 'this schedule is a rerun of this one',
     )
 
+    # initial cached data
+    __initial = None
+
+    def changed(self, fields = ['date','duration','frequency']):
+        initial = self._Schedule__initial
+        if not initial:
+            return
+
+        before, now = self.__initial, self.__dict__
+        before, now = {
+            f: getattr(before, f) for f in fields
+            if hasattr(before, f)
+        }, {
+            f: getattr(now, f) for f in fields
+            if hasattr(now, f)
+        }
+        return before == now
+
     @property
     def end(self):
         return self.date + utils.to_timedelta(self.duration)
@@ -626,6 +649,10 @@ class Schedule(models.Model):
             ) for date in dates
         ]
         return diffusions
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.__initial = self.__dict__.copy()
 
     def __str__(self):
         return ' | '.join([ '#' + str(self.id), self.program.name,

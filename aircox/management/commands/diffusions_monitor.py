@@ -128,16 +128,18 @@ class Command (BaseCommand):
             '--update', action='store_true',
             help='generate (unconfirmed) diffusions for the given month. '
                  'These diffusions must be confirmed manually by changing '
-                 'their type to "normal"')
+                 'their type to "normal"'
+        )
         group.add_argument(
             '--clean', action='store_true',
-            help='remove unconfirmed diffusions older than the given month')
-
+            help='remove unconfirmed diffusions older than the given month'
+        )
         group.add_argument(
             '--check', action='store_true',
-            help='check future unconfirmed diffusions from the given date '
-                 'agains\'t schedules and remove it if that do not match any '
-                 'schedule')
+            help='check unconfirmed later diffusions from the given '
+                 'date again'\'t schedule. If no schedule is found, remove '
+                 'it.'
+        )
 
         group = parser.add_argument_group('date')
         group.add_argument(
@@ -160,7 +162,6 @@ class Command (BaseCommand):
                  'thus must be approved manually; auto confirmes all '
                  'diffusions except those that conflicts with others'
         )
-
 
     def handle (self, *args, **options):
         date = tz.datetime(year = options.get('year'),
