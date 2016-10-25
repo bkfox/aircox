@@ -13,26 +13,40 @@
                 <th>{% trans "Date" %}</th>
                 {# Translators "Header for statistics view" #}
                 <th>{% trans "Diffusion or sound played" %}
-                <th colspan="100"></th>
+                <th></th>
             </tr>
 
             {% for item in stats.items %}
-            <tr>
-                <td>{{ item.date|date:"H:i" }}</td>
-                {# TODO: logs #}
-                <td>{{ item.program.name }}</td>
-                {% for tag,count in item.tags %}
-                <td>{{ tag }}: {{ count }}</td>
+                <tr class="log">
+                    <td>{{ item.date|date:"H:i" }}</td>
+                    {# TODO: logs #}
+                    {% if 'program' in item %}
+                    <td>{{ item.program.name }}</td>
+                    {% else %}
+                    <td>{{ item.comment }}</td>
+                    {% endif %}
+                    <td>{% for tag,count in item.tags %}
+                        {{ tag }}: {{ count }};
+                        {% endfor %}</td>
+                </tr>
+
+                {% for track in item.tracks %}
+                <tr class="track">
+                    <td></td>
+                    <td>{{ track.artist }} -- <emph>{{ track.title }}</emph> {{ track.version }}</td>
+                    <td>{{ track.tags.all|join:', ' }}</td>
+                </tr>
                 {% endfor %}
-            </tr>
             {% endfor %}
 
             <tr>
                 <td>{{ stats.date|date:'d/m/Y' }}</td>
-                <td>{% trans "Total and average" %} ({{ stats.tracks_count }})</td>
-                {% for tag, count, average in stats.tags %}
-                <td>{{ tag }}: <b>{{ count }} / {{ average|floatformat }}%</b></td>
+                {# TODO: translation block #}
+                <td>{% trans "Total and average" %} ({{ stats.tracks_count }} tracks)</td>
+                <td>{% for tag, count, average in stats.tags %}
+                    {{ tag }}: <b>{{ count }} / {{ average|floatformat }}%</b>;
                 {% endfor %}
+                </td>
             </tr>
         </table>
     </section>
