@@ -105,7 +105,8 @@ class Monitor:
             source = current_source.id,
             date = tz.now(),
             related = sound[0] if sound else None,
-            comment = None if sound else current_sound,
+            # keep sound path (if sound is removed, we keep that info)
+            comment = current_sound,
         )
 
     def trace_sound_tracks(self, log):

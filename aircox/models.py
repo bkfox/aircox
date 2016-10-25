@@ -377,52 +377,6 @@ class Program(Nameable):
         return qs[0] if qs else None
 
 
-class DiffusionManager(models.Manager):
-    def get_at(self, date = None, next = False):
-        """
-        Return a queryset of diffusions that have the given date
-        in their range.
-
-        If date is a datetime.date object, check only against the
-        date.
-        """
-        date = date or tz.now()
-        if not issubclass(type(date), datetime.datetime):
-            return self.filter(
-                models.Q(start__contains = date) | \
-                models.Q(end__contains = date)
-            )
-
-        if not next:
-            return self.filter(start__lte = date, end__gte = date) \
-                       .order_by('start')
-
-        return self.filter(
-            models.Q(start__lte = date, end__gte = date) |
-            models.Q(start__gte = date),
-        ).order_by('start')
-
-    def get_after(self, date = None):
-        """
-        Return a queryset of diffusions that happen after the given
-        date.
-        """
-        date = date_or_default(date)
-        return self.filter(
-            start__gte = date,
-        ).order_by('start')
-
-    def get_before(self, date):
-        """
-        Return a queryset of diffusions that finish before the given
-        date.
-        """
-        date = date_or_default(date)
-        return self.filter(
-            end__lte = date,
-        ).order_by('start')
-
-
 class Stream(models.Model):
     """
     When there are no program scheduled, it is possible to play sounds
@@ -669,6 +623,52 @@ class Schedule(models.Model):
     class Meta:
         verbose_name = _('Schedule')
         verbose_name_plural = _('Schedules')
+
+
+class DiffusionManager(models.Manager):
+    def get_at(self, date = None, next = False):
+        """
+        Return a queryset of diffusions that have the given date
+        in their range.
+
+        If date is a datetime.date object, check only against the
+        date.
+        """
+        date = date or tz.now()
+        if not issubclass(type(date), datetime.datetime):
+            return self.filter(
+                models.Q(start__contains = date) | \
+                models.Q(end__contains = date)
+            )
+
+        if not next:
+            return self.filter(start__lte = date, end__gte = date) \
+                       .order_by('start')
+
+        return self.filter(
+            models.Q(start__lte = date, end__gte = date) |
+            models.Q(start__gte = date),
+        ).order_by('start')
+
+    def get_after(self, date = None):
+        """
+        Return a queryset of diffusions that happen after the given
+        date.
+        """
+        date = date_or_default(date)
+        return self.filter(
+            start__gte = date,
+        ).order_by('start')
+
+    def get_before(self, date):
+        """
+        Return a queryset of diffusions that finish before the given
+        date.
+        """
+        date = date_or_default(date)
+        return self.filter(
+            end__lte = date,
+        ).order_by('start')
 
 
 class Diffusion(models.Model):
@@ -1036,7 +1036,7 @@ class Log(Related):
     Log sounds and diffusions that are played on the station.
 
     This only remember what has been played on the outputs, not on each
-    track; Source designate here which source is responsible of that.
+    source; Source designate here which source is responsible of that.
     """
     class Type(IntEnum):
         stop = 0x00

@@ -137,7 +137,7 @@ class Command (BaseCommand):
         group.add_argument(
             '--check', action='store_true',
             help='check unconfirmed later diffusions from the given '
-                 'date again'\'t schedule. If no schedule is found, remove '
+                 'date agains\'t schedule. If no schedule is found, remove '
                  'it.'
         )
 

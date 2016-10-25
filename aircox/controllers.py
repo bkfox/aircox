@@ -19,7 +19,7 @@ class Streamer:
     """
     Related station
     """
-    template_name = 'aircox/controllers/liquidsoap.liq'
+    template_name = 'aircox/config/liquidsoap.liq'
     """
     If set, use this template in order to generated the configuration
     file in self.path file

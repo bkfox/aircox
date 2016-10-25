@@ -1,0 +1,46 @@
+{% load i18n %}
+
+<div id='stats'>
+    {% for stats in statistics %}
+    <section class="station">
+        <header>
+            <h1>{{ stats.station.name }}</h1>
+            <h2>- {{ stats.date|date:'l d F Y' }}</h2>
+        </header>
+
+        <table border=1>
+            <tr>
+                <th>{% trans "Date" %}</th>
+                {# Translators "Header for statistics view" #}
+                <th>{% trans "Diffusion or sound played" %}
+                <th colspan="100"></th>
+            </tr>
+
+            {% for item in stats.items %}
+            <tr>
+                <td>{{ item.date|date:"H:i" }}</td>
+                {# TODO: logs #}
+                <td>{{ item.program.name }}</td>
+                {% for tag,count in item.tags %}
+                <td>{{ tag }}: {{ count }}</td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+
+            <tr>
+                <td>{{ stats.date|date:'d/m/Y' }}</td>
+                <td>{% trans "Total and average" %} ({{ stats.tracks_count }})</td>
+                {% for tag, count, average in stats.tags %}
+                <td>{{ tag }}: <b>{{ count }} / {{ average|floatformat }}%</b></td>
+                {% endfor %}
+            </tr>
+        </table>
+    </section>
+    {% endfor %}
+</div>
+
+
+
+
+
+
