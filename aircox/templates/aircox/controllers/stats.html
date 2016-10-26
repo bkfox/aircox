@@ -18,21 +18,17 @@
 
             {% for item in stats.items %}
                 <tr class="log">
-                    <td>{{ item.date|date:"H:i" }}</td>
-                    {# TODO: logs #}
-                    {% if 'program' in item %}
-                    <td>{{ item.program.name }}</td>
-                    {% else %}
-                    <td>{{ item.comment }}</td>
-                    {% endif %}
-                    <td>{% for tag,count in item.tags %}
+                    <th>{{ item.date|date:"H:i" }}</th>
+                    <th>{{ item.name }}</th>
+                    <th>{% for tag,count in item.tags.items %}
                         {{ tag }}: {{ count }};
-                        {% endfor %}</td>
+                        {% endfor %}</th>
+                    <th>{{ item.type }}</th>
                 </tr>
 
                 {% for track in item.tracks %}
                 <tr class="track">
-                    <td></td>
+                    <td>{{ track.date|date:"H:i" }}</td>
                     <td>{{ track.artist }} -- <emph>{{ track.title }}</emph> {{ track.version }}</td>
                     <td>{{ track.tags.all|join:', ' }}</td>
                 </tr>
@@ -42,7 +38,7 @@
             <tr>
                 <td>{{ stats.date|date:'d/m/Y' }}</td>
                 {# TODO: translation block #}
-                <td>{% trans "Total and average" %} ({{ stats.tracks_count }} tracks)</td>
+                <td>{% trans "Total and average" %} ({{ stats.count }} tracks)</td>
                 <td>{% for tag, count, average in stats.tags %}
                     {{ tag }}: <b>{{ count }} / {{ average|floatformat }}%</b>;
                 {% endfor %}

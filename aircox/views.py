@@ -126,7 +126,38 @@ class Monitor(View,TemplateResponseMixin,LoginRequiredMixin):
 class StatisticsView(View,TemplateResponseMixin,LoginRequiredMixin):
     template_name = 'aircox/controllers/stats.html'
 
-    class Stats:
+    class Taggable:
+        tags = None
+
+        def add_tags(self, qs):
+            if not self.tags:
+                self.tags = {}
+
+            qs = qs.values('tags__name').annotate(count = Count('tags__name')) \
+                    .order_by('tags__name')
+            for q in qs:
+                key = q['tags__name']
+                if not key:
+                    continue
+
+                value = q['count']
+                if key not in self.tags:
+                    self.tags[key] = value
+                else:
+                    self.tags[key] += value
+
+    class Item (Taggable):
+        type = ''
+        date = None
+        name = None
+        related = None
+        tracks = None
+        tags = None
+
+        def __init__(self, **kwargs):
+            self.__dict__.update(kwargs)
+
+    class Stats (Taggable):
         station = None
         date = None
         items = None
@@ -136,48 +167,66 @@ class StatisticsView(View,TemplateResponseMixin,LoginRequiredMixin):
             - tags: [ (tag_name, tag_count), ...]
             - tracks_count: total count of tracks
         """
-        tags = None
-        """
-        Total of played track's tags: [(tag_name, tag_count, tag_average), ...]
-        on the station for the given date. Note: tag_average is in %
-        """
-        tracks_count = 0
+        count = 0
 
         def __init__(self, **kwargs):
             self.items = []
-            self.tags = []
             self.__dict__.update(kwargs)
 
     def get_stats(self, station, date):
         """
         Return statistics for the given station and date.
         """
-        items = station.on_air(date)
-        stats = self.Stats(station = station, items = items, date = date)
+        stats = self.Stats(station = station, date = date,
+                           items = [], tags = {})
 
-        sums = {}
-        total = 0
+        last_item = None
+        for elm in station.on_air(date):
+            qs = None
+            item = None
+            if type(elm) == models.Diffusion:
+                qs = models.Track.objects.get_for(elm)
+                item = self.Item(
+                    type = _('Diffusion'),
+                    date = elm.date,
+                    name = elm.program.name,
+                    related = elm,
+                    tracks = qs[:]
+                )
+                item.add_tags(qs)
+                stats.items.append(item)
+                stats.count += len(item.tracks)
 
-        for item in items:
-            qs = models.Track.objects.get_for(item)
-            item.tracks = qs
-            item.tracks_count = qs.count()
+            else:
+                # type is Track (related object of a track is a sound)
+                stream = elm.related.related
+                qs = models.Track.objects.filter(pk = elm.related.pk)
 
-            qs = qs.values('tags__name').annotate(count = Count('tags__name')) \
-                    .order_by('tags__name')
-            item.tags = [
-                (q['tags__name'], q['count'])
-                for q in qs if q['tags__name']
-            ]
-            for name, count in item.tags:
-                sums[name] = (sums.get(name) or 0) + count
+                if last_item and last_item.related == stream:
+                    item = last_item
+                else:
+                    item = self.Item(
+                        type = _('Stream'),
+                        date = elm.date,
+                        name = stream.path,
+                        related = stream,
+                        tracks = []
+                    )
+                    stats.items.append(item)
 
-            total += item.tracks_count
+                elm.related.date = elm.date
+                item.tracks.insert(0, elm.related)
+                item.date = min(elm.date, item.date)
+                item.add_tags(qs)
+                stats.count += 1
 
-        stats.tracks_count = total
+            last_item = item
+            stats.add_tags(qs)
+
+        print(stats.tags)
         stats.tags = [
-            (name, count, count / total * 100)
-            for name, count in sums.items()
+            (name, count, count / stats.count * 100)
+            for name, count in stats.tags.items()
         ]
         stats.tags.sort(key=lambda s: s[0])
         return stats

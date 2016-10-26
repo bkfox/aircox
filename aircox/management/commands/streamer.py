@@ -132,7 +132,8 @@ class Monitor:
                     type = Log.Type.play,
                     source = log.source,
                     date = pos,
-                    related = track
+                    related = track,
+                    comment = track,
                 )
 
     def sync_playlists(self):
