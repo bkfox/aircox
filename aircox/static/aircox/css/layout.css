@@ -1,0 +1,58 @@
+
+body {
+    background-color: #373737;
+    background-color: #F2F2F2;
+    font-family: 'Myriad Pro', Calibri, Helvetica, Arial, sans-serif;
+    font-size: 18px;
+    line-height: 1.5;
+}
+
+main {
+    padding: 1em;
+}
+
+
+input {
+    padding: 0.4em;
+}
+
+
+table {
+    background-color: #f2f2f2;
+    border: 1px black solid;
+    width: 80%;
+    margin: auto;
+}
+
+td {
+    margin: 0;
+    padding: 0 0.4em;
+}
+
+th {
+    text-align: left;
+    font-weight: normal;
+    margin: 0;
+    padding: 0.4em;
+}
+
+tr:not(.header):hover {
+    background-color: rgba(0, 0, 0, 0.1);
+}
+
+tr.header {
+    background-color: #212121;
+    color: #eee;
+}
+
+tr.bottom > td {
+    vertical-align: top;
+    padding: 0.4em;
+}
+
+tr.subdata {
+    font-style: italic;
+    font-size: 0.9em;
+}
+
+

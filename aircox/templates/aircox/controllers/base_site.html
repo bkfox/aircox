@@ -1,0 +1,27 @@
+{% load static %}
+
+<html>
+    <head>
+        <title>Aircox</title>
+        <link rel="stylesheet" href="{% static 'aircox/css/layout.css' %}" type="text/css" />
+    </head>
+    <body>
+        <sidebar class="sidebar main-sidebar">
+        </sidebar>
+
+        <main>
+        {% block title %}
+        <h1>{{ title|default:"Aircox" }}</h1>
+        {% endblock %}
+
+        <div class="content">
+        {% block content %}
+
+        {% endblock %}
+        </div>
+        </main>
+    </body>
+</html>
+
+
+

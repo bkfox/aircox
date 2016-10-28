@@ -45,3 +45,4 @@ if settings.DEBUG:
     )
 
 urlpatterns.append(url(r'', include(wagtail_urls)))
+

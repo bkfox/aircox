@@ -17,7 +17,7 @@ USE_L10N = True
 USE_TZ = True
 
 LANGUAGE_CODE = os.environ.get('LANG') or 'en_US'
-TIME_ZONE = os.environ.get('TZ') or 'Europe/Brussels'
+TIME_ZONE = 'UTC' # os.environ.get('TZ') or 'Europe/Brussels'
 
 try:
     import locale

@@ -1,46 +1,77 @@
+{% extends "aircox/controllers/base_site.html" %}
 {% load i18n %}
 
+{% block title %}
+<h1>Statistics of the stations</h1>
+{% endblock %}
+
+{% block content %}
 <div id='stats'>
+
+    {# TODO here #}
+    <form action="?" method="GET">
+        Go to this date:
+        <input name="day" type="number" placeholder="{% trans "day" %}"
+               value="{{ statistics.0.date.day }}"></input>
+        <input name="month" type="number" placeholder="{% trans "month" %}"
+               value="{{ statistics.0.date.month }}"></input>
+        <input name="year" type="number" placeholder="{% trans "year" %}"
+               value="{{ statistics.0.date.year }}"></input>
+        <button type="submit">Show</button>
+    </form>
+
+
     {% for stats in statistics %}
     <section class="station">
         <header>
-            <h1>{{ stats.station.name }}</h1>
-            <h2>- {{ stats.date|date:'l d F Y' }}</h2>
+            <h2>{{ stats.station.name }},
+                {{ stats.date|date:'l d F Y' }}</h2>
         </header>
 
-        <table border=1>
-            <tr>
+        <table cellspacing="0" cellpading="0" class="object">
+            <tr class="header">
                 <th>{% trans "Date" %}</th>
+                <th width="10%">{% trans "Type" %}
                 {# Translators "Header for statistics view" #}
-                <th>{% trans "Diffusion or sound played" %}
-                <th></th>
+                <th width="50%">{% trans "Diffusion or sound played" %}
+                <th width="30%">{% trans "Tags" %}</th>
             </tr>
 
             {% for item in stats.items %}
-                <tr class="log">
-                    <th>{{ item.date|date:"H:i" }}</th>
+                <tr>
+                    <th>{{ item.date|time:"H:i" }}</th>
+                    <th>{{ item.type }}</th>
                     <th>{{ item.name }}</th>
                     <th>{% for tag,count in item.tags.items %}
                         {{ tag }}: {{ count }};
                         {% endfor %}</th>
-                    <th>{{ item.type }}</th>
                 </tr>
 
                 {% for track in item.tracks %}
-                <tr class="track">
-                    <td>{{ track.date|date:"H:i" }}</td>
+                <tr class="subdata">
+                    <td>{{ track.date|time:"H:i" }}</td>
+                    <td>{% trans "Track" %}</td>
                     <td>{{ track.artist }} -- <emph>{{ track.title }}</emph> {{ track.version }}</td>
                     <td>{{ track.tags.all|join:', ' }}</td>
                 </tr>
                 {% endfor %}
             {% endfor %}
 
-            <tr>
+            <tr class="bottom">
                 <td>{{ stats.date|date:'d/m/Y' }}</td>
+                <td>{% trans "Total" %}</td>
                 {# TODO: translation block #}
-                <td>{% trans "Total and average" %} ({{ stats.count }} tracks)</td>
+                <td>
+                    {% with stats.items|length as items_count %}
+                    {% with stats.count as tracks_count %}
+                    {% blocktrans %}
+                    {{ items_count }} items, with a total of {{ tracks_count }} tracks
+                    {% endblocktrans %}
+                    {% endwith %}
+                    {% endwith %}
+                </td>
                 <td>{% for tag, count, average in stats.tags %}
-                    {{ tag }}: <b>{{ count }} / {{ average|floatformat }}%</b>;
+                    <span>{{ tag }}: <b>{{ average|floatformat }}%</b> ({{ count }})<br>
                 {% endfor %}
                 </td>
             </tr>
@@ -48,9 +79,6 @@
     </section>
     {% endfor %}
 </div>
-
-
-
-
+{% endblock %}
 
 

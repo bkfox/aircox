@@ -208,6 +208,8 @@ class Station(Nameable):
                 logs.filter(date__gt = diff.end, date__lt = diff_.start) \
                     if diff_ else \
                 logs.filter(date__gt = diff.end)
+            print(diff.end, *[str(log.date > diff.end) + " " + str(log.date) for log in logs])
+
             diff_ = diff
             items.extend(logs_)
             items.append(diff)
@@ -217,7 +219,7 @@ class Station(Nameable):
         if diff_:
             if count and len(items) >= count:
                 return items[:count]
-            logs_ = logs.filter(date__lt = diff_.end)
+            logs_ = logs.filter(date__lt = diff_.start)
         else:
             logs_ = logs.all()
 

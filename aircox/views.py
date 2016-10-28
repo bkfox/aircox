@@ -181,7 +181,7 @@ class StatisticsView(View,TemplateResponseMixin,LoginRequiredMixin):
                            items = [], tags = {})
 
         last_item = None
-        for elm in station.on_air(date):
+        for elm in reversed(station.on_air(date)):
             qs = None
             item = None
             if type(elm) == models.Diffusion:
@@ -215,7 +215,7 @@ class StatisticsView(View,TemplateResponseMixin,LoginRequiredMixin):
                     stats.items.append(item)
 
                 elm.related.date = elm.date
-                item.tracks.insert(0, elm.related)
+                item.tracks.append(elm.related)
                 item.date = min(elm.date, item.date)
                 item.add_tags(qs)
                 stats.count += 1
@@ -223,7 +223,6 @@ class StatisticsView(View,TemplateResponseMixin,LoginRequiredMixin):
             last_item = item
             stats.add_tags(qs)
 
-        print(stats.tags)
         stats.tags = [
             (name, count, count / stats.count * 100)
             for name, count in stats.tags.items()

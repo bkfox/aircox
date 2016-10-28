@@ -1,4 +1,3 @@
-
 from django.conf.urls import include, url
 import aircox.views as views
 
