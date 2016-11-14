@@ -12,6 +12,7 @@ import aircox.utils as utils
 
 @receiver(post_save, sender=models.Schedule)
 def schedule_post_saved(sender, instance, created, *args, **kwargs):
+    # TODO: case instance.program has changed
     if not instance.program.sync:
         return
 
@@ -19,8 +20,12 @@ def schedule_post_saved(sender, instance, created, *args, **kwargs):
     if not initial or not instance.changed(['date','duration', 'frequency']):
         return
 
+    if not initial.get('date') or not initial.get('duration') or not initial.get('frequency'):
+        return
+
     # old schedule and timedelta
     old_sched = models.Schedule(
+        program = instance.program,
         date = initial['date'],
         duration = initial['duration'],
         frequency = initial['frequency'],

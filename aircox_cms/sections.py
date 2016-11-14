@@ -202,13 +202,29 @@ class ListBase(models.Model):
         ], heading=_('sorting'))
     ]
 
+    def __get_related(self, qs):
+        related = self.related and self.related.specific
+
+        if self.siblings:
+            qs = qs.sibling_of(related)
+        else:
+            qs = qs.descendant_of(related)
+
+        date = related.date if hasattr(related, 'date') else \
+                related.first_published_at
+        if self.date_filter == self.DateFilter.before_related:
+            qs = qs.filter(date__lt = date)
+        elif self.date_filter == self.DateFilter.after_related:
+            qs = qs.filter(date__gte = date)
+        return qs
+
+
     def get_queryset(self):
         """
         Get queryset based on the arguments. This class is intended to be
         reusable by other classes if needed.
         """
         from aircox_cms.models import Publication
-        related = self.related and self.related.specific
 
         # model
         if self.model:
@@ -218,18 +234,9 @@ class ListBase(models.Model):
         qs = qs.live().not_in_menu()
 
         # related
-        if related:
-            if self.siblings:
-                qs = qs.sibling_of(related)
-            else:
-                qs = qs.descendant_of(related)
+        if self.related:
+            qs = self.__get_related(qs)
 
-            date = related.date if hasattr(related, 'date') else \
-                    related.first_published_at
-            if self.date_filter == self.DateFilter.before_related:
-                qs = qs.filter(date__lt = date)
-            elif self.date_filter == self.DateFilter.after_related:
-                qs = qs.filter(date__gte = date)
         # date
         date = tz.now()
         if self.date_filter == self.DateFilter.previous:

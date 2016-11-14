@@ -83,7 +83,7 @@ def station_post_saved(sender, instance, created, *args, **kwargs):
     section.add_item(sections.SectionList(
         count = 15,
         url_text = _('All programs'),
-        model = ContentType.objects.get_for_model(ProgramPage),
+        model = ContentType.objects.get_for_model(models.ProgramPage),
         related = programs,
     ))
 
@@ -131,12 +131,10 @@ def program_post_saved(sender, instance, created, *args, **kwargs):
 
 @receiver(pre_delete, sender=aircox.Program)
 def program_post_deleted(sender, instance, *args, **kwargs):
-    if not instance.page.count() or (
-            instance.page.first().specific.body or
-            Page.objects.descendant_of(instance).count()
-            ):
-        return
-    instance.page.delete()
+    for page in instance.page.all():
+        if page.specific.body or Page.objects.descendant_of(page).count():
+            continue
+        page.delete()
 
 
 @receiver(post_save, sender=aircox.Diffusion)
@@ -153,8 +151,9 @@ def diffusion_post_saved(sender, instance, created, *args, **kwargs):
 
 @receiver(pre_delete, sender=aircox.Program)
 def diffusion_post_deleted(sender, instance, *args, **kwargs):
-    if not instance.page.count() or instance.page.first().specific.body:
-        return
-    instance.page.delete()
+    for page in instance.page.all():
+        if page.specific.body or Page.objects.descendant_of(page).count():
+            continue
+        page.delete()
 
 

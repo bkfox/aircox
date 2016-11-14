@@ -1,12 +1,14 @@
-{% extends "aircox/controllers/base_site.html" %}
+{% extends "admin/base_site.html" %}
+{# {% extends "aircox/controllers/base_site.html" %} #}
 {% load i18n %}
 
 {% block title %}
-<h1>Statistics of the stations</h1>
+{% trans "Statistics of the stations" %}
 {% endblock %}
 
 {% block content %}
-<div id='stats'>
+<div id='content'>
+    <h1>{% trans "Statistics of the stations" %}</h1>
 
     {# TODO here #}
     <form action="?" method="GET">
@@ -58,10 +60,10 @@
             {% endfor %}
 
             <tr class="bottom">
-                <td>{{ stats.date|date:'d/m/Y' }}</td>
-                <td>{% trans "Total" %}</td>
+                <th>{{ stats.date|date:'d/m/Y' }}</th>
+                <th>{% trans "Total" %}</th>
                 {# TODO: translation block #}
-                <td>
+                <th>
                     {% with stats.items|length as items_count %}
                     {% with stats.count as tracks_count %}
                     {% blocktrans %}
@@ -69,11 +71,11 @@
                     {% endblocktrans %}
                     {% endwith %}
                     {% endwith %}
-                </td>
-                <td>{% for tag, count, average in stats.tags %}
+                </th>
+                <th>{% for tag, count, average in stats.tags %}
                     <span>{{ tag }}: <b>{{ average|floatformat }}%</b> ({{ count }})<br>
                 {% endfor %}
-                </td>
+                </th>
             </tr>
         </table>
     </section>

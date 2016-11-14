@@ -26,6 +26,7 @@ import aircox.urls
 
 
 urlpatterns = [
+    url(r'^jet/', include('jet.urls', 'jet')),
     url(r'^admin/', include(admin.site.urls)),
     url(r'^aircox/', include(aircox.urls.urls)),
 

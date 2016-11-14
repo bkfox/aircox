@@ -32,6 +32,7 @@ except:
 
 # Application definition
 INSTALLED_APPS = (
+    'jet',
     'wagtail.wagtailforms',
     'wagtail.wagtailredirects',
     'wagtail.wagtailembeds',
