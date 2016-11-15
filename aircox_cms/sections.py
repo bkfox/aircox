@@ -487,8 +487,9 @@ class Section(ClusterableModel):
             FieldPanel('name'),
             FieldPanel('position'),
             FieldPanel('model'),
+            FieldPanel('page'),
         ], heading=_('General')),
-        InlinePanel('places', label=_('Section Items')),
+        # InlinePanel('items', label=_('Section Items')),
     ]
 
     @classmethod
@@ -500,11 +501,14 @@ class Section(ClusterableModel):
         qs = Section.objects.filter(position = position)
         if page:
             qs = qs.filter(
+                models.Q(page__isnull = True) |
+                models.Q(page = page)
+            )
+            qs = qs.filter(
                 models.Q(model__isnull = True) |
                 models.Q(
                     model = ContentType.objects.get_for_model(page).pk
-                ) |
-                models.Q(page = page)
+                )
             )
         return qs
 
@@ -513,37 +517,20 @@ class Section(ClusterableModel):
         Add an item to the section. Automatically save the item and
         create the corresponding SectionPlace.
         """
-        # TODO: arbitrary position; Orderable.sort_order?
+        item.section = self
         item.save()
-        place, created = SectionPlace.objects.get_or_create(
-            section = self,
-            item = item,
-        )
 
     def render(self, request, page = None, context = None, *args, **kwargs):
+        # if self.page and page != self.page.specific:
+        #    return ''
+
         return ''.join([
-            place.item.specific.render(request, page, context, *args, **kwargs)
-            for place in self.places.all()
+            item.specific.render(request, page, context, *args, **kwargs)
+            for item in self.items.all().order_by('order')
         ])
 
     def __str__(self):
         return '{}: {}'.format(self.__class__.__name__, self.name or self.pk)
-
-
-class SectionPlace(Orderable):
-    section = ParentalKey(Section, related_name='places')
-    item = models.ForeignKey(
-        'SectionItem',
-        verbose_name=_('item'),
-    )
-
-    panels = [ SnippetChooserPanel('item'), ]
-
-    class Meta:
-        unique_together = ('section', 'item')
-
-    def __str__(self):
-        return '{}: {}'.format(self.__class__.__name__, self.title or self.pk)
 
 
 class SectionItemMeta(models.base.ModelBase):
@@ -576,6 +563,12 @@ class SectionItem(models.Model,metaclass=SectionItemMeta):
     """
     Base class for a section item.
     """
+    section = ParentalKey(Section, related_name='items')
+    order = models.IntegerField(
+        _('order'),
+        default = 100,
+        help_text = _('position in the menu. The higher, the latest to render')
+    )
     real_type = models.CharField(
         max_length=32,
         blank = True, null = True,
@@ -598,8 +591,10 @@ class SectionItem(models.Model,metaclass=SectionItemMeta):
     )
     panels = [
         MultiFieldPanel([
+            FieldPanel('section'),
             FieldPanel('title'),
             FieldPanel('show_title'),
+            FieldPanel('order'),
             FieldPanel('css_class'),
         ], heading=_('General')),
     ]
@@ -782,31 +777,7 @@ class SectionLink(RelatedLinkBase, SectionItem):
     Render a link to a page or a given url.
     Can either be used standalone or in a SectionLinkList
     """
-    parent = ParentalKey('SectionLinkList', related_name='links',
-                         blank=True, null=True)
     panels = SectionItem.panels + RelatedLinkBase.panels
-
-
-@register_snippet
-class SectionLinkList(SectionRelativeItem, ClusterableModel):
-    """
-    Render a list of links. If related to the current page, print
-    the page's links otherwise, the assigned link list.
-
-    Note: assign the link's class to the <a> tag if there is some.
-    """
-    panels = SectionItem.panels + [
-        InlinePanel('links', label=_('links'), help_text=_(
-            'If the list is related to the current page, theses links '
-            'will be used when there is no links found for this publication'
-        ))
-    ]
-
-    def get_context(self, request, page):
-        context = super().get_context(request, page)
-        links = self.related_attr(page, 'related_link') or self.links
-        context['object_list'] = links.all()
-        return context
 
 
 @register_snippet

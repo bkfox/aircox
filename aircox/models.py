@@ -422,6 +422,7 @@ class Schedule(models.Model):
     # the schedule is present.
     # For ponctual programs, there is no need for a schedule, only a diffusion
     class Frequency(IntEnum):
+        ponctual = 0b000000
         first = 0b000001
         second = 0b000010
         third = 0b000100
@@ -445,6 +446,7 @@ class Schedule(models.Model):
         _('frequency'),
         choices = [
             (int(y), {
+                'ponctual': _('ponctual'),
                 'first': _('first week of the month'),
                 'second': _('second week of the month'),
                 'third': _('third week of the month'),

@@ -29,7 +29,7 @@ def station_post_saved(sender, instance, created, *args, **kwargs):
         body = _(
             'If you see this page, then Aircox is running for the station '
             '{station.name}. You might want to change it to a better one. '
-        ),
+        ).format(station = instance),
     )
     root_page.add_child(instance=homepage)
 
@@ -75,13 +75,14 @@ def station_post_saved(sender, instance, created, *args, **kwargs):
     homepage.add_child(instance = programs)
 
     section = sections.Section(
-        name = _('Programs List'),
+        name = _('Programs'),
         position = 'post_content',
         page = programs,
     )
     section.save();
     section.add_item(sections.SectionList(
         count = 15,
+        title = _('Programs'),
         url_text = _('All programs'),
         model = ContentType.objects.get_for_model(models.ProgramPage),
         related = programs,
