@@ -3,8 +3,12 @@
 
 {% block content %}
 {% with link=self.as_dict %}
-<a href="{{ link.url }}">
-    {% if link.icon %}{% image link.icon fill-32x32 class="icon link_icon" height='' width='' %}{% endif %}
+<a href="{{ link.url }}" {% if self.info %}title="{{ self.info }}"{% endif %}>
+    {% if link.icon %}
+        {% image link.icon fill-32x32 class="icon link_icon" height='' width='' %}
+    {% elif link.icon_path %}
+        <img src="{{ link.icon_path }}" class="icon link_icon"/>
+    {% endif %}
     {{ link.text }}
 </a>
 {% endwith %}

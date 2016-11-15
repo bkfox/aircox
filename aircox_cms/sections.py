@@ -9,6 +9,7 @@ from django.utils.functional import cached_property
 from django.core.urlresolvers import reverse
 from django.template.loader import render_to_string
 from django.contrib.contenttypes.models import ContentType
+from django.contrib.staticfiles.templatetags.staticfiles import static
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 from wagtail.wagtailcore.models import Page, Orderable
@@ -99,18 +100,32 @@ class RelatedLinkBase(Orderable):
         null=True, blank=True,
         on_delete=models.SET_NULL,
         related_name='+',
-        help_text = _('icon to display before the url'),
+        help_text = _(
+            'icon from the gallery'
+        ),
     )
-    # icon = models.ImageField(
-    #    verbose_name = _('icon'),
-    #    null=True, blank=True,
-    #    help_text = _('icon to display before the url'),
-    #)
+    icon_path = models.CharField(
+        _('icon path'),
+        null=True, blank=True,
+        max_length=128,
+        help_text = _(
+            'icon from a given URL or path in the directory of static files'
+        )
+    )
     text = models.CharField(
         _('text'),
         max_length = 64,
         null = True, blank=True,
-        help_text = _('text to display of the link'),
+        help_text = _('text of the link'),
+    )
+    info = models.CharField(
+        _('info'),
+        max_length = 128,
+        null=True, blank=True,
+        help_text = _(
+            'description displayed in a popup when the mouse hovers '
+            'the link'
+        )
     )
 
     class Meta:
@@ -119,11 +134,23 @@ class RelatedLinkBase(Orderable):
     panels = [
         MultiFieldPanel([
             FieldPanel('text'),
+            FieldPanel('info'),
             ImageChooserPanel('icon'),
+            FieldPanel('icon_path'),
             FieldPanel('url'),
             PageChooserPanel('page'),
         ], heading=_('link'))
     ]
+
+    def icon_url(self):
+        """
+        Return icon_path as a complete url, since it can either be an
+        url or a path to static file.
+        """
+        if self.icon_path.startswith('http://') or \
+                self.icon_path.startswith('https://'):
+            return self.icon_path
+        return static(self.icon_path)
 
     def as_dict(self):
         """
@@ -131,13 +158,15 @@ class RelatedLinkBase(Orderable):
         'url', 'icon', 'text'
         """
         if self.page:
-            url, text = self.page.url, self.page.title
+            url, text = self.page.url, self.text or self.page.title
         else:
-            url, text = self.url, self.url
+            url, text = self.url, self.text or self.url
         return {
             'url': url,
-            'text': self.text or text,
-            'icon': self.icon
+            'text': text,
+            'info': self.info,
+            'icon': self.icon,
+            'icon_path': self.icon_path and self.icon_url(),
         }
 
 
@@ -467,6 +496,11 @@ class Section(ClusterableModel):
         help_text = _('name of the template block in which the section must '
                       'be set'),
     )
+    order = models.IntegerField(
+        _('order'),
+        default = 100,
+        help_text = _('order of rendering, the higher the latest')
+    )
     model = models.ForeignKey(
         ContentType,
         verbose_name = _('model'),
@@ -510,7 +544,7 @@ class Section(ClusterableModel):
                     model = ContentType.objects.get_for_model(page).pk
                 )
             )
-        return qs
+        return qs.order_by('order','pk')
 
     def add_item(self, item):
         """
@@ -521,12 +555,9 @@ class Section(ClusterableModel):
         item.save()
 
     def render(self, request, page = None, context = None, *args, **kwargs):
-        # if self.page and page != self.page.specific:
-        #    return ''
-
         return ''.join([
             item.specific.render(request, page, context, *args, **kwargs)
-            for item in self.items.all().order_by('order')
+            for item in self.items.all().order_by('order','pk')
         ])
 
     def __str__(self):
@@ -567,7 +598,7 @@ class SectionItem(models.Model,metaclass=SectionItemMeta):
     order = models.IntegerField(
         _('order'),
         default = 100,
-        help_text = _('position in the menu. The higher, the latest to render')
+        help_text = _('order of rendering, the higher the latest')
     )
     real_type = models.CharField(
         max_length=32,
@@ -772,12 +803,27 @@ class SectionImage(SectionRelativeItem):
 
 
 @register_snippet
-class SectionLink(RelatedLinkBase, SectionItem):
+class SectionLinkList(ClusterableModel, SectionItem):
+    panels = SectionItem.panels + [
+        InlinePanel('links', label=_('Links')),
+    ]
+
+@register_snippet
+class SectionLink(RelatedLinkBase):
     """
     Render a link to a page or a given url.
     Can either be used standalone or in a SectionLinkList
     """
-    panels = SectionItem.panels + RelatedLinkBase.panels
+    parent = ParentalKey(
+        'SectionLinkList', related_name = 'links',
+        null = True
+    )
+
+    def __str__(self):
+        return 'link: {} #{}'.format(
+            self.text or (self.page and self.page.title) or self.title,
+            self.pk
+        )
 
 
 @register_snippet

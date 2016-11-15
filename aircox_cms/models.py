@@ -222,8 +222,9 @@ class Comment(models.Model):
         return super().save(*args, **kwargs)
 
 
-class RelatedLink(RelatedLinkBase):
+class PublicationRelatedLink(RelatedLinkBase):
     parent = ParentalKey('Publication', related_name='related_links')
+
 
 class PublicationTag(TaggedItemBase):
     content_object = ParentalKey('Publication', related_name='tagged_items')
