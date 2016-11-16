@@ -62,29 +62,64 @@ ul {
 
 
 /** content: menus **/
-nav.menu {
+.menu {
     padding: 0.4em;
 }
 
-.menu.top {
-    padding: 0.2em;
-    height: 2.5em;
-    margin-bottom: 1em;
-    background-color: white;
-    box-shadow: 0em 0em 0.2em black;
-}
-    .menu.top * {
-        vertical-align: bottom;
+    body > .top *,
+    body > .header * {
+        vertical-align: middle;
     }
 
-    .menu.top > section {
+    body > .top section,
+    body > .header section {
         display: inline-block;
     }
 
-    .menu.top a {
+    body > .top a,
+    body > .header a {
         display: inline-block;
         margin: 0.2em 1em;
     }
+
+
+body > .top {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: calc(100% - 0.8em);
+    height: 2.5em;
+    background-color: white;
+    box-shadow: 0em 0em 0.2em black;
+    transition: opacity 1.5s;
+}
+
+    body[scrollY] > .top {
+        opacity: 0.1;
+        transition: opacity 1.5s 1s;
+    }
+
+    body > .top:hover {
+        opacity: 1.0;
+        transition: opacity 1.5s;
+    }
+
+
+body > .header {
+    overflow: hidden;
+    margin-top: 3.3em;
+    margin-bottom: 1em;
+}
+
+    body > .header > div {
+        width: 15000%;
+    }
+
+    body > .header > div > section {
+        margin: 0;
+        margin-right: -0.4em;
+    }
+
 
 .page_left, .page_right {
     max-width: 16em;

@@ -470,6 +470,74 @@ class DatedListBase(models.Model):
         }
 
 
+class TemplateMixinMeta(models.base.ModelBase):
+    """
+    Metaclass for SectionItem, assigning needed values such as `template`.
+
+    It needs to load the item's template if the section uses the default
+    one, and throw error if there is an error in the template.
+    """
+    def __new__(cls, name, bases, attrs):
+        from django.template.loader import get_template
+        from django.template import TemplateDoesNotExist
+
+        cl = super().__new__(cls, name, bases, attrs)
+        if not hasattr(cl, '_meta'):
+            return cl
+
+        if not 'template' in attrs:
+            cl.snake_name = camelcase_to_underscore(name)
+            cl.template = '{}/sections/{}.html'.format(
+                cl._meta.app_label,
+                cl.snake_name,
+            )
+            if name != 'SectionItem':
+                try:
+                    get_template(cl.template)
+                except TemplateDoesNotExist:
+                    cl.template = 'aircox_cms/sections/section_item.html'
+        return cl
+
+
+class TemplateMixin(metaclass=TemplateMixinMeta):
+    def get_context(self, request, page):
+        """
+        Default context attributes:
+        * self: section being rendered
+        * page: current page being rendered
+        * request: request used to render the current page
+
+        Other context attributes usable in the default template:
+        * content: **safe string** set as content of the section
+        * hide: DO NOT render the section, render only an empty string
+        """
+        return {
+            'self': self,
+            'page': page,
+            'request': request,
+        }
+
+    def render(self, request, page, context, *args, **kwargs):
+        """
+        Render the section. Page is the current publication being rendered.
+
+        Rendering is similar to pages, using 'template' attribute set
+        by default to the app_label/sections/model_name_snake_case.html
+
+        If the default template is not found, use SectionItem's one,
+        that can have a context attribute 'content' that is used to render
+        content.
+        """
+        context_ = self.get_context(request, *args, page=page, **kwargs)
+        if context:
+            context_.update(context)
+
+        if context.get('hide'):
+            return ''
+        return render_to_string(self.template, context_)
+
+
+
 #
 # Sections
 #
@@ -564,33 +632,8 @@ class Section(ClusterableModel):
         return '{}: {}'.format(self.__class__.__name__, self.name or self.pk)
 
 
-class SectionItemMeta(models.base.ModelBase):
-    """
-    Metaclass for SectionItem, assigning needed values such as `template`.
-
-    It needs to load the item's template if the section uses the default
-    one, and throw error if there is an error in the template.
-    """
-    def __new__(cls, name, bases, attrs):
-        from django.template.loader import get_template
-        from django.template import TemplateDoesNotExist
-
-        cl = super().__new__(cls, name, bases, attrs)
-        if not 'template' in attrs:
-            cl.snake_name = camelcase_to_underscore(name)
-            cl.template = '{}/sections/{}.html'.format(
-                cl._meta.app_label,
-                cl.snake_name,
-            )
-            if name != 'SectionItem':
-                try:
-                    get_template(cl.template)
-                except TemplateDoesNotExist:
-                    cl.template = 'aircox_cms/sections/section_item.html'
-        return cl
-
 @register_snippet
-class SectionItem(models.Model,metaclass=SectionItemMeta):
+class SectionItem(models.Model,TemplateMixin):
     """
     Base class for a section item.
     """
@@ -644,42 +687,6 @@ class SectionItem(models.Model,metaclass=SectionItemMeta):
         if type(self) != SectionItem and not self.real_type:
             self.real_type = type(self).__name__.lower()
         return super().save(*args, **kwargs)
-
-    def get_context(self, request, page):
-        """
-        Default context attributes:
-        * self: section being rendered
-        * page: current page being rendered
-        * request: request used to render the current page
-
-        Other context attributes usable in the default template:
-        * content: **safe string** set as content of the section
-        * hide: DO NOT render the section, render only an empty string
-        """
-        return {
-            'self': self,
-            'page': page,
-            'request': request,
-        }
-
-    def render(self, request, page, context, *args, **kwargs):
-        """
-        Render the section. Page is the current publication being rendered.
-
-        Rendering is similar to pages, using 'template' attribute set
-        by default to the app_label/sections/model_name_snake_case.html
-
-        If the default template is not found, use SectionItem's one,
-        that can have a context attribute 'content' that is used to render
-        content.
-        """
-        context_ = self.get_context(request, *args, page=page, **kwargs)
-        if context:
-            context_.update(context)
-
-        if context.get('hide'):
-            return ''
-        return render_to_string(self.template, context_)
 
     def __str__(self):
         return '{}: {}'.format(
@@ -808,12 +815,14 @@ class SectionLinkList(ClusterableModel, SectionItem):
         InlinePanel('links', label=_('Links')),
     ]
 
+
 @register_snippet
-class SectionLink(RelatedLinkBase):
+class SectionLink(RelatedLinkBase,TemplateMixin):
     """
     Render a link to a page or a given url.
     Can either be used standalone or in a SectionLinkList
     """
+    template = 'aircox_cms/snippets/link.html'
     parent = ParentalKey(
         'SectionLinkList', related_name = 'links',
         null = True

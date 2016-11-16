@@ -1,7 +1,5 @@
-{% extends "aircox_cms/sections/section_item.html" %}
 {% load wagtailimages_tags %}
 
-{% block content %}
 {% with link=self.as_dict %}
 <a href="{{ link.url }}" {% if self.info %}title="{{ self.info }}"{% endif %}>
     {% if link.icon %}
@@ -12,6 +10,4 @@
     {{ link.text }}
 </a>
 {% endwith %}
-{% endblock %}
-
 

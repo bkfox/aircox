@@ -27,3 +27,15 @@ def render_sections(context, position = None):
         for section in Section.get_sections_at(position, page)
     ))
 
+@register.simple_tag(takes_context=True)
+def render_template_mixin(context, mixin):
+    """
+    Render correctly a template mixin, e.g SectionLink
+    """
+    request = context.get('request')
+    page = context.get('page')
+    return mark_safe(mixin.render(request, page=page, context = {
+        'settings': context.get('settings')
+    }))
+
+

@@ -444,10 +444,10 @@ class ProgramPage(Publication):
 
 
 class Track(aircox.models.Track,Orderable):
-    sort_order_field = 'position'
-
     diffusion = ParentalKey('DiffusionPage',
                             related_name='tracks')
+
+    sort_order_field = 'position'
     panels = [
         FieldPanel('artist'),
         FieldPanel('title'),

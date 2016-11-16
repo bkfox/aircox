@@ -25,6 +25,7 @@
             {% block css_extras %}{% endblock %}
         {% endblock %}
 
+        <script src="{% static 'aircox_cms/js/bootstrap.js' %}"></script>
         <script src="{% static 'aircox_cms/js/utils.js' %}"></script>
         <script src="{% static 'aircox_cms/js/player.js' %}"></script>
 
@@ -36,7 +37,9 @@
         </div>
 
         <header class="header">
+            <div>
             {% render_sections position="header" %}
+            </div>
         </header>
 
         <div class="page flex_row">
@@ -71,7 +74,7 @@
         </div>
 
         {% block footer %}
-        <footer class="footer">
+        <footer class="menu footer">
             {% render_sections position="footer" %}
             <div class="small float_right">Propulsed by
                 <a href="https://github.com/bkfox/aircox">Aircox</a>

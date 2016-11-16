@@ -108,10 +108,8 @@ main.detail {
     }
 
     main.detail > header h1.title {
-        position: relative;
         width: calc(70% - 0.8em);
         margin: 0em;
-        margin-bottom: -2em;
         padding: 0.4em;
         background-color: rgba(255,255,255,0.8);
     }
@@ -125,7 +123,6 @@ main.detail {
     main.detail header .summary {
         display: inline-block;
         padding: 1em;
-        width: calc(20% - 2em);
         vertical-align: middle;
         font-size: 1.2em;
         font-weight: bold;
