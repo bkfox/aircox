@@ -12,18 +12,18 @@
 {# Translators: terms are search terms, or tag tarms. url: url to the page #}
 {% with terms=list_selector.terms %}
 {% if terms %}
-{% blocktrans %}Search in publications for <i>{{ terms }}</i>{% endblocktrans %}
+    {% blocktrans %}Search in publications for <i>{{ terms }}</i>{% endblocktrans %}
 {% elif list_selector.filter_related %}
 {# should never happen #}
-{% with title=list_selector.filter_related.title url=list_selector.filter_related.url %}
-{% blocktrans %}
-    Related to <a href="{{ url }}">{{ title }}</a>{% endblocktrans %}
-{% endwith %}
+    {% with title=list_selector.filter_related.title url=list_selector.filter_related.url %}
+    {% blocktrans %}
+    Related to <a href="{{ url }}">{{ title }}</a>
+    {% endblocktrans %}
+    {% endwith %}
 {% else %}
-{% blocktrans %}All the publications{% endblocktrans %}
+    {% blocktrans %}All the publications{% endblocktrans %}
 {% endif %}
 {% endwith %}
-{% endif %}
 </h1>
 {% endblock %}
 
@@ -36,17 +36,15 @@
             {{ related.summary }}
             <a href="{{ related.url }}">{% trans "More about it" %}</a>
         </div>
-        {% elif page.body %}
+    {% elif page.body %}
         <div class="body">
         {{ page.body|richtext }}
         </div>
-        {% endif %}
-        {% endwith %}
-
-        {% with list_paginator=paginator %}
-        {% include "aircox_cms/snippets/list.html" %}
-        {% endwith %}
     {% endif %}
+{% endwith %}
+
+{% with list_paginator=paginator %}
+{% include "aircox_cms/snippets/list.html" %}
 {% endwith %}
 {% endblock %}
 
