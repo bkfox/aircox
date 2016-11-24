@@ -25,7 +25,7 @@ from wagtail.wagtailcore.utils import camelcase_to_underscore
 from wagtail.wagtailsnippets.edit_handlers import SnippetChooserPanel
 from wagtail.wagtailsnippets.models import register_snippet
 
-from wagtail.wagtailimages.utils import generate_signature
+from wagtail.wagtailimages.views.serve import generate_signature
 
 # tags
 from modelcluster.models import ClusterableModel
