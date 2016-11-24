@@ -31,7 +31,7 @@ except:
     pass
 
 # Application definition
-INSTALLED_APPS = (
+INSTALLED_APPS = [
     'jet',
     'wagtail.wagtailforms',
     'wagtail.wagtailredirects',
@@ -60,9 +60,9 @@ INSTALLED_APPS = (
 
     'aircox',
     'aircox_cms',
-)
+]
 
-MIDDLEWARE_CLASSES = (
+MIDDLEWARE_CLASSES = [
     'django.middleware.gzip.GZipMiddleware',
     'htmlmin.middleware.HtmlMinifyMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -76,7 +76,7 @@ MIDDLEWARE_CLASSES = (
 
     'wagtail.wagtailcore.middleware.SiteMiddleware',
     'wagtail.wagtailredirects.middleware.RedirectMiddleware',
-)
+]
 
 
 ROOT_URLCONF = 'instance.urls'

@@ -21,7 +21,7 @@ autostart = true
 autorestart = true
 stdout_logfile = /srv/apps/aircox/logs/server.log
 redirect_stderr = true
-environment=AIRCOX_DEBUG="False"
+environment=AIRCOX_DEBUG="False",PATH="/srv/apps/aircox/venv/bin"
 
 [program:aircox_sounds_monitor]
 command = /srv/apps/aircox/manage.py sounds_monitor -qsm

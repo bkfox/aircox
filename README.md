@@ -49,12 +49,16 @@ Python modules:
 * `Pillow`: `aircox.cms` (needed by `wagtail`)
 * Django's required database modules
 
-External applications:
+External applications used by Aircox:
 * `liquidsoap`: `aircox` (generation of the audio streams)
 * `sox`: `aircox` (check sounds quality and metadatas)
 * note there might be external dependencies for python's Pillow too
 * sqlite, mysql or any database library that you need to run a database, that is supported by python
 
+External applications used to run Aircox properly
+* `supervisorctl`: optional, supervise services provided by Aircox
+* `gunicorn`: WSGI server (included in `requirements.txt` file)
+* `nginx`: HTTP server;
 
 ### Configuration
 You must write a settings.py file in the `instance` directory (you can just
@@ -83,7 +87,7 @@ Create the database if needed, and generate the tables:
 
 ```bash
 # apply dependencies' migrations
-./manage.py makemigrations
+./manage.py makemigrations aircox aircox_cms
 # create the database
 ./manage.py migrate --fake-initial
 # create a super-user (needed in order to access the administration)
