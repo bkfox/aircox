@@ -1,6 +1,6 @@
 
 from django.core.urlresolvers import reverse
-from wagtail.wagtailimages.utils import generate_signature
+from wagtail.wagtailimages.views.serve import generate_signature, verify_sign   ature
 
 
 def image_url(image, filter_spec):

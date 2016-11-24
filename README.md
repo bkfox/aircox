@@ -60,6 +60,15 @@ External applications:
 You must write a settings.py file in the `instance` directory (you can just
 copy and paste `instance/sample_settings.py`.
 
+You will need to define a secret key, and eventually update the list of allowed hosts:
+
+```
+# django's project secret key (mandatory; you can find generators online)
+SECRET_KEY = ''
+# list of allowed hosts
+ALLOWED_HOSTS = [ '127.0.0.1:8042' ]
+```
+
 You also want to redefine the following variable (required by Wagtail for the CMS):
 
 ```

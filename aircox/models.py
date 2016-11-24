@@ -503,6 +503,9 @@ class Schedule(models.Model):
         otherwise.
         If the schedule is ponctual, return None.
         """
+        if self.frequency == Schedule.Frequency.ponctual:
+            return False
+
         # since we care only about the week, go to the same day of the week
         date = date_or_default(date)
         date += tz.timedelta(days = self.date.weekday() - date.weekday() )
@@ -531,6 +534,9 @@ class Schedule(models.Model):
         """
         Return a list with all matching dates of date.month (=today)
         """
+        if self.frequency == Schedule.Frequency.ponctual:
+            return []
+
         date = date_or_default(date, True).replace(day=1)
         freq = self.frequency
 
@@ -580,6 +586,9 @@ class Schedule(models.Model):
 
         If exclude_saved, exclude all diffusions that are yet in the database.
         """
+        if self.frequency == Schedule.Frequency.ponctual:
+            return []
+
         dates = self.dates_of_month(date)
         diffusions = []
 
