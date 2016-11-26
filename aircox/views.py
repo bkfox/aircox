@@ -106,21 +106,29 @@ class Monitor(View,TemplateResponseMixin,LoginRequiredMixin):
         station = stations.stations.filter(name = POST.get('station')) \
                                    .first()
         if not station:
-            return HttpResponse('')
-        station.prepare(fetch=True)
+            return Http404()
 
         source = None
         if 'source' in POST:
-            source = next([ s for s in station.sources
-                                if s.name == POST['source']], None)
+            source = [ s for s in station.sources
+                        if s.name == POST['source']]
+            source = source[0]
+            if not source:
+                return Http404
 
-        if station and action == 'skip':
-            if source:
-                source.skip()
-            else:
-                station.streamer.skip()
-
+        station.streamer.fetch()
+        source = source or station.streamer.current_source
+        if action == 'skip':
+            self.actionSkip(request, station, source)
+        if action == 'restart':
+            self.actionRestart(request, station, source)
         return HttpResponse('')
+
+    def actionSkip(self, request, station, source):
+        source.skip()
+
+    def actionRestart(self, request, station, source):
+        source.restart()
 
 
 class StatisticsView(View,TemplateResponseMixin,LoginRequiredMixin):

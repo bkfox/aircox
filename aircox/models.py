@@ -146,10 +146,10 @@ class Station(Nameable):
         if not self.__streamer:
             self.__streamer = controllers.Streamer(station = self)
             self.__dealer = controllers.Source(station = self)
-            self.__sources = [
+            self.__sources = [ self.__dealer ] + [
                 controllers.Source(station = self, program = program)
                 for program in Program.objects.filter(stream__isnull = False)
-            ] + [ self.__dealer ]
+            ]
 
     @property
     def sources(self):
@@ -252,7 +252,6 @@ class Station(Nameable):
         logs = Log.objects.get_for(model = Track) \
                   .filter(station = self) \
                   .order_by('-date')
-
         if date:
             logs = logs.filter(date__contains = date)
             diffs = Diffusion.objects.get_at(date)
@@ -377,6 +376,9 @@ class Program(Nameable):
         path = path[-1]
         qs = cl.objects.filter(id = int(path))
         return qs[0] if qs else None
+
+    def is_show(self):
+        return self.schedule_set.count() != 0
 
 
 class Stream(models.Model):

@@ -5,6 +5,7 @@ Base configuration file to configure a station on liquidsoap.
 # Interactive elements:
 An interactive element is accessible to the people, in order to:
 - get metadata
+- seek
 - skip the current sound
 - enable/disable it
 
@@ -21,13 +22,47 @@ put station specific configuration in the template itself.
 
 
 {% block functions %}
+
+{% comment %}
+Seek function
+{% endcomment %}
+def seek(source, t) =
+  t = float_of_string(default=0.,t)
+  ret = source.seek(source,t)
+  log("seek #{ret} seconds.")
+  "#{ret}"
+end
+
+{% comment %}
+Transition to live sources
+{% endcomment %}
+def to_live(stream,live)
+  stream = fade.final(duration=2., type='log', stream)
+  live = fade.initial(duration=2., type='log', live)
+  add(normalize=false, [stream,live])
+end
+
+{% comment %}
+Transition to stream sources
+{% endcomment %}
+def to_stream(live,stream)
+  source.skip(stream)
+  add(normalize=false, [live,stream])
+end
+
+
 {% comment %}
 An interactive source is a source that:
 - is skippable through the given id on external interfaces
+- is seekable through the given id and amount of seconds on e.i.
 - can be disabled
 - store metadata
 {% endcomment %}
 def interactive_source (id, s, ~active=true, ~disable_switch=false) =
+    server.register(namespace=id,
+                    description="Seek to a relative position",
+                    usage="seek <duration>",
+                    "seek", fun (x) ->  begin seek(s, x) end)
     s = store_metadata(id=id, size=1, s)
     add_skip_command(s)
     if disable_switch then
@@ -88,7 +123,7 @@ stream = fallback([
             {% elif stream.begin and stream.end %}
             at({ {{stream.begin}}-{{stream.end}} },
                stream("{{ source.id }}", "{{ source.path }}")),
-            {% elif not stream %}
+            {% else %}
             stream("{{ source.id }}", "{{ source.path }}"),
             {% endif %}
         {% endwith %}
@@ -103,19 +138,6 @@ stream = fallback([
 
 {% block sources_extras %}
 {% endblock %}
-
-
-def to_live(stream,live)
-  stream = fade.final(duration=2., type='log', stream)
-  live = fade.initial(duration=2., type='log', live)
-  add(normalize=false, [stream,live])
-end
-
-def to_stream(live,stream)
-  source.skip(stream)
-  add(normalize=false, [live,stream])
-end
-
 
 {% block station %}
 {{ station.streamer.id }} = interactive_source (

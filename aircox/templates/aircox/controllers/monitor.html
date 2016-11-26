@@ -1,47 +1,60 @@
+{% extends "admin/base_site.html" %}
 {% load i18n %}
+{% load static %}
 
+{% block title %}
+{% trans "Monitoring streamer" %}
+{% endblock %}
+
+{% block content %}
 <style>
+.actions button {
+    padding: 0em;
+    margin: 0.2em;
+    text-align: center;
+}
+.actions button img {
+    max-width: 2em;
+    max-height: 2em;
+}
+
+.sources img {
+    max-width: 2.5em;
+    max-height: 2em;
+}
+
+.float_right {
+    float: right;
+}
+
+.table_section_header {
+    font-style: italic;
+}
+
 section.station {
     padding: 0.4em;
     font-size: 0.9em;
 }
 
-    section.station header {
-        margin: 0.4em 0em;
-    }
-
-    section.station header > * {
-        margin: 0em 0.2em;
-    }
-
-        section.station h1 {
-            display: inline;
-            margin: 0px;
-            font-size: 1.4em;
-        }
-
-        section.station button {
-            float: right;
-        }
-
     section.station .sources {
-        border: 1px grey solid;
+        width: 100%;
     }
 
-    section.station .source {
-        margin: 0.2em 0em;
+    section.station .name {
+        width: 15em;
     }
 
-        section.station .name {
-            display: inline-block;
-            width: 10em;
-        }
+    section.station .file {
+        color: #007EDF;
 
-        section.station .file {
-            color: #007EDF;
-        }
+    }
 
-    section.station .source.current:before {
+    section.station .actions {
+        width: 4em;
+        text-align: right;
+    }
+
+    section.station .sources .current:before {
         content: '▶';
         color: red;
         margin: 0em 1em;
@@ -54,7 +67,7 @@ var Monitor = {
         return document.cookie.replace(/.*csrftoken=([^;]+)(;.*|$)/, '$1');
     },
 
-    post: function(station, source, action) {
+    run: function(action, station, source) {
         var params = 'station=' + station + '&&action=' + action;
         if(source)
             params += '&&source=' + source;
@@ -67,10 +80,6 @@ var Monitor = {
         req.setRequestHeader("X-CSRFToken", this.get_token());
         req.send(params);
         this.update();
-    },
-
-    skip: function(station, source) {
-        this.post(station, source, 'skip');
     },
 
     update: function(timeout) {
@@ -96,30 +105,89 @@ var Monitor = {
     },
 }
 
-Monitor.update(1000);
+Monitor.update(50000);
 </script>
+
+<header>
+<h1>{% trans "Monitor Streamer" %}</h1>
+
+<input type="button" onclick="Monitor.update();"
+       value="{% trans "refresh" %}">
+</header>
 
 <div id='stations'>
     {% for station in stations %}
     <section class="station">
         <header>
-        <h1>{{ station.name }}</h1>
-        <button onclick="Monitor.skip('{{ station.name }}');">{% trans "skip" %}</button>
-        <button onclick="Monitor.update();">{% trans "update" %}</button>
+        <h2>{{ station.name }}</h2>
         </header>
-        <div class="sources">
-            {% for source in station.all_sources %}
-            {% if source.controller.current_sound %}
-            <div class="source{% if source == station.controller.current_source %} current{% endif %}">
-                <span class="name">{{ source.name }}</span>
-                <span class="file">{{ source.controller.current_sound }}</span>
-                <button onclick="Monitor.skip('{{ station.name }}','{{ source.name }}');">
-                    {% trans "skip" %}</button>
-            </div>
-            {% endif %}
+        <table cellspacing="0" cellpadding="0" class="sources object">
+            <tr>
+                <th class="name" colspan=2>{{ station.name }}</th>
+                <td>
+                    {% with station.streamer.current_source.name as current_source %}
+                    {% blocktrans %}
+                    Current source: {{ current_source }}
+                    {% endblocktrans %}
+                    {% endwith %}
+                </td>
+                <td class="actions">
+                    <button onclick="Monitor.run('restart', '{{ station.name }}');">
+                        <img src="{% static "aircox/images/redo.png" %}" alt="{% trans "restart" %}"></button>
+                    <button onclick="Monitor.run('skip', '{{ station.name }}');">
+                        <img src="{% static "aircox/images/playback_next.png" %}" alt="{% trans "skip" %}"></button>
+                </td>
+            </tr>
+
+            <tr class="table_section_header">
+                <td colspan=2>{% trans "Source" %}</td>
+                <td>{% trans "File" %}</td>
+                <td>{% trans "Actions*" %}</td>
+            </tr>
+            {% for source in station.sources %}
+            <tr class="source">
+                <td class="name">
+                    {% if source.is_dealer %}
+                        {% trans "Diffusions" %}
+                    {% else %}
+                        {{ source.name }}
+                    {% endif %}
+                </td>
+                <td class="source_info">
+                    {% if source.name == station.streamer.current_source.name %}
+                    <img src="{% static "aircox/images/play.png" %}" alt="{% trans "current" %}">
+                    {% endif %}
+                    {% if source.is_dealer %}
+                    <img src="{% static "aircox/images/calendar_month.png" %}" alt="{% trans "diffusions" %}">
+                    {% elif not source.program.is_show %}
+                    <img src="{% static "aircox/images/schuffle.png" %}" alt="{% trans "stream" %}">
+                    {% endif %}
+                </td>
+                <td class="file">
+                    {% if source.is_dealer %}
+                    {{ source.playlist|join:"<br>" }}
+                    {% else %}
+                    {{ source.current_sound }}
+                    {% endif %}
+                </td>
+                <td class="actions">
+                    <button onclick="Monitor.run('restart', '{{ station.name }}', '{{ source.name }}');">
+                        <img src="{% static "aircox/images/redo.png" %}" alt="{% trans "restart" %}"></button>
+                    <button onclick="Monitor.run('skip', '{{ station.name }}', '{{ source.name }}');">
+                        <img src="{% static "aircox/images/playback_next.png" %}" alt="{% trans "skip" %}"></button>
+                </td>
+            </tr>
             {% endfor %}
-        </div>
+        </table>
     </section>
     {% endfor %}
+
+    <div class="info small">
+    {% blocktrans %}
+    *: Due to some technical issues, it might take up to 30 seconds to execute the given action.
+    {% endblocktrans %}
+    </div>
 </div>
+{% endblock %}
+
 

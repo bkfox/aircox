@@ -92,13 +92,11 @@ class Streamer:
             return
 
         self.current_sound = data.get('initial_uri')
-        try:
-            self.current_source = next(
-                source for source in self.station.sources
-                if source.rid == rid
-            )
-        except:
-            self.current_source = None
+        self.current_source = next(
+            iter(source for source in self.station.sources
+                if source.rid == rid),
+            self.current_source
+        )
 
     def push(self, config = True):
         """
@@ -123,15 +121,6 @@ class Streamer:
             os.makedirs(os.path.dirname(self.path), exist_ok = True)
             with open(self.path, 'w+') as file:
                 file.write(data)
-
-    def skip(self):
-        """
-        Skip a given source. If no source, use master.
-        """
-        if self.current_source:
-            self.current_source.skip()
-        else:
-            self._send(self.id, '.skip')
 
     #
     # Process management
@@ -190,7 +179,7 @@ class Source:
     """
     Related source
     """
-    name = 'dealer'
+    name = ''
 
     path = ''
     """
@@ -245,6 +234,12 @@ class Source:
 
         if not self.__playlist:
             self.from_db()
+
+    def is_stream(self):
+        return self.program and not self.program.show
+
+    def is_dealer(self):
+        return not self.program
 
     @property
     def playlist(self):
@@ -337,6 +332,20 @@ class Source:
         Skip the current sound in the source
         """
         self._send(self.id, '.skip')
+
+    def restart(self):
+        """
+        Restart the current sound in the source. Since liquidsoap
+        does not give us current position in stream, it seeks back
+        max 10 hours in the current sound.
+        """
+        self.seek(-216000*10);
+
+    def seek(self, n):
+        """
+        Seeks into the sound. Note that liquidsoap seems really slow for that.
+        """
+        self._send(self.id, '.seek ', str(n))
 
     def stream(self):
         """
