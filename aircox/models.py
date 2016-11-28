@@ -89,6 +89,13 @@ class Related(models.Model):
 
     objects = RelatedManager()
 
+    @classmethod
+    def ReverseField(cl):
+        """
+        Return a GenericRelation object that points to this class
+        """
+        return GenericRelation(cl, 'related_id', 'related_type')
+
     class Meta:
         abstract = True
 
@@ -791,7 +798,7 @@ class Diffusion(models.Model):
     start = models.DateTimeField( _('start of the diffusion') )
     end = models.DateTimeField( _('end of the diffusion') )
 
-    tracks = GenericRelation(Track, 'related_id', 'related_type')
+    tracks = Track.ReverseField()
 
     @property
     def duration(self):
@@ -929,7 +936,7 @@ class Sound(Nameable):
         help_text = _('the sound is accessible to the public')
     )
 
-    tracks = GenericRelation(Track, 'related_id', 'related_type')
+    tracks = Track.ReverseField()
 
     def get_mtime(self):
         """
