@@ -462,6 +462,7 @@ class DatedListBase(models.Model):
         # context dict
         return {
             'nav_dates': {
+                'today': today,
                 'date': date,
                 'next': next,
                 'prev': prev,
@@ -935,12 +936,14 @@ class SectionLogsList(SectionItem):
         print(log, type(log))
         if type(log) == aircox.models.Diffusion:
             return DiffusionPage.as_item(log)
+
+        related = log.related
         return ListItem(
             title = '{artist} -- {title}'.format(
-                artist = log.related.artist,
-                title = log.related.title,
+                artist = related.artist,
+                title = related.title,
             ),
-            summary = log.related.info,
+            summary = related.info,
             date = log.date,
             info = '♫',
             css_class = 'track'

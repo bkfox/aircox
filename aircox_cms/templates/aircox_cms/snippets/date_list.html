@@ -4,6 +4,8 @@
 <div class="list date_list">
 {% if nav_dates %}
 <nav class="nav_dates">
+    <a href="?date={{ nav_dates.today|date:"Y-m-d" }}" title="{% trans "today" %}">￮</a>
+
     {% if nav_dates.prev %}
     <a href="?date={{ nav_dates.prev|date:"Y-m-d" }}" title="{% trans "previous days" %}">◀</a>
     {% endif %}
@@ -11,7 +13,9 @@
     {% for day in nav_dates.dates %}
     <a onclick="select_tab(this, '.panel[data-date=\'{{day|date:"Y-m-d"}}\']');"
         {% if day == nav_dates.date %}selected{% endif %}
-        class="tab {% if day == nav_dates.date %}today{% endif %}">
+        class="tab {% if day == nav_dates.date %}today{% endif %}"
+        title="{{ day|date:"l d F Y" }}"
+        >
         {{ day|date:'D. d' }}
     </a>
     {% endfor %}

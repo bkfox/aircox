@@ -10,7 +10,7 @@ from django.template.defaultfilters import slugify
 from django.utils.translation import ugettext as _, ugettext_lazy
 from django.utils import timezone as tz
 from django.utils.html import strip_tags
-from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.conf import settings as main_settings
 
@@ -116,6 +116,54 @@ class Nameable(models.Model):
 
 
 #
+# Small common models
+#
+class Track(Related):
+    """
+    Track of a playlist of an object. The position can either be expressed
+    as the position in the playlist or as the moment in seconds it started.
+    """
+    # There are no nice solution for M2M relations ship (even without
+    # through) in django-admin. So we unfortunately need to make one-
+    # to-one relations and add a position argument
+    title = models.CharField (
+        _('title'),
+        max_length = 128,
+    )
+    artist = models.CharField(
+        _('artist'),
+        max_length = 128,
+    )
+    tags = TaggableManager(
+        verbose_name=_('tags'),
+        blank=True,
+    )
+    info = models.CharField(
+        _('information'),
+        max_length = 128,
+        blank = True, null = True,
+        help_text=_('additional informations about this track, such as '
+                    'the version, if is it a remix, features, etc.'),
+    )
+    position = models.SmallIntegerField(
+        default = 0,
+        help_text=_('position in the playlist'),
+    )
+    in_seconds = models.BooleanField(
+        _('in seconds'),
+        default = False,
+        help_text=_('position in the playlist is expressed in seconds')
+    )
+
+    def __str__(self):
+        return '{self.artist} -- {self.title}'.format(self=self)
+
+    class Meta:
+        verbose_name = _('Track')
+        verbose_name_plural = _('Tracks')
+
+
+#
 # Station related classes
 #
 class Station(Nameable):
@@ -208,8 +256,20 @@ class Station(Nameable):
                 logs.filter(date__gt = diff.end, date__lt = diff_.start) \
                     if diff_ else \
                 logs.filter(date__gt = diff.end)
-            print(diff.end, *[str(log.date > diff.end) + " " + str(log.date) for log in logs])
 
+            # a log can be started before the end of the diffusion and
+            # still is running => need to add it to the list and change
+            # the start date
+            partial_log = logs.filter(
+                date__gt = diff.start, date__lt = diff.end
+            ).last()
+            if partial_log:
+                next_log = logs.filter(pk__gt = partial_log.pk).first()
+                if not next_log or next_log.date > diff.date:
+                    partial_log.date = diff.end
+                    logs_ = [partial_log] + list(logs_[:count])
+
+            # append to list
             diff_ = diff
             items.extend(logs_)
             items.append(diff)
@@ -252,6 +312,7 @@ class Station(Nameable):
         logs = Log.objects.get_for(model = Track) \
                   .filter(station = self) \
                   .order_by('-date')
+
         if date:
             logs = logs.filter(date__contains = date)
             diffs = Diffusion.objects.get_at(date)
@@ -730,6 +791,8 @@ class Diffusion(models.Model):
     start = models.DateTimeField( _('start of the diffusion') )
     end = models.DateTimeField( _('end of the diffusion') )
 
+    tracks = GenericRelation(Track, 'related_id', 'related_type')
+
     @property
     def duration(self):
         return self.end - self.start
@@ -855,16 +918,18 @@ class Sound(Nameable):
         blank = True, null = True,
         help_text = _('last modification date and time'),
     )
-    good_quality = models.BooleanField(
+    good_quality = models.NullBooleanField(
         _('good quality'),
-        default = False,
-        help_text = _('sound\'s quality is okay')
+        help_text = _('sound\'s quality is okay'),
+        blank = True, null = True
     )
     public = models.BooleanField(
         _('public'),
         default = False,
         help_text = _('the sound is accessible to the public')
     )
+
+    tracks = GenericRelation(Track, 'related_id', 'related_type')
 
     def get_mtime(self):
         """
@@ -891,6 +956,36 @@ class Sound(Nameable):
         """
         return os.path.exists(self.path)
 
+    def file_metadata(self):
+        """
+        Get metadata from sound file and return a Track object if succeed,
+        else None.
+        """
+        if not self.file_exists():
+            return None
+
+        import mutagen
+        meta = mutagen.File(self.path)
+
+        def get_meta(key, cast=str):
+            value = meta.get(key)
+            return cast(value[0]) if value else None
+
+        info = '{} ({})'.format(get_meta('album'), get_meta('year')) \
+                    if 'album' and 'year' in meta else \
+               get_meta('album') \
+                    if 'album' else \
+               ('year' in meta) and get_meta('year') or ''
+
+        track = Track(
+            related = self,
+            title = get_meta('title') or self.name,
+            artist = get_meta('artist') or _('unknown'),
+            info = info,
+            position = get_meta('tracknumber', int) or 0,
+        )
+        return track
+
     def check_on_file(self):
         """
         Check sound file info again'st self, and update informations if
@@ -915,7 +1010,7 @@ class Sound(Nameable):
         mtime = self.get_mtime()
         if self.mtime != mtime:
             self.mtime = mtime
-            self.good_quality = False
+            self.good_quality = None
             logger.info('sound %s: m_time has changed. Reset quality info',
                         self.path)
             return True
@@ -964,50 +1059,6 @@ class Sound(Nameable):
         verbose_name = _('Sound')
         verbose_name_plural = _('Sounds')
 
-
-class Track(Related):
-    """
-    Track of a playlist of an object. The position can either be expressed
-    as the position in the playlist or as the moment in seconds it started.
-    """
-    # There are no nice solution for M2M relations ship (even without
-    # through) in django-admin. So we unfortunately need to make one-
-    # to-one relations and add a position argument
-    title = models.CharField (
-        _('title'),
-        max_length = 128,
-    )
-    artist = models.CharField(
-        _('artist'),
-        max_length = 128,
-    )
-    tags = TaggableManager(
-        verbose_name=_('tags'),
-        blank=True,
-    )
-    info = models.CharField(
-        _('information'),
-        max_length = 128,
-        blank = True, null = True,
-        help_text=_('additional informations about this track, such as '
-                    'the version, if is it a remix, features, etc.'),
-    )
-    position = models.SmallIntegerField(
-        default = 0,
-        help_text=_('position in the playlist'),
-    )
-    in_seconds = models.BooleanField(
-        _('in seconds'),
-        default = False,
-        help_text=_('position in the playlist is expressed in seconds')
-    )
-
-    def __str__(self):
-        return '{self.artist} -- {self.title}'.format(self=self)
-
-    class Meta:
-        verbose_name = _('Track')
-        verbose_name_plural = _('Tracks')
 
 #
 # Controls and audio output

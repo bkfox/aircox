@@ -116,21 +116,30 @@ class SoundInfo:
         self.sound = sound
         return sound
 
-    def find_playlist(self, sound):
+    def find_playlist(self, sound, use_default = True):
         """
-        Find a playlist file corresponding to the sound path
+        Find a playlist file corresponding to the sound path, such as:
+            my_sound.ogg => my_sound.csv
+
+        If use_default is True and there is no playlist find found,
+        use sound file's metadata.
         """
+        if sound.tracks.count():
+            return
+
         import aircox.management.commands.import_playlist \
                 as import_playlist
 
+        # no playlist, try to retrieve metadata
         path = os.path.splitext(self.sound.path)[0] + '.csv'
         if not os.path.exists(path):
+            if use_default:
+                track = sound.file_metadata()
+                if track:
+                    track.save()
             return
 
-        old = Track.objects.get_for(object = sound)
-        if old:
-            return
-
+        # else, import
         import_playlist.Importer(sound, path, save=True)
 
     def find_diffusion(self, program, save = True):
@@ -326,8 +335,10 @@ class Command(BaseCommand):
         if check:
             self.check_sounds(sounds)
 
-        files = [ sound.path for sound in sounds
-                    if os.path.exists(sound.path) ]
+        files = [
+            sound.path for sound in sounds
+            if os.path.exists(sound.path) and sound.good_quality is None
+        ]
 
         # check quality
         logger.info('quality check...',)

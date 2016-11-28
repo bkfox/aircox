@@ -40,7 +40,7 @@ def on_air(request):
     else:
         station = stations.stations.first()
 
-    last = station.on_air(count = 1)
+    last = station.on_air(count = 10)
     if not last:
         return HttpResponse('')
 
