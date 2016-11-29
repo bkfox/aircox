@@ -178,6 +178,10 @@ ul.list {
 
     .date_list nav a {
         display: inline-block;
+        width: 2em;
+    }
+
+    .date_list nav a.date {
         width: 4em;
     }
 

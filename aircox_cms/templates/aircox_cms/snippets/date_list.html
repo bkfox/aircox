@@ -13,7 +13,7 @@
     {% for day in nav_dates.dates %}
     <a onclick="select_tab(this, '.panel[data-date=\'{{day|date:"Y-m-d"}}\']');"
         {% if day == nav_dates.date %}selected{% endif %}
-        class="tab {% if day == nav_dates.date %}today{% endif %}"
+        class="tab date {% if day == nav_dates.date %}today{% endif %}"
         title="{{ day|date:"l d F Y" }}"
         >
         {{ day|date:'D. d' }}

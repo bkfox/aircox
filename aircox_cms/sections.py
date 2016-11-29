@@ -247,7 +247,6 @@ class ListBase(models.Model):
             qs = qs.filter(date__gte = date)
         return qs
 
-
     def get_queryset(self):
         """
         Get queryset based on the arguments. This class is intended to be
