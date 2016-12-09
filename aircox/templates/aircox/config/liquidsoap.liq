@@ -157,7 +157,7 @@ stream = fallback([
 
 
 {% block outputs %}
-{% for output in station.output_set.all %}
+{% for output in station.outputs %}
 output.{{ output.get_type_display }}(
     {{ station.streamer.id }},
     {% if controller.settings %},

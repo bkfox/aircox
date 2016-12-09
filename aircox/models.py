@@ -207,6 +207,26 @@ class Station(Nameable):
             ]
 
     @property
+    def inputs(self):
+        """
+        Return all active input ports of the station
+        """
+        return self.port_set.filter(
+            direction = Port.Direction.Input,
+            active = True
+        )
+
+    @property
+    def outputs(self):
+        """
+        Return all active output ports of the station
+        """
+        return self.port_set.filter(
+            direction = Port.Direction.Output,
+            active = True,
+        )
+
+    @property
     def sources(self):
         """
         Audio sources, dealer included
@@ -795,6 +815,13 @@ class Diffusion(models.Model):
         blank = True, null = True,
         help_text = _('the diffusion is a rerun of this one')
     )
+    # port = models.ForeignKey(
+    #    'self',
+    #    verbose_name = _('port'),
+    #    blank = True, null = True,
+    #    help_text = _('use this input port'),
+    # )
+
     start = models.DateTimeField( _('start of the diffusion') )
     end = models.DateTimeField( _('end of the diffusion') )
 
@@ -1068,22 +1095,39 @@ class Sound(Nameable):
 
 
 #
-# Controls and audio output
+# Controls and audio input/output
 #
-class Output (models.Model):
+class Port (models.Model):
     """
-    Represent an audio output for the audio stream generation.
+    Represent an audio input/output for the audio stream
+    generation.
+
     You might want to take a look to LiquidSoap's documentation
-    for the Jack, Alsa, and Icecast ouptuts.
+    for the options available for each kind of input/output.
+
+    Some port types may be not available depending on the
+    direction of the port.
     """
+    class Direction(IntEnum):
+        input = 0x00
+        output = 0x01
+
     class Type(IntEnum):
         jack = 0x00
         alsa = 0x01
-        icecast = 0x02
+        pulseaudio = 0x02
+        icecast = 0x03
+        http = 0x04
+        https = 0x05
+        file = 0x06
 
     station = models.ForeignKey(
         Station,
         verbose_name = _('station'),
+    )
+    direction = models.SmallIntegerField(
+        _('direction'),
+        choices = [ (int(y), _(x)) for x,y in Direction.__members__.items() ],
     )
     type = models.SmallIntegerField(
         _('type'),
@@ -1093,15 +1137,41 @@ class Output (models.Model):
     active = models.BooleanField(
         _('active'),
         default = True,
-        help_text = _('this output is active')
+        help_text = _('this port is active')
     )
     settings = models.TextField(
-        _('output settings'),
+        _('port settings'),
         help_text = _('list of comma separated params available; '
-                      'this is put in the output config as raw code; '
+                      'this is put in the output config file as raw code; '
                       'plugin related'),
         blank = True, null = True
     )
+
+    def is_valid_type(self):
+        """
+        Return True if the type is available for the given direction.
+        """
+        if self.direction == self.Direction.input:
+            return self.type not in (
+                self.Type.icecast, self.Type.file
+            )
+        return self.type not in (
+            self.Type.http, self.Type.https
+        )
+
+    def save(self, *args, **kwargs):
+        if not self.is_valid_type():
+            raise ValueError(
+                "port type is not allowed with the given port direction"
+            )
+        return super().save(*args, **kwargs)
+
+    def __str__(self):
+        return "{direction}: {type} #{id}".format(
+            direction = self.get_direction_display(),
+            type = self.get_type_display(),
+            id = self.pk or ''
+        )
 
 
 class Log(Related):

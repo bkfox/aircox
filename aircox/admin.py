@@ -172,20 +172,20 @@ class TrackAdmin(admin.ModelAdmin):
 
 
 # TODO: sort & redo
-class OutputInline(admin.StackedInline):
-    model = Output
+class PortInline(admin.StackedInline):
+    model = Port
     extra = 0
 
 @admin.register(Station)
 class StationAdmin(admin.ModelAdmin):
-    inlines = [ OutputInline ]
+    inlines = [ PortInline ]
 
 @admin.register(Log)
 class LogAdmin(admin.ModelAdmin):
     list_display = ['id', 'date', 'station', 'source', 'type', 'comment', 'related']
     list_filter = ['date', 'source', 'related_type']
 
-admin.site.register(Output)
+admin.site.register(Port)
 
 
 

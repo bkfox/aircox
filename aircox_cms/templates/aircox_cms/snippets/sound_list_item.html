@@ -24,7 +24,7 @@ function add_sound_{{ item.id }}(event) {
 </script>
 
 <a class="list_item sound flex_row" onclick="add_sound_{{ item.id }}(event)">
-    <img src="{% static "aircox_cms/images/listen.png" %}" class="icon"/>
+    <img src="{% static "aircox/images/listen.png" %}" class="icon"/>
     <h3 class="flex_item">{{ item.name }}</h3>
 
     <time class="info">
@@ -35,7 +35,7 @@ function add_sound_{{ item.id }}(event) {
         {% endif %}
     </time>
 
-    <img src="{% static "aircox_cms/images/add.png" %}" class="icon"
+    <img src="{% static "aircox/images/add.png" %}" class="icon"
          data-action='add' alt="{% trans "add this sound to the playlist" %}"/>
 </a>
 {% endif %}

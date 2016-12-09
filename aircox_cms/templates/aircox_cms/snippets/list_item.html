@@ -33,7 +33,7 @@ Options:
         {% with date_format=item_date_format|default:'l d F, H:i' %}
         <time datetime="{{ item.date }}">
             {% if item.diffusion %}
-            <img src="{% static "aircox_cms/images/clock.png" %}" class="small_icon">
+            <img src="{% static "aircox/images/clock.png" %}" class="small_icon">
             {{ item.diffusion.start|date:date_format }}
             {% else %}
             {{ item.date|date:date_format }}

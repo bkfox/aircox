@@ -36,23 +36,23 @@
     {% endwith %}
 
     <div class="share">
-        <img src="{% static "aircox_cms/images/share.png" %}" alt="{% trans "Share" %}"
+        <img src="{% static "aircox/images/share.png" %}" alt="{% trans "Share" %}"
                 class="small_icon">
         <a href="mailto:?&body={{ page.full_url|urlencode }}"
                 target="new">
-            <img src="{% static "aircox_cms/images/mail.png" %}" alt="Mail" class="small_icon">
+            <img src="{% static "aircox/images/mail.png" %}" alt="Mail" class="small_icon">
         </a>
         <a href="https://www.facebook.com/sharer/sharer.php?u={{ page.full_url|urlencode }}"
                 target="new">
-            <img src="{% static "aircox_cms/images/facebook.png" %}" alt="Facebook" class="small_icon">
+            <img src="{% static "aircox/images/facebook.png" %}" alt="Facebook" class="small_icon">
         </a>
         <a href="https://twitter.com/intent/tweet?text={{ page.full_url|urlencode }}"
                 target="new">
-            <img src="{% static "aircox_cms/images/twitter.png" %}" alt="Twitter" class="small_icon">
+            <img src="{% static "aircox/images/twitter.png" %}" alt="Twitter" class="small_icon">
         </a>
         <a href="https://plus.google.com/share?url={{ page.full_url|urlencode }}"
                 target="new">
-            <img src="{% static "aircox_cms/images/gplus.png" %}" alt="Google Plus" class="small_icon">
+            <img src="{% static "aircox/images/gplus.png" %}" alt="Google Plus" class="small_icon">
         </a>
     </div>
 </div>

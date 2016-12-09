@@ -4,7 +4,7 @@
 <div class="list date_list">
 {% if nav_dates %}
 <nav class="nav_dates">
-    <a href="?date={{ nav_dates.today|date:"Y-m-d" }}" title="{% trans "today" %}">￮</a>
+    <a href="?date={{ nav_dates.today|date:"Y-m-d" }}" title="{% trans "go to today" %}">￮</a>
 
     {% if nav_dates.prev %}
     <a href="?date={{ nav_dates.prev|date:"Y-m-d" }}" title="{% trans "previous days" %}">◀</a>
