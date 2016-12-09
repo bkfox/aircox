@@ -36,6 +36,7 @@ Sound.prototype = {
     on_air: false,
 
     item: undefined,
+    position_item: undefined,
 
     get seekable() {
         return this.duration != undefined;
@@ -59,6 +60,7 @@ Sound.prototype = {
 
         item.sound = this;
         this.item = item;
+        this.position_item = item.querySelector('.position');
 
         // events
         var self = this;
@@ -164,9 +166,9 @@ Playlist.prototype = {
         sound.item.setAttribute('selected', 'true');
 
         if(!sound.on_air)
-            sound.item.querySelector('.content').insertBefore(
-                this.player.progress.item,
-                sound.item.querySelector('.content .duration')
+            sound.item.querySelector('.content').parentNode.appendChild(
+                this.player.progress.item //,
+                // sound.item.querySelector('.content .duration')
             )
 
         if(sound.seekable)
@@ -217,6 +219,7 @@ Playlist.prototype = {
     },
 }
 
+var ActivePlayer = null;
 
 function Player(id, on_air_url, show_cover) {
     this.id = id;
@@ -253,6 +256,10 @@ Player.prototype = {
     sound: undefined,
     on_air_url: undefined,
 
+    get sound() {
+        return this.playlist.sound;
+    },
+
     init_events: function() {
         var self = this;
 
@@ -265,19 +272,20 @@ Player.prototype = {
         function update_info() {
             var progress = self.progress;
             var pos = self.audio.currentTime;
+            var position = self.sound.position_item;
 
             // progress
-            if(!self.sound || !self.sound.seekable ||
+            if(!self.audio || !self.audio.seekable ||
                     !pos || self.audio.duration == Infinity)
             {
-                progress.duration.innerHTML = '';
+                position.innerHTML = '';
                 progress.bar.value = 0;
                 return;
             }
 
             progress.bar.value = pos;
             progress.bar.max = self.audio.duration;
-            progress.duration.innerHTML = duration_str(pos);
+            position.innerHTML = duration_str(pos);
         }
 
         // audio
@@ -302,7 +310,7 @@ Player.prototype = {
         this.audio.addEventListener('ended', function() {
             self.player.removeAttribute('state');
             if(!self.controls.single.checked)
-                self.next(true);
+                self.playlist.next(true);
         }, false);
 
         // progress
@@ -318,7 +326,8 @@ Player.prototype = {
                return;
 
             var pos = time_from_progress(event);
-            self.progress.duration.innerHTML = duration_str(pos);
+            var position = self.sound.position_item;
+            position.innerHTML = duration_str(pos);
         }, false);
     },
 
@@ -368,6 +377,11 @@ Player.prototype = {
     },
 
     play: function() {
+        if(ActivePlayer && ActivePlayer != this) {
+            ActivePlayer.stop();
+        }
+        ActivePlayer = this;
+
         if(this.audio.paused)
             this.audio.play();
         else

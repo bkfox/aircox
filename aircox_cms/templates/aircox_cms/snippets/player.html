@@ -22,6 +22,7 @@
         <div class="flex_item">
             <h3 class="title flex_item">{{ self.live_title }}</h3>
             <div class="content flex_row">
+                <span class="info position flex_item"></span>
                 <span class="info duration flex_item"></span>
                 <span class="actions">
                     <a class="action add" title="{% trans "add to the player" %}">+</a>
@@ -34,10 +35,10 @@
 </div>
 
 <div class="controls">
-    <span class="progress">
-        <span class="info duration"></span>
+    <div class="progress">
+        <!-- <div class="info duration"></span> -->
         <progress class="flex_item progress" value="0" max="1"></progress>
-    </span>
+    </div>
 
     <input type="checkbox" class="single" id="player_single_mode">
     <label for="player_single_mode" class="info"

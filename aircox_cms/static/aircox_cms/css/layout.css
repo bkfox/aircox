@@ -323,6 +323,14 @@ ul.list {
         display: inline;
     }
 
+    .player .playlist .duration {
+       text-align: right;
+    }
+
+    .player .playlist progress {
+        width: 100%;
+    }
+
 
 .player .item[selected] {
     border-left: 1px #007EDF solid;
@@ -344,7 +352,6 @@ ul.list {
     .player .button > img {
         max-height: 2.0em;
     }
-
 
     .player:not([state]) .item[selected] .button > img:not(.play),
     .player[state="paused"] .item[selected] .button > img:not(.play),

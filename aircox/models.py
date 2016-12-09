@@ -999,7 +999,10 @@ class Sound(Nameable):
             return None
 
         import mutagen
-        meta = mutagen.File(self.path)
+        try:
+            meta = mutagen.File(self.path)
+        except:
+            meta = {}
 
         def get_meta(key, cast=str):
             value = meta.get(key)

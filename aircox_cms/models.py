@@ -550,7 +550,7 @@ class DiffusionPage(Publication):
         sound = self.diffusion.get_archives() \
                     .filter(public = True).first()
         if sound:
-            sound.detail_url = self.detail_url
+            sound.detail_url = self.url
         return sound
 
     def get_podcasts(self):
@@ -682,6 +682,11 @@ class LogsPage(DatedListPage):
         help_text = _('maximum days in the past allowed to be shown. '
                       '0 means no limit')
     )
+    reverse = models.BooleanField(
+        _('reverse list'),
+        default=False,
+        help_text = _('print logs in ascending order by date'),
+    )
 
     class Meta:
         verbose_name = _('Logs')
@@ -691,6 +696,7 @@ class LogsPage(DatedListPage):
         MultiFieldPanel([
             FieldPanel('station'),
             FieldPanel('age_max'),
+            FieldPanel('reverse'),
         ], heading=_('Configuration')),
     ]
 
@@ -718,7 +724,9 @@ class LogsPage(DatedListPage):
         for date in context['nav_dates']['dates']:
             items = [ SectionLogsList.as_item(item)
                         for item in self.station.on_air(date = date) ]
-            logs.append((date, items))
+            logs.append(
+                (date, reversed(items) if self.reverse else items)
+            )
         return logs
 
 
