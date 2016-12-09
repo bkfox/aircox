@@ -364,9 +364,22 @@ ul.list {
     .player .item:not([selected]) .button > img.play {
         display: block;
     }
-    .player .item:not([selected]) .button > img:not(.play) {
+
+    .player .item:not([selected]) .button > img:not(.play):not(.cover) {
         display: none;
     }
+
+    .player .item .button > img.cover {
+        display: block;
+        position: absolute;
+        transition: opacity 0.2s;
+    }
+
+    .player .item:hover .button > img.cover {
+        /* display: none; */
+        opacity: 0.2;
+    }
+
 
 
 main .player .actions .action:not(.add),

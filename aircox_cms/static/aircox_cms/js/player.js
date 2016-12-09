@@ -56,7 +56,7 @@ Sound.prototype = {
         if(this.detail)
             item.querySelector('.detail').href = this.detail;
         if(playlist.player.show_cover && this.cover)
-            item.querySelector('img.play').src = this.cover;
+            item.querySelector('img.cover').src = this.cover;
 
         item.sound = this;
         this.item = item;
@@ -316,7 +316,9 @@ Player.prototype = {
         // progress
         progress = this.progress.bar;
         progress.addEventListener('click', function(event) {
-            player.audio.currentTime = time_from_progress(event);
+            self.audio.currentTime = time_from_progress(event);
+            event.preventDefault();
+            event.stopImmediatePropagation();
         }, false);
 
         progress.addEventListener('mouseout', update_info, false);
