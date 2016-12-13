@@ -33,13 +33,13 @@ stdout_logfile = /srv/apps/aircox/logs/sounds_monitor.log
 redirect_stderr = true
 environment=AIRCOX_DEBUG="False",PATH="/srv/apps/aircox/venv/bin"
 
-[program:aircox_controllers]
-command = /srv/apps/aircox/manage.py controllers -crm
+[program:aircox_streamer]
+command = /srv/apps/aircox/manage.py streamer -crm
 directory = /srv/apps/aircox
 user = aircox
 autostart = true
 autorestart = true
-stdout_logfile = /srv/apps/aircox/logs/controllers.log
+stdout_logfile = /srv/apps/aircox/logs/streamer.log
 redirect_stderr = true
 environment=AIRCOX_DEBUG="False",PATH="/srv/apps/aircox/venv/bin"
 

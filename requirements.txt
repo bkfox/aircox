@@ -1,15 +1,15 @@
+gunicorn>=19.6.0
 Django>=1.10.3
 django-taggit>=0.18.3
-mutagen=1.35.1
+mutagen==1.35.1
 watchdog>=0.8.3
 dateutils>=0.6.6
 bleach>=1.4.3
 django-htmlmin>=0.10.0
 wagtail>=1.5.3
-django-overextend>=0.4.2
+django-overextends>=0.4.2
 Pillow>=3.3.0
-django-modelcluster=2.0
+django-modelcluster==2.0
 django-honeypot>=0.5.0
 django-jet>=1.0.3
-
 

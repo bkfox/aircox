@@ -37,6 +37,8 @@ and `gunicorn` in mind.
 
 
 ## Installation
+Later we plan to have an installation script to reduce the number of above steps.
+
 ### Dependencies
 Python modules:
 * `django-taggits`: `aircox.programs`, `aircox.cms`
@@ -53,8 +55,23 @@ External applications:
 * `liquidsoap`: `aircox` (generation of the audio streams)
 * `sox`: `aircox` (check sounds quality and metadatas)
 * note there might be external dependencies for python's Pillow too
-* sqlite, mysql or any database library that you need to run a database, that is supported by python
+* sqlite, mysql or any database library that you need to run a database, that is supported by Django (+ eventual python deps)
 
+### Setup environment
+All scripts and files assumes that:
+- you have cloned aircox in `/srv/apps/` (such as `/srv/apps/aircox/README.md`)
+- you have a supervisor running (we have scripts for `supervisord`)
+- you want to use `gunicorn` as WSGI server (otherwise, you'll need to remove it from the requirement list)
+
+This installation process uses a virtualenv, including all provided scripts.
+
+```
+# setup virtual env and activate
+virtualenv venv
+source venv/bin/activate
+# install requirements
+pip install -r requirements.txt
+```
 
 ### Configuration
 You must write a settings.py file in the `instance` directory (you can just
@@ -110,16 +127,12 @@ TODO: cms related documentation here
 
 Once the configuration is okay, you must start the *controllers monitor*,
 that creates configuration file for the audio streams using the new information
-and that run the appropriate application (note that you dont need to restart it
+and that runs the appropriate application (note that you dont need to restart it
 after adding a program that is based on schedules).
 
 If you use supervisord and our script with it, you can use the services defined
 in it instead of running commands manually.
 
-
-Note: later we want to provide an installation script in order to make your life easy.
-
 ## More informations
 There are extra informations in `aircox/README.md` and `aircox_cms/README.md` files.
-
 
