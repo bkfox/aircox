@@ -376,7 +376,6 @@ ul.list {
     }
 
     .player .item:hover .button > img.cover {
-        /* display: none; */
         opacity: 0.2;
     }
 

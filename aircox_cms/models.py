@@ -283,8 +283,8 @@ class Publication(Page):
     content_panels = [
         MultiFieldPanel([
             FieldPanel('title'),
-            FieldPanel('body', classname='full'),
             FieldPanel('summary'),
+            FieldPanel('body', classname='full'),
         ], heading=_('Content'))
     ]
     promote_panels = [

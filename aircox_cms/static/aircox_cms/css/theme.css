@@ -108,14 +108,17 @@ main.detail {
     }
 
     main.detail > header h1.title {
-        width: calc(70% - 0.8em);
-        margin: 0em;
+        position: relative;
         padding: 0.4em;
+        margin: 0em;
+        margin-bottom: -2em;
         background-color: rgba(255,255,255,0.8);
     }
 
     main.detail > header img.cover {
-        width: 70%;
+        /*width: 70%;*/
+        width: 100%;
+        margin: auto;
         vertical-align: middle;
         display: inline-block;
     }
