@@ -30,7 +30,7 @@ for:
 
 * cron: daily cron configuration for the generation of the diffusions
 * supervisorctl: audio stream generation, website, sounds monitoring
-* nginx: sampe config file (must be adapted)
+* nginx: sample config file (must be adapted)
 
 The scripts are written with  a combination of `cron`, `supervisord`, `nginx`
 and `gunicorn` in mind.

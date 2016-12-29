@@ -1,4 +1,5 @@
-from django.db.models.signals import post_save, pre_delete
+from django.db.models.signals import post_save, pre_save, pre_delete, m2m_changed
+from django.contrib.auth.models import User, Group, Permission
 
 from django.dispatch import receiver
 from django.utils.translation import ugettext as _, ugettext_lazy
@@ -6,6 +7,31 @@ from django.contrib.contenttypes.models import ContentType
 
 import aircox.models as models
 import aircox.utils as utils
+import aircox.settings as settings
+
+# Add a default group to a user when it is created. It also assigns a list
+# of permissions to the group if it is created.
+#
+# - group name: settings.AIRCOX_DEFAULT_USER_GROUP
+# - group permissions: settings.AIRCOX_DEFAULT_USER_GROUP_PERMS
+#
+@receiver(post_save, sender=User)
+def user_default_groups(sender, instance, created, *args, **kwargs):
+    groupName = settings.AIRCOX_DEFAULT_USER_GROUP
+    if not created or instance.is_superuser or \
+            instance.groups.filter(name = groupName).count():
+        return
+
+    group, created = Group.objects.get_or_create(name = groupName)
+    if created:
+        for codename in settings.AIRCOX_DEFAULT_USER_GROUP_PERMS:
+            permission = Permission.objects.filter(codename = codename).first()
+            if permission:
+                group.permissions.add(permission)
+        group.save()
+
+    instance.groups.add(group)
+
 
 # FIXME: avoid copy of the code in schedule_post_saved and
 #        schedule_pre_delete
