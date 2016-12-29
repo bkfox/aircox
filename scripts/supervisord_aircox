@@ -21,7 +21,7 @@ autostart = true
 autorestart = true
 stdout_logfile = /srv/apps/aircox/logs/server.log
 redirect_stderr = true
-environment=AIRCOX_DEBUG="False",PATH="/srv/apps/aircox/venv/bin"
+environment=AIRCOX_DEBUG="False"
 
 [program:aircox_sounds_monitor]
 command = /srv/apps/aircox/scripts/launch_in_venv ./manage.py sounds_monitor -qsm
@@ -31,7 +31,7 @@ autostart = true
 autorestart = true
 stdout_logfile = /srv/apps/aircox/logs/sounds_monitor.log
 redirect_stderr = true
-environment=AIRCOX_DEBUG="False",PATH="/srv/apps/aircox/venv/bin"
+environment=AIRCOX_DEBUG="False"
 
 [program:aircox_streamer]
 command = /srv/apps/aircox/scripts/launch_in_venv ./manage.py streamer -crm
@@ -41,6 +41,6 @@ autostart = true
 autorestart = true
 stdout_logfile = /srv/apps/aircox/logs/streamer.log
 redirect_stderr = true
-environment=AIRCOX_DEBUG="False",PATH="/srv/apps/aircox/venv/bin"
+environment=AIRCOX_DEBUG="False"
 
 

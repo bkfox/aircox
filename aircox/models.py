@@ -212,7 +212,7 @@ class Station(Nameable):
         Return all active input ports of the station
         """
         return self.port_set.filter(
-            direction = Port.Direction.Input,
+            direction = Port.Direction.input,
             active = True
         )
 
@@ -222,7 +222,7 @@ class Station(Nameable):
         Return all active output ports of the station
         """
         return self.port_set.filter(
-            direction = Port.Direction.Output,
+            direction = Port.Direction.output,
             active = True,
         )
 
