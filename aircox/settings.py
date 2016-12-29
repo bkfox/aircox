@@ -6,14 +6,18 @@ from django.conf import settings
 def ensure (key, default):
     globals()[key] = getattr(settings, key, default)
 
-# name of the group assigned by default to all users that are created
-ensure('AIRCOX_DEFAULT_USER_GROUP', 'Radio Hosts')
-ensure('AIRCOX_DEFAULT_USER_GROUP_PERMS', (
-    'change_program', 'change_diffusion',
-    'change_sound',
-    'add_track', 'change_track', 'delete_track',
-    'add_tag', 'change_tag', 'delete_tag',
-))
+# group to assign to users at their creation, along with the permissions
+# to add to each group.
+ensure('AIRCOX_DEFAULT_USER_GROUPS', {
+    'Radio Hosts': (
+        'change_program', 'change_diffusion',
+        'change_sound',
+        'add_track', 'change_track', 'delete_track',
+        'add_tag', 'change_tag', 'delete_tag',
+    ),
+    # ensure user can log in using Wagtail
+    'Editors': None
+})
 
 # Directory for the programs data
 ensure('AIRCOX_PROGRAMS_DIR',

@@ -17,25 +17,25 @@ import aircox.settings as settings
 #
 @receiver(post_save, sender=User)
 def user_default_groups(sender, instance, created, *args, **kwargs):
-    groupName = settings.AIRCOX_DEFAULT_USER_GROUP
-    if not created or instance.is_superuser or \
-            instance.groups.filter(name = groupName).count():
+    if not created or instance.is_superuser:
         return
 
-    group, created = Group.objects.get_or_create(name = groupName)
-    if created:
-        for codename in settings.AIRCOX_DEFAULT_USER_GROUP_PERMS:
-            permission = Permission.objects.filter(codename = codename).first()
-            if permission:
-                group.permissions.add(permission)
-        group.save()
+    for groupName, permissions in settings.AIRCOX_DEFAULT_USER_GROUPS.items():
+        if instance.groups.filter(name = groupName).count():
+            continue
 
-    instance.groups.add(group)
+        group, created = Group.objects.get_or_create(name = groupName)
+        if created and permissions:
+            for codename in permissions:
+                permission = Permission.objects.filter(codename = codename).first()
+                if permission:
+                    group.permissions.add(permission)
+            group.save()
+        instance.groups.add(group)
 
 
 # FIXME: avoid copy of the code in schedule_post_saved and
 #        schedule_pre_delete
-
 @receiver(post_save, sender=models.Schedule)
 def schedule_post_saved(sender, instance, created, *args, **kwargs):
     # TODO: case instance.program has changed
