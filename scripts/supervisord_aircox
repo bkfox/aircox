@@ -14,7 +14,7 @@
 ;
 
 [program:aircox_server]
-command = gunicorn --bind 127.0.0.1:8042 instance.wsgi:application
+command = /srv/apps/aircox/scripts/launch_in_venv gunicorn --bind 127.0.0.1:8042 instance.wsgi:application
 directory = /srv/apps/aircox
 user = aircox
 autostart = true
@@ -24,7 +24,7 @@ redirect_stderr = true
 environment=AIRCOX_DEBUG="False",PATH="/srv/apps/aircox/venv/bin"
 
 [program:aircox_sounds_monitor]
-command = /srv/apps/aircox/manage.py sounds_monitor -qsm
+command = /srv/apps/aircox/scripts/launch_in_venv ./manage.py sounds_monitor -qsm
 directory = /srv/apps/aircox
 user = aircox
 autostart = true
@@ -34,7 +34,7 @@ redirect_stderr = true
 environment=AIRCOX_DEBUG="False",PATH="/srv/apps/aircox/venv/bin"
 
 [program:aircox_streamer]
-command = /srv/apps/aircox/manage.py streamer -crm
+command = /srv/apps/aircox/scripts/launch_in_venv ./manage.py streamer -crm
 directory = /srv/apps/aircox
 user = aircox
 autostart = true
