@@ -85,6 +85,7 @@ ul {
 
 body > .top {
     position: fixed;
+    z-index: 10000000;
     top: 0;
     left: 0;
     width: calc(100% - 0.8em);
