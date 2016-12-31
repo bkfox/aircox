@@ -25,8 +25,6 @@ from wagtail.wagtailcore.utils import camelcase_to_underscore
 from wagtail.wagtailsnippets.edit_handlers import SnippetChooserPanel
 from wagtail.wagtailsnippets.models import register_snippet
 
-from wagtail.wagtailimages.views.serve import generate_signature
-
 # tags
 from modelcluster.models import ClusterableModel
 from modelcluster.fields import ParentalKey
@@ -789,6 +787,7 @@ class SectionImage(SectionRelativeItem):
             )
 
     def get_context(self, request, page):
+        from wagtail.wagtailimages.views.serve import generate_signature
         context = super().get_context(request, page)
 
         image = self.related_attr(page, 'cover') or self.image
