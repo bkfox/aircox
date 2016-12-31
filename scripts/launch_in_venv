@@ -2,6 +2,5 @@
 root_dir=`dirname $0`/..
 cd $root_dir
 source $root_dir/venv/bin/activate
-$@
-deactivate
+exec $@
 
