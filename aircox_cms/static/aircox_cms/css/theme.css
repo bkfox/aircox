@@ -115,6 +115,10 @@ main.detail {
         background-color: rgba(255,255,255,0.8);
     }
 
+    main.detail > header h1.title + section {
+        margin-top: 2em;
+    }
+
     main.detail > header img.cover {
         /*width: 70%;*/
         width: 100%;
