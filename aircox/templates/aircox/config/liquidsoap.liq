@@ -159,10 +159,10 @@ stream = fallback([
 {% block outputs %}
 {% for output in station.outputs %}
 output.{{ output.get_type_display }}(
-    {{ station.streamer.id }},
-    {% if controller.settings %},
-    {{ output.settings }}
+    {% if output.settings %}
+    {{ output.settings|safe }},
     {% endif %}
+    {{ station.streamer.id }}
 )
 {% endfor %}
 {% endblock %}
