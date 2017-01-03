@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2016-09-10 17:54+0200\n"
+"POT-Creation-Date: 2016-11-24 16:38+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,300 +18,370 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: programs/admin.py:82 programs/models.py:648
+#: admin.py:82 models.py:637
 msgid "Schedule"
-msgstr ""
+msgstr "Horaire"
 
-#: programs/admin.py:112 programs/models.py:451
+#: admin.py:111 models.py:407
 msgid "end"
-msgstr ""
+msgstr "fin"
 
-#: programs/admin.py:153
+#: admin.py:152
 msgid "Program"
-msgstr ""
+msgstr "Programme"
 
-#: programs/admin.py:157
+#: admin.py:156
 msgid "Day"
-msgstr ""
+msgstr "Jour"
 
-#: programs/admin.py:161
+#: admin.py:160
 msgid "Rerun"
-msgstr ""
+msgstr "Rediffusion"
 
-#: programs/models.py:98
+#: models.py:98
 msgid "name"
-msgstr ""
+msgstr "nom"
 
-#: programs/models.py:131
+#: models.py:131
 msgid "path"
-msgstr ""
+msgstr "chemin"
 
-#: programs/models.py:132
+#: models.py:132
 msgid "path to the working directory"
-msgstr ""
+msgstr "chemin vers le repertoire courant"
 
-#: programs/models.py:295 programs/models.py:995 programs/models.py:1050
+#: models.py:292 models.py:1026 models.py:1081
 msgid "station"
-msgstr ""
+msgstr "station"
 
-#: programs/models.py:298 programs/models.py:1003
+#: models.py:295 models.py:1034
 msgid "active"
-msgstr ""
+msgstr "actif"
 
-#: programs/models.py:300
-msgid "if not set this program is no longer active"
-msgstr ""
+#: models.py:297
+msgid "if not checked this program is no longer active"
+msgstr "si selectionné, ce programme n'est plus actif"
 
-#: programs/models.py:437 programs/models.py:481
+#: models.py:300
+msgid "syncronise"
+msgstr "synchroniser"
+
+#: models.py:302
+msgid "update later diffusions according to schedule changes"
+msgstr "mettre à jour les diffusions suivantes selon les changements de l'horaire"
+
+#: models.py:393 models.py:438
 msgid "related program"
-msgstr ""
+msgstr "programme apparenté"
 
-#: programs/models.py:440
+#: models.py:396
 msgid "delay"
-msgstr ""
+msgstr "délai"
 
-#: programs/models.py:442
+#: models.py:398
 msgid "delay between two sound plays"
-msgstr ""
+msgstr "délai entre deux diffusions de son"
 
-#: programs/models.py:445
+#: models.py:401
 msgid "begin"
-msgstr ""
+msgstr "début"
 
-#: programs/models.py:447 programs/models.py:453
+#: models.py:403 models.py:409
 msgid "used to define a time range this stream isplayed"
-msgstr ""
+msgstr "utilisé pour définir un intervalle de temps pendant laquelle ce stream est joué"
 
-#: programs/models.py:483 programs/models.py:1062
+#: models.py:440 models.py:1093
 msgid "date"
-msgstr ""
+msgstr "date"
 
-#: programs/models.py:485 programs/models.py:812
+#: models.py:442 models.py:847
 msgid "duration"
-msgstr ""
+msgstr "durée"
 
-#: programs/models.py:486
+#: models.py:443
 msgid "regular duration"
-msgstr ""
+msgstr "durée normale"
 
-#: programs/models.py:489
+#: models.py:446
 msgid "frequency"
-msgstr ""
+msgstr "fréquence"
 
-#: programs/models.py:492
+#: models.py:449
+msgid "ponctual"
+msgstr "ponctuel"
+
+#: models.py:450
 msgid "first week of the month"
-msgstr ""
+msgstr "première semaine du mois"
 
-#: programs/models.py:493
+#: models.py:451
 msgid "second week of the month"
-msgstr ""
+msgstr "deuxième semaine du mois"
 
-#: programs/models.py:494
+#: models.py:452
 msgid "third week of the month"
-msgstr ""
+msgstr "troisième semaine du mois"
 
-#: programs/models.py:495
+#: models.py:453
 msgid "fourth week of the month"
-msgstr ""
+msgstr "quatrième semaine du mois"
 
-#: programs/models.py:496
+#: models.py:454
 msgid "last week of the month"
-msgstr ""
+msgstr "dernière semaine du mois"
 
-#: programs/models.py:497
+#: models.py:455
 msgid "first and third weeks of the month"
-msgstr ""
+msgstr "première et troisième semaines du mois"
 
-#: programs/models.py:498
+#: models.py:456
 msgid "second and fourth weeks of the month"
-msgstr ""
+msgstr "deuxième et quatrième semaines du mois"
 
-#: programs/models.py:499
+#: models.py:457
 msgid "every week"
-msgstr ""
+msgstr "toutes les semaines"
 
-#: programs/models.py:500
+#: models.py:458
 msgid "one week on two"
-msgstr ""
+msgstr "une semaine sur deux"
 
-#: programs/models.py:506 programs/models.py:689
+#: models.py:464 models.py:724
 msgid "initial"
-msgstr ""
+msgstr "début"
 
-#: programs/models.py:649
+#: models.py:638
 msgid "Schedules"
-msgstr ""
+msgstr "Horaires"
 
-#: programs/models.py:680 programs/models.py:782
+#: models.py:715 models.py:817
 msgid "program"
-msgstr ""
+msgstr "programme"
 
-#: programs/models.py:684 programs/models.py:793 programs/models.py:998
-#: programs/models.py:1044
+#: models.py:719 models.py:828 models.py:1029 models.py:1075
 msgid "type"
-msgstr ""
+msgstr "type"
 
-#: programs/models.py:691
+#: models.py:726
 msgid "the diffusion is a rerun of this one"
-msgstr ""
+msgstr "la diffusion est une rediffusion de celle-ci"
 
-#: programs/models.py:693
+#: models.py:728
 msgid "start of the diffusion"
-msgstr ""
+msgstr "début de la diffusion"
 
-#: programs/models.py:694
+#: models.py:729
 msgid "end of the diffusion"
-msgstr ""
+msgstr "fin de la diffusion"
 
-#: programs/models.py:761
+#: models.py:796 views.py:190
 msgid "Diffusion"
-msgstr ""
+msgstr "Diffusion"
 
-#: programs/models.py:762
+#: models.py:797
 msgid "Diffusions"
-msgstr ""
+msgstr "Diffusions"
 
-#: programs/models.py:765
+#: models.py:800
 msgid "edit the diffusion's planification"
-msgstr ""
+msgstr "éditer la planification de la diffusion"
 
-#: programs/models.py:784
+#: models.py:819
 msgid "program related to it"
-msgstr ""
+msgstr "programme apparenté à celui-ci"
 
-#: programs/models.py:788
+#: models.py:823
 msgid "diffusion"
-msgstr ""
+msgstr "diffusion"
 
-#: programs/models.py:790
+#: models.py:825
 msgid "initial diffusion related it"
-msgstr ""
+msgstr "diffusion initiale apparentée"
 
-#: programs/models.py:798
+#: models.py:833
 msgid "file"
-msgstr ""
+msgstr "fichier"
 
-#: programs/models.py:807
+#: models.py:842
 msgid "embed HTML code"
-msgstr ""
+msgstr "code HTML intégré"
 
-#: programs/models.py:809
+#: models.py:844
 msgid "HTML code used to embed a sound from external plateform"
-msgstr ""
+msgstr "code HTML utilisé pour intégrer un son depuis une plateforme extérieure"
 
-#: programs/models.py:814
+#: models.py:849
 msgid "duration of the sound"
-msgstr ""
+msgstr "durée du son"
 
-#: programs/models.py:817
+#: models.py:852
 msgid "modification time"
-msgstr ""
+msgstr "temps de la modification"
 
-#: programs/models.py:819
+#: models.py:854
 msgid "last modification date and time"
-msgstr ""
+msgstr "date et heure de la dernière modification"
 
-#: programs/models.py:822
+#: models.py:857
 msgid "good quality"
-msgstr ""
+msgstr "bonne qualité"
 
-#: programs/models.py:824
+#: models.py:859
 msgid "sound's quality is okay"
-msgstr ""
+msgstr "la qualité du son est okay"
 
-#: programs/models.py:827
+#: models.py:862
 msgid "public"
-msgstr ""
+msgstr "public"
 
-#: programs/models.py:829
+#: models.py:864
 msgid "the sound is accessible to the public"
-msgstr ""
+msgstr "ce son est accessible au public"
 
-#: programs/models.py:927
+#: models.py:962
 msgid "Sound"
-msgstr ""
+msgstr "Son"
 
-#: programs/models.py:928
+#: models.py:963
 msgid "Sounds"
-msgstr ""
+msgstr "Sons"
 
-#: programs/models.py:940
+#: models.py:975
 msgid "title"
-msgstr ""
+msgstr "titre"
 
-#: programs/models.py:944
+#: models.py:979
 msgid "artist"
-msgstr ""
+msgstr "artiste"
 
-#: programs/models.py:948
+#: models.py:983
 msgid "tags"
-msgstr ""
+msgstr "tags"
 
-#: programs/models.py:952
+#: models.py:987
 msgid "information"
-msgstr ""
+msgstr "information"
 
-#: programs/models.py:955
+#: models.py:990
 msgid ""
 "additional informations about this track, such as the version, if is it a "
 "remix, features, etc."
 msgstr ""
+"informations additionnelles à propos de ce morceau, telles que la version, s'il"
+"s'agit d'un remix, les fonctionnalités, etc"
 
-#: programs/models.py:960
+#: models.py:995
 msgid "position in the playlist"
-msgstr ""
+msgstr "position dans la playlist"
 
-#: programs/models.py:963
+#: models.py:998
 msgid "in seconds"
-msgstr ""
+msgstr "en secondes"
 
-#: programs/models.py:965
+#: models.py:1000
 msgid "position in the playlist is expressed in seconds"
-msgstr ""
+msgstr "position dans la playlist exprimée en secondes"
 
-#: programs/models.py:972
+#: models.py:1007 templates/aircox/controllers/stats.html:55
 msgid "Track"
-msgstr ""
+msgstr "Morceau"
 
-#: programs/models.py:973
+#: models.py:1008
 msgid "Tracks"
-msgstr ""
+msgstr "Morceaux"
 
-#: programs/models.py:1005
+#: models.py:1036
 msgid "this output is active"
-msgstr ""
+msgstr "cette sortie est active"
 
-#: programs/models.py:1008
+#: models.py:1039
 msgid "output settings"
-msgstr ""
+msgstr "paramètres de sortie"
 
-#: programs/models.py:1009
+#: models.py:1040
 msgid ""
 "list of comma separated params available; this is put in the output config "
 "as raw code; plugin related"
 msgstr ""
+"liste des paramètres disponibles séparés par des virgules; placé dans la configuration de sortie"
+"en temps que code brut; plugin apparenté"
 
-#: programs/models.py:1051
+#: models.py:1082
 msgid "station on which the event occured"
-msgstr ""
+msgstr "station sur laquelle l'événement a eu lieu"
 
-#: programs/models.py:1056
+#: models.py:1087
 msgid "source"
-msgstr ""
+msgstr "source"
 
-#: programs/models.py:1058
+#: models.py:1089
 msgid "source id that make it happen on the station"
-msgstr ""
+msgstr "id de la source qui le fait arriver sur la station"
 
-#: programs/models.py:1066
+#: models.py:1097
 msgid "comment"
-msgstr ""
+msgstr "commentaire"
 
-#: programs/templates/aircox/controllers/monitor.html:107
-#: programs/templates/aircox/controllers/monitor.html:117
+#: templates/aircox/controllers/monitor.html:107
+#: templates/aircox/controllers/monitor.html:117
 msgid "skip"
-msgstr ""
+msgstr "passer"
 
-#: programs/templates/aircox/controllers/monitor.html:108
+#: templates/aircox/controllers/monitor.html:108
 msgid "update"
+msgstr "mettre à jour"
+
+#: templates/aircox/controllers/stats.html:6
+#: templates/aircox/controllers/stats.html:11
+msgid "Statistics of the stations"
+msgstr "Statistiques des stations"
+
+#: templates/aircox/controllers/stats.html:16
+msgid "day"
+msgstr "jour"
+
+#: templates/aircox/controllers/stats.html:18
+msgid "month"
+msgstr "mois"
+
+#: templates/aircox/controllers/stats.html:20
+msgid "year"
+msgstr "année"
+
+#: templates/aircox/controllers/stats.html:35
+msgid "Date"
+msgstr "Date"
+
+#: templates/aircox/controllers/stats.html:36
+msgid "Type"
+msgstr "Type"
+
+#. Translators "Header for statistics view"
+#: templates/aircox/controllers/stats.html:38
+msgid "Diffusion or sound played"
+msgstr "Diffusion ou son joué"
+
+#: templates/aircox/controllers/stats.html:39
+msgid "Tags"
+msgstr "Tags"
+
+#: templates/aircox/controllers/stats.html:64
+msgid "Total"
+msgstr "Total"
+
+#: templates/aircox/controllers/stats.html:69
+#, python-format
+msgid ""
+"\n"
+"                    %(items_count)s items, with a total of %(tracks_count)s "
+"tracks\n"
+"                    "
 msgstr ""
+"\n"
+"                   %(items_counts)s items, avec un total de %(tracks_count)s "
+"tracks\n"
+""
+
+#: views.py:209
+msgid "Stream"
+msgstr "Stream"
