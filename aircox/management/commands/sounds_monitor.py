@@ -280,6 +280,7 @@ class Command(BaseCommand):
         logger.info('scan all programs...')
         programs = Program.objects.filter()
 
+        dirs = []
         for program in programs:
             logger.info('#%d %s', program.id, program.name)
             self.scan_for_program(
@@ -290,6 +291,11 @@ class Command(BaseCommand):
                 program, settings.AIRCOX_SOUND_EXCERPTS_SUBDIR,
                 type = Sound.Type.excerpt,
             )
+            dirs.append(os.path.join(program.path))
+
+        # extra scan for files that are not in programs' dir anymore
+        # TODO
+
 
     def scan_for_program(self, program, subdir, **sound_kwargs):
         """

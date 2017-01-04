@@ -43,18 +43,12 @@ class Importer:
         if not os.path.exists(path):
             return True
         with open(path, 'r') as file:
-            self.data = list(csv.reader(
-                file,
+            self.data = list(csv.DictReader(
+                (row for row in file if not row.startswith('#')),
+                fieldnames = settings.AIRCOX_IMPORT_PLAYLIST_CSV_COLS,
                 delimiter = settings.AIRCOX_IMPORT_PLAYLIST_CSV_DELIMITER,
                 quotechar = settings.AIRCOX_IMPORT_PLAYLIST_CSV_TEXT_QUOTE,
             ))
-
-    def __get(self, line, field, default = None):
-        maps = settings.AIRCOX_IMPORT_PLAYLIST_CSV_COLS
-        if field not in maps:
-            return default
-        index = maps.index(field)
-        return line[index] if index < len(line) else default
 
     def make_playlist(self, related, save = False):
         """
@@ -67,21 +61,21 @@ class Importer:
         in_seconds = ('minutes' or 'seconds') in maps
         for index, line in enumerate(self.data):
             position = \
-                int(self.__get(line, 'minutes', 0)) * 60 + \
-                int(self.__get(line, 'seconds', 0)) \
+                int(line.get('minute') or 0) * 60 + \
+                int(line.get('seconds') or 0) \
                 if in_seconds else index
 
             track, created = Track.objects.get_or_create(
                 related_type = ContentType.objects.get_for_model(related),
                 related_id = related.pk,
-                title = self.__get(line, 'title'),
-                artist = self.__get(line, 'artist'),
+                title = line.get('title'),
+                artist = line.get('artist'),
                 position = position,
             )
 
             track.in_seconds = in_seconds
-            track.info = self.__get(line, 'info')
-            tags = self.__get(line, 'tags')
+            track.info = line.get('info')
+            tags = line.get('tags')
             if tags:
                 track.tags.add(*tags.split(','))
 
@@ -120,13 +114,13 @@ class Command (BaseCommand):
                 path__icontains = options.get('sound')
             ).first()
         else:
-            path, ext = os.path.splitext(options.get('path'))
-            related = Sound.objects.filter(path__icontains = path).first()
+            path_, ext = os.path.splitext(path)
+            related = Sound.objects.filter(path__icontains = path_).first()
 
         if not related:
             logger.error('no sound found in the database for the path ' \
                          '{path}'.format(path=path))
-            return -1
+            return
 
         if options.get('diffusion') and related.diffusion:
             related = related.diffusion
