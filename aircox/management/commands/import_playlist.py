@@ -26,6 +26,7 @@ logger = logging.getLogger('aircox.tools')
 
 
 class Importer:
+    path = None
     data = None
     tracks = None
 
@@ -43,6 +44,8 @@ class Importer:
         if not os.path.exists(path):
             return True
         with open(path, 'r') as file:
+            logger.info('start reading csv ' + path)
+            self.path = path
             self.data = list(csv.DictReader(
                 (row for row in file if not row.startswith('#')),
                 fieldnames = settings.AIRCOX_IMPORT_PLAYLIST_CSV_COLS,
@@ -58,26 +61,35 @@ class Importer:
         maps = settings.AIRCOX_IMPORT_PLAYLIST_CSV_COLS
         tracks = []
 
+        logger.info('parse csv file ' + self.path)
         in_seconds = ('minutes' or 'seconds') in maps
         for index, line in enumerate(self.data):
-            position = \
-                int(line.get('minute') or 0) * 60 + \
-                int(line.get('seconds') or 0) \
-                if in_seconds else index
+            if ('title' or 'artist') not in line:
+                return
 
-            track, created = Track.objects.get_or_create(
-                related_type = ContentType.objects.get_for_model(related),
-                related_id = related.pk,
-                title = line.get('title'),
-                artist = line.get('artist'),
-                position = position,
-            )
+            try:
+                position = \
+                    int(line.get('minute') or 0) * 60 + \
+                    int(line.get('seconds') or 0) \
+                    if in_seconds else index
 
-            track.in_seconds = in_seconds
-            track.info = line.get('info')
-            tags = line.get('tags')
-            if tags:
-                track.tags.add(*tags.split(','))
+                track, created = Track.objects.get_or_create(
+                    related_type = ContentType.objects.get_for_model(related),
+                    related_id = related.pk,
+                    title = line.get('title'),
+                    artist = line.get('artist'),
+                    position = position,
+                )
+
+                track.in_seconds = in_seconds
+                track.info = line.get('info')
+                tags = line.get('tags')
+                if tags:
+                    track.tags.add(*tags.split(','))
+            except:
+                logger.warning('an error occured for track {index}, it may not '
+                               'have been saved'.format(index = index))
+                continue
 
             if save:
                 track.save()

@@ -1004,12 +1004,15 @@ class Sound(Nameable):
         except:
             meta = {}
 
+        if meta is None:
+            meta = {}
+
         def get_meta(key, cast=str):
             value = meta.get(key)
             return cast(value[0]) if value else None
 
         info = '{} ({})'.format(get_meta('album'), get_meta('year')) \
-                    if 'album' and 'year' in meta else \
+                    if meta and ('album' and 'year' in meta) else \
                get_meta('album') \
                     if 'album' else \
                ('year' in meta) and get_meta('year') or ''
