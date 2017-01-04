@@ -69,7 +69,7 @@ class Importer:
 
             try:
                 position = \
-                    int(line.get('minute') or 0) * 60 + \
+                    int(line.get('minutes') or 0) * 60 + \
                     int(line.get('seconds') or 0) \
                     if in_seconds else index
 
