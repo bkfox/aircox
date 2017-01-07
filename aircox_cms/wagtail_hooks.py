@@ -28,8 +28,9 @@ class DiffusionAdmin(ModelAdmin):
     menu_label = _('Diffusions')
     menu_icon = 'date'
     menu_order = 200
-    list_display = ('program', 'start', 'end', 'frequency', 'initial')
-    list_filter = ('frequency', 'start', 'program')
+    list_display = ('program', 'start', 'end', 'type', 'initial')
+    list_filter = ('program', 'start', 'type')
+    search_fields = ('program__name', 'start')
 
 class ScheduleAdmin(ModelAdmin):
     model = aircox.models.Schedule
@@ -53,7 +54,6 @@ class AdvancedAdminGroup(ModelAdminGroup):
     items = (ProgramAdmin, DiffusionAdmin, ScheduleAdmin, StreamAdmin)
 
 modeladmin_register(AdvancedAdminGroup)
-
 
 class SoundAdmin(ModelAdmin):
     model = aircox.models.Sound
@@ -79,6 +79,10 @@ def editor_css():
 
 class GenericMenu(Menu):
     page_model = models.Publication
+    explore = False
+    """
+    If True, show page explorer instead of page editor.
+    """
 
     def __init__(self):
         super().__init__('')
@@ -94,7 +98,9 @@ class GenericMenu(Menu):
 
     def get_page_url(self, page_model, item):
         if item.page.count():
-            return reverse('wagtailadmin_pages:edit', args=[item.page.first().id])
+            name =  'wagtailadmin_explore' \
+                    if self.explore else 'wagtailadmin_pages:edit'
+            return reverse(name, args=[item.page.first().id])
 
         parent_page = self.get_parent(item)
         if not parent_page:
@@ -152,6 +158,7 @@ class ProgramsMenu(GenericMenu):
     Menu to display all active programs
     """
     page_model = models.DiffusionPage
+    explore = True
 
     def get_queryset(self):
         return aircox.models.Program.objects \
