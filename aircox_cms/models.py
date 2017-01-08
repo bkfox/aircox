@@ -696,7 +696,7 @@ class LogsPage(DatedListPage):
         verbose_name = _('Logs')
         verbose_name_plural = _('Logs')
 
-    content_panels = DatedListBase.panels + [
+    content_panels = DatedListBase.content_panels + [
         MultiFieldPanel([
             FieldPanel('station'),
             FieldPanel('age_max'),
