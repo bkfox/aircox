@@ -773,7 +773,7 @@ msgstr "Précédemment on air"
 #: aircox_cms/signals.py:137
 #, python-brace-format
 msgid "{program.name} is a program on {station.name}."
-msgstr "{program.bale} est un programme sur {station.name}"
+msgstr "{program.name} est un programme sur {station.name}"
 
 #: aircox_cms/templates/aircox_cms/diffusion_page.html:8
 msgid "Playlist"
@@ -842,6 +842,7 @@ msgid ""
 msgstr ""
 "\n"
 "               %(day)s %(start)s jusqu'à %(end)s, %(frequency)s\n"
+"            "
 
 #: aircox_cms/templates/aircox_cms/program_page.html:24
 msgid "Rerun"
