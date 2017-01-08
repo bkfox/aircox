@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Aircox 0.1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2017-01-08 20:31+0000\n"
+"POT-Creation-Date: 2017-01-08 22:44+0100\n"
 "PO-Revision-Date: 2016-10-10 16:00+02\n"
 "Last-Translator: Aarys\n"
 "Language-Team: Aircox's translators team\n"
@@ -64,7 +64,7 @@ msgstr "favicon"
 msgid "small logo for the website displayed in the browser"
 msgstr "petit logo pour le site affiché dans le navigateur"
 
-#: aircox_cms/models.py:58 aircox_cms/models.py:274
+#: aircox_cms/models.py:58 aircox_cms/models.py:278
 msgid "tags"
 msgstr "tags"
 
@@ -199,7 +199,7 @@ msgstr "public"
 msgid "author"
 msgstr "auteur"
 
-#: aircox_cms/models.py:181 aircox_cms/models.py:391
+#: aircox_cms/models.py:181 aircox_cms/models.py:395
 msgid "email"
 msgstr "email"
 
@@ -241,143 +241,146 @@ msgstr "la publication est mise en avant;"
 msgid "allow comments"
 msgstr "autoriser les commentaires"
 
+#: aircox_cms/models.py:260 aircox_cms/models.py:607 aircox_cms/models.py:632
+msgid "body"
+msgstr "corps du texte"
+
 #: aircox_cms/models.py:262
+msgid "the publication itself"
+msgstr "le contenu de la publication elle-même"
+
+#: aircox_cms/models.py:266
 msgid "cover"
 msgstr "couverture"
 
-#: aircox_cms/models.py:266
+#: aircox_cms/models.py:270
 msgid "image to use as cover of the publication"
 msgstr "image à utiliser comme couverture de la publication"
 
-#: aircox_cms/models.py:269
+#: aircox_cms/models.py:273
 msgid "summary"
 msgstr "résumé"
 
-#: aircox_cms/models.py:271
+#: aircox_cms/models.py:275
 msgid "summary of the publication"
 msgstr "résumé de la publication"
 
-#: aircox_cms/models.py:280 aircox_cms/models.py:281
+#: aircox_cms/models.py:284 aircox_cms/models.py:285
 msgid "Publication"
 msgstr "Publication"
 
-#: aircox_cms/models.py:288 aircox_cms/models.py:295 aircox_cms/models.py:612
-#: aircox_cms/models.py:640
+#: aircox_cms/models.py:293 aircox_cms/models.py:299 aircox_cms/models.py:616
+#: aircox_cms/models.py:644
 msgid "Content"
 msgstr "Contenu"
 
-#: aircox_cms/models.py:296 aircox_cms/sections.py:814
+#: aircox_cms/models.py:300 aircox_cms/sections.py:814
 msgid "Links"
 msgstr "Liens"
 
-#: aircox_cms/models.py:383
+#: aircox_cms/models.py:387
 msgid "program"
 msgstr "programme"
 
-#: aircox_cms/models.py:394
+#: aircox_cms/models.py:398
 msgid "email is public"
 msgstr "l'email est public"
 
-#: aircox_cms/models.py:396
+#: aircox_cms/models.py:400
 msgid "the email addess is accessible to the public"
 msgstr "l'adresse email est accessible au public"
 
-#: aircox_cms/models.py:400
+#: aircox_cms/models.py:404
 msgid "Program"
 msgstr "Programme"
 
-#: aircox_cms/models.py:401 aircox_cms/signals.py:85 aircox_cms/signals.py:90
-#: aircox_cms/signals.py:97 aircox_cms/wagtail_hooks.py:20
-#: aircox_cms/wagtail_hooks.py:184
+#: aircox_cms/models.py:405 aircox_cms/signals.py:85 aircox_cms/signals.py:97
+#: aircox_cms/wagtail_hooks.py:20 aircox_cms/wagtail_hooks.py:184
 msgid "Programs"
 msgstr "Programmes"
 
-#: aircox_cms/models.py:470
+#: aircox_cms/models.py:474
 msgid "diffusion"
 msgstr "diffusion"
 
-#: aircox_cms/models.py:482
+#: aircox_cms/models.py:486
 msgid "publish archive"
 msgstr "publier l'archive"
 
-#: aircox_cms/models.py:484
+#: aircox_cms/models.py:488
 msgid "publish the podcast of the complete diffusion"
 msgstr "publier le podcast de la diffusion complète"
 
-#: aircox_cms/models.py:488
+#: aircox_cms/models.py:492
 msgid "Diffusion"
 msgstr "Diffusion"
 
-#: aircox_cms/models.py:489 aircox_cms/wagtail_hooks.py:28
+#: aircox_cms/models.py:493 aircox_cms/wagtail_hooks.py:28
 msgid "Diffusions"
 msgstr "Diffusions"
 
-#: aircox_cms/models.py:492
+#: aircox_cms/models.py:496
 msgid "Tracks"
 msgstr "Pistes"
 
-#: aircox_cms/models.py:532
+#: aircox_cms/models.py:536
 #, python-format
 msgid "Rerun of %(date)s"
 msgstr "Rediffusion de %(date)s"
 
-#: aircox_cms/models.py:536
+#: aircox_cms/models.py:540
 msgid "Cancelled"
 msgstr "Annulé"
 
-#: aircox_cms/models.py:603 aircox_cms/models.py:628
-msgid "body"
-msgstr "corps"
-
-#: aircox_cms/models.py:605 aircox_cms/models.py:630
+#: aircox_cms/models.py:609 aircox_cms/models.py:634
 msgid "add an extra description for this list"
 msgstr "ajouter une description supplémentaire pour cette liste"
 
-#: aircox_cms/models.py:616
+#: aircox_cms/models.py:620
 msgid "Dynamic List Page"
 msgstr "Page avec liste dynamique"
 
-#: aircox_cms/models.py:617
+#: aircox_cms/models.py:621
 msgid "Dynamic List Pages"
 msgstr "Pages avec liste dynamique"
 
-#: aircox_cms/models.py:674 aircox_cms/sections.py:907
+#: aircox_cms/models.py:678 aircox_cms/sections.py:907
 msgid "station"
 msgstr "station"
 
-#: aircox_cms/models.py:677 aircox_cms/sections.py:910
+#: aircox_cms/models.py:681 aircox_cms/sections.py:910
 msgid "(required) the station on which the logs happened"
 msgstr "(obliatoire) la station sur laquelle les logs se sont produits"
 
-#: aircox_cms/models.py:680
+#: aircox_cms/models.py:684
 msgid "maximum age"
 msgstr "âge maximum"
 
-#: aircox_cms/models.py:682
+#: aircox_cms/models.py:686
 msgid "maximum days in the past allowed to be shown. 0 means no limit"
 msgstr ""
 "nombre de jours maximum dans le passé autorisés à être affichés. 0 signifie "
 "qu'il n'y a pas de limite"
 
-#: aircox_cms/models.py:686
+#: aircox_cms/models.py:690
 msgid "reverse list"
 msgstr ""
 
-#: aircox_cms/models.py:688
+#: aircox_cms/models.py:692
 #, fuzzy
 #| msgid "if selected sort list in the ascending order by date"
 msgid "print logs in ascending order by date"
 msgstr "si selectionné, ordonne la liste dans l'ordre ascendant par date"
 
-#: aircox_cms/models.py:692 aircox_cms/models.py:693
+#: aircox_cms/models.py:696 aircox_cms/models.py:697
 msgid "Logs"
 msgstr "Logs"
 
-#: aircox_cms/models.py:700
+#: aircox_cms/models.py:704
 msgid "Configuration"
 msgstr "Configuration"
 
-#: aircox_cms/models.py:737 aircox_cms/models.py:738 aircox_cms/signals.py:71
+#: aircox_cms/models.py:741 aircox_cms/models.py:742 aircox_cms/signals.py:71
 msgid "Timetable"
 msgstr "Grille horaire"
 
@@ -757,6 +760,12 @@ msgstr "radio,{station.name}"
 msgid "Search"
 msgstr "Recherche"
 
+#: aircox_cms/signals.py:90
+#, fuzzy
+#| msgid "program"
+msgid "programs"
+msgstr "programme"
+
 #: aircox_cms/signals.py:98
 #, fuzzy
 #| msgid "program"
@@ -878,11 +887,11 @@ msgstr "montrer plus d'options"
 
 #: aircox_cms/templates/aircox_cms/snippets/comments.html:34
 msgid "Post!"
-msgstr "Poster !"
+msgstr "Poster!"
 
 #: aircox_cms/templates/aircox_cms/snippets/date_list.html:7
 msgid "go to today"
-msgstr ""
+msgstr "aujourd'hui"
 
 #: aircox_cms/templates/aircox_cms/snippets/date_list.html:10
 msgid "previous days"

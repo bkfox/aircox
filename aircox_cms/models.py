@@ -256,7 +256,11 @@ class Publication(Page):
         help_text = _('allow comments')
     )
 
-    body = RichTextField(blank=True)
+    body = RichTextField(
+        _('body'),
+        blank=True,
+        help_text = _('the publication itself')
+    )
     cover = models.ForeignKey(
         'wagtailimages.Image',
         verbose_name = _('cover'),
