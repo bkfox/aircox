@@ -87,7 +87,7 @@ def station_post_saved(sender, instance, created, *args, **kwargs):
     homepage.add_child(instance = programs)
 
     section = sections.Section(
-        name = _('Programs'),
+        name = _('programs'),
         position = 'post_content',
         page = programs,
     )

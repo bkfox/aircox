@@ -22,6 +22,18 @@ server {
 
     location /static/ {
         alias /srv/apps/aircox/static/ ;
+
+        location ~* \.(jpg|jpeg|png|gif|ico|css|js)$ {
+            expires 365d;
+        }
+    }
+
+    location /media/ {
+        alias /srv/apps/aircox/static/media/ ;
+
+        location ~* \.(jpg|jpeg|png|gif|ico|css|js)$ {
+            expires 365d;
+        }
     }
 }
 
