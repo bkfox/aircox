@@ -201,7 +201,8 @@ class MonitorHandler(PatternMatchingEventHandler):
             return
 
         si = SoundInfo(event.src_path)
-        si.get_sound(save = True, program = program, **self.sound_kwargs)
+        self.sound_kwargs['program'] = program
+        si.get_sound(save = True, **self.sound_kwargs)
         if si.year != None:
             si.find_diffusion(program)
 
@@ -318,7 +319,8 @@ class Command(BaseCommand):
                 continue
 
             si = SoundInfo(path)
-            si.get_sound(save = True, program = program, **sound_kwargs)
+            sound_kwargs['program'] = program
+            si.get_sound(save = True, **sound_kwargs)
             si.find_diffusion(program)
             si.find_playlist(si.sound)
             sounds.append(si.sound.pk)
