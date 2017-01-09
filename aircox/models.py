@@ -278,6 +278,8 @@ class Station(Nameable):
         # each to put them too there
         items = []
         diff_ = None
+        now = tz.now()
+        logs = logs.order_by('-date')
         for diff in diffs.order_by('-start'):
             logs_ = \
                 logs.filter(date__gt = diff.end, date__lt = diff_.start) \
@@ -287,14 +289,15 @@ class Station(Nameable):
             # a log can be started before the end of the diffusion and
             # still is running => need to add it to the list and change
             # the start date
-            partial_log = logs.filter(
-                date__gt = diff.start, date__lt = diff.end
-            ).last()
-            if partial_log:
-                next_log = logs.filter(pk__gt = partial_log.pk).first()
-                if not next_log or next_log.date > diff.date:
-                    partial_log.date = diff.end
-                    logs_ = [partial_log] + list(logs_[:count])
+            if diff.end < now:
+                partial_log = logs.filter(
+                    date__gt = diff.start, date__lt = diff.end
+                ).last()
+                if partial_log:
+                    next_log = logs.filter(pk__gt = partial_log.pk).first()
+                    if not next_log or next_log.date > diff.date:
+                        partial_log.date = diff.end
+                        logs_ = [partial_log] + list(logs_[:count])
 
             # append to list
             diff_ = diff
@@ -337,9 +340,7 @@ class Station(Nameable):
             return []
 
         logs = Log.objects.get_for(model = Track) \
-                  .filter(station = self) \
-                  .order_by('-date')
-
+                  .filter(station = self)
         if date:
             logs = logs.filter(date__contains = date)
             diffs = Diffusion.objects.get_at(date)
