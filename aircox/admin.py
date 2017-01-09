@@ -57,8 +57,9 @@ class TrackInline(GenericTabularInline):
 @admin.register(Sound)
 class SoundAdmin(NameableAdmin):
     fields = None
-    list_display = ['id', 'name', 'duration', 'type', 'mtime',
+    list_display = ['id', 'name', 'program', 'type', 'duration', 'mtime',
                     'public', 'good_quality', 'path']
+    list_filter = ('program', 'type', 'good_quality', 'public')
     fieldsets = [
         (None, { 'fields': NameableAdmin.fields +
                            ['path', 'type', 'program', 'diffusion'] } ),

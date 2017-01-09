@@ -60,8 +60,8 @@ class SoundAdmin(ModelAdmin):
     menu_label = _('Sounds')
     menu_icon = 'media'
     menu_order = 350
-    list_display = ('name', 'duration', 'type', 'path', 'good_quality', 'public')
-    list_filter = ('type', 'good_quality', 'public')
+    list_display = ('name', 'program', 'type', 'duration', 'path', 'good_quality', 'public')
+    list_filter = ('program', 'type', 'good_quality', 'public')
     search_fields = ('name', 'path')
 
 modeladmin_register(SoundAdmin)
