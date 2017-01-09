@@ -200,6 +200,8 @@ Playlist.prototype = {
         var list = [];
         for(var i in this.sounds) {
             var sound = Object.assign({}, this.sounds[i])
+            if(sound.on_air)
+                continue;
             delete sound.item;
             list.push(sound);
         }
