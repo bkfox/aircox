@@ -298,7 +298,7 @@ class Station(Nameable):
                 # one.
                 partial = logs.filter(
                     date__gt = diff.start, date__lt = diff.end
-                )
+                ).last()
                 if partial:
                     next_log = logs.filter(pk__gt = partial.pk).first()
                     if not next_log or next_log.date > diff.end:
