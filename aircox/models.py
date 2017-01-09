@@ -303,7 +303,7 @@ class Station(Nameable):
                     next_log = logs.filter(pk__gt = partial.pk).first()
                     if not next_log or next_log.date > diff.end:
                         partial.date = diff.end
-                        logs_ = list(logs_[:count]) + [partial]
+                        logs_ = list(logs_) + [partial]
 
             # append to list
             diff_ = diff
