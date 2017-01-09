@@ -275,29 +275,35 @@ class Station(Nameable):
         the resulting list
         """
         # we fill a list with diff and retrieve logs that happened between
-        # each to put them too there
-        items = []
+        # each to put them too there.
+        # we do the algorithm in the reverse way in order to be able to limit
+        # process calculations using count if needed.
         diff_ = None
         now = tz.now()
+        items = []
+
         logs = logs.order_by('-date')
         for diff in diffs.order_by('-start'):
-            logs_ = \
-                logs.filter(date__gt = diff.end, date__lt = diff_.start) \
-                    if diff_ else \
-                logs.filter(date__gt = diff.end)
+            if diff_:
+                logs_ = logs.filter(date__gt = diff.end, date__lt = diff_.start)
+            else:
+                logs_ = logs.filter(date__gt = diff.end)
 
-            # a log can be started before the end of the diffusion and
-            # still is running => need to add it to the list and change
-            # the start date
             if diff.end < now:
-                partial_log = logs.filter(
+                # a log can be started before the end of the diffusion and still
+                # is running. We can't say if it has been properly finished
+                # before the end of the diffusion, but we assume that in most
+                # cases this is true.
+                # We just check if there is some other log after this partial
+                # one.
+                partial = logs.filter(
                     date__gt = diff.start, date__lt = diff.end
-                ).last()
-                if partial_log:
+                )
+                if partial:
                     next_log = logs.filter(pk__gt = partial_log.pk).first()
-                    if not next_log or next_log.date > diff.date:
-                        partial_log.date = diff.end
-                        logs_ = [partial_log] + list(logs_[:count])
+                    if not next_log or next_log.date > diff.end:
+                        partial.date = diff.end
+                        logs_ = list(logs_[:count]) + [partial]
 
             # append to list
             diff_ = diff
