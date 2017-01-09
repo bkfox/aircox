@@ -96,7 +96,7 @@ class SoundInfo:
             self.duration = duration
             return duration
 
-    def get_sound(self, save = True, **kwargs = None):
+    def get_sound(self, save = True, **kwargs):
         """
         Get or create a sound using self info.
 
