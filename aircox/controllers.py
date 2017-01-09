@@ -2,6 +2,7 @@ import os
 import re
 import subprocess
 import atexit
+import logging
 
 from django.template.loader import render_to_string
 
@@ -9,6 +10,8 @@ import aircox.models as models
 import aircox.settings as settings
 
 from aircox.connector import Connector
+
+logger = logging.getLogger('aircox.tools')
 
 
 class Streamer:
@@ -148,11 +151,15 @@ class Streamer:
         if not args:
             return
         self.process = subprocess.Popen(args, stderr=subprocess.STDOUT)
-        atexit.register(self.process.terminate)
+        atexit.register(lambda: self.process_terminate())
 
     def process_terminate(self):
         if self.process:
-            self.process.terminate()
+            logger.info("kill process {pid}: {info}".format(
+                pid = self.process.pid,
+                info = ' '.join(self.__get_process_args())
+            ))
+            self.process.kill()
             self.process = None
 
     def process_wait(self):
