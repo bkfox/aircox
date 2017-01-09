@@ -96,7 +96,7 @@ class SoundInfo:
             self.duration = duration
             return duration
 
-    def get_sound(self, kwargs = None, save = True):
+    def get_sound(self, save = True, **kwargs = None):
         """
         Get or create a sound using self info.
 
@@ -201,7 +201,7 @@ class MonitorHandler(PatternMatchingEventHandler):
             return
 
         si = SoundInfo(event.src_path)
-        si.get_sound(self.sound_kwargs, True)
+        si.get_sound(save = True, program = program, **self.sound_kwargs)
         if si.year != None:
             si.find_diffusion(program)
 
@@ -318,7 +318,7 @@ class Command(BaseCommand):
                 continue
 
             si = SoundInfo(path)
-            si.get_sound(sound_kwargs, True)
+            si.get_sound(save = True, program = program, **sound_kwargs)
             si.find_diffusion(program)
             si.find_playlist(si.sound)
             sounds.append(si.sound.pk)
