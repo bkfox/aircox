@@ -136,6 +136,26 @@ class Streamer:
         """
         return ['liquidsoap', '-v', self.path]
 
+    def __check_for_zombie(self):
+        """
+        Check if there is a process that has not been killed
+        """
+        # TODO: this method does not work in case the working
+        #       directory has been erased then regenerated
+        if not os.path.exist(self.path + ".pid"):
+            return
+
+        with open(self.path + ".pid") as file:
+            pid = file.read()
+            os.kill(int(pid), signal.SIGKILL)
+
+    def __prevent_zombie(self):
+        """
+        Write process pid
+        """
+        with open(self.path + ".pid", "w") as file:
+            file.write(str(self.process.pid))
+
     def process_run(self):
         """
         Execute the external application with corresponding informations.
@@ -150,7 +170,10 @@ class Streamer:
         args = self.__get_process_args()
         if not args:
             return
+
+        self.__check_for_zombie()
         self.process = subprocess.Popen(args, stderr=subprocess.STDOUT)
+        self.__prevent_zombie()
         atexit.register(lambda: self.process_terminate())
 
     def process_terminate(self):
@@ -161,6 +184,9 @@ class Streamer:
             ))
             self.process.kill()
             self.process = None
+
+            # the zombie has been killed
+            os.remove(self.path + ".pid")
 
     def process_wait(self):
         """

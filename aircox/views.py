@@ -111,7 +111,7 @@ class Monitor(View,TemplateResponseMixin,LoginRequiredMixin):
         source = None
         if 'source' in POST:
             source = [ s for s in station.sources
-                        if s.name == POST['source']]
+                        if s.name == POST['source'] ]
             source = source[0]
             if not source:
                 return Http404
