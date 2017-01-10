@@ -1,4 +1,5 @@
 import os
+import signal
 import re
 import subprocess
 import atexit

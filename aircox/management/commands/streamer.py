@@ -6,8 +6,6 @@ used to:
 - cancels Diffusions that have an archive but could not have been played;
 - run Liquidsoap
 """
-import os
-import signal
 import time
 import re
 
