@@ -142,7 +142,7 @@ class Streamer:
         """
         # TODO: this method does not work in case the working
         #       directory has been erased then regenerated
-        if not os.path.exist(self.path + ".pid"):
+        if not os.path.exists(self.path + ".pid"):
             return
 
         with open(self.path + ".pid") as file:
