@@ -3,6 +3,7 @@ Django>=1.10.3
 django-taggit>=0.18.3
 mutagen==1.35.1
 watchdog>=0.8.3
+psutil>=5.0.1
 dateutils>=0.6.6
 bleach>=1.4.3
 django-htmlmin>=0.10.0
