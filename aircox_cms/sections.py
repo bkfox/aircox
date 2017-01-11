@@ -7,6 +7,7 @@ from django.utils.translation import ugettext as _, ugettext_lazy
 from django.utils import timezone as tz
 from django.utils.functional import cached_property
 from django.core.urlresolvers import reverse
+from django.template import Template, Context
 from django.template.loader import render_to_string
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.staticfiles.templatetags.staticfiles import static
@@ -776,6 +777,9 @@ class SectionImage(SectionRelativeItem):
         ], heading=_('Resizing'))
     ]
 
+    cache = ""
+
+
     def get_filter(self):
         return \
             'original' if not (self.height or self.width) else \
@@ -786,6 +790,33 @@ class SectionImage(SectionRelativeItem):
                 self.width, self.height
             )
 
+    def ensure_cache(self, image):
+        """
+        Ensure that we have a generated image and that it is put in cache.
+        We use this method since generating dynamic signatures don't generate
+        static images (and we need it).
+        """
+        # Note: in order to put the generated image in db, we first need a way
+        #       to get save events from related page or image.
+        if self.cache:
+            return self.cache
+
+        if self.width or self.height:
+            template = Template(
+                '{% load wagtailimages_tags %}\n' +
+                '{{% image source {filter} as img %}}'.format(
+                    filter = self.get_filter()
+                ) +
+                '<img src="{{ img.url }}">'
+            )
+            context = Context({
+                "source": image
+            })
+            self.cache = template.render(context)
+        else:
+            self.cache = '<img src="{}"/>'.format(image.file.url)
+        return self.cache
+
     def get_context(self, request, page):
         from wagtail.wagtailimages.views.serve import generate_signature
         context = super().get_context(request, page)
@@ -794,17 +825,7 @@ class SectionImage(SectionRelativeItem):
         if not image:
             return context
 
-        if self.width or self.height:
-            filter_spec = self.get_filter()
-            filter_spec = (image.id, filter_spec)
-            url = reverse(
-                'wagtailimages_serve',
-                args=(generate_signature(*filter_spec), *filter_spec)
-            )
-        else:
-            url = image.file.url
-
-        context['content'] = '<img src="{}"/>'.format(url)
+        context['content'] = self.ensure_cache(image)
         return context
 
 
