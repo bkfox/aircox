@@ -727,7 +727,8 @@ class Schedule(models.Model):
         if self.initial:
             self.program = self.initial.program
             self.duration = self.initial.duration
-            self.frequency = self.initial.frequency
+            if not self.frequency:
+                self.frequency = self.initial.frequency
         super().save(*args, **kwargs)
 
     class Meta:
