@@ -4,10 +4,14 @@
 <div class="list date_list">
 {% if nav_dates %}
 <nav class="nav_dates">
-    <a href="?date={{ nav_dates.today|date:"Y-m-d" }}" title="{% trans "go to today" %}">￮</a>
+    {{ target }}
+    {% if target %}
+    <a href="{{ target.url }}?date={{ nav_dates.today|date:"Y-m-d" }}" title="{% trans "go to today" %}">￮</a>
 
     {% if nav_dates.prev %}
-    <a href="?date={{ nav_dates.prev|date:"Y-m-d" }}" title="{% trans "previous days" %}">◀</a>
+    <a href="{{ target.url }}?date={{ nav_dates.prev|date:"Y-m-d" }}" title="{% trans "previous days" %}">◀</a>
+    {% endif %}
+
     {% endif %}
 
     {% for day in nav_dates.dates %}
@@ -20,8 +24,8 @@
     </a>
     {% endfor %}
 
-    {% if nav_dates.next %}
-    <a href="?date={{ nav_dates.next|date:"Y-m-d" }}" title="{% trans "next days" %}">▶</a>
+    {% if target and nav_dates.next %}
+    <a href="{{ target.url }}?date={{ nav_dates.next|date:"Y-m-d" }}" title="{% trans "next days" %}">▶</a>
     {% endif %}
 </nav>
 {% endif %}

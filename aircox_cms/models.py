@@ -666,6 +666,7 @@ class DatedListPage(DatedListBase,Page):
 
         # queryset
         context['object_list'] = self.get_queryset(request, context)
+        context['target'] = self
         return context
 
 

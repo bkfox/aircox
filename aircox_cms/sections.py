@@ -982,7 +982,21 @@ class SectionTimetable(SectionItem,DatedListBase):
         verbose_name = _('Section: Timetable')
         verbose_name_plural = _('Sections: Timetable')
 
-    panels = SectionItem.panels + DatedListBase.panels
+    target = models.ForeignKey(
+        'aircox_cms.TimetablePage',
+        verbose_name = _('timetable page'),
+        blank = True, null = True,
+        help_text = _('select a timetable page used to show complete timetable'),
+    )
+    nav_visible = models.BooleanField(
+        _('show date navigation'),
+        default = True,
+        help_text = _('if checked, navigation dates will be shown')
+    )
+
+    panels = SectionItem.panels + DatedListBase.panels + [
+        FieldPanel('page')
+    ]
 
     def get_queryset(self, context):
         from aircox_cms.models import DiffusionPage
@@ -995,8 +1009,10 @@ class SectionTimetable(SectionItem,DatedListBase):
 
     def get_context(self, request, page):
         context = super().get_context(request, page)
-        context.update(self.get_date_context())
+        if self.nav_visible:
+            context.update(self.get_date_context())
         context['object_list'] = self.get_queryset(context)
+        context['target'] = self.timetable_page
         return context
 
 

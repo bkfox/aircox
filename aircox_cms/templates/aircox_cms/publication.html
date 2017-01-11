@@ -20,7 +20,7 @@
     {% if page.summary %}
         {{ page.summary }}
     {% else %}
-        {{ page.body|richtext|truncatewords:24 }}
+        {{ page.body|truncatewords:24|richtext }}
     {% endif %}
 </section>
 {% endblock %}
