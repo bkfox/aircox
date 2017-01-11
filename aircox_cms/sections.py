@@ -994,8 +994,12 @@ class SectionTimetable(SectionItem,DatedListBase):
         help_text = _('if checked, navigation dates will be shown')
     )
 
+    # TODO: put in multi-field panel of datedlistbase
     panels = SectionItem.panels + DatedListBase.panels + [
-        FieldPanel('target')
+        MultiFieldPanel([
+            FieldPanel('nav_visible'),
+            FieldPanel('target'),
+        ], header=_('Navigation')),
     ]
 
     def get_queryset(self, context):
