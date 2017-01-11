@@ -113,6 +113,13 @@ main.detail {
         display: block;
         padding: 0.4em;
         vertical-align: middle;
+        transition: opacity 1.5s;
+    }
+
+    main.detail > header:hover h1.title,
+    main.detail > header:hover .summary {
+        opacity: 0.0;
+        transition: opacity 1.5s 1s;
     }
 
     main.detail > header h1.title {
