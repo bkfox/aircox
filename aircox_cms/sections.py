@@ -1013,10 +1013,12 @@ class SectionTimetable(SectionItem,DatedListBase):
 
     def get_context(self, request, page):
         context = super().get_context(request, page)
-        if self.nav_visible:
-            context.update(self.get_date_context())
+        context.update(self.get_date_context())
         context['object_list'] = self.get_queryset(context)
         context['target'] = self.timetable_page
+
+        if self.nav_visible:
+            context['nav_dates'] = None
         return context
 
 
