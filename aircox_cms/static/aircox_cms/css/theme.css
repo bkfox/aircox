@@ -101,6 +101,7 @@ main .post_content {
 main .post_content section {
     display: inline-block;
     width: calc(50% - 4em);
+    vertical-align: top;
 }
 
 
