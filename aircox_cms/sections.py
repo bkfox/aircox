@@ -1016,8 +1016,7 @@ class SectionTimetable(SectionItem,DatedListBase):
         context.update(self.get_date_context())
         context['object_list'] = self.get_queryset(context)
         context['target'] = self.target
-
-        if self.nav_visible:
+        if not self.nav_visible:
             context['nav_dates'] = None
         return context
 

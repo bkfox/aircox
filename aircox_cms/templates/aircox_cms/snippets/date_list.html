@@ -4,7 +4,6 @@
 <div class="list date_list">
 {% if nav_dates %}
 <nav class="nav_dates">
-    {{ target }}
     {% if target %}
     <a href="{{ target.url }}?date={{ nav_dates.today|date:"Y-m-d" }}" title="{% trans "go to today" %}">￮</a>
 
