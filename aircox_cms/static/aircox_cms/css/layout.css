@@ -131,6 +131,11 @@ body > .header {
     margin-bottom: 1em;
 }
 
+    .page_left .section_link_list a,
+    .page_right .section_link_list a {
+        display: block;
+    }
+
 
 /** content: list & items **/
 .list {
