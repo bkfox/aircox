@@ -999,7 +999,7 @@ class SectionTimetable(SectionItem,DatedListBase):
         MultiFieldPanel([
             FieldPanel('nav_visible'),
             FieldPanel('target'),
-        ], header=_('Navigation')),
+        ], heading=_('Navigation')),
     ]
 
     def get_queryset(self, context):
