@@ -162,7 +162,7 @@ main.detail {
     }
 
     main.detail > header .cover_container {
-       max-height: 500px;
+       max-height: 450px;
        overflow: hidden;
        margin-top: -2.8em;
        margin-bottom: -2.4em;
