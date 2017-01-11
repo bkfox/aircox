@@ -2,7 +2,7 @@
 
 {# FIXME: get current complete URL #}
 <div class="list date_list">
-{% if nav_dates %}
+{% if nav_dates.dates %}
 <nav class="nav_dates">
     {% if target %}
     <a href="{{ target.url }}?date={{ nav_dates.today|date:"Y-m-d" }}" title="{% trans "go to today" %}">￮</a>
