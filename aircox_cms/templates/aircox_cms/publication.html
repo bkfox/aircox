@@ -11,7 +11,9 @@
 <h1 class="title">{{ page.title }}</h1>
 
 {% if page.cover %}
+<span class="cover_container">
 {% image page.cover max-600x480 class="cover" height="" width="" %}
+</span>
 {% endif %}
 
 <section class="summary">

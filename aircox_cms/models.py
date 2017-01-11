@@ -405,7 +405,7 @@ class ProgramPage(Publication):
         verbose_name_plural = _('Programs')
 
     content_panels = [
-        FieldPanel('program'),
+        # FieldPanel('program'),
     ] + Publication.content_panels
 
     settings_panels = Publication.settings_panels + [
