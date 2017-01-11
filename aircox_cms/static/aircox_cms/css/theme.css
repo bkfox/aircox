@@ -109,7 +109,7 @@ main.detail {
     }
 
     main.detail > header h1.title,
-    main.detail > header summary {
+    main.detail > header .summary {
         display: block;
         padding: 0.4em;
         vertical-align: middle;
