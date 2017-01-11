@@ -94,6 +94,16 @@ main {
         margin: 0em 0em 0.4em 0em;
     }
 
+main .post_content {
+    display: block;
+}
+
+main .post_content section {
+    display: inline-block;
+    width: calc(50% - 4em);
+}
+
+
 /** detail view **/
 main.detail {
     padding: 0em;
@@ -133,7 +143,6 @@ main.detail {
 
     main.detail > header h1.title + section {
         margin-top: 2em;
-        width: 100%;
     }
 
     main.detail header .summary {
