@@ -995,7 +995,7 @@ class SectionTimetable(SectionItem,DatedListBase):
     )
 
     panels = SectionItem.panels + DatedListBase.panels + [
-        FieldPanel('page')
+        FieldPanel('target')
     ]
 
     def get_queryset(self, context):
