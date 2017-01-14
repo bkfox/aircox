@@ -45,6 +45,10 @@
     {{ page.body|richtext}}
     </section>
 
+    {% if page.links %}
+    {% include "aircox_cms/sections/section_link_list.html" %}
+    {% endif %}
+
     {% block content_extras %}{% endblock %}
 
     <div class="post_content">

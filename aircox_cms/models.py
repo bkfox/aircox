@@ -31,6 +31,7 @@ import aircox.models
 import aircox_cms.settings as settings
 
 from aircox_cms.utils import image_url
+from aircox_cms.template import TemplateMixin
 from aircox_cms.sections import *
 
 
@@ -193,7 +194,6 @@ class Comment(models.Model):
         _('comment'),
     )
 
-
     def __str__(self):
         # Translators: text shown in the comments list (in admin)
         return _('{date}, {author}: {content}...').format(
@@ -222,8 +222,9 @@ class Comment(models.Model):
         return super().save(*args, **kwargs)
 
 
-class PublicationRelatedLink(RelatedLinkBase):
-    parent = ParentalKey('Publication', related_name='related_links')
+class PublicationRelatedLink(RelatedLinkBase,TemplateMixin):
+    template = 'aircox_cms/snippets/link.html'
+    parent = ParentalKey('Publication', related_name='links')
 
 
 class PublicationTag(TaggedItemBase):
@@ -280,6 +281,7 @@ class Publication(Page):
         blank=True
     )
 
+
     class Meta:
         verbose_name = _('Publication')
         verbose_name_plural = _('Publication')
@@ -297,7 +299,7 @@ class Publication(Page):
             FieldPanel('tags'),
             FieldPanel('focus'),
         ], heading=_('Content')),
-        InlinePanel('related_links', label=_('Links'))
+        InlinePanel('links', label=_('Links'))
     ] + Page.promote_panels
     settings_panels = Page.settings_panels + [
         FieldPanel('publish_as'),
