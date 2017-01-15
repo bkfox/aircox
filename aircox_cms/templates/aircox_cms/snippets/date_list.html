@@ -30,7 +30,7 @@
 {% endif %}
 
 {% for day, list in object_list %}
-<ul class="panel {% if day == nav_dates.date %}class="today"{% endif %}"
+<ul class="panel {% if day == nav_dates.date %}today{% endif %}"
     {% if day == nav_dates.date %}selected{% endif %}
     data-date="{{day|date:"Y-m-d"}}">
     {# you might like to hide it by default -- this more for sections #}
