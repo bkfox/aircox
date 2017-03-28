@@ -249,8 +249,6 @@ function Player(id, on_air_url, show_cover) {
 
     this.init_events();
     this.load();
-
-    this.update_on_air();
 }
 
 Player.prototype = {

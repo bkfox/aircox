@@ -82,7 +82,6 @@ ul {
         margin: 0.2em 1em;
     }
 
-
 body > .top {
     position: fixed;
     z-index: 10000000;
@@ -136,6 +135,10 @@ body > .header {
         display: block;
     }
 
+
+body section ul {
+    padding: 0em;
+}
 
 /** content: list & items **/
 .list {

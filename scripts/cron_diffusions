@@ -3,7 +3,9 @@
 # aircox daily tasks:
 # - diffusions monitoring for the current month
 export PATH="/srv/apps/aircox/venv/bin"
-/srv/apps/aircox/manage.py diffusions_monitor --update --clean --check
+cd /srv/app/aircox/
+scripts/launch_in_venv ./manage.py diffusions_monitor --update --clean --check --mode auto
 # - diffusions monitoring for the next month
-/srv/apps/aircox/manage.py diffusions_monitor --update --next-month
+scripts/launch_in_venv ./manage.py diffusions_monitor --update --next-month --mode auto
+cd -
 

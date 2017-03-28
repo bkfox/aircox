@@ -401,6 +401,12 @@ class DatedListBase(models.Model):
         help_text = _('if selected, show dates navigation per weeks instead '
                       'of show days equally around the current date')
     )
+    hide_icons = models.BooleanField(
+        _('hide icons'),
+        default = False,
+        help_text = _('if selected, images of publications will not be '
+                      'displayed in the list')
+    )
 
     class Meta:
         abstract = True
@@ -409,6 +415,7 @@ class DatedListBase(models.Model):
         MultiFieldPanel([
             FieldPanel('nav_days'),
             FieldPanel('nav_per_week'),
+            FieldPanel('hide_icons'),
         ], heading=_('Navigation')),
     ]
 
