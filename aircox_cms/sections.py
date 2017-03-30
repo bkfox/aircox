@@ -285,6 +285,7 @@ class ListBase(models.Model):
         import aircox_cms.models as models
 
         params = {
+            'view': 'list',
             'date_filter': self.get_date_filter_display(),
             'model': self.model and self.model.model,
             'asc': self.asc,

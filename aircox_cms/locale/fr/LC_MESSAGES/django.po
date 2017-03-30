@@ -863,7 +863,7 @@ msgstr "Ce programme n'est plus actif"
 
 #: aircox_cms/templates/aircox_cms/publication.html:33
 msgid "Go back to the publication"
-msgstr "Retourner à l'application"
+msgstr "Retourner à la publication"
 
 #: aircox_cms/templates/aircox_cms/sections/section_publication_info.html:15
 msgid "Published by"
