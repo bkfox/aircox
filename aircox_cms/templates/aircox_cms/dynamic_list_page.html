@@ -10,20 +10,18 @@
 <h1>
 {# Translators: titles for the page that shows a list of elements. #}
 {# Translators: terms are search terms, or tag tarms. url: url to the page #}
-{% with terms=list_selector.terms %}
-{% if terms %}
-    {% blocktrans %}Search in publications for <i>{{ terms }}</i>{% endblocktrans %}
+{% if list_selector.terms %}
+    {% blocktrans with terms=list_selector.terms trimmed %}
+    Search in publications for <i>{{ terms }}</i>
+    {% endblocktrans %}
 {% elif list_selector.filter_related %}
 {# should never happen #}
-    {% with title=list_selector.filter_related.title url=list_selector.filter_related.url %}
-    {% blocktrans %}
+    {% blocktrans with title=list_selector.filter_related.title url=list_selector.filter_related.url trimmed %}
     Related to <a href="{{ url }}">{{ title }}</a>
     {% endblocktrans %}
-    {% endwith %}
 {% else %}
     {% blocktrans %}All the publications{% endblocktrans %}
 {% endif %}
-{% endwith %}
 </h1>
 {% endblock %}
 

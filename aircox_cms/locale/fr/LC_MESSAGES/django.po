@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Aircox 0.1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2017-03-31 15:34+0200\n"
+"POT-Creation-Date: 2017-03-31 16:54+0200\n"
 "PO-Revision-Date: 2016-10-10 16:00+02\n"
 "Last-Translator: Aarys\n"
 "Language-Team: Aircox's translators team\n"
@@ -43,8 +43,6 @@ msgid "No publication found for this comment"
 msgstr "Aucune publication n'a été trouvée pour ce commentaire"
 
 #: models.py:42
-#, fuzzy
-#| msgid "station"
 msgid "aircox station"
 msgstr "station aircox"
 
@@ -365,10 +363,8 @@ msgid "reverse list"
 msgstr ""
 
 #: models.py:695
-#, fuzzy
-#| msgid "if selected sort list in the ascending order by date"
 msgid "print logs in ascending order by date"
-msgstr "si selectionné, ordonne la liste dans l'ordre ascendant par date"
+msgstr "afficher les logs de manière ascendante par date"
 
 #: models.py:699 models.py:700
 msgid "Logs"
@@ -476,7 +472,7 @@ msgstr "ordre ascendant"
 
 #: sections.py:213
 msgid "if selected sort list in the ascending order by date"
-msgstr "si selectionné, ordonne la liste dans l'ordre ascendant par date"
+msgstr "si selectionné, affiche la liste dans l'ordre ascendant par date"
 
 #: sections.py:224
 msgid "filters"
@@ -510,11 +506,11 @@ msgstr ""
 
 #: sections.py:406
 msgid "hide icons"
-msgstr ""
+msgstr "cacher les icones"
 
 #: sections.py:408
 msgid "if selected, images of publications will not be displayed in the list"
-msgstr ""
+msgstr "si sélectionné, la liste n'affiche pas les images des publications"
 
 #: sections.py:420 sections.py:940
 msgid "Navigation"
@@ -542,7 +538,7 @@ msgstr "ordre"
 
 #: sections.py:507 sections.py:581
 msgid "order of rendering, the higher the latest"
-msgstr "ordre de rendement, le plus haut est le plus récent"
+msgstr "ordre d'affichage, le plus élevé étant affiché en dernier"
 
 #: sections.py:511
 msgid "model"
@@ -586,7 +582,7 @@ msgstr "classe CSS"
 
 #: sections.py:601
 msgid "section container's \"class\" attribute"
-msgstr "attribut \"class\" du récipient de la section"
+msgstr "attribut \"class\" de la balise HTML de la section"
 
 #: sections.py:636
 msgid "is related"
@@ -693,24 +689,21 @@ msgid "Sections: Timetable"
 msgstr "Sections: Grilles horaire"
 
 #: sections.py:925
-#, fuzzy
-#| msgid "Timetable"
 msgid "timetable page"
-msgstr "Grille horaire"
+msgstr "Page de Grille horaire"
 
 #: sections.py:927
 msgid "select a timetable page used to show complete timetable"
 msgstr ""
+"sélectionner une page de grille horaire pour afficher l'horaire complet"
 
 #: sections.py:930
-#, fuzzy
-#| msgid "Navigation"
 msgid "show date navigation"
-msgstr "Navigation"
+msgstr "afficher les dates de navigation"
 
 #: sections.py:932
 msgid "if checked, navigation dates will be shown"
-msgstr ""
+msgstr "si coché, les dates de navigation sont affichées"
 
 #: sections.py:965
 msgid "Section: publication's info"
@@ -781,26 +774,18 @@ msgid "radio,{station.name}"
 msgstr "radio,{station.name}"
 
 #: signals.py:78
-#, fuzzy
-#| msgid "search"
 msgid "Search"
 msgstr "Recherche"
 
 #: signals.py:90
-#, fuzzy
-#| msgid "program"
 msgid "programs"
-msgstr "programme"
+msgstr "programmes"
 
 #: signals.py:98
-#, fuzzy
-#| msgid "program"
 msgid "All programs"
 msgstr "Tous les programmes"
 
 #: signals.py:108
-#, fuzzy
-#| msgid "previous days"
 msgid "Previously on air"
 msgstr "Précédemment on air"
 
@@ -822,29 +807,20 @@ msgstr "Dates de diffusion"
 msgid "Podcasts"
 msgstr "Podcasts"
 
-#: templates/aircox_cms/dynamic_list_page.html:15
+#: templates/aircox_cms/dynamic_list_page.html:14
 #, python-format
 msgid "Search in publications for <i>%(terms)s</i>"
 msgstr "Chercher <i>%(terms)s</i> dans les publications"
 
 #: templates/aircox_cms/dynamic_list_page.html:19
-#, fuzzy, python-format
-#| msgid ""
-#| "\n"
-#| "        Related to <a href=\"%(url)s\">%(title)s</a>"
-msgid ""
-"\n"
-"    Related to <a href=\"%(url)s\">%(title)s</a>\n"
-"    "
-msgstr ""
-"\n"
-"   Apparenté à <a href=\"%(url)s\">%(title)s</a>\n"
+msgid "Related to <a href=\"%(url)s\">%(title)s</a>"
+msgstr "Relatif à <a href=\"%(url)s\">%(title)s</a>"
 
-#: templates/aircox_cms/dynamic_list_page.html:24
+#: templates/aircox_cms/dynamic_list_page.html:23
 msgid "All the publications"
 msgstr "Toutes les publications"
 
-#: templates/aircox_cms/dynamic_list_page.html:37
+#: templates/aircox_cms/dynamic_list_page.html:35
 msgid "More about it"
 msgstr "Plus d'informations"
 
@@ -869,15 +845,8 @@ msgid "Schedule"
 msgstr "Horaire"
 
 #: templates/aircox_cms/program_page.html:18
-#, python-format
-msgid ""
-"\n"
-"                %(day)s %(start)s until %(end)s, %(frequency)s\n"
-"            "
-msgstr ""
-"\n"
-"               %(day)s %(start)s jusqu'à %(end)s, %(frequency)s\n"
-"            "
+msgid "%(day)s %(start)s until %(end)s, %(frequency)s"
+msgstr "%(day)s %(start)s jusqu'à %(end)s, %(frequency)s"
 
 #: templates/aircox_cms/program_page.html:24
 msgid "Rerun"
@@ -891,21 +860,33 @@ msgstr "Ce programme n'est plus actif"
 msgid "Go back to the publication"
 msgstr "Retourner à la publication"
 
-#: templates/aircox_cms/sections/section_publication_info.html:15
-msgid "Published by"
-msgstr "Publié par"
+#: templates/aircox_cms/sections/section_publication_info.html:12
+#: templates/aircox_cms/sections/section_publication_info.html:13
+msgid "Parent pages"
+msgstr "Pages parentes"
 
-#: templates/aircox_cms/sections/section_publication_info.html:22
-#, fuzzy, python-format
-#| msgid "Published on "
-msgid "<b>Published on </b> %(date)s"
-msgstr "<b>Publié le </b> %(date)s"
-
-#: templates/aircox_cms/sections/section_publication_info.html:31
+#: templates/aircox_cms/sections/section_publication_info.html:27
+#: templates/aircox_cms/sections/section_publication_info.html:28
 msgid "Tags"
 msgstr "Tags"
 
-#: templates/aircox_cms/sections/section_publication_info.html:40
+#: templates/aircox_cms/sections/section_publication_info.html:45
+#: templates/aircox_cms/sections/section_publication_info.html:46
+msgid "Author"
+msgstr "Auteur"
+
+#: templates/aircox_cms/sections/section_publication_info.html:48
+#, python-format
+msgid "Published by %(author)s"
+msgstr "Publié par %(author)s"
+
+#: templates/aircox_cms/sections/section_publication_info.html:58
+#: templates/aircox_cms/sections/section_publication_info.html:59
+msgid "Date of publication"
+msgstr "Date de publication"
+
+#: templates/aircox_cms/sections/section_publication_info.html:68
+#: templates/aircox_cms/sections/section_publication_info.html:69
 msgid "Share"
 msgstr "Partager"
 
@@ -993,15 +974,15 @@ msgstr "Sons"
 msgid "Today's Diffusions"
 msgstr "Diffusion du jour"
 
+#~ msgid "Published by"
+#~ msgstr "Publié par"
+
 #~ msgid "message to display when a post waits to be reviewed"
 #~ msgstr "message à afficher quand une publication attend d'être approuvée"
 
 #~ msgid "message to display there is an error an incomplete form."
 #~ msgstr ""
 #~ "message à afficher quand il y a une erreur dans un formulaire incomplet"
-
-#~ msgid "automatic publications"
-#~ msgstr "publications automatiques"
 
 #~ msgid ""
 #~ "Create automatically new publications for new programs and diffusions in "
