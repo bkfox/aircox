@@ -406,13 +406,21 @@ main .body ~ section:not(.comments) {
     display: inline-block;
 }
 
-.meta > .share {
-    margin-top: 0.8em;
-}
-
 .meta .author .summary {
     display: none;
 }
+
+    .meta .link_list > a {
+        font-size: 0.9em;
+        margin: 0em 0.1em;
+        padding: 0.2em;
+        line-height: 1.4em;
+    }
+
+    .meta .link_list > a:hover {
+        border-radius: 0.2em;
+        background-color: rgba(0, 126, 223, 0.1);
+    }
 
 
 /** content: others **/

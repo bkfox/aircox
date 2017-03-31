@@ -5,39 +5,68 @@
 {% load wagtailsettings_tags %}
 
 {% block content %}
+{% spaceless %}
 <div class="meta">
+    <div class="link_list">
+        <img src="{% static "aircox/images/home.png" %}"
+             alt="{% trans "Parent pages" %}"
+             title="{% trans "Parent pages" %}"
+             class="small_icon">
+        {% for page in page.get_ancestors %}
+        {% if not forloop.first %}
+            <a href="{{ page.url }}">{{ page.title }}</a>
+            {% if not forloop.last %} &gt; {% endif %}
+        {% endif %}
+        {% endfor %}
+    </div>
+
+    {% with list_page=settings.cms.WebsiteSettings.list_page %}
+    {% if list_page and page.tags.count %}
+    <div class="link_list tags">
+        <img src="{% static "aircox/images/tags.png" %}"
+             alt="{% trans "Tags" %}"
+             title="{% trans "Tags" %}"
+             class="small_icon">
+        {% for tag in page.tags.all %}
+        <a href="{{ list_page }}?tag={{ tag }}">{{ tag }}</a>
+        {% if not forloop.last %}, {% endif %}
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
     <div class="author">
         {% if page.publish_as %}
             {% with item=page.publish_as item_date_format='' %}
             {% include "aircox_cms/snippets/list_item.html" %}
             {% endwith %}
         {% elif page.owner %}
-            {% trans "Published by" %}
-            {{ page.owner }}
+            <img src="{% static "aircox/images/info.png" %}"
+                 alt="{% trans "Author" %}"
+                 title="{% trans "Author" %}"
+                 class="small_icon">
+            {% blocktrans with author=page.owner trimmed %}
+            Published by {{ author }}
+            {% endblocktrans %}
         {% endif %}
     </div>
+
     {% with page_date=page.specific.date %}
     {% if page_date %}
     <time datetime="{{ page_date }}">
-        <b>{% trans "Published on " %}</b>
+        <img src="{% static "aircox/images/calendar_day.png" %}"
+             alt="{% trans "Date of publication" %}"
+             title="{% trans "Date of publication" %}"
+             class="small_icon">
         {{ page_date|date:'l d F, H:i' }}
     </time>
     {% endif %}
     {% endwith %}
 
-    {% with list_page=settings.cms.WebsiteSettings.list_page %}
-    {% if list_page and page.tags.count %}
-    <div class="tags"><b>{% trans "Tags" %}</b>
-        {% for tag in page.tags.all %}
-        <a href="{{ list_page }}?tag={{ tag }}">{{ tag }}</a>
-        {% endfor %}
-    </div>
-    {% endif %}
-    {% endwith %}
-
-    <div class="share">
-        <img src="{% static "aircox/images/share.png" %}" alt="{% trans "Share" %}"
-                class="small_icon">
+    <div class="share link_list">
+        <img src="{% static "aircox/images/share.png" %}"
+             alt="{% trans "Share" %}"
+             title="{% trans "Share" %}" class="small_icon">
         <a href="mailto:?&body={{ page.full_url|urlencode }}"
                 target="new">
             <img src="{% static "aircox/images/mail.png" %}" alt="Mail" class="small_icon">
@@ -56,5 +85,6 @@
         </a>
     </div>
 </div>
+{% endspaceless %}
 {% endblock %}
 
