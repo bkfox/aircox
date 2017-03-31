@@ -16,7 +16,7 @@
             {% with frequency=schedule.get_frequency_display day=schedule.date|date:'l' %}
             {% with start=schedule.date|date:"H:i" end=schedule.end|date:"H:i" %}
             {% blocktrans trimmed %}
-                {{ day }} {{ start }} until {{ end }}, {{ frequency }}
+            {{ day }} at {{ start }} until {{ end }}, <span class="info">{{ frequency }}</span>
             {% endblocktrans %}
             {% endwith %}
             {% endwith %}

@@ -41,11 +41,13 @@
 {% else %}
 {# detail view #}
 <div class="content">
+    {% if page.body %}
     <section class="body">
     {{ page.body|richtext}}
     </section>
+    {% endif %}
 
-    {% if page.links %}
+    {% if page.links.count %}
     {% include "aircox_cms/sections/section_link_list.html" %}
     {% endif %}
 

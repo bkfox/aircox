@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Aircox 0.1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2017-03-31 16:54+0200\n"
+"POT-Creation-Date: 2017-03-31 18:23+0200\n"
 "PO-Revision-Date: 2016-10-10 16:00+02\n"
 "Last-Translator: Aarys\n"
 "Language-Team: Aircox's translators team\n"
@@ -100,10 +100,8 @@ msgid "Your comment has been successfully posted!"
 msgstr "Votre commentaire a bien été posté !"
 
 #: models.py:91
-#, fuzzy
-#| msgid "message to display when a post has been posted"
 msgid "message displayed when a comment has been successfully posted"
-msgstr "message à afficher quand une publication a bien été postée"
+msgstr "message à afficher quand un commentaire a bien été posté"
 
 #: models.py:95
 msgid "waiting message"
@@ -156,7 +154,7 @@ msgstr ""
 #, fuzzy
 #| msgid "default program parent page"
 msgid "default programs page"
-msgstr "Page par défaut d'un programme"
+msgstr "Page des programmes par défault"
 
 #: models.py:128
 msgid ""
@@ -399,8 +397,6 @@ msgid "icon from the gallery"
 msgstr "icône de la gallerie"
 
 #: sections.py:105
-#, fuzzy
-#| msgid "icon"
 msgid "icon path"
 msgstr "chemin de l'icône"
 
@@ -413,8 +409,6 @@ msgid "text"
 msgstr "texte"
 
 #: sections.py:116
-#, fuzzy
-#| msgid "text of the url"
 msgid "text of the link"
 msgstr "texte du lien"
 
@@ -458,12 +452,9 @@ msgid "select siblings of related"
 msgstr "selectionne les sœurs de la page apparentée"
 
 #: sections.py:206
-#, fuzzy
-#| msgid ""
-#| "if selected select related publications that are siblings of this one"
 msgid "if checked, related publications are siblings instead of the children."
 msgstr ""
-"si selectionné,les publications apparentées sont les sœurs au lieu des "
+"si coché, les publications apparentées sont les sœurs au lieu des "
 "enfants."
 
 #: sections.py:211
@@ -813,6 +804,7 @@ msgid "Search in publications for <i>%(terms)s</i>"
 msgstr "Chercher <i>%(terms)s</i> dans les publications"
 
 #: templates/aircox_cms/dynamic_list_page.html:19
+#, python-format
 msgid "Related to <a href=\"%(url)s\">%(title)s</a>"
 msgstr "Relatif à <a href=\"%(url)s\">%(title)s</a>"
 
@@ -845,8 +837,9 @@ msgid "Schedule"
 msgstr "Horaire"
 
 #: templates/aircox_cms/program_page.html:18
-msgid "%(day)s %(start)s until %(end)s, %(frequency)s"
-msgstr "%(day)s %(start)s jusqu'à %(end)s, %(frequency)s"
+msgid ""
+"%(day)s at %(start)s until %(end)s, <span class=\"info\">%(frequency)s</span>"
+msgstr "%(day)s de %(start)s à %(end)s, <span class=\"info\">%(frequency)s</span>"
 
 #: templates/aircox_cms/program_page.html:24
 msgid "Rerun"
@@ -860,33 +853,33 @@ msgstr "Ce programme n'est plus actif"
 msgid "Go back to the publication"
 msgstr "Retourner à la publication"
 
-#: templates/aircox_cms/sections/section_publication_info.html:12
-#: templates/aircox_cms/sections/section_publication_info.html:13
+#: templates/aircox_cms/sections/section_publication_info.html:14
+#: templates/aircox_cms/sections/section_publication_info.html:15
 msgid "Parent pages"
 msgstr "Pages parentes"
 
-#: templates/aircox_cms/sections/section_publication_info.html:27
-#: templates/aircox_cms/sections/section_publication_info.html:28
+#: templates/aircox_cms/sections/section_publication_info.html:31
+#: templates/aircox_cms/sections/section_publication_info.html:32
 msgid "Tags"
 msgstr "Tags"
 
-#: templates/aircox_cms/sections/section_publication_info.html:45
-#: templates/aircox_cms/sections/section_publication_info.html:46
+#: templates/aircox_cms/sections/section_publication_info.html:49
+#: templates/aircox_cms/sections/section_publication_info.html:50
 msgid "Author"
 msgstr "Auteur"
 
-#: templates/aircox_cms/sections/section_publication_info.html:48
+#: templates/aircox_cms/sections/section_publication_info.html:52
 #, python-format
 msgid "Published by %(author)s"
 msgstr "Publié par %(author)s"
 
-#: templates/aircox_cms/sections/section_publication_info.html:58
-#: templates/aircox_cms/sections/section_publication_info.html:59
+#: templates/aircox_cms/sections/section_publication_info.html:62
+#: templates/aircox_cms/sections/section_publication_info.html:63
 msgid "Date of publication"
 msgstr "Date de publication"
 
-#: templates/aircox_cms/sections/section_publication_info.html:68
-#: templates/aircox_cms/sections/section_publication_info.html:69
+#: templates/aircox_cms/sections/section_publication_info.html:72
+#: templates/aircox_cms/sections/section_publication_info.html:73
 msgid "Share"
 msgstr "Partager"
 

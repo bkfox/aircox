@@ -7,6 +7,8 @@
 {% block content %}
 {% spaceless %}
 <div class="meta">
+    {% with ancestors=page.get_ancestors %}
+    {% if ancestors|length != 1 %}
     <div class="link_list">
         <img src="{% static "aircox/images/home.png" %}"
              alt="{% trans "Parent pages" %}"
@@ -19,6 +21,8 @@
         {% endif %}
         {% endfor %}
     </div>
+    {% endif %}
+    {% endwith %}
 
     {% with list_page=settings.cms.WebsiteSettings.list_page %}
     {% if list_page and page.tags.count %}
