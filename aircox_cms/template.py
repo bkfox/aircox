@@ -65,7 +65,7 @@ class TemplateMixin(metaclass=TemplateMixinMeta):
         if context:
             context_.update(context)
 
-        if context.get('hide'):
+        if context_.get('hide'):
             return ''
         return render_to_string(self.template, context_)
 
