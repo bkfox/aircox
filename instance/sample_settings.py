@@ -16,14 +16,23 @@ Note that:
 You can also take a look at `base_settings` for more information.
 
 """
+import pytz
 import os
 # If Aircox is not installed as a regular python module, you can use:
 # import sys
 # sys.path.append('/path/to/aircox_parent_folder/')
 
+from django.utils import timezone
 
 from .base_settings import *
 
+
+# define TIME_ZONE before the call to timezone.activate
+# TIME_ZONE = os.environ.get('TZ') or 'UTC'
+timezone.activate(pytz.timezone(TIME_ZONE))
+
+
+# debug or production mode
 DEBUG = False
 if 'AIRCOX_DEBUG' in os.environ:
     DEBUG = (os.environ['AIRCOX_DEBUG'].lower()) in ('true','1')

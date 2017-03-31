@@ -20,7 +20,6 @@
 body {
     background-color: #F2F2F2;
     font-family: "Myriad Pro",Calibri,Helvetica,Arial,sans-serif;
-    margin: 0em;
     padding: 0em;
 }
 
@@ -100,7 +99,7 @@ main .post_content {
 
 main .post_content section {
     display: inline-block;
-    width: calc(50% - 4em);
+    width: calc(50% - 1em);
     vertical-align: top;
 }
 

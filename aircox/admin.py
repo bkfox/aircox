@@ -162,8 +162,8 @@ class ScheduleAdmin(admin.ModelAdmin):
     rerun.boolean = True
 
     list_filter = ['frequency', 'program']
-    list_display = ['id', 'program_name', 'frequency', 'date', 'day', 'rerun']
-    list_editable = ['frequency', 'date']
+    list_display = ['id', 'program_name', 'frequency', 'day', 'date', 'duration', 'rerun']
+    list_editable = ['frequency', 'date', 'duration']
 
 
 @admin.register(Track)
