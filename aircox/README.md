@@ -22,9 +22,11 @@ Each program has a directory in **AIRCOX_PROGRAMS_DIR**; For each, subdir:
 
 
 ## manage.py's commands
-* **diffusions_monitor**: update/create, check and clean diffusions; When a diffusion is created its type can be set on "unconfirmed" (this depends on the approval mode).
-* **sound_monitor**: check for existing and missing sounds files in programs directories and synchronize the database. Can also check for the quality of file and synchronize the database according to them.
-* **sound_quality_check**: check for the quality of the file (don't update database)
+* **diffusions**: update/create, check and clean diffusions based on programs schedules;
+* **import_playlist**: import a playlist from a csv file, and associate it to a sound;
+* **sound_monitor**: check for existing and missing sounds files in programs directories and synchronize the database. It can check for the quality of file and update sound info.
+* **sound_quality_check**: check for the quality of the file (don't update database);
+* **streamer**: audio stream generation and control it;
 
 
 ## Requirements
