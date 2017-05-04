@@ -131,7 +131,7 @@ Playlist.prototype = {
         container = container || this.playlist;
         if(position != undefined) {
             container.insertBefore(sound.item, container.children[position]);
-            this.sounds.insert(position, 0, sound.item);
+            this.sounds.splice(position, 0, sound);
         }
         else {
             container.appendChild(sound.item);
