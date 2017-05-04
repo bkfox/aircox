@@ -15,7 +15,7 @@ var sound = player.playlist.add(
         streams=[ {% for stream in streams %}'{{ stream }}',{% endfor %} ],
         cover = undefined,
         on_air = true
-    )
+    ), undefined, 0
 );
 sound.item.className += ' live';
 player.playlist.select(sound, false);

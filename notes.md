@@ -1,5 +1,6 @@
 This file is used as a reminder, can be used as crappy documentation too.
 
+
 # conventions
 ## coding style
 * name of classes relative to a class:

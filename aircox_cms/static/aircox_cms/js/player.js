@@ -81,7 +81,6 @@ Sound.prototype = {
             }, false
         );
 
-
         item.addEventListener('click', function(event) {
             if(event.target.className.indexOf('action') != -1)
                 return;
@@ -119,7 +118,7 @@ Playlist.prototype = {
         });
     },
 
-    add: function(sound, container) {
+    add: function(sound, container, position) {
         var sound_ = this.find(sound.streams);
         if(sound_)
             return sound_;
@@ -128,9 +127,16 @@ Playlist.prototype = {
             this.on_air = sound;
 
         sound.make_item(this, this.item_);
-        (container || this.playlist).appendChild(sound.item);
 
-        this.sounds.push(sound);
+        container = container || this.playlist;
+        if(position != undefined) {
+            container.insertBefore(sound.item, container.children[position]);
+            this.sounds.insert(position, 0, sound.item);
+        }
+        else {
+            container.appendChild(sound.item);
+            this.sounds.push(sound);
+        }
         this.save();
         return sound;
     },

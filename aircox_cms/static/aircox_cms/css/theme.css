@@ -76,7 +76,7 @@ a:hover > .small_icon {
 
 /** page **/
 .page > nav {
-    width: 16em;
+    width: 20em;
     overflow: hidden;
 }
 
@@ -214,4 +214,11 @@ main.detail {
     }
 }
 
+
+
+/** section: playlist **/
+.playlist .title {
+    font-style: italic;
+    color: #616161;
+}
 
