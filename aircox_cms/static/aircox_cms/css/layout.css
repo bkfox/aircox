@@ -2,7 +2,7 @@
  *  Define rules for the default layouts, and some useful classes
  */
 body {
-    max-width: 85em;
+    max-width: 92em;
     margin: 0em auto;
     padding: 0em;
 }
@@ -88,7 +88,7 @@ body > .top {
     z-index: 10000000;
     top: 0;
     width: calc(100% - 0.8em);
-    max-width: calc(85em - 0.8em);
+    max-width: calc(92em - 0.8em);
     height: 2.5em;
     margin: 0em auto;
     background-color: white;
@@ -140,6 +140,7 @@ body > .header {
 
 body section ul {
     padding: 0em;
+    padding-left: 1em;
 }
 
 /** content: list & items **/
@@ -161,6 +162,9 @@ ul.list {
 
 .list_item img.cover.big {
     display: block;
+    max-width: 100%;
+    min-height: 15em;
+    margin: auto;
 }
 
 .list_item img.cover.small {
@@ -312,6 +316,7 @@ ul.list {
         }
 
 .player .playlist .item {
+    position: relative;
     margin: 0em;
     padding: 0.2em 0.4em;
     cursor: pointer;
@@ -327,12 +332,31 @@ ul.list {
 
     .player .playlist .item .actions {
         display: none;
-        font-size: 0.9em;
+        height: 100%;
+        max-width: 2.9em;
+        position: absolute;
+        right: 0px;
+        font-size: 1.2em;
+        text-align: right;
     }
 
-    .player .playlist .item:hover .actions {
-        display: inline;
+        .player .playlist .item:hover .actions {
+            display: inline;
+        }
+
+    .player .playlist .item .action {
+        display: inline-block;
+        width: 1.2em;
+        height: 1.2em;
+        border-radius: 0.2em;
+        text-align: center;
+        line-height: 1.2em;
+        background-color: #F2F2F2;
     }
+
+        .player .playlist .item .action:hover {
+            background-color: rgba(0, 126, 223, 0.1);
+        }
 
     .player .playlist .duration {
        text-align: right;
