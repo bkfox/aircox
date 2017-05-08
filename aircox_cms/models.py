@@ -281,7 +281,6 @@ class Publication(Page):
         blank=True
     )
 
-
     class Meta:
         verbose_name = _('Publication')
         verbose_name_plural = _('Publication')
@@ -448,6 +447,12 @@ class ProgramPage(Publication):
                     .order_by('-start').prefetch_related('page')
         return self.diffs_to_page(diffs)
 
+    def save(self, *args, **kwargs):
+        # set publish_as
+        if self.program and not self.pk:
+            self.publish_as = self
+        super().save(*args, **kwargs)
+
 
 class Track(aircox.models.Track,Orderable):
     diffusion = ParentalKey('DiffusionPage',
@@ -497,11 +502,14 @@ class DiffusionPage(Publication):
     content_panels = Publication.content_panels + [
         InlinePanel('tracks', label=_('Tracks')),
     ]
-
     promote_panels = [
-        # FieldPanel('diffusion'),
-        FieldPanel('publish_archive'),
-    ] + Publication.promote_panels
+        MultiFieldPanel([
+            FieldPanel('publish_archive'),
+            FieldPanel('tags'),
+            FieldPanel('focus'),
+        ], heading=_('Content')),
+        InlinePanel('links', label=_('Links'))
+    ] + Page.promote_panels
 
     @classmethod
     def from_diffusion(cl, diff, model = None, **kwargs):
@@ -577,6 +585,10 @@ class DiffusionPage(Publication):
 
     def save(self, *args, **kwargs):
         if self.diffusion:
+            # set publish_as
+            if not self.pk:
+                self.publish_as = self.diffusion.program.page.first()
+
             # sync date
             self.date = self.diffusion.start
 
