@@ -32,6 +32,9 @@ except:
 
 # Application definition
 INSTALLED_APPS = (
+    'aircox',
+    'aircox_cms',
+
     'jet',
     'wagtail.wagtailforms',
     'wagtail.wagtailredirects',
@@ -57,9 +60,6 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.admin',
-
-    'aircox',
-    'aircox_cms',
 )
 
 MIDDLEWARE_CLASSES = (
