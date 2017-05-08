@@ -169,9 +169,10 @@ class WebsiteSettings(BaseSetting):
 class Comment(models.Model):
     publication = models.ForeignKey(
         'Publication',
+        verbose_name = _('publication')
     )
     published = models.BooleanField(
-        verbose_name = _('public'),
+        verbose_name = _('published'),
         default = False
     )
     author = models.CharField(
@@ -193,6 +194,10 @@ class Comment(models.Model):
     content = models.TextField (
         _('comment'),
     )
+
+    class Meta:
+        verbose_name = _('comment')
+        verbose_name_plural = _('comments')
 
     def __str__(self):
         # Translators: text shown in the comments list (in admin)

@@ -965,7 +965,7 @@ msgstr "Sons"
 
 #: wagtail_hooks.py:151
 msgid "Today's Diffusions"
-msgstr "Diffusion du jour"
+msgstr "Diffusions du jour"
 
 #~ msgid "Published by"
 #~ msgstr "Publié par"

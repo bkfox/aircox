@@ -60,9 +60,9 @@ class CommentAdmin(ModelAdmin):
     menu_label = _('Comments')
     menu_icon = 'pick'
     menu_order = 300
-    list_display = ('published', 'author', 'date', 'content')
+    list_display = ('published', 'publication', 'author', 'date', 'content')
     list_filter = ('date', 'published')
-    search_fields = ('name', 'content', 'date')
+    search_fields = ('author', 'content', 'publication__title')
 
 modeladmin_register(CommentAdmin)
 
