@@ -14,7 +14,6 @@ from wagtail.contrib.modeladmin.options import \
 import aircox.models
 import aircox_cms.models as models
 
-
 class ProgramAdmin(ModelAdmin):
     model = aircox.models.Program
     menu_label = _('Programs')
@@ -54,6 +53,18 @@ class AdvancedAdminGroup(ModelAdminGroup):
     items = (ProgramAdmin, DiffusionAdmin, ScheduleAdmin, StreamAdmin)
 
 modeladmin_register(AdvancedAdminGroup)
+
+
+class CommentAdmin(ModelAdmin):
+    model = models.Comment
+    menu_label = _('Comments')
+    menu_icon = 'pick'
+    menu_order = 300
+    list_display = ('published', 'author', 'date', 'content')
+    list_filter = ('date', 'published')
+    search_fields = ('name', 'content', 'date')
+
+modeladmin_register(CommentAdmin)
 
 class SoundAdmin(ModelAdmin):
     model = aircox.models.Sound
