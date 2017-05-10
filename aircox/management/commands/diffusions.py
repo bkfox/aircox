@@ -70,6 +70,7 @@ class Actions:
             # by schedule;
             items = schedule.diffusions_of_month(date, exclude_saved = True)
             count[0] += len(items)
+            print(*[item.date for item in items])
 
             if manual:
                 Diffusion.objects.bulk_create(items)
@@ -79,7 +80,6 @@ class Actions:
                     if hasattr(item, 'do_not_save'):
                         count[0] -= 1
                         continue
-
                     item.save()
                     saved_items.add(item)
 

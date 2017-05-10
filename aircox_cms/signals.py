@@ -162,8 +162,8 @@ def diffusion_post_saved(sender, instance, created, *args, **kwargs):
         instance = page
     )
 
-@receiver(pre_delete, sender=aircox.Program)
-def diffusion_post_deleted(sender, instance, *args, **kwargs):
+@receiver(pre_delete, sender=aircox.Diffusion)
+def diffusion_pre_deleted(sender, instance, *args, **kwargs):
     for page in instance.page.all():
         if page.specific.body or Page.objects.descendant_of(page).count():
             continue

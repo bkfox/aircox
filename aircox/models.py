@@ -602,7 +602,9 @@ class Schedule(models.Model):
         """
         Set the time of a datetime to the schedule's one
         """
-        return date.replace(hour = self.date.hour, minute = self.date.minute)
+        date = date.replace(hour = self.date.hour, minute = self.date.minute,
+                            second = 0)
+        return date if tz.is_aware(date) else tz.make_aware(date)
 
     def dates_of_month(self, date = None):
         """
