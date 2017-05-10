@@ -23,29 +23,6 @@ import aircox.settings as settings
 logger = logging.getLogger('aircox.core')
 
 
-def as_date(date, as_datetime = True):
-    """
-    If as_datetime, return the date with time info set to 0; else, return
-    a date with date informations of the given date/time.
-    """
-    import datetime
-    if as_datetime:
-        return date.replace(hour = 0, minute = 0, second = 0, microsecond = 0)
-    return datetime.date(date.year, date.month, date.day)
-
-def date_or_default(date, no_time = False):
-    """
-    Return date or default value (now) if not defined, and remove time info
-    if date_only is True
-    """
-    date = date or tz.now()
-    if not tz.is_aware(date):
-        date = tz.make_aware(date)
-    if no_time:
-        return as_date(date)
-    return date
-
-
 #
 # Abstracts
 #
@@ -589,7 +566,7 @@ class Schedule(models.Model):
         """
         Return True if the given datetime matches the schedule
         """
-        date = date_or_default(date)
+        date = utils.date_or_default(date)
         if self.date.weekday() == date.weekday() and self.match_week(date):
             return self.date.time() == date.time() if check_time else True
         return False
@@ -604,12 +581,12 @@ class Schedule(models.Model):
             return False
 
         # since we care only about the week, go to the same day of the week
-        date = date_or_default(date)
+        date = utils.date_or_default(date)
         date += tz.timedelta(days = self.date.weekday() - date.weekday() )
 
         if self.frequency == Schedule.Frequency.one_on_two:
             # cf notes in date_of_month
-            diff = as_date(date, False) - as_date(self.date, False)
+            diff = utils.as_date(date, False) - utils.as_date(self.date, False)
             return not (diff.days % 14)
 
         first_of_month = date.replace(day = 1)
@@ -634,7 +611,7 @@ class Schedule(models.Model):
         if self.frequency == Schedule.Frequency.ponctual:
             return []
 
-        date = date_or_default(date, True).replace(day=1)
+        date = utils.date_or_default(date, True).replace(day=1)
         freq = self.frequency
 
         # last of the month
@@ -660,7 +637,7 @@ class Schedule(models.Model):
         dates = []
         if freq == Schedule.Frequency.one_on_two:
             # check date base on a diff of dates base on a 14 days delta
-            diff = as_date(date, False) - as_date(self.date, False)
+            diff = utils.as_date(date, False) - utils.as_date(self.date, False)
             if diff.days % 14:
                 date += tz.timedelta(days = 7)
 
@@ -745,12 +722,16 @@ class DiffusionManager(models.Manager):
         If date is a datetime.date object, check only against the
         date.
         """
-        date = date or tz.now()
+        date = utils.date_or_default(date)
         if not issubclass(type(date), datetime.datetime):
             return self.filter(
                 models.Q(start__contains = date) | \
                 models.Q(end__contains = date)
             )
+
+
+        if not date.is_aware():
+            date = make_aware(date)
 
         if not next:
             return self.filter(start__lte = date, end__gte = date) \
@@ -766,7 +747,7 @@ class DiffusionManager(models.Manager):
         Return a queryset of diffusions that happen after the given
         date.
         """
-        date = date_or_default(date)
+        date = utils.date_or_default(date)
         return self.filter(
             start__gte = date,
         ).order_by('start')
@@ -776,7 +757,7 @@ class DiffusionManager(models.Manager):
         Return a queryset of diffusions that finish before the given
         date.
         """
-        date = date_or_default(date)
+        date = utils.date_or_default(date)
         return self.filter(
             end__lte = date,
         ).order_by('start')
@@ -1260,7 +1241,7 @@ class Log(Related):
         against the date, so it is still possible that the expiration
         occured because of a Stop or other source.
         """
-        date = date_or_default(date)
+        date = utils.date_or_default(date)
         return self.end < date
 
     def print(self):

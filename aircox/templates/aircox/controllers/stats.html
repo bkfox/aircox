@@ -1,6 +1,9 @@
 {% extends "admin/base_site.html" %}
 {# {% extends "aircox/controllers/base_site.html" %} #}
 {% load i18n %}
+{% load tz %}
+{% localtime on %}
+
 
 {% block title %}
 {% trans "Statistics of the stations" %}
@@ -82,4 +85,6 @@
 {% endfor %}
 {% endblock %}
 
+
+{% endlocaltime %}
 

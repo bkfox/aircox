@@ -186,7 +186,7 @@ class Monitor:
         that still have to be played. If there is not, return None
         """
         station = self.station
-        now = tz.make_aware(tz.datetime.now())
+        now = tz.now()
 
         diff_log = station.get_played(models = Diffusion) \
                           .order_by('date').last()
