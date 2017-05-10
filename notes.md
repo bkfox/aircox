@@ -40,6 +40,17 @@ cms:
     - comments -> remove/edit by the author
 
 
+# error when generating diffusions (when all page of a page have been removed):
+seems like the numchild attribute is not updated correctly when calling page.delete()
+
+    ```
+    File "/srv/apps/aircox/venv/lib/python3.5/site-packages/treebeard/mp_tree.py", line 977, in add_child
+        return MP_AddChildHandler(self, **kwargs).process()
+    File "/srv/apps/aircox/venv/lib/python3.5/site-packages/treebeard/mp_tree.py", line 360, in process
+        newobj.path = self.node.get_last_child()._inc_path()
+    AttributeError: 'NoneType' object has no attribute '_inc_path'
+    ```
+
 # Instance's TODO
 - menu_top .sections:
     - display inline block
