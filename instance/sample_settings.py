@@ -28,7 +28,7 @@ from .base_settings import *
 
 
 # define TIME_ZONE before the call to timezone.activate
-# TIME_ZONE = os.environ.get('TZ') or 'UTC'
+TIME_ZONE = os.environ.get('TZ') or 'UTC'
 timezone.activate(pytz.timezone(TIME_ZONE))
 
 

@@ -8,7 +8,6 @@ from django.utils.translation import ugettext as _, ugettext_lazy
 
 from aircox.models import *
 
-
 #
 # Inlines
 #
