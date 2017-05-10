@@ -17,10 +17,11 @@ def date_or_default(date, no_time = False):
     if date_only is True
     """
     date = date or tz.now()
-    if issubclass(date, date.datetime) and not tz.is_aware(date):
-        date = tz.make_aware(date)
     if no_time:
         return as_date(date)
+
+    if isinstance(date, datetime.datetime) and not tz.is_aware(date):
+        date = tz.make_aware(date)
     return date
 
 def to_timedelta (time):
