@@ -59,7 +59,7 @@ def schedule_post_saved(sender, instance, created, *args, **kwargs):
     delta = instance.date - old_sched.date
 
     # update diffusions...
-    qs = models.Diffusion.objects.get_after().filter(
+    qs = models.Diffusion.objects.after(instance.program.station).filter(
         program = instance.program
     )
     for diff in qs:
@@ -84,7 +84,7 @@ def schedule_pre_delete(sender, instance, *args, **kwargs):
         frequency = initial['frequency'],
     )
 
-    qs = models.Diffusion.objects.get_after().filter(
+    qs = models.Diffusion.objects.after(instance.program.station).filter(
         program = instance.program
     )
     for diff in qs:

@@ -84,8 +84,7 @@ class Monitor:
         if not current_sound or not current_source:
             return
 
-        log = Log.objects.get_for(model = Sound) \
-                         .filter(station = self.station) \
+        log = Log.objects.get_for(self.station, model = Sound) \
                          .order_by('date').last()
 
         # only streamed
@@ -113,7 +112,7 @@ class Monitor:
         Log tracks for the given sound (for streamed programs); Called by
         self.trace
         """
-        logs = Log.objects.get_for(model = Track) \
+        logs = Log.objects.get_for(self.station, model = Track) \
                           .filter(pk__gt = log.pk)
         logs = [ log.related_id for log in logs ]
 
@@ -160,11 +159,11 @@ class Monitor:
         if not self.cancel_timeout:
             return
 
-        diffs = Diffusions.objects.get_at().filter(
+        diffs = Diffusions.objects.at(self.station).filter(
             type = Diffusion.Type.normal,
             sound__type = Sound.Type.archive,
         )
-        logs = station.get_played(models = Diffusion)
+        logs = station.played(models = Diffusion)
 
         date = tz.now() - datetime.timedelta(seconds = self.cancel_timeout)
         for diff in diffs:
@@ -188,14 +187,14 @@ class Monitor:
         station = self.station
         now = tz.now()
 
-        diff_log = station.get_played(models = Diffusion) \
+        diff_log = station.played(models = Diffusion) \
                           .order_by('date').last()
         if not diff_log or \
                 not diff_log.related.is_date_in_range(now):
             return None, []
 
         # sound has switched? assume it has been (forced to) stopped
-        sounds = station.get_played(models = Sound) \
+        sounds = station.played(models = Sound) \
                         .filter(date__gte = diff_log.date) \
                         .order_by('date')
 
@@ -228,7 +227,7 @@ class Monitor:
         now = tz.now()
 
         args = {'start__gt': diff.date } if diff else {}
-        diff = Diffusion.objects.get_at(now).filter(
+        diff = Diffusion.objects.at(station, now).filter(
             type = Diffusion.Type.normal,
             sound__type = Sound.Type.archive,
             **args

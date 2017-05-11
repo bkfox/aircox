@@ -696,9 +696,7 @@ class LogsPage(DatedListPage):
     station = models.ForeignKey(
         aircox.models.Station,
         verbose_name = _('station'),
-        null = True,
-        on_delete=models.SET_NULL,
-        help_text = _('(required) the station on which the logs happened')
+        help_text = _('(required) related station')
     )
     age_max = models.IntegerField(
         _('maximum age'),
@@ -756,6 +754,17 @@ class LogsPage(DatedListPage):
 
 class TimetablePage(DatedListPage):
     template = 'aircox_cms/dated_list_page.html'
+    station = models.ForeignKey(
+        aircox.models.Station,
+        verbose_name = _('station'),
+        help_text = _('(required) related station')
+    )
+
+    content_panels = DatedListPage.content_panels + [
+        MultiFieldPanel([
+            FieldPanel('station'),
+        ], heading=_('Configuration')),
+    ]
 
     class Meta:
         verbose_name = _('Timetable')
@@ -764,7 +773,7 @@ class TimetablePage(DatedListPage):
     def get_queryset(self, request, context):
         diffs = []
         for date in context['nav_dates']['dates']:
-            items = aircox.models.Diffusion.objects.get_at(date).order_by('start')
+            items = aircox.models.Diffusion.objects.at(self.station, date)
             items = [ DiffusionPage.as_item(item) for item in items ]
             diffs.append((date, items))
         return diffs

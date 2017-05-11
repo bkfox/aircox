@@ -40,12 +40,10 @@ cms:
     - comments -> remove/edit by the author
 
 # Timezone shit:
-Check:
-- manager/commands:
-    - diffusions
-    - streamer
-- admin: date printed for diffusion is utc even using localtime => tz.get_current_timezone() stays as UTC
-
+- run tests:
+    - streamer: dealer & streams hours (to localtime)
+    - diffusions: update & check
+    - check in templates
 
 # Instance's TODO
 - menu_top .sections:

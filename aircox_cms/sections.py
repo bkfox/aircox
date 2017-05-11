@@ -920,6 +920,11 @@ class SectionTimetable(SectionItem,DatedListBase):
         verbose_name = _('Section: Timetable')
         verbose_name_plural = _('Sections: Timetable')
 
+    station = models.ForeignKey(
+        aircox.models.Station,
+        verbose_name = _('station'),
+        help_text = _('(required) related station')
+    )
     target = models.ForeignKey(
         'aircox_cms.TimetablePage',
         verbose_name = _('timetable page'),
@@ -944,7 +949,7 @@ class SectionTimetable(SectionItem,DatedListBase):
         from aircox_cms.models import DiffusionPage
         diffs = []
         for date in context['nav_dates']['dates']:
-            items = aircox.models.Diffusion.objects.get_at(date).order_by('start')
+            items = aircox.models.Diffusion.objects.at(self.station, date)
             items = [ DiffusionPage.as_item(item) for item in items ]
             diffs.append((date, items))
         return diffs

@@ -27,7 +27,7 @@ logger = logging.getLogger('aircox.core')
 # Abstracts
 #
 class RelatedManager(models.Manager):
-    def get_for(self, object = None, model = None):
+    def get_for(self, object = None, model = None, qs = None):
         """
         Return a queryset that filter on the given object or model(s)
 
@@ -37,13 +37,15 @@ class RelatedManager(models.Manager):
         if not model and object:
             model = type(object)
 
+        qs = qs or self
         if hasattr(model, '__iter__'):
             model = [ ContentType.objects.get_for_model(m).id
                         for m in model ]
-            qs = self.filter(related_type__pk__in = model)
+            qs = qs.filter(related_type__pk__in = model)
         else:
             model = ContentType.objects.get_for_model(model)
-            qs = self.filter(related_type__pk = model.id)
+            qs = qs.filter(related_type__pk = model.id)
+
         if object:
             qs = qs.filter(related_id = object.pk)
         return qs
@@ -224,23 +226,11 @@ class Station(Nameable):
         self.__prepare()
         return self.__streamer
 
-    def get_played(self, models, archives = True):
+    def played(self, models, archives = True):
         """
-        Return a queryset with log of played elements on this station,
-        of the given models, ordered by date ascending.
-
-        * models: a model or a list of models
-        * archives: if false, exclude log of diffusion's archives from
-            the queryset;
+        Call Log.objects.played for this station
         """
-        qs = Log.objects.get_for(model = models) \
-                .filter(station = self, type = Log.Type.play)
-        if not archives and self.dealer:
-            qs = qs.exclude(
-                source = self.dealer.id,
-                related_type = ContentType.objects.get_for_model(Sound)
-            )
-        return qs.order_by('date')
+        return Log.objects.played(self, models, archives)
 
     @staticmethod
     def __mix_logs_and_diff(diffs, logs, count = 0):
@@ -319,16 +309,17 @@ class Station(Nameable):
         if not date and not count:
             raise ValueError('at least one argument must be set')
 
+        # FIXME can be a potential source of bug
         if date and date > datetime.date.today():
             return []
 
-        logs = Log.objects.get_for(model = Track) \
-                  .filter(station = self)
         if date:
-            logs = logs.filter(date__contains = date)
-            diffs = Diffusion.objects.get_at(date)
+            logs = Log.objects.at_for(self, date, model = Track)
+            diffs = Diffusion.objects.at(self, date)
         else:
+            logs = Log.objects.get_for(self, model = Track)
             diffs = Diffusion.objects
+        logs = logs.filter(station = self)
 
         diffs = diffs.filter(program__station = self) \
                      .filter(type = Diffusion.Type.normal) \
@@ -344,6 +335,11 @@ class Station(Nameable):
 
         super().save(*args, **kwargs)
 
+
+class ProgramManager(models.Manager):
+    def station(self, station, qs = None):
+        qs = qs or self
+        return qs.filter(station = station)
 
 class Program(Nameable):
     """
@@ -372,6 +368,8 @@ class Program(Nameable):
         default = True,
         help_text = _('update later diffusions according to schedule changes')
     )
+
+    objects = ProgramManager()
 
     @property
     def path(self):
@@ -586,7 +584,7 @@ class Schedule(models.Model):
 
         if self.frequency == Schedule.Frequency.one_on_two:
             # cf notes in date_of_month
-            diff = utils.as_date(date, False) - utils.as_date(self.date, False)
+            diff = utils.cast_date(date, False) - utils.cast_date(self.date, False)
             return not (diff.days % 14)
 
         first_of_month = date.replace(day = 1)
@@ -601,14 +599,16 @@ class Schedule(models.Model):
     def normalize(self, date):
         """
         Set the time of a datetime to the schedule's one
+        Ensure timezone awareness.
         """
-        date = date.replace(hour = self.date.hour, minute = self.date.minute,
-                            second = 0)
+        date = tz.datetime(date.year, date.month, date.day,
+                           self.date.hour, self.date.minute, 0, 0)
         return date if tz.is_aware(date) else tz.make_aware(date)
 
     def dates_of_month(self, date = None):
         """
         Return a list with all matching dates of date.month (=today)
+        Ensure timezone awareness.
         """
         if self.frequency == Schedule.Frequency.ponctual:
             return []
@@ -622,10 +622,10 @@ class Schedule(models.Model):
 
             # end of month before the wanted weekday: move one week back
             if date.weekday() < self.date.weekday():
-                date -= datetime.timedelta(days = 7)
+                date -= tz.timedelta(days = 7)
 
             delta = self.date.weekday() - date.weekday()
-            date += datetime.timedelta(days = delta)
+            date += tz.timedelta(days = delta)
             return [self.normalize(date)]
 
         # move to the first day of the month that matches the schedule's weekday
@@ -639,7 +639,7 @@ class Schedule(models.Model):
         dates = []
         if freq == Schedule.Frequency.one_on_two:
             # check date base on a diff of dates base on a 14 days delta
-            diff = utils.as_date(date, False) - utils.as_date(self.date, False)
+            diff = utils.cast_date(date, False) - utils.cast_date(self.date, False)
             if diff.days % 14:
                 date += tz.timedelta(days = 7)
 
@@ -716,51 +716,81 @@ class Schedule(models.Model):
 
 
 class DiffusionManager(models.Manager):
-    def get_at(self, date = None, next = False):
+    def station(self, station, qs = None):
+        qs = qs or self
+        return qs.filter(program__station = station)
+
+    @staticmethod
+    def __in_range(field, range, field_ = None, reversed = False):
         """
-        Return a queryset of diffusions that have the given date
-        in their range.
-
-        If date is a datetime.date object, check only against the
-        date.
+        Return a kwargs to catch diffusions based on the given field name
+        and datetime range.
         """
-        date = utils.date_or_default(date)
-        if not issubclass(type(date), datetime.datetime):
-            return self.filter(
-                models.Q(start__contains = date) | \
-                models.Q(end__contains = date)
-            )
+        if reversed:
+            return { field + "__lte": range[1],
+                     (field_ or field) + "__gte": range[0] }
 
+        return { field + "__gte" : range[0],
+                 (field_ or field) + "__lte" : range[1] }
 
-        if not date.is_aware():
-            date = make_aware(date)
+    def at(self, station, date = None, next = False, qs = None):
+        """
+        Return diffusions occuring at the given date, ordered by +start
 
-        if not next:
-            return self.filter(start__lte = date, end__gte = date) \
-                       .order_by('start')
+        If date is a datetime instance, get diffusions that occurs at
+        the given moment. If date is not a datetime object, it uses
+        it as a date, and get diffusions that occurs this day.
 
-        return self.filter(
-            models.Q(start__lte = date, end__gte = date) |
-            models.Q(start__gte = date),
-        ).order_by('start')
+        When date is None, uses tz.now().
 
-    def get_after(self, date = None):
+        When next is true, include diffusions that also occur after
+        the given moment.
+        """
+        # note: we work with localtime
+        date = utils.date_or_default(date, keep_type = True)
+
+        qs = qs or self
+        filters = None
+        if isinstance(date, datetime.datetime):
+            # use datetime: we want diffusion that occurs around this
+            # range
+            range = date, date
+            filters = self.__in_range('start', range, 'end', True)
+            if next:
+                qs = qs.filter(
+                    models.Q(date__gte = date) | models.Q(**filters)
+                )
+            else:
+                qs = qs.filter(**filters)
+        else:
+            # use date: we want diffusions that occurs this day
+            range = utils.date_range(date)
+            filters = models.Q(**self.__in_range('start', range)) | \
+                     models.Q(**self.__in_range('end', range))
+            if next:
+                # include also diffusions of the next day
+                filters |= models.Q(start__gte = range[0])
+            qs = qs.filter(filters)
+        return self.station(station, qs).order_by('start').distinct()
+
+    def after(self, station, date = None, qs = None):
         """
         Return a queryset of diffusions that happen after the given
         date.
         """
         date = utils.date_or_default(date)
-        return self.filter(
+        return self.station(station, qs).filter(
             start__gte = date,
         ).order_by('start')
 
-    def get_before(self, date):
+    def before(self, station, date = None, qs = None):
         """
         Return a queryset of diffusions that finish before the given
         date.
         """
         date = utils.date_or_default(date)
-        return self.filter(
+        qs = qs or self
+        return self.station(station, qs).filter(
             end__lte = date,
         ).order_by('start')
 
@@ -1171,6 +1201,58 @@ class Port (models.Model):
         )
 
 
+class LogManager(RelatedManager):
+    def station(self, station, qs = None):
+        qs = qs or self
+        return qs.filter(station = station)
+
+    def get_for(self, station, *args, **kwargs):
+        qs = super().get_for(*args, **kwargs)
+        return self.station(station, qs) if station else qs
+
+    def _at(self, date = None, qs = None):
+        start, end = utils.date_range(date)
+        qs = qs or self
+        return qs.filter(date__gte = start,
+                         date__lte = end)
+
+    def at(self, station = None, date = None, qs = None):
+        """
+        Return a queryset of logs that have the given date
+        in their range.
+        """
+        qs = self._at(date, qs)
+        return self.station(station, qs) if station else qs
+
+    def at_for(self, station, date, object = None, model = None, qs = None):
+        """
+        Return a queryset of logs that occured at the given date
+        for the given model or object.
+        """
+        qs = self.get_for(station, object, model, qs)
+        return self._at(date, qs)
+
+    def played(self, station, models, archives = True):
+        """
+        Return a queryset of the played elements' log for the given
+        station and model. This queryset is ordered by date ascending
+
+        * station: related station
+        * models: a model or a list of models
+        * archives: if false, exclude log of diffusion's archives from
+            the queryset;
+        """
+        qs = self.get_for(station, model = models) \
+                 .filter(type = Log.Type.play)
+
+        if not archives and station.dealer:
+            qs = qs.exclude(
+                source = station.dealer.id,
+                related_type = ContentType.objects.get_for_model(Sound)
+            )
+        return qs.order_by('date')
+
+
 class Log(Related):
     """
     Log sounds and diffusions that are played on the station.
@@ -1206,14 +1288,14 @@ class Log(Related):
     station = models.ForeignKey(
         Station,
         verbose_name = _('station'),
-        help_text = _('station on which the event occured'),
+        help_text = _('related station'),
     )
     source = models.CharField(
         # we use a CharField to avoid loosing logs information if the
         # source is removed
         _('source'),
         max_length=64,
-        help_text = _('source id that make it happen on the station'),
+        help_text = _('identifier of the source related to this log'),
         blank = True, null = True,
     )
     date = models.DateTimeField(
@@ -1225,6 +1307,8 @@ class Log(Related):
         max_length = 512,
         blank = True, null = True,
     )
+
+    objects = LogManager()
 
     @property
     def end(self):
@@ -1258,6 +1342,5 @@ class Log(Related):
         return '#{} ({}, {})'.format(
                 self.pk, self.date.strftime('%Y/%m/%d %H:%M'), self.source
         )
-
 
 
