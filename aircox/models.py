@@ -37,7 +37,7 @@ class RelatedManager(models.Manager):
         if not model and object:
             model = type(object)
 
-        qs = qs or self
+        qs = self if qs is None else qs
         if hasattr(model, '__iter__'):
             model = [ ContentType.objects.get_for_model(m).id
                         for m in model ]
@@ -338,7 +338,7 @@ class Station(Nameable):
 
 class ProgramManager(models.Manager):
     def station(self, station, qs = None):
-        qs = qs or self
+        qs = self if qs is None else qs
         return qs.filter(station = station)
 
 class Program(Nameable):
@@ -717,7 +717,7 @@ class Schedule(models.Model):
 
 class DiffusionManager(models.Manager):
     def station(self, station, qs = None):
-        qs = qs or self
+        qs = self if qs is None else qs
         return qs.filter(program__station = station)
 
     @staticmethod
@@ -749,7 +749,7 @@ class DiffusionManager(models.Manager):
         # note: we work with localtime
         date = utils.date_or_default(date, keep_type = True)
 
-        qs = qs or self
+        qs = self if qs is None else qs
         filters = None
         if isinstance(date, datetime.datetime):
             # use datetime: we want diffusion that occurs around this
@@ -789,7 +789,7 @@ class DiffusionManager(models.Manager):
         date.
         """
         date = utils.date_or_default(date)
-        qs = qs or self
+        qs = self if qs is None else qs
         return self.station(station, qs).filter(
             end__lte = date,
         ).order_by('start')
@@ -1203,7 +1203,7 @@ class Port (models.Model):
 
 class LogManager(RelatedManager):
     def station(self, station, qs = None):
-        qs = qs or self
+        qs = self if qs is None else qs
         return qs.filter(station = station)
 
     def get_for(self, station, *args, **kwargs):
@@ -1212,7 +1212,7 @@ class LogManager(RelatedManager):
 
     def _at(self, date = None, qs = None):
         start, end = utils.date_range(date)
-        qs = qs or self
+        qs = self if qs is None else qs
         return qs.filter(date__gte = start,
                          date__lte = end)
 

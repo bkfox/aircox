@@ -42,8 +42,9 @@ cms:
 # Timezone shit:
 - run tests:
     - streamer: dealer & streams hours (to localtime)
-    - diffusions: update & check
-    - check in templates
+    - diffusions: update & check algorithms
+    x check in templates
+    x diffusion page date info
 
 # Instance's TODO
 - menu_top .sections:

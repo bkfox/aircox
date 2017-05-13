@@ -577,6 +577,9 @@ class DiffusionPage(Publication):
         Return a list of podcasts, with archive as the first item of the
         list when available.
         """
+        if not self.diffusion:
+            return
+
         podcasts = []
         archive = self.get_archive()
         if archive:
