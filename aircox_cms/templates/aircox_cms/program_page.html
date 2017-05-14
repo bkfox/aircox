@@ -8,7 +8,7 @@
 
 {% block content_extras %}
 <section class="schedule">
-{% if page.program.active %}
+{% if page.program.active and page.program.schedule_set.count %}
     <h2>{% trans "Schedule" %}</h2>
     <ul>
         {% for schedule in page.program.schedule_set.all %}

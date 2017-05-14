@@ -720,19 +720,6 @@ class DiffusionManager(models.Manager):
         qs = self if qs is None else qs
         return qs.filter(program__station = station)
 
-    @staticmethod
-    def __in_range(field, range, field_ = None, reversed = False):
-        """
-        Return a kwargs to catch diffusions based on the given field name
-        and datetime range.
-        """
-        if reversed:
-            return { field + "__lte": range[1],
-                     (field_ or field) + "__gte": range[0] }
-
-        return { field + "__gte" : range[0],
-                 (field_ or field) + "__lte" : range[1] }
-
     def at(self, station, date = None, next = False, qs = None):
         """
         Return diffusions occuring at the given date, ordered by +start
@@ -754,22 +741,21 @@ class DiffusionManager(models.Manager):
         if isinstance(date, datetime.datetime):
             # use datetime: we want diffusion that occurs around this
             # range
-            range = date, date
-            filters = self.__in_range('start', range, 'end', True)
+            filters = { 'start__lte': date, 'end__gte': date }
             if next:
                 qs = qs.filter(
-                    models.Q(date__gte = date) | models.Q(**filters)
+                    models.Q(start__gte = date) | models.Q(**filters)
                 )
             else:
                 qs = qs.filter(**filters)
         else:
             # use date: we want diffusions that occurs this day
-            range = utils.date_range(date)
-            filters = models.Q(**self.__in_range('start', range)) | \
-                     models.Q(**self.__in_range('end', range))
+            start, end = utils.date_range(date)
+            filters = models.Q(start__gte = start, start__lte = end) | \
+                      models.Q(end__gt = start, end__lt = end)
             if next:
                 # include also diffusions of the next day
-                filters |= models.Q(start__gte = range[0])
+                filters |= models.Q(start__gte = start)
             qs = qs.filter(filters)
         return self.station(station, qs).order_by('start').distinct()
 
@@ -842,6 +828,12 @@ class Diffusion(models.Model):
     #    blank = True, null = True,
     #    help_text = _('use this input port'),
     # )
+    conflicts = models.ManyToManyField(
+        'self',
+        verbose_name = _('conflicts'),
+        blank = True,
+        help_text = _('conflicts'),
+    )
 
     start = models.DateTimeField( _('start of the diffusion') )
     end = models.DateTimeField( _('end of the diffusion') )
@@ -891,21 +883,43 @@ class Diffusion(models.Model):
         """
         Return a list of conflictual diffusions, based on the scheduled duration.
         """
-        r = Diffusion.objects.filter(
+        return Diffusion.objects.filter(
             models.Q(start__lt = self.start,
                      end__gt = self.start) |
             models.Q(start__gt = self.start,
                      start__lt = self.end)
         )
-        return r
 
-    def save(self, *args, **kwargs):
+    def check_conflicts(self):
+        conflicts = self.get_conflicts()
+        self.conflicts.set(conflicts)
+
+    __initial = None
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.__initial = {
+            'start': self.start,
+            'end': self.end,
+        }
+
+    def save(self, no_check = False, *args, **kwargs):
+        if no_check:
+            return super().save(*args, **kwargs)
+
         if self.initial:
             # force link to the top initial diffusion
             if self.initial.initial:
                 self.initial = self.initial.initial
             self.program = self.initial.program
+
         super().save(*args, **kwargs)
+
+        if self.__initial:
+            if self.start != self.__initial['start'] or \
+                    self.end != self.__initial['end']:
+                self.check_conflicts()
+
 
     def __str__(self):
         return '{self.program.name} {date} #{self.pk}'.format(

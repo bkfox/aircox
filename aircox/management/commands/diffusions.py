@@ -25,43 +25,12 @@ from aircox.models import *
 
 logger = logging.getLogger('aircox.tools')
 
+import time
+
 class Actions:
-    @staticmethod
-    def __check_conflicts (item, saved_items):
-        """
-        Check for conflicts, and update conflictual
-        items if they have been generated during this
-        update.
-
-        It set an attribute 'do_not_save' if the item should not
-        be saved. FIXME: find proper way
-
-        Return the number of conflicts
-        """
-        conflicts = list(item.get_conflicts())
-        for i, conflict in enumerate(conflicts):
-            if conflict.program == item.program:
-                item.do_not_save = True
-                del conflicts[i]
-                continue
-
-            if conflict.pk in saved_items and \
-                    conflict.type != Diffusion.Type.unconfirmed:
-                conflict.type = Diffusion.Type.unconfirmed
-                conflict.save()
-
-        if not conflicts:
-            item.type = Diffusion.Type.normal
-            return 0
-
-        item.type = Diffusion.Type.unconfirmed
-        return len(conflicts)
-
     @classmethod
     def update (cl, date, mode):
         manual = (mode == 'manual')
-        if not manual:
-            saved_items = set()
 
         count = [0, 0]
         for schedule in Schedule.objects.filter(program__active = True) \
@@ -71,16 +40,15 @@ class Actions:
             items = schedule.diffusions_of_month(date, exclude_saved = True)
             count[0] += len(items)
 
-            if manual:
-                Diffusion.objects.bulk_create(items)
-            else:
-                for item in items:
-                    count[1] += cl.__check_conflicts(item, saved_items)
-                    if hasattr(item, 'do_not_save'):
-                        count[0] -= 1
-                        continue
-                    item.save()
-                    saved_items.add(item)
+            # we can't bulk create because we ned signal processing
+            for item in items:
+                conflicts = item.get_conflicts()
+                item.type = Diffusion.Type.unconfirmed \
+                                if manual or conflicts.count() else \
+                            Diffusion.Type.normal
+                item.save(no_check = True)
+                if conflicts.count():
+                    item.conflicts.set(conflicts.all())
 
             logger.info('[update] schedule %s: %d new diffusions',
                     str(schedule), len(items),

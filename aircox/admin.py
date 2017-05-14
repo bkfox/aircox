@@ -101,9 +101,9 @@ class DiffusionAdmin(admin.ModelAdmin):
         sounds = [ str(s) for s in obj.get_archives()]
         return ', '.join(sounds) if sounds else ''
 
-    def conflicts(self, obj):
-        if obj.type == Diffusion.Type.unconfirmed:
-            return ', '.join([ str(d) for d in obj.get_conflicts()])
+    def conflicts_(self, obj):
+        if obj.conflicts.count():
+            return obj.conflicts.count()
         return ''
 
     def end_time(self, obj):
@@ -113,12 +113,13 @@ class DiffusionAdmin(admin.ModelAdmin):
     def first(self, obj):
         return obj.initial.start if obj.initial else ''
 
-    list_display = ('id', 'program', 'start', 'end_time', 'type', 'first', 'archives', 'conflicts')
+    list_display = ('id', 'program', 'start', 'end_time', 'type', 'first', 'archives', 'conflicts_')
     list_filter = ('type', 'start', 'program')
     list_editable = ('type',)
     ordering = ('-start', 'id')
 
-    fields = ['type', 'start', 'end', 'initial', 'program']
+    fields = ['type', 'start', 'end', 'initial', 'program', 'conflicts']
+    readonly_fields = ('conflicts',)
     inlines = [ DiffusionInline, SoundInline ]
 
 

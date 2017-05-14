@@ -150,7 +150,7 @@
 
 @-webkit-keyframes MenuAnimOut1 {
   50% {
-    -webkit-transform: translateZ(-250px) rotateY(30deg);
+    -webkit-transform: translateZ(-220px) rotateY(30deg);
   }
   75% {
     -webkit-transform: translateZ(-372.5px) rotateY(15deg);
@@ -192,8 +192,8 @@
 
 @keyframes MenuAnimOut1 {
   50% {
-    -webkit-transform: translateZ(-250px) rotateY(30deg);
-    transform: translateZ(-250px) rotateY(30deg);
+    -webkit-transform: translateZ(-220px) rotateY(30deg);
+    transform: translateZ(-220px) rotateY(30deg);
   }
   75% {
     -webkit-transform: translateZ(-372.5px) rotateY(15deg);
@@ -270,7 +270,7 @@
     opacity: 0;
   }
   20% {
-    -webkit-transform: translateZ(-250px) rotateY(30deg);
+    -webkit-transform: translateZ(-220px) rotateY(30deg);
     opacity: 0.5;
   }
   100% {
@@ -330,8 +330,8 @@
     opacity: 0;
   }
   20% {
-    -webkit-transform: translateZ(-250px) rotateY(30deg);
-    transform: translateZ(-250px) rotateY(30deg);
+    -webkit-transform: translateZ(-220px) rotateY(30deg);
+    transform: translateZ(-220px) rotateY(30deg);
     opacity: 0.5;
   }
   100% {
@@ -1932,7 +1932,7 @@ body.ready .fade {
 
 @media screen and (min-width: 50em) {
   .modal-dialog {
-    padding: 0 0 2em 180px;
+    padding: 0 0 2em 220px;
   }
 }
 
@@ -3846,7 +3846,7 @@ table.listing {
   }
   .listing.images > li .image {
     text-align: center;
-    height: 180px;
+    height: 220px;
   }
   .listing.images > li .image:before {
     content: '';
@@ -4881,8 +4881,8 @@ body.ready .progress .bar {
 
 .nav-wrapper {
   position: relative;
-  margin-left: -180px;
-  width: 180px;
+  margin-left: -220px;
+  width: 220px;
   float: left;
   height: 100%;
   min-height: 800px;
@@ -5005,13 +5005,13 @@ body.ready .nav-main a {
   display: none;
 }
 
-.nav-submenu .menu-item a {
-  white-space: normal;
-  padding: 0.9em 1.7em 0.9em 4.5em;
+.nav-submenu .menu-item .info {
+  margin-right: 1em;
 }
 
-.nav-submenu .menu-item a:before {
-  margin-left: -1.5em;
+.nav-submenu .menu-item a {
+  white-space: normal;
+  padding: 0.9em 1em 0.9em 1em;
 }
 
 .nav-submenu .menu-item a:hover {
@@ -5106,8 +5106,8 @@ body.ready .nav-main a {
 }
 
 body.nav-open .wrapper {
-  transform: translate3d(180px, 0, 0);
-  -webkit-transform: translate3d(180px, 0, 0);
+  transform: translate3d(220px, 0, 0);
+  -webkit-transform: translate3d(220px, 0, 0);
 }
 
 body.nav-open .content-wrapper {
@@ -5163,7 +5163,7 @@ body.explorer-open .explorer-close {
     -webkit-transform: none;
     -ms-transform: none;
     transform: none;
-    padding-left: 180px;
+    padding-left: 220px;
   }
   .nav-wrapper {
     position: absolute;
@@ -5174,7 +5174,7 @@ body.explorer-open .explorer-close {
   .nav-wrapper .inner {
     height: 100%;
     position: fixed;
-    width: 180px;
+    width: 220px;
   }
   .nav-toggle {
     display: none;
@@ -5186,7 +5186,7 @@ body.explorer-open .explorer-close {
   }
   .nav-main .footer {
     position: fixed;
-    width: 180px;
+    width: 220px;
     bottom: 0;
   }
   .nav-main .footer-open .footer-submenu {
@@ -5256,14 +5256,14 @@ body.explorer-open .explorer-close {
     width: 0;
     padding: 0;
     top: 0;
-    left: 180px;
+    left: 220px;
     overflow: auto;
     max-height: 100%;
   }
   .nav-submenu h2,
   .nav-submenu ul {
     float: right;
-    width: 180px;
+    width: 220px;
   }
   .nav-submenu h2 {
     display: block;
@@ -5296,14 +5296,14 @@ body.explorer-open .explorer-close {
   }
   li.submenu-active .nav-submenu {
     box-shadow: 2px 0 2px rgba(0, 0, 0, 0.35);
-    width: 180px;
-    padding: 0 0 1.5em;
+    width: 220px;
+    padding: 0 0 0.5em;
   }
   body.ready li.submenu-active .nav-submenu {
     transition: width 0.2s ease;
   }
   li.submenu-active .nav-submenu a {
-    padding-left: 3.5em;
+    padding-left: 1em;
   }
   .explorer {
     width: 400px;
@@ -5325,7 +5325,7 @@ body.explorer-open .explorer-close {
   }
   body.explorer-open .nav-wrapper {
     margin-left: 0;
-    width: 180px;
+    width: 220px;
   }
   body.explorer-open .explorer:before {
     display: none;
@@ -5356,7 +5356,7 @@ body.explorer-open .explorer-close {
     -webkit-transform: none;
     -ms-transform: none;
     transform: none;
-    left: 180px;
+    left: 220px;
     position: relative;
   }
   body.explorer-open .wrapper {
@@ -5375,7 +5375,7 @@ body.explorer-open .explorer-close {
     left: 0;
   }
   body.explorer-open .nav-wrapper {
-    width: 180px;
+    width: 220px;
   }
 }
 
@@ -5603,7 +5603,7 @@ body.explorer-open .explorer-close {
   position: absolute;
   z-index: 25;
   top: 0;
-  left: 180px;
+  left: 220px;
 }
 
 #wagtail .c-state-indicator {
@@ -5811,7 +5811,7 @@ footer li {
 }
 
 footer .actions {
-  width: 250px;
+  width: 220px;
   margin-right: 1.5%;
 }
 

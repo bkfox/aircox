@@ -18,6 +18,7 @@
 {% endif %}
 {% endwith %}
 
+{% if diffusion.diffusion_set.count %}
 <section class="dates">
     <h2>{% trans "Dates of diffusion" %}</h2>
     <ul>
@@ -29,6 +30,7 @@
         {% endwith %}
     </ul>
 </section>
+{% endif %}
 
 {% with podcasts=self.get_podcasts %}
 {% if podcasts %}

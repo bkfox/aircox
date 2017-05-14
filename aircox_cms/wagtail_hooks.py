@@ -29,6 +29,7 @@ class DiffusionAdmin(ModelAdmin):
     menu_order = 200
     list_display = ('program', 'start', 'end', 'type', 'initial')
     list_filter = ('program', 'start', 'type')
+    readonly_fields = ('conflicts',)
     search_fields = ('program__name', 'start')
 
 class ScheduleAdmin(ModelAdmin):
@@ -99,12 +100,21 @@ class GenericMenu(Menu):
         super().__init__('')
 
     def get_queryset(self):
+        """
+        Return a queryset of items used to display menu
+        """
         pass
 
     def get_title(self, item):
+        """
+        Return the title of a menu-item for the given item
+        """
         pass
 
     def get_parent(self, item):
+        """
+        Return id of the parent page for the given item
+        """
         pass
 
     def get_page_url(self, page_model, item):
@@ -150,7 +160,12 @@ class DiffusionsMenu(GenericMenu):
         ).order_by('start')
 
     def get_title(self, item):
-        return item.program.name
+        from django.utils.safestring import mark_safe
+        title = '<i class="info">{}</i> {}'.format(
+            item.start.strftime('%H:%M'),
+            item.program.name
+        )
+        return mark_safe(title)
 
     def get_parent(self, item):
         return item.program.page.first()

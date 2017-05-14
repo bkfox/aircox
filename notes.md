@@ -1,6 +1,21 @@
 This file is used as a reminder, can be used as crappy documentation too.
 
 
+# for the 1.0
+- sounds:
+    - detect id3 tags
+- run tests:
+    - streamer: dealer & streams hours (to localtime)
+    x diffusions: update & check algorithms
+    x check in templates
+    x diffusion page date info
+- streamer:
+    - restart running streamer on demand
+    - add restart button for the streamer
+- cms:
+    - button to select the current station
+
+
 # conventions
 ## coding style
 * name of classes relative to a class:
@@ -40,11 +55,6 @@ cms:
     - comments -> remove/edit by the author
 
 # Timezone shit:
-- run tests:
-    - streamer: dealer & streams hours (to localtime)
-    - diffusions: update & check algorithms
-    x check in templates
-    x diffusion page date info
 
 # Instance's TODO
 - menu_top .sections:
