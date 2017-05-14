@@ -161,8 +161,9 @@ class DiffusionsMenu(GenericMenu):
 
     def get_title(self, item):
         from django.utils.safestring import mark_safe
+        from django.utils.timezone import localtime
         title = '<i class="info">{}</i> {}'.format(
-            item.start.strftime('%H:%M'),
+            localtime(item.start).strftime('%H:%M'),
             item.program.name
         )
         return mark_safe(title)
