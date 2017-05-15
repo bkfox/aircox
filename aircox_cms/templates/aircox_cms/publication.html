@@ -16,9 +16,9 @@
 </span>
 {% endif %}
 
-<section class="summary">
-    {% if page.summary %}
-        {{ page.summary }}
+<section class="headline">
+    {% if page.headline %}
+        {{ page.headline }}
     {% else %}
         {{ page.body|truncatewords:24|richtext }}
     {% endif %}
@@ -30,8 +30,8 @@
 {% block content %}
 {% if object_list %}
 {# list view #}
-    <section class="body summary">
-    {{ page.summary }}
+    <section class="body headline">
+    {{ page.headline }}
     <a href="?" class="go_back float_right">{% trans "Go back to the publication" %}</a>
     </section>
 

@@ -275,10 +275,10 @@ class Publication(Page):
         related_name='+',
         help_text = _('image to use as cover of the publication'),
     )
-    summary = models.TextField(
-        _('summary'),
+    headline = models.TextField(
+        _('headline'),
         blank = True, null = True,
-        help_text = _('summary of the publication'),
+        help_text = _('headline of the publication'),
     )
     tags = ClusterTaggableManager(
         verbose_name = _('tags'),
@@ -294,7 +294,7 @@ class Publication(Page):
         MultiFieldPanel([
             FieldPanel('title'),
             ImageChooserPanel('cover'),
-            FieldPanel('summary'),
+            FieldPanel('headline'),
             FieldPanel('body', classname='full'),
         ], heading=_('Content'))
     ]

@@ -175,11 +175,11 @@ class TodayMenu(GenericMenu):
 
         qs = PageRevision.objects.filter(page = item.page.first())
         if qs.count():
-            summary = qs.latest('created_at').content_json
-            summary = json.loads(summary).get('summary')
-            attrs['title'] = summary
+            headline = qs.latest('created_at').content_json
+            headline = json.loads(headline).get('headline')
+            attrs['title'] = headline
         else:
-            summary = ''
+            headline = ''
 
         return MenuItem(label, self.page_url(item), attrs = attrs)
 

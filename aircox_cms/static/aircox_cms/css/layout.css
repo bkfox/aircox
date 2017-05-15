@@ -430,7 +430,7 @@ main .body ~ section:not(.comments) {
     display: inline-block;
 }
 
-.meta .author .summary {
+.meta .author .headline {
     display: none;
 }
 

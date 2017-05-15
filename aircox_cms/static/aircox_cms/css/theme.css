@@ -119,7 +119,7 @@ main.detail {
     }
 
     main.detail > header h1.title,
-    main.detail > header .summary {
+    main.detail > header .headline {
         display: block;
         padding: 0.4em;
         vertical-align: middle;
@@ -127,7 +127,7 @@ main.detail {
     }
 
     main.detail > header:hover h1.title,
-    main.detail > header:hover .summary {
+    main.detail > header:hover .headline {
         opacity: 0.0;
         transition: opacity 1.5s 1s;
     }
@@ -145,7 +145,7 @@ main.detail {
         margin-top: 2em;
     }
 
-    main.detail header .summary {
+    main.detail header .headline {
         display: inline-block;
         width: calc(100% - 0.8em);
         min-height: 1.2em;

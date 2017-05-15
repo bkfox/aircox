@@ -64,7 +64,7 @@ class ListItem:
     on Publication.
     """
     title = ''
-    summary = ''
+    headline = ''
     url = ''
     cover = None
     date = None
@@ -899,7 +899,7 @@ class SectionLogsList(SectionItem):
                 artist = related.artist,
                 title = related.title,
             ),
-            summary = related.info,
+            headline = related.info,
             date = log.date,
             info = '♫',
             css_class = 'track'

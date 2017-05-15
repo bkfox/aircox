@@ -29,9 +29,9 @@
 {% block content %}
 {% with related=list_selector.filter_related %}
     {% if related %}
-        <div class="body summary">
+        <div class="body headline">
             {% image related.cover fill-128x128 class="cover item_cover" %}
-            {{ related.summary }}
+            {{ related.headline }}
             <a href="{{ related.url }}">{% trans "More about it" %}</a>
         </div>
     {% elif page.body %}

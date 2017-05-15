@@ -253,12 +253,12 @@ msgid "image to use as cover of the publication"
 msgstr "image à utiliser comme couverture de la publication"
 
 #: models.py:274
-msgid "summary"
-msgstr "résumé"
+msgid "headline"
+msgstr "entête"
 
 #: models.py:276
-msgid "summary of the publication"
-msgstr "résumé de la publication"
+msgid "headline of the publication"
+msgstr "entête de la publication"
 
 #: models.py:286 models.py:287
 msgid "Publication"
