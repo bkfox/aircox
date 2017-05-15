@@ -12,6 +12,8 @@ This file is used as a reminder, can be used as crappy documentation too.
 - streamer:
     - restart running streamer on demand
     - add restart button for the streamer
+    \--> rewrite streamer for client-server controller
+    \--> move liquidsoap control on commands/streamer.py
 - cms:
     - button to select the current station
 

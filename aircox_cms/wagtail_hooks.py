@@ -1,11 +1,15 @@
+import json
+
 from django.utils import timezone as tz
 from django.utils.translation import ugettext_lazy as _
 from django.core.urlresolvers import reverse
 from django.contrib.staticfiles.templatetags.staticfiles import static
 from django.utils.html import format_html
+from django.utils.safestring import mark_safe
 
 from wagtail.wagtailcore import hooks
 from wagtail.wagtailadmin.menu import MenuItem, Menu, SubmenuMenuItem
+from wagtail.wagtailcore.models import PageRevision
 
 from wagtail.contrib.modeladmin.options import \
     ModelAdmin, ModelAdminGroup, modeladmin_register
@@ -14,6 +18,10 @@ from wagtail.contrib.modeladmin.options import \
 import aircox.models
 import aircox_cms.models as models
 
+
+#
+# ModelAdmin items
+#
 class ProgramAdmin(ModelAdmin):
     model = aircox.models.Program
     menu_label = _('Programs')
@@ -79,16 +87,9 @@ class SoundAdmin(ModelAdmin):
 modeladmin_register(SoundAdmin)
 
 
-## Hooks
-
-@hooks.register('insert_editor_css')
-def editor_css():
-    return format_html(
-        '<link rel="stylesheet" href="{}">',
-        static('aircox_cms/css/cms.css')
-    )
-
-
+#
+# Menus with sub-menus
+#
 class GenericMenu(Menu):
     page_model = models.Publication
     explore = False
@@ -105,19 +106,19 @@ class GenericMenu(Menu):
         """
         pass
 
-    def get_title(self, item):
+    def make_item(self, item):
         """
-        Return the title of a menu-item for the given item
+        Return the instance of MenuItem for the given item in the queryset
         """
         pass
 
     def get_parent(self, item):
         """
-        Return id of the parent page for the given item
+        Return id of the parent page for the given item of the queryset
         """
         pass
 
-    def get_page_url(self, page_model, item):
+    def page_url(self, item):
         if item.page.count():
             name =  'wagtailadmin_explore' \
                     if self.explore else 'wagtailadmin_pages:edit'
@@ -129,7 +130,8 @@ class GenericMenu(Menu):
 
         return reverse(
             'wagtailadmin_pages:add', args= [
-                page_model._meta.app_label, page_model._meta.model_name,
+                self.page_model._meta.app_label,
+                self.page_model._meta.model_name,
                 parent_page.id
             ]
         )
@@ -141,14 +143,16 @@ class GenericMenu(Menu):
 
         qs = self.get_queryset()
         return [
-            MenuItem(self.get_title(x), self.get_page_url(self.page_model, x))
-            for x in qs
+            self.make_item(item) for item in qs
         ]
 
 
-class DiffusionsMenu(GenericMenu):
+#
+# Today's diffusions menu
+#
+class TodayMenu(GenericMenu):
     """
-    Menu to display diffusions of today
+    Menu to display today's diffusions
     """
     page_model = models.DiffusionPage
 
@@ -159,14 +163,25 @@ class DiffusionsMenu(GenericMenu):
             initial__isnull = True,
         ).order_by('start')
 
-    def get_title(self, item):
-        from django.utils.safestring import mark_safe
-        from django.utils.timezone import localtime
-        title = '<i class="info">{}</i> {}'.format(
-            localtime(item.start).strftime('%H:%M'),
-            item.program.name
+    def make_item(self, item):
+        label = mark_safe(
+            '<i class="info">{}</i> {}'.format(
+                tz.localtime(item.start).strftime('%H:%M'),
+                item.program.name
+            )
         )
-        return mark_safe(title)
+
+        attrs = {}
+
+        qs = PageRevision.objects.filter(page = item.page.first())
+        if qs.count():
+            summary = qs.latest('created_at').content_json
+            summary = json.loads(summary).get('summary')
+            attrs['title'] = summary
+        else:
+            summary = ''
+
+        return MenuItem(label, self.page_url(item), attrs = attrs)
 
     def get_parent(self, item):
         return item.program.page.first()
@@ -175,14 +190,17 @@ class DiffusionsMenu(GenericMenu):
 @hooks.register('register_admin_menu_item')
 def register_programs_menu_item():
     return SubmenuMenuItem(
-        _('Today\'s Diffusions'), DiffusionsMenu(),
+        _('Today\'s Diffusions'), TodayMenu(),
         classnames='icon icon-folder-open-inverse', order=101
     )
 
 
+#
+# Programs menu
+#
 class ProgramsMenu(GenericMenu):
     """
-    Menu to display all active programs
+    Display all active programs
     """
     page_model = models.DiffusionPage
     explore = True
@@ -193,8 +211,8 @@ class ProgramsMenu(GenericMenu):
                     .filter(stream__isnull = True) \
                     .order_by('name')
 
-    def get_title(self, item):
-        return item.name
+    def make_item(self, item):
+        return MenuItem(item.name, self.page_url(item))
 
     def get_parent(self, item):
         # TODO: #Station / get current site

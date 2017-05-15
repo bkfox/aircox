@@ -167,6 +167,11 @@ class Station(Nameable):
         max_length = 256,
         blank = True,
     )
+    default = models.BooleanField(
+        _('default station'),
+        default = True,
+        help_text = _('if checked, this station is used as the main one')
+    )
 
     #
     # Controllers
@@ -332,6 +337,12 @@ class Station(Nameable):
                 settings.AIRCOX_CONTROLLERS_WORKING_DIR,
                 self.slug
             )
+
+        if self.default:
+            qs = Station.objects.filter(default = True)
+            if self.pk:
+                qs = qs.exclude(pk = self.pk)
+            qs.update(default = False)
 
         super().save(*args, **kwargs)
 

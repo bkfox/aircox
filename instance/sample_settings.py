@@ -82,7 +82,7 @@ else:
     }
 
 # allowed hosts
-ALLOWED_HOSTS = ['127.0.0.1:8000']
+ALLOWED_HOSTS = ('127.0.0.1',)
 
 # secret key: you MUST put a consistent secret key
 SECRET_KEY = ''
@@ -145,7 +145,7 @@ INSTALLED_APPS = (
     'django.contrib.admin',
 )
 
-MIDDLEWARE_CLASSES = (
+MIDDLEWARE = (
     'django.middleware.gzip.GZipMiddleware',
     'htmlmin.middleware.HtmlMinifyMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
