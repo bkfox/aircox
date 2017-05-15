@@ -278,7 +278,7 @@ class Publication(Page):
     headline = models.TextField(
         _('headline'),
         blank = True, null = True,
-        help_text = _('headline of the publication'),
+        help_text = _('headline of the publication, use it as an introduction'),
     )
     tags = ClusterTaggableManager(
         verbose_name = _('tags'),

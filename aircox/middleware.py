@@ -33,25 +33,40 @@ class AircoxMiddleware(object):
     def __init__(self, get_response):
         self.get_response = get_response
 
-    def init_station(self, aircox):
-        station = None
+    def init_station(self, request, aircox):
+        # update current station
+        station = request.GET.get('aircox.station')
+        pk = None
         try:
-            pk = request.session.get('aircox.station')
-            if pk:
-                station = int(pk)
-                station = models.Station.objects.filter(pk = station).first()
-
-            if not station:
-                pk = None
-                station = self.default_qs.first() or \
-                            models.Station.objects.first()
-
-            aircox.station = station
-            aircox.default_station = (pk is None)
+            if station:
+                pk = request.GET['aircox.station']
+                if station:
+                    pk = int(pk)
+                    if models.Station.objects.filter(pk = station).exists():
+                        request.session['aircox.station'] = pk
         except:
             pass
 
-    def init_timezone(self, aircox):
+        # select current station
+        station = None
+        pk = None
+        try:
+            pk = request.session.get('aircox.station')
+            if pk:
+                pk = int(pk)
+                station = models.Station.objects.filter(pk = pk).first()
+        except:
+            pass
+
+        if not station:
+            pk = None
+            station = self.default_qs.first() or \
+                        models.Station.objects.first()
+
+        aircox.station = station
+        aircox.default_station = (pk is None)
+
+    def init_timezone(self, request, aircox):
         # note: later we can use http://freegeoip.net/ on user side if
         # required
         timezone = None
@@ -70,9 +85,9 @@ class AircoxMiddleware(object):
         tz.activate(pytz.timezone('Europe/Brussels'))
         aircox = AircoxInfo()
 
-        if request.user.is_authenticated:
-            self.init_station(aircox)
-        self.init_timezone(aircox)
+        if request.user.is_authenticated():
+            self.init_station(request, aircox)
+        self.init_timezone(request, aircox)
 
         request.aircox = aircox
         return self.get_response(request)

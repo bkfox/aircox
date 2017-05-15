@@ -92,9 +92,20 @@ modeladmin_register(SoundAdmin)
 #
 class GenericMenu(Menu):
     page_model = models.Publication
+    """
+    Model of the page for the items
+    """
     explore = False
     """
     If True, show page explorer instead of page editor.
+    """
+    request = None
+    """
+    Current request
+    """
+    station = None
+    """
+    Current station
     """
 
     def __init__(self):
@@ -146,6 +157,12 @@ class GenericMenu(Menu):
             self.make_item(item) for item in qs
         ]
 
+    def render_html(self, request):
+        self.request = request
+        self.station = self.request and self.request.aircox.station
+        return super().render_html(request)
+
+
 
 #
 # Today's diffusions menu
@@ -157,7 +174,11 @@ class TodayMenu(GenericMenu):
     page_model = models.DiffusionPage
 
     def get_queryset(self):
-        return aircox.models.Diffusion.objects.filter(
+        qs = aircox.models.Diffusion.objects
+        if self.station:
+            qs = qs.filter(program__station = self.station)
+
+        return qs.filter(
             type = aircox.models.Diffusion.Type.normal,
             start__contains = tz.now().date(),
             initial__isnull = True,
@@ -206,10 +227,13 @@ class ProgramsMenu(GenericMenu):
     explore = True
 
     def get_queryset(self):
-        return aircox.models.Program.objects \
-                    .filter(active = True, page__isnull = False) \
-                    .filter(stream__isnull = True) \
-                    .order_by('name')
+        qs = aircox.models.Program.objects
+        if self.station:
+            qs = qs.filter(station = self.station)
+
+        return qs.filter(active = True, page__isnull = False) \
+                 .filter(stream__isnull = True) \
+                 .order_by('name')
 
     def make_item(self, item):
         return MenuItem(item.name, self.page_url(item))
@@ -229,5 +253,63 @@ def register_programs_menu_item():
         _('Programs'), ProgramsMenu(),
         classnames='icon icon-folder-open-inverse', order=102
     )
+
+
+#
+# Select station
+#
+# Submenu hides themselves if there are no children
+#
+#
+class GroupMenuItem(MenuItem):
+    """
+    Display a list of items based on given list of items
+    """
+    def __init__(self, label, *args, **kwargs):
+        super().__init__(label, None, *args, **kwargs)
+
+    def get_queryset(self):
+        pass
+
+    def make_item(self, item):
+        pass
+
+    def render_html(self, request):
+        self.request = request
+        self.station = self.request and self.request.aircox.station
+
+        title = '<h1>{}</h1>'.format(self.label)
+        qs = [
+            self.make_item(item).render_html(request)
+                for item in self.get_queryset()
+        ]
+        return title + '\n'.join(qs)
+
+
+class SelectStationMenuItem(GroupMenuItem):
+    """
+    Menu to display today's diffusions
+    """
+    def get_queryset(self):
+        return aircox.models.Station.objects.all()
+
+    def make_item(self, station):
+        return MenuItem(
+            station.name,
+            reverse('wagtailadmin_home') + '?aircox.station=' + str(station.pk),
+            classnames = 'icon ' + ('icon-success'
+                if station == self.station else
+                    'icon-cross'
+                if not station.active else
+                    ''
+            )
+        )
+
+@hooks.register('register_settings_menu_item')
+def register_select_station_menu_item():
+    return SelectStationMenuItem(
+        _('Current Station'), order=10000
+    )
+
 
 
