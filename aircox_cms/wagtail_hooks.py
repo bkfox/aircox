@@ -163,6 +163,30 @@ class GenericMenu(Menu):
         return super().render_html(request)
 
 
+class GroupMenuItem(MenuItem):
+    """
+    Display a list of items based on given list of items
+    """
+    def __init__(self, label, *args, **kwargs):
+        super().__init__(label, None, *args, **kwargs)
+
+    def get_queryset(self):
+        pass
+
+    def make_item(self, item):
+        pass
+
+    def render_html(self, request):
+        self.request = request
+        self.station = self.request and self.request.aircox.station
+
+        title = '</ul><h2>{}</h2><ul>'.format(self.label)
+        qs = [
+            self.make_item(item).render_html(request)
+                for item in self.get_queryset()
+        ]
+        return title + '\n'.join(qs)
+
 
 #
 # Today's diffusions menu
@@ -261,31 +285,6 @@ def register_programs_menu_item():
 # Submenu hides themselves if there are no children
 #
 #
-class GroupMenuItem(MenuItem):
-    """
-    Display a list of items based on given list of items
-    """
-    def __init__(self, label, *args, **kwargs):
-        super().__init__(label, None, *args, **kwargs)
-
-    def get_queryset(self):
-        pass
-
-    def make_item(self, item):
-        pass
-
-    def render_html(self, request):
-        self.request = request
-        self.station = self.request and self.request.aircox.station
-
-        title = '<h1>{}</h1>'.format(self.label)
-        qs = [
-            self.make_item(item).render_html(request)
-                for item in self.get_queryset()
-        ]
-        return title + '\n'.join(qs)
-
-
 class SelectStationMenuItem(GroupMenuItem):
     """
     Menu to display today's diffusions
@@ -297,7 +296,7 @@ class SelectStationMenuItem(GroupMenuItem):
         return MenuItem(
             station.name,
             reverse('wagtailadmin_home') + '?aircox.station=' + str(station.pk),
-            classnames = 'icon ' + ('icon-success'
+            classnames = 'icon ' + ('icon-success menu-active'
                 if station == self.station else
                     'icon-cross'
                 if not station.active else

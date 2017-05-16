@@ -5001,6 +5001,10 @@ body.ready .nav-main a {
   background: #262626;
 }
 
+.nav-submenu h1 {
+  color: #a2a2a2;
+}
+
 .nav-submenu h2 {
   display: none;
 }

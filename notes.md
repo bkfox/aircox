@@ -2,8 +2,8 @@ This file is used as a reminder, can be used as crappy documentation too.
 
 
 # for the 1.0
-- sounds:
-    - detect id3 tags
+- logs:
+    - do not add track if between two consecutive diffusions
 - run tests:
     - streamer: dealer & streams hours (to localtime)
     x diffusions: update & check algorithms
@@ -15,7 +15,7 @@ This file is used as a reminder, can be used as crappy documentation too.
     \--> rewrite streamer for client-server controller
     \--> move liquidsoap control on commands/streamer.py
 - cms:
-    - button to select the current station
+    x button to select the current station
 
 
 # conventions
