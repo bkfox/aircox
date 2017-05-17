@@ -460,8 +460,11 @@ class ProgramPage(Publication):
 
 
 class Track(aircox.models.Track,Orderable):
-    diffusion = ParentalKey('DiffusionPage',
-                            related_name='tracks')
+    diffusion = ParentalKey(
+        'DiffusionPage', related_name='tracks',
+        null = True, blank = True,
+        on_delete = models.SET_NULL
+    )
 
     sort_order_field = 'position'
     panels = [

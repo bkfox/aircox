@@ -193,7 +193,7 @@ class StatisticsView(View,TemplateResponseMixin,LoginRequiredMixin):
             qs = None
             item = None
             if type(elm) == models.Diffusion:
-                qs = models.Track.objects.get_for(elm)
+                qs = models.Track.objects.get_for(object = elm)
                 item = self.Item(
                     type = _('Diffusion'),
                     date = elm.date,
@@ -204,7 +204,6 @@ class StatisticsView(View,TemplateResponseMixin,LoginRequiredMixin):
                 item.add_tags(qs)
                 stats.items.append(item)
                 stats.count += len(item.tracks)
-
             else:
                 # type is Track (related object of a track is a sound)
                 stream = elm.related.related

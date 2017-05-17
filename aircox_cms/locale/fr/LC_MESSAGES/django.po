@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Aircox 0.1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2017-03-31 18:23+0200\n"
+"POT-Creation-Date: 2017-05-17 20:54+0200\n"
 "PO-Revision-Date: 2016-10-10 16:00+02\n"
 "Last-Translator: Aarys\n"
 "Language-Team: Aircox's translators team\n"
@@ -62,7 +62,7 @@ msgstr "favicon"
 msgid "small logo for the website displayed in the browser"
 msgstr "petit logo pour le site affiché dans le navigateur"
 
-#: models.py:59 models.py:279
+#: models.py:59 models.py:284
 msgid "tags"
 msgstr "tags"
 
@@ -175,6 +175,7 @@ msgid "Promotion"
 msgstr "promotion"
 
 #: models.py:154 templates/aircox_cms/snippets/comments.html:6
+#: wagtail_hooks.py:162
 msgid "Comments"
 msgstr "Commentaires"
 
@@ -186,193 +187,210 @@ msgstr "Programmes et contrôles"
 msgid "website settings"
 msgstr "paramètres du site internet"
 
-#: models.py:174
-msgid "public"
-msgstr "public"
+#: models.py:172
+#, fuzzy
+#| msgid "Publication"
+msgid "publication"
+msgstr "Publication"
 
-#: models.py:178
+#: models.py:175
+#, fuzzy
+#| msgid "Published by"
+msgid "published"
+msgstr "Publié par"
+
+#: models.py:179
 msgid "author"
 msgstr "auteur"
 
-#: models.py:182 models.py:397
+#: models.py:183 models.py:401
 msgid "email"
 msgstr "email"
 
-#: models.py:186
+#: models.py:187
 msgid "website"
 msgstr "site internet"
 
-#: models.py:190 models.py:238
+#: models.py:191 models.py:243
 msgid "date"
 msgstr "date"
 
-#: models.py:194
+#: models.py:195 models.py:199
 msgid "comment"
 msgstr "commentaire"
 
+#: models.py:200
+#, fuzzy
+#| msgid "comment"
+msgid "comments"
+msgstr "commentaire"
+
 #. Translators: text shown in the comments list (in admin)
-#: models.py:199
+#: models.py:204
 #, python-brace-format
 msgid "{date}, {author}: {content}..."
 msgstr "{date}, {author}: {content}..."
 
-#: models.py:244
+#: models.py:249
 msgid "publish as program"
 msgstr "publier en tant que programme"
 
-#: models.py:247
+#: models.py:252
 msgid "use this program as the author of the publication"
 msgstr "utiliser ce programme en tant qu'auteur de la publication"
 
-#: models.py:250
+#: models.py:255
 msgid "focus"
 msgstr "focus"
 
-#: models.py:252
+#: models.py:257
 msgid "the publication is highlighted;"
 msgstr "la publication est mise en avant;"
 
-#: models.py:255 models.py:257
+#: models.py:260 models.py:262
 msgid "allow comments"
 msgstr "autoriser les commentaires"
 
-#: models.py:261 models.py:609 models.py:634
+#: models.py:266 models.py:632 models.py:657
 msgid "body"
 msgstr "corps du texte"
 
-#: models.py:263
+#: models.py:268
 msgid "the publication itself"
 msgstr "le contenu de la publication elle-même"
 
-#: models.py:267
+#: models.py:272
 msgid "cover"
 msgstr "couverture"
 
-#: models.py:271
+#: models.py:276
 msgid "image to use as cover of the publication"
 msgstr "image à utiliser comme couverture de la publication"
 
-#: models.py:274
+#: models.py:279
 msgid "headline"
 msgstr "entête"
 
-#: models.py:276
-msgid "headline of the publication"
+#: models.py:281
+#, fuzzy
+#| msgid "headline of the publication"
+msgid "headline of the publication, use it as an introduction"
 msgstr "entête de la publication"
 
-#: models.py:286 models.py:287
+#: models.py:290 models.py:291
 msgid "Publication"
 msgstr "Publication"
 
-#: models.py:295 models.py:301 models.py:618 models.py:646
+#: models.py:299 models.py:305 models.py:518 models.py:641 models.py:669
 msgid "Content"
 msgstr "Contenu"
 
-#: models.py:302 sections.py:773
+#: models.py:306 models.py:519 sections.py:773
 msgid "Links"
 msgstr "Liens"
 
-#: models.py:389
+#: models.py:393
 msgid "program"
 msgstr "programme"
 
-#: models.py:400
+#: models.py:404
 msgid "email is public"
 msgstr "l'email est public"
 
-#: models.py:402
+#: models.py:406
 msgid "the email addess is accessible to the public"
 msgstr "l'adresse email est accessible au public"
 
-#: models.py:406
+#: models.py:410 wagtail_hooks.py:49
 msgid "Program"
 msgstr "Programme"
 
-#: models.py:407 signals.py:85 signals.py:97 wagtail_hooks.py:20
-#: wagtail_hooks.py:184
+#: models.py:411 signals.py:85 signals.py:97 wagtail_hooks.py:38
+#: wagtail_hooks.py:370
 msgid "Programs"
 msgstr "Programmes"
 
-#: models.py:476
+#: models.py:489
 msgid "diffusion"
 msgstr "diffusion"
 
-#: models.py:488
+#: models.py:501
 msgid "publish archive"
 msgstr "publier l'archive"
 
-#: models.py:490
+#: models.py:503
 msgid "publish the podcast of the complete diffusion"
 msgstr "publier le podcast de la diffusion complète"
 
-#: models.py:494
+#: models.py:507 templates/aircox_cms/snippets/list_item.html:37
+#: wagtail_hooks.py:80
 msgid "Diffusion"
 msgstr "Diffusion"
 
-#: models.py:495 wagtail_hooks.py:28
+#: models.py:508 wagtail_hooks.py:55
 msgid "Diffusions"
 msgstr "Diffusions"
 
-#: models.py:498
+#: models.py:511
 msgid "Tracks"
 msgstr "Pistes"
 
-#: models.py:538
+#: models.py:554
 #, python-format
 msgid "Rerun of %(date)s"
-msgstr "Rediffusion de %(date)s"
+msgstr "Rediffusion du %(date)s"
 
-#: models.py:542
+#: models.py:558
 msgid "Cancelled"
 msgstr "Annulé"
 
-#: models.py:611 models.py:636
+#: models.py:634 models.py:659
 msgid "add an extra description for this list"
 msgstr "ajouter une description supplémentaire pour cette liste"
 
-#: models.py:622
+#: models.py:645
 msgid "Dynamic List Page"
 msgstr "Page avec liste dynamique"
 
-#: models.py:623
+#: models.py:646
 msgid "Dynamic List Pages"
 msgstr "Pages avec liste dynamique"
 
-#: models.py:681 sections.py:866
+#: models.py:704 models.py:765 sections.py:866 sections.py:925
 msgid "station"
 msgstr "station"
 
-#: models.py:684 sections.py:869
-msgid "(required) the station on which the logs happened"
-msgstr "(obliatoire) la station sur laquelle les logs se sont produits"
+#: models.py:705 models.py:766 sections.py:926
+msgid "(required) related station"
+msgstr ""
 
-#: models.py:687
+#: models.py:708
 msgid "maximum age"
 msgstr "âge maximum"
 
-#: models.py:689
+#: models.py:710
 msgid "maximum days in the past allowed to be shown. 0 means no limit"
 msgstr ""
 "nombre de jours maximum dans le passé autorisés à être affichés. 0 signifie "
 "qu'il n'y a pas de limite"
 
-#: models.py:693
+#: models.py:714
 msgid "reverse list"
 msgstr ""
 
-#: models.py:695
+#: models.py:716
 msgid "print logs in ascending order by date"
 msgstr "afficher les logs de manière ascendante par date"
 
-#: models.py:699 models.py:700
+#: models.py:720 models.py:721 wagtail_hooks.py:127
 msgid "Logs"
 msgstr "Logs"
 
-#: models.py:707
+#: models.py:728 models.py:772
 msgid "Configuration"
 msgstr "Configuration"
 
-#: models.py:744 models.py:745 signals.py:71
+#: models.py:776 models.py:777 signals.py:71
 msgid "Timetable"
 msgstr "Grille horaire"
 
@@ -454,8 +472,7 @@ msgstr "selectionne les sœurs de la page apparentée"
 #: sections.py:206
 msgid "if checked, related publications are siblings instead of the children."
 msgstr ""
-"si coché, les publications apparentées sont les sœurs au lieu des "
-"enfants."
+"si coché, les publications apparentées sont les sœurs au lieu des enfants."
 
 #: sections.py:211
 msgid "ascending order"
@@ -503,7 +520,7 @@ msgstr "cacher les icones"
 msgid "if selected, images of publications will not be displayed in the list"
 msgstr "si sélectionné, la liste n'affiche pas les images des publications"
 
-#: sections.py:420 sections.py:940
+#: sections.py:420 sections.py:945
 msgid "Navigation"
 msgstr "Navigation"
 
@@ -659,6 +676,10 @@ msgstr ""
 msgid "Rendering"
 msgstr "Rendu"
 
+#: sections.py:869
+msgid "(required) the station on which the logs happened"
+msgstr "(obliatoire) la station sur laquelle les logs se sont produits"
+
 #: sections.py:874
 msgid "number of items to display in the list (max 100)"
 msgstr "nombre d'objets à afficher dans la liste (max 100)"
@@ -679,68 +700,68 @@ msgstr "Section: Grille horaire"
 msgid "Sections: Timetable"
 msgstr "Sections: Grilles horaire"
 
-#: sections.py:925
+#: sections.py:930
 msgid "timetable page"
 msgstr "Page de Grille horaire"
 
-#: sections.py:927
+#: sections.py:932
 msgid "select a timetable page used to show complete timetable"
 msgstr ""
 "sélectionner une page de grille horaire pour afficher l'horaire complet"
 
-#: sections.py:930
+#: sections.py:935
 msgid "show date navigation"
 msgstr "afficher les dates de navigation"
 
-#: sections.py:932
+#: sections.py:937
 msgid "if checked, navigation dates will be shown"
 msgstr "si coché, les dates de navigation sont affichées"
 
-#: sections.py:965
+#: sections.py:970
 msgid "Section: publication's info"
 msgstr "Section: info de la publication"
 
-#: sections.py:966
+#: sections.py:971
 msgid "Sections: publication's info"
 msgstr "Sections: info de la publication"
 
-#: sections.py:971
+#: sections.py:976
 msgid "default text"
 msgstr "texte par défaut"
 
-#: sections.py:973
+#: sections.py:978
 msgid "search"
 msgstr "recherche"
 
-#: sections.py:974
+#: sections.py:979
 msgid "text to display when the search field is empty"
 msgstr "texte à afficher quand le champ de recherche est vide"
 
-#: sections.py:978
+#: sections.py:983
 msgid "Section: search field"
 msgstr "Section: champ de recherche"
 
-#: sections.py:979
+#: sections.py:984
 msgid "Sections: search field"
 msgstr "Sections: champ de recherche"
 
-#: sections.py:995
+#: sections.py:1000
 msgid "live title"
 msgstr "titre du direct"
 
-#: sections.py:997
+#: sections.py:1002
 msgid "text to display when it plays live"
 msgstr "texte à afficher quand le direct est activé"
 
-#: sections.py:1000
+#: sections.py:1005
 msgid "audio streams"
 msgstr "streams audio"
 
-#: sections.py:1001
+#: sections.py:1006
 msgid "one audio stream per line"
 msgstr "un stream audio par ligne"
 
-#: sections.py:1005
+#: sections.py:1010
 msgid "Section: Player"
 msgstr "Section: Player"
 
@@ -790,11 +811,11 @@ msgstr "{program.name} est un programme sur {station.name}"
 msgid "Playlist"
 msgstr "Playlist"
 
-#: templates/aircox_cms/diffusion_page.html:22
+#: templates/aircox_cms/diffusion_page.html:23
 msgid "Dates of diffusion"
 msgstr "Dates de diffusion"
 
-#: templates/aircox_cms/diffusion_page.html:36
+#: templates/aircox_cms/diffusion_page.html:38
 msgid "Podcasts"
 msgstr "Podcasts"
 
@@ -832,14 +853,16 @@ msgstr "Lieu"
 msgid "Price"
 msgstr "Prix"
 
-#: templates/aircox_cms/program_page.html:12
+#: templates/aircox_cms/program_page.html:12 wagtail_hooks.py:101
 msgid "Schedule"
 msgstr "Horaire"
 
 #: templates/aircox_cms/program_page.html:18
+#, python-format
 msgid ""
 "%(day)s at %(start)s until %(end)s, <span class=\"info\">%(frequency)s</span>"
-msgstr "%(day)s de %(start)s à %(end)s, <span class=\"info\">%(frequency)s</span>"
+msgstr ""
+"%(day)s de %(start)s à %(end)s, <span class=\"info\">%(frequency)s</span>"
 
 #: templates/aircox_cms/program_page.html:24
 msgid "Rerun"
@@ -927,19 +950,19 @@ msgstr "pause"
 msgid "loading..."
 msgstr "chargement..."
 
-#: templates/aircox_cms/snippets/player.html:29
+#: templates/aircox_cms/snippets/player.html:32
 msgid "add to the player"
 msgstr "ajouter au player"
 
-#: templates/aircox_cms/snippets/player.html:30
+#: templates/aircox_cms/snippets/player.html:33
 msgid "more informations"
 msgstr "plus d'informations"
 
-#: templates/aircox_cms/snippets/player.html:31
+#: templates/aircox_cms/snippets/player.html:34
 msgid "remove this sound"
 msgstr "enlever ce son"
 
-#: templates/aircox_cms/snippets/player.html:46
+#: templates/aircox_cms/snippets/player.html:47
 msgid "enable and disable single mode"
 msgstr "activer et désactiver le mode solo"
 
@@ -947,28 +970,44 @@ msgstr "activer et désactiver le mode solo"
 msgid "add this sound to the playlist"
 msgstr "ajouter ce son à la playlist"
 
-#: wagtail_hooks.py:37
+#: wagtail_hooks.py:86
 msgid "Schedules"
 msgstr "Horaires"
 
-#: wagtail_hooks.py:45
+#: wagtail_hooks.py:107
 msgid "Streams"
 msgstr "Streams"
 
-#: wagtail_hooks.py:52
+#: wagtail_hooks.py:121
+#, fuzzy
+#| msgid "Streams"
+msgid "Stream"
+msgstr "Streams"
+
+#: wagtail_hooks.py:146
+#, fuzzy
+#| msgid "Logs"
+msgid "Log"
+msgstr "Logs"
+
+#: wagtail_hooks.py:153
 msgid "Advanced"
 msgstr "Avancé"
 
-#: wagtail_hooks.py:60
+#: wagtail_hooks.py:173
 msgid "Sounds"
 msgstr "Sons"
 
-#: wagtail_hooks.py:151
+#: wagtail_hooks.py:331
 msgid "Today's Diffusions"
 msgstr "Diffusions du jour"
 
-#~ msgid "Published by"
-#~ msgstr "Publié par"
+#: wagtail_hooks.py:403
+msgid "Current Station"
+msgstr ""
+
+#~ msgid "public"
+#~ msgstr "public"
 
 #~ msgid "message to display when a post waits to be reviewed"
 #~ msgstr "message à afficher quand une publication attend d'être approuvée"

@@ -3,6 +3,7 @@ import json
 from django.utils import timezone as tz
 from django.utils.translation import ugettext_lazy as _
 from django.core.urlresolvers import reverse
+from django.forms import SelectMultiple, TextInput
 from django.contrib.staticfiles.templatetags.staticfiles import static
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
@@ -10,14 +11,24 @@ from django.utils.safestring import mark_safe
 from wagtail.wagtailcore import hooks
 from wagtail.wagtailadmin.menu import MenuItem, Menu, SubmenuMenuItem
 from wagtail.wagtailcore.models import PageRevision
-
 from wagtail.contrib.modeladmin.options import \
     ModelAdmin, ModelAdminGroup, modeladmin_register
+from wagtail.wagtailadmin.edit_handlers import FieldPanel, FieldRowPanel, \
+        MultiFieldPanel, InlinePanel, PageChooserPanel, StreamFieldPanel
 
 
 import aircox.models
 import aircox_cms.models as models
 
+
+class RelatedListWidget(SelectMultiple):
+    def __init__(self, *args, **kwargs):
+        self.readonly = True
+        super().__init__(*args, **kwargs)
+
+    def get_context(self, name, value, attrs):
+        self.choices.queryset = self.choices.queryset.filter(pk__in = value)
+        return super().get_context(name, value, attrs)
 
 #
 # ModelAdmin items
@@ -27,8 +38,17 @@ class ProgramAdmin(ModelAdmin):
     menu_label = _('Programs')
     menu_icon = 'pick'
     menu_order = 200
-    list_display = ('name', 'active')
+    list_display = ('name', 'active', 'station')
     search_fields = ('name',)
+
+aircox.models.Program.panels = [
+    MultiFieldPanel([
+        FieldPanel('name'),
+        FieldPanel('active'),
+        FieldPanel('sync'),
+    ], heading=_('Program')),
+]
+
 
 class DiffusionAdmin(ModelAdmin):
     model = aircox.models.Diffusion
@@ -40,6 +60,27 @@ class DiffusionAdmin(ModelAdmin):
     readonly_fields = ('conflicts',)
     search_fields = ('program__name', 'start')
 
+aircox.models.Diffusion.panels = [
+    MultiFieldPanel([
+        FieldPanel('program'),
+        FieldPanel('type'),
+        FieldRowPanel([
+            FieldPanel('start'),
+            FieldPanel('end'),
+        ]),
+        FieldPanel('initial'),
+        FieldPanel(
+            'conflicts',
+            widget = RelatedListWidget(
+                attrs = {
+                    'disabled': True,
+                }
+            )
+        ),
+    ], heading=_('Diffusion')),
+]
+
+
 class ScheduleAdmin(ModelAdmin):
     model = aircox.models.Schedule
     menu_label = _('Schedules')
@@ -47,6 +88,19 @@ class ScheduleAdmin(ModelAdmin):
     menu_order = 200
     list_display = ('program', 'frequency', 'duration', 'initial')
     list_filter = ('frequency', 'date', 'duration', 'program')
+
+aircox.models.Schedule.panels = [
+    MultiFieldPanel([
+        FieldPanel('program'),
+        FieldPanel('frequency'),
+        FieldRowPanel([
+            FieldPanel('date'),
+            FieldPanel('duration'),
+        ]),
+        FieldPanel('initial'),
+    ], heading=_('Schedule')),
+]
+
 
 class StreamAdmin(ModelAdmin):
     model = aircox.models.Stream
@@ -56,10 +110,49 @@ class StreamAdmin(ModelAdmin):
     list_display = ('program', 'delay', 'begin', 'end')
     list_filter = ('program', 'delay', 'begin', 'end')
 
+aircox.models.Stream.panels = [
+    MultiFieldPanel([
+        FieldPanel('program'),
+        FieldPanel('delay'),
+        FieldRowPanel([
+            FieldPanel('begin'),
+            FieldPanel('end'),
+        ]),
+    ], heading=_('Stream')),
+]
+
+
+class LogAdmin(ModelAdmin):
+    model = aircox.models.Log
+    menu_label = _('Logs')
+    menu_icon = 'time'
+    menu_order = 300
+    list_display = ['date', 'station', 'source', 'type', 'comment', 'related']
+    list_filter = ['date', 'source', 'related_type']
+
+aircox.models.Log.panels = [
+    MultiFieldPanel([
+        FieldPanel('date'),
+        FieldRowPanel([
+            FieldPanel('station'),
+            FieldPanel('source'),
+        ]),
+        FieldPanel('type'),
+        FieldPanel('comment'),
+        FieldRowPanel([
+            FieldPanel('related_type'),
+            FieldPanel('related_id')
+        ]),
+    ], heading = _('Log')),
+]
+
+
+# Missing: Port, Station, Track
+
 class AdvancedAdminGroup(ModelAdminGroup):
     menu_label = _("Advanced")
     menu_icon = 'plus-inverse'
-    items = (ProgramAdmin, DiffusionAdmin, ScheduleAdmin, StreamAdmin)
+    items = (ProgramAdmin, DiffusionAdmin, ScheduleAdmin, StreamAdmin, LogAdmin)
 
 modeladmin_register(AdvancedAdminGroup)
 

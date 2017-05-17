@@ -478,7 +478,7 @@ class Stream(models.Model):
     delay = models.TimeField(
         _('delay'),
         blank = True, null = True,
-        help_text = _('delay between two sound plays')
+        help_text = _('minimal delay between two sound plays')
     )
     begin = models.TimeField(
         _('begin'),
@@ -520,7 +520,10 @@ class Schedule(models.Model):
         Program,
         verbose_name = _('related program'),
     )
-    date = models.DateTimeField(_('date'))
+    date = models.DateTimeField(
+        _('date'),
+        help_text = _('date of the first diffusion')
+    )
     duration = models.TimeField(
         _('duration'),
         help_text = _('regular duration'),
@@ -544,7 +547,7 @@ class Schedule(models.Model):
     )
     initial = models.ForeignKey(
         'self',
-        verbose_name = _('initial'),
+        verbose_name = _('initial schedule'),
         blank = True, null = True,
         help_text = 'this schedule is a rerun of this one',
     )
@@ -829,7 +832,7 @@ class Diffusion(models.Model):
     )
     initial = models.ForeignKey (
         'self',
-        verbose_name = _('initial'),
+        verbose_name = _('initial diffusion'),
         blank = True, null = True,
         help_text = _('the diffusion is a rerun of this one')
     )
