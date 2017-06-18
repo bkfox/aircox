@@ -194,11 +194,16 @@ ul.list, .list > ul {
     margin: 0.4em;
 }
 
-.content > .list .dated_list_item time {
+.content > .list .date_list_item time {
     color: #007EDF;
     display: block;
     margin-left: -0.5em;
 }
+
+.content > .list .date_list_item {
+    width: 100%;
+}
+
 
 
 /** content: date list **/

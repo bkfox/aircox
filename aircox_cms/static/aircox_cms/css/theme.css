@@ -163,14 +163,13 @@ main.detail {
 
     main > header .cover {
         right: 0em;
-        bottom: 0em;
+        top: 1em;
         width: auto;
-        max-height: calc(100% - 4em);
-        max-width: 40%;
+        max-height: calc(100% - 2em);
+        max-width: calc(40% - 2em);
         margin: 1em;
         position: absolute;
-        box-shadow: 0em 0em 4em rgba(0, 0, 0, 0.3);
-        border: 1em rgba(255, 255, 255, 0.1) solid;
+        box-shadow: 0em 0em 4em rgba(0, 0, 0, 0.4);
     }
 
 
