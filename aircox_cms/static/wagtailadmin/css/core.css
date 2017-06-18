@@ -5296,7 +5296,7 @@ body.explorer-open .explorer-close {
   }
   li.submenu-active .nav-submenu {
     box-shadow: 2px 0 2px rgba(0, 0, 0, 0.35);
-    width: 220px;
+    width: 230px;
     padding: 0 0 0.5em;
   }
   body.ready li.submenu-active .nav-submenu {

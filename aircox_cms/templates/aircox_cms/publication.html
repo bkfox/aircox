@@ -6,40 +6,8 @@
 
 {% load aircox_cms %}
 
-{% if not object_list %}
-{% block title %}
-<h1 class="title">{{ page.title }}</h1>
-
-{% if page.cover %}
-<span class="cover_container">
-{% image page.cover max-600x480 class="cover" height="" width="" %}
-</span>
-{% endif %}
-
-<section class="headline">
-    {% if page.headline %}
-        {{ page.headline }}
-    {% else %}
-        {{ page.body|truncatewords:24|richtext }}
-    {% endif %}
-</section>
-{% endblock %}
-{% endif %}
-
 
 {% block content %}
-{% if object_list %}
-{# list view #}
-    <section class="body headline">
-    {{ page.headline }}
-    <a href="?" class="go_back float_right">{% trans "Go back to the publication" %}</a>
-    </section>
-
-    {% with list_paginator=paginator %}
-    {% include "aircox_cms/snippets/list.html" %}
-    {% endwith %}
-{% else %}
-{# detail view #}
 <div class="content">
     {% if page.body %}
     <section class="body">
@@ -47,21 +15,18 @@
     </section>
     {% endif %}
 
-    {% if page.links.count %}
-    {% include "aircox_cms/sections/section_link_list.html" %}
+    {% if object_list %}
+    {# list view #}
+        {% with list_paginator=paginator %}
+        {% include "aircox_cms/snippets/list.html" %}
+        {% endwith %}
+    {% else %}
+    {# detail view #}
+        {% if page.links.count %}
+        {% include "aircox_cms/sections/section_link_list.html" %}
+        {% endif %}
     {% endif %}
-
-    {% block content_extras %}{% endblock %}
-
-    <div class="post_content">
-    {% render_sections position="post_content" %}
-    </div>
-
-    <section class="comments">
-    {% include "aircox_cms/snippets/comments.html" %}
-    </section>
 </div>
-{% endif %}
 {% endblock %}
 
 

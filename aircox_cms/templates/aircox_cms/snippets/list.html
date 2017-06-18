@@ -7,6 +7,11 @@ Options:
 {% load i18n %}
 {% load aircox_cms %}
 
+{% if focus %}
+{% with item=focus item_big_cover=True %}
+{% include "aircox_cms/snippets/list_item.html" %}
+{% endwith %}
+{% endif %}
 
 <ul class="list {{ list_css_class|default:'' }}">
 {% for page in object_list %}
@@ -20,13 +25,13 @@ Options:
 <nav>
 {% with list_paginator.num_pages as num_pages %}
     {% if object_list.has_previous %}
-        <a href="?page={{ object_list.previous_page_number }}">
+    <a href="?{{ list_url_args }}&page={{ object_list.previous_page_number }}">
             {% trans "previous page" %}
         </a>
     {% endif %}
 
     {% if object_list.number > 3 %}
-        <a href="?page=1">1</a>
+        <a href="?{{ list_url_args }}&page=1">1</a>
         {% if object_list.number > 4 %}
         &#8230;
         {% endif %}
@@ -36,7 +41,7 @@ Options:
         {% if i == object_list.number %}
             {{ object_list.number }}
         {% elif i > 0 and i <= num_pages %}
-            <a href="?page={{ i }}">{{ i }}</a>
+            <a href="?{{ list_url_args }}&page={{ i }}">{{ i }}</a>
         {% endif %}
     {% endfor %}
 
@@ -45,7 +50,7 @@ Options:
         {% if max|add:"1" < num_pages %}
         &#8230;
         {% endif %}
-        <a href="?page={{ num_pages }}">{{ num_pages }}</a>
+        <a href="?{{ list_url_args }}&page={{ num_pages }}">{{ num_pages }}</a>
     {% endif %}
     {% endwith %}
 

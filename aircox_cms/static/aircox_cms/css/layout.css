@@ -148,7 +148,7 @@ body section ul {
     width: 100%;
 }
 
-ul.list {
+ul.list, .list > ul {
     padding: 0.4em;
 }
 
@@ -183,6 +183,21 @@ ul.list {
 .list nav {
     text-align: center;
     font-size: 0.9em;
+}
+
+
+/** content: list items in full page **/
+.content > .list .list_item {
+    min-width: 20em;
+    display: inline-block;
+    min-height: 2.5em;
+    margin: 0.4em;
+}
+
+.content > .list .dated_list_item time {
+    color: #007EDF;
+    display: block;
+    margin-left: -0.5em;
 }
 
 

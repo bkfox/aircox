@@ -16,6 +16,11 @@ This file is used as a reminder, can be used as crappy documentation too.
     \--> move liquidsoap control on commands/streamer.py
 - cms:
     x button to select the current station
+    - section's title: format with current page info e.g. "The diffusions of {program.name}" -- perhaps use pass **context
+    - section exclude: exclude a section for a given page type
+    - category page
+    - for timetable, logs, etc. make station optional
+    - django's message css displayed on pages when element is modified (remove bullet)
 
 
 # conventions

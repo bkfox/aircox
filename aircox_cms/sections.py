@@ -167,7 +167,7 @@ class RelatedLinkBase(Orderable):
         }
 
 
-class ListBase(models.Model):
+class BaseList(models.Model):
     """
     Generic list
     """
@@ -175,37 +175,24 @@ class ListBase(models.Model):
         none = 0x00
         previous = 0x01
         next = 0x02
-        before_related = 0x03,
-        after_related = 0x04,
+        before_related = 0x03
+        after_related = 0x04
 
-    date_filter = models.SmallIntegerField(
-        verbose_name = _('filter by date'),
-        choices = [ (int(y), _(x.replace('_', ' ')))
-                        for x,y in DateFilter.__members__.items() ],
-        blank = True, null = True,
-    )
-    model = models.ForeignKey(
-        ContentType,
-        verbose_name = _('filter by type'),
-        blank = True, null = True,
-        on_delete=models.SET_NULL,
-        help_text = _('if set, select only elements that are of this type'),
-        limit_choices_to = related_pages_filter,
-    )
-    related = models.ForeignKey(
-        Page,
-        verbose_name = _('filter by a related page'),
-        blank = True, null = True,
-        on_delete=models.SET_NULL,
-        help_text = _('if set, select children or siblings related to this page'),
-    )
-    siblings = models.BooleanField(
-        verbose_name = _('select siblings of related'),
+    class RelationFilter(IntEnum):
+        none = 0x00
+        subpages = 0x01
+        siblings = 0x02
+
+    # rendering
+    use_focus = models.BooleanField(
+        _('focus available'),
         default = False,
-        help_text = _(
-            'if checked, related publications are siblings instead of '
-            'the children.'
-        ),
+        help_text = _('if true, highlight the first focused article found')
+    )
+    count = models.SmallIntegerField(
+        _('count'),
+        default = 30,
+        help_text = _('number of items to display in the list'),
     )
     asc = models.BooleanField(
         verbose_name = _('ascending order'),
@@ -213,27 +200,87 @@ class ListBase(models.Model):
         help_text = _('if selected sort list in the ascending order by date')
     )
 
-    class Meta:
-        abstract = True
+    # selectors
+    date_filter = models.SmallIntegerField(
+        verbose_name = _('filter on date'),
+        choices = [ (int(y), _(x.replace('_', ' ')))
+                        for x,y in DateFilter.__members__.items() ],
+        blank = True, null = True,
+        help_text = _(
+            'select pages whose date follows the given constraint'
+        )
+    )
+    model = models.ForeignKey(
+        ContentType,
+        verbose_name = _('filter on page type'),
+        blank = True, null = True,
+        on_delete=models.SET_NULL,
+        help_text = _('if set, select only elements that are of this type'),
+        limit_choices_to = related_pages_filter,
+    )
+    related = models.ForeignKey(
+        Page,
+        verbose_name = _('related page'),
+        blank = True, null = True,
+        on_delete=models.SET_NULL,
+        help_text = _(
+            'if set, select children or siblings of this page'
+        ),
+        related_name = '+'
+    )
+    relation = models.BooleanField(
+        verbose_name = _('relation'),
+        choices = [ (int(y), _(x.replace('_', ' ')))
+                        for x,y in RelationFilter.__members__.items() ],
+        default = 1,
+        help_text = _(
+            'when the list is related to a page, only select pages that '
+            'correspond to this relationship'
+        ),
+    )
+    search = models.CharField(
+        verbose_name = _('filter on search'),
+        blank = True, null = True,
+        max_length = 128,
+        help_text = _(
+            'keep only pages that matches the given search'
+        )
+    )
+    tags = models.CharField(
+        verbose_name = _('filter on tag'),
+        blank = True, null = True,
+        max_length = 128,
+        help_text = _(
+            'keep only pages with the given tags (separated by a colon)'
+        )
+    )
 
     panels = [
         MultiFieldPanel([
-            FieldPanel('model'),
-            PageChooserPanel('related'),
-            FieldPanel('siblings'),
-        ], heading=_('filters')),
+            FieldPanel('count'),
+            FieldPanel('use_focus'),
+            FieldPanel('asc'),
+        ], heading=_('rendering')),
         MultiFieldPanel([
             FieldPanel('date_filter'),
-            FieldPanel('asc'),
-        ], heading=_('sorting'))
+            FieldPanel('model'),
+            PageChooserPanel('related'),
+            FieldPanel('relation'),
+            FieldPanel('search'),
+            FieldPanel('tags'),
+        ], heading=_('filters'))
     ]
+
+    class Meta:
+        abstract = True
 
     def __get_related(self, qs):
         related = self.related and self.related.specific
 
-        if self.siblings:
+        if self.relation == self.RelationFilter.siblings:
             qs = qs.sibling_of(related)
         else:
+        # elif self.relation == RelatedFilter.subpages:
             qs = qs.descendant_of(related)
 
         date = related.date if hasattr(related, 'date') else \
@@ -250,7 +297,6 @@ class ListBase(models.Model):
         reusable by other classes if needed.
         """
         from aircox_cms.models import Publication
-
         # model
         if self.model:
             qs = self.model.model_class().objects.all()
@@ -262,7 +308,7 @@ class ListBase(models.Model):
         if self.related:
             qs = self.__get_related(qs)
 
-        # date
+        # date_filter
         date = tz.now()
         if self.date_filter == self.DateFilter.previous:
             qs = qs.filter(date__lt = date)
@@ -270,77 +316,138 @@ class ListBase(models.Model):
             qs = qs.filter(date__gte = date)
 
         # sort
-        if self.asc:
-            return qs.order_by('date', 'pk')
-        return qs.order_by('-date', '-pk')
+            qs = qs.order_by('date', 'pk') \
+                    if self.asc else qs.order_by('-date', '-pk')
 
-    def to_url(self, list_page = None, **kwargs):
+        # tags
+        if self.tags:
+            qs = qs.filter(tags__name__in = ','.split(self.tags))
+
+        # search
+        if self.search:
+            # this qs.search does not return a queryset
+            qs = qs.search(self.search)
+
+        return qs
+
+    def get_context(self, request, qs = None, paginate = True):
         """
-        Return a url parameters from self. Extra named parameters are used
-        to override values of self or add some to the parameters.
+        Return a context object using the given request and arguments.
+        @param paginate: paginate and include paginator into context
 
-        If there is related field use it to get the page, otherwise use the
-        given list_page or the first DynamicListPage it finds.
+        Context arguments:
+            - object_list: queryset of the list's objects
+            - paginator: [if paginate] paginator object for this list
+            - list_url_args: GET arguments of the url as string
+
+        ! Note: BaseList does not inherit from Wagtail.Page, and calling
+                this method won't call other super() get_context.
         """
-        import aircox_cms.models as models
+        qs = qs or self.get_queryset()
+        paginator = None
+        context = {}
+        if qs.count():
+            if paginate:
+                context.update(self.paginate(request, qs))
+            else:
+                context['object_list'] = qs[:self.count]
+        else:
+            # keep empty queryset
+            context['object_list'] = qs
+        context['list_url_args'] = self.to_url(full_url = False)
+        #context['list_selector'] = {
+        #    attr: getattr(self, attr) for attr in (
+        #        'asc', 'date_filter', 'model', 'related', 'relation',
+        #        'tags', 'search',
+        #    )
+        #}
+        return context
 
+    def paginate(self, request, qs):
+        # paginator
+        paginator = Paginator(qs, self.count)
+        try:
+            qs = paginator.page(request.GET.get('page') or 1)
+        except PageNotAnInteger:
+            qs = paginator.page(1)
+        except EmptyPage:
+            qs = paginator.page(paginator.num_pages)
+        return {
+            'paginator': paginator,
+            'object_list': qs
+        }
+
+    def to_url(self, page = None, full_url = True, **kwargs):
+        """
+        Return a url to a given page with GET corresponding to this
+        list's parameters.
+        @param page: if given use it to prepend url with page's url instead of giving only
+                        GET parameters
+        @param **kwargs: override list parameters
+
+        If there is related field use it to get the page, otherwise use
+        the given list_page or the first BaseListPage it finds.
+        """
         params = {
-            'view': 'list',
+            'asc': self.asc,
             'date_filter': self.get_date_filter_display(),
             'model': self.model and self.model.model,
-            'asc': self.asc,
-            'related': self.related,
-            'siblings': self.siblings,
+            'relation': self.get_relation_display(),
+            'search': self.search,
+            'tags': self.tags
         }
         params.update(kwargs)
-
-        page = params.get('related') or list_page or \
-                models.DynamicListPage.objects.all().first()
 
         if params.get('related'):
             params['related'] = True
 
         params = '&'.join([
             key if value == True else '{}={}'.format(key, value)
-            for key, value in params.items()
-            if value
+            for key, value in params.items() if value
         ])
+        if not full_url:
+            return params
+
+        page = page or self.page
+        if not page:
+            raise ValueError(
+                "full_url = True requires either list.related or "
+                "method's argument `page` to be given"
+            )
         return page.url + '?' + params
 
     @classmethod
-    def from_request(cl, request, related = None, context = None,
-                     *args, **kwargs):
+    def from_request(cl, request, related = None):
         """
-        Return a queryset from the request's GET parameters. Context
-        can be used to update relative informations.
+        Return a context from the request's GET parameters. Context
+        can be used to update relative informations, more information
+        on this object from BaseList.get_context()
+
+        @param request: get params from this request
+        @param related: reference page for a related list
+        @return context object from BaseList.get_context()
 
         This function can be used by other views if needed
 
         Parameters:
+        * asc:      if present, sort ascending instead of descending
         * date_filter: one of DateFilter attribute's key.
         * model:    ['program','diffusion','event'] type of the publication
-        * asc:      if present, sort ascending instead of descending
-        * related:  children of the thread passed in arguments only
-        * siblings: sibling of the related instead of children
+        * relation: one of RelationFilter attribute's key
+        * related:  list is related to the method's argument `related`
 
         * tag:      tag to search for
         * search:   query to search in the publications
         * page:     page number
-
-        Context's fields:
-        * object_list:      the final queryset
-        * list_selector:    dict of { 'tag_query', 'search_query' } plus
-                            arguments passed to ListBase.get_base_queryset
-        * paginator:        paginator object
         """
-        def set(key, value):
-            if context is not None:
-                context[key] = value
-
+        # FIXME: page argument to select a page
+        # FIXME: related
         date_filter = request.GET.get('date_filter')
         model = request.GET.get('model')
+        relation = request.GET.get('relation')
 
         kwargs = {
+            'asc': 'asc' in request.GET,
             'date_filter':
                 int(getattr(cl.DateFilter, date_filter))
                 if date_filter and hasattr(cl.DateFilter, date_filter)
@@ -350,42 +457,21 @@ class ListBase(models.Model):
                 DiffusionPage if model == 'diffusion' else
                 EventPage if model == 'event' else None,
             'related': 'related' in request.GET and related,
-            'siblings': 'siblings' in request.GET,
-            'asc': 'asc' in request.GET,
+            'relation':
+                int(getattr(cl.RelationFilter, relation))
+                if relation and hasattr(cl.RelationFilter, relation)
+                else None,
+            'tags': request.GET.get('tags'),
+            'search': request.GET.get('search'),
         }
 
-        base_list = cl(**{ k:v for k,v in kwargs.items() if v })
-        qs = base_list.get_queryset()
-
-        # filter by tag
-        tag = request.GET.get('tag')
-        if tag:
-            kwargs['terms'] = tag
-            qs = qs.filter(tags__name = tag)
-
-        # search
-        search = request.GET.get('search')
-        if search:
-            kwargs['terms'] = search
-            qs = qs.search(search)
-
-        set('list_selector', kwargs)
-
-        # paginator
-        if qs:
-            paginator = Paginator(qs, 30)
-            try:
-                qs = paginator.page(request.GET.get('page') or 1)
-            except PageNotAnInteger:
-                qs = paginator.page(1)
-            except EmptyPage:
-                qs = parginator.page(paginator.num_pages)
-            set('paginator', paginator)
-        set('object_list', qs)
-        return qs
+        base_list = cl(
+            count = 30, **{ k:v for k,v in kwargs.items() if v }
+        )
+        return base_list.get_context(request)
 
 
-class DatedListBase(models.Model):
+class DatedBaseList(models.Model):
     """
     List that display items per days. Renders a navigation section on the
     top.
@@ -794,69 +880,46 @@ class SectionLink(RelatedLinkBase,TemplateMixin):
 
 
 @register_snippet
-class SectionList(ListBase, SectionRelativeItem):
+class SectionList(BaseList, SectionRelativeItem):
     """
     This one is quite badass, but needed: render a list of pages
-    using given parameters (cf. ListBase).
+    using given parameters (cf. BaseList).
 
     If focus_available, the first article in the list will be the last
     article with a focus, and will be rendered in a bigger size.
     """
-    focus_available = models.BooleanField(
-        _('focus available'),
-        default = False,
-        help_text = _('if true, highlight the first focused article found')
-    )
-    count = models.SmallIntegerField(
-        _('count'),
-        default = 5,
-        help_text = _('number of items to display in the list'),
-    )
+    # TODO/FIXME: focus, quid?
+    # TODO: logs in menu show headline???
     url_text = models.CharField(
         _('text of the url'),
         max_length=32,
         blank = True, null = True,
         help_text = _('use this text to display an URL to the complete '
-                      'list. If empty, does not print an address'),
+                      'list. If empty, no link is displayed'),
     )
 
     panels = SectionRelativeItem.panels + [
-        MultiFieldPanel([
-        FieldPanel('focus_available'),
-        FieldPanel('count'),
         FieldPanel('url_text'),
-        ], heading=_('Rendering')),
-    ] + ListBase.panels
+    ] + BaseList.panels
 
     def get_context(self, request, page):
-        from aircox_cms.models import Publication
-        context = super().get_context(request, page)
-
+        import aircox_cms.models as cms
         if self.is_related:
             self.related = page
 
-        qs = self.get_queryset()
-        qs = qs.live()
-        if self.focus_available:
-            focus = qs.type(Publication).filter(focus = True).first()
-            if focus:
-                focus.css_class = 'focus'
-                qs = qs.exclude(pk = focus.pk)
-        else:
-            focus = None
-
-        if not qs.count():
+        context = BaseList.get_context(self, request, paginate = False)
+        if not context['object_list'].count():
             return { 'hide': True }
 
-        pages = qs[:self.count - (focus != None)]
-
-        context['focus'] = focus
-        context['object_list'] = pages
+        context.update(SectionRelativeItem.get_context(self, request, page))
         if self.url_text:
-            context['url'] = self.to_url(
-                list_page = self.is_related and page
-            )
+            if not self.is_related or not page:
+                settings = cms.WebsiteSettings.for_site(request.site)
+                page = settings.list_page
+            context['url'] = self.to_url(page = page) + '&view=list'
         return context
+
+SectionList._meta.get_field('count').default = 5
 
 
 @register_snippet
@@ -915,7 +978,7 @@ class SectionLogsList(SectionItem):
 
 
 @register_snippet
-class SectionTimetable(SectionItem,DatedListBase):
+class SectionTimetable(SectionItem,DatedBaseList):
     class Meta:
         verbose_name = _('Section: Timetable')
         verbose_name_plural = _('Sections: Timetable')
@@ -937,8 +1000,8 @@ class SectionTimetable(SectionItem,DatedListBase):
         help_text = _('if checked, navigation dates will be shown')
     )
 
-    # TODO: put in multi-field panel of datedlistbase
-    panels = SectionItem.panels + DatedListBase.panels + [
+    # TODO: put in multi-field panel of DatedBaseList
+    panels = SectionItem.panels + DatedBaseList.panels + [
         MultiFieldPanel([
             FieldPanel('nav_visible'),
             FieldPanel('target'),
@@ -986,12 +1049,6 @@ class SectionSearchField(SectionItem):
     panels = SectionItem.panels + [
         FieldPanel('default_text'),
     ]
-
-    def get_context(self, request, page):
-        # FIXME ?????
-        from aircox_cms.models import DynamicListPage
-        context = super().get_context(request, page)
-        return context
 
 
 @register_snippet

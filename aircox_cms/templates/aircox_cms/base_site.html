@@ -1,6 +1,7 @@
 {% load staticfiles %}
 {% load i18n %}
 
+{% load wagtailcore_tags %}
 {% load wagtailimages_tags %}
 {% load wagtailsettings_tags %}
 
@@ -60,12 +61,47 @@
 
             <header>
             {% block title %}
-            <h1>{{ page.title }}</h1>
+                {% if page.cover %}
+                <div class="background">
+                {% image page.cover max-600x480 class="background-cover" height="" width="" %}
+                </div>
+                {% image page.cover max-600x480 class="cover" height="" width="" %}
+                <div class="foreground">
+                {% endif %}
+                    <h1 class="title"><a href="{{ page.url }}">{{ page.title }}</a></h1>
+
+                    {% if page.headline %}
+                    <section class="headline">
+                    {{ page.headline }}
+                    </section>
+                    {% endif %}
+                {% if page.cover %}
+                </div>
+                {% endif %}
             {% endblock %}
             </header>
 
-            {% block content %}
-            {% endblock %}
+            <div class="content">
+                {% block content %}
+                {% if page.body %}
+                <section class="body">
+                {{ page.body|richtext}}
+                </section>
+                {% endif %}
+                {% endblock %}
+
+                {% block content_extras %}
+                {% endblock %}
+
+                <div class="post_content">
+                {% render_sections position="post_content" %}
+                </div>
+
+                <section class="comments">
+                {% include "aircox_cms/snippets/comments.html" %}
+                </section>
+            </div>
+
             </main>
 
             <nav class="menu page_right flex_item">

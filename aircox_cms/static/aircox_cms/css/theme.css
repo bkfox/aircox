@@ -82,11 +82,14 @@ a:hover > .small_icon {
 
 main {
     background-color: rgba(255,255,255,0.9);
-    padding: 1em;
     margin: 0em 2em;
     box-shadow: 0em 0em 0.2em black;
     width: 60%;
 }
+
+    main > .content {
+        /*! margin: 1em; */
+    }
 
 
     main:not(.detail) h1 {
@@ -109,68 +112,65 @@ main.detail {
     padding: 0em;
 }
 
-    main.detail > .content {
+    main > .content {
         padding: 1em;
     }
 
-    main.detail > header {
-        padding: 0em;
+    main > header {
         margin: 0em;
-    }
-
-    main.detail > header h1.title,
-    main.detail > header .headline {
-        display: block;
-        padding: 0.4em;
-        vertical-align: middle;
-        transition: opacity 1.5s;
-    }
-
-    main.detail > header:hover h1.title,
-    main.detail > header:hover .headline {
-        opacity: 0.0;
-        transition: opacity 1.5s 1s;
-    }
-
-    main.detail > header h1.title {
+        padding: 1em;
         position: relative;
-        z-index: 1000;
-        height: 1.2em;
+    }
+
+    main > header .foreground {
+        position: absolute;
+        left: 0em;
+        top: 0em;
+        width: calc(100% - 2em);
+        padding: 1em;
+    }
+
+    main > header h1 {
+        width: calc(100% - 2em);
         margin: 0em;
-        background-color: rgba(255,255,255,0.8);
-        /*! padding-top: 0em; */
+        margin-bottom: 0.8em;
     }
 
-    main.detail > header h1.title + section {
-        margin-top: 2em;
-    }
-
-    main.detail header .headline {
+    main header .headline {
         display: inline-block;
-        width: calc(100% - 0.8em);
+        width: calc(60% - 0.8em);
         min-height: 1.2em;
         font-size: 1.2em;
         font-weight: bold;
-        background-color: rgba(255,255,255,0.8);
     }
 
-    main.detail > header .cover_container,
-    main.detail > header img.cover {
-       display: block;
-       width: 100%;
+    main > header .background {
+        margin: -1em;
+        height: 17em;
+        overflow: hidden;
+        position: relative;
     }
 
-    main.detail > header .cover_container {
-       max-height: 450px;
-       overflow: hidden;
-       margin-top: -2.8em;
-       margin-bottom: -2.4em;
+    main > header .background img {
+        position: absolute;
+        top: -40%;
+        left: -40%;
+        width: 250%;
+        min-height: 250%;
+        filter: blur(20px);
+        opacity: 0.3;
     }
 
-    main.detail > header img.cover {
-        height: auto;
-        margin: auto;
-        vertical-align: middle;
+    main > header .cover {
+        right: 0em;
+        bottom: 0em;
+        width: auto;
+        max-height: calc(100% - 4em);
+        max-width: 40%;
+        margin: 1em;
+        position: absolute;
+        box-shadow: 0em 0em 4em rgba(0, 0, 0, 0.3);
+        border: 1em rgba(255, 255, 255, 0.1) solid;
     }
 
 

@@ -162,14 +162,11 @@ class WebsiteSettings(BaseSetting):
         verbose_name = _('website settings')
 
 
-#
-# Publications
-#
 @register_snippet
 class Comment(models.Model):
     publication = models.ForeignKey(
-        'Publication',
-        verbose_name = _('publication')
+        Page,
+        verbose_name = _('page')
     )
     published = models.BooleanField(
         verbose_name = _('published'),
@@ -227,16 +224,114 @@ class Comment(models.Model):
         return super().save(*args, **kwargs)
 
 
+class BasePage(Page):
+    body = RichTextField(
+        _('body'),
+        null = True, blank = True,
+        help_text = _('the publication itself')
+    )
+    cover = models.ForeignKey(
+        'wagtailimages.Image',
+        verbose_name = _('cover'),
+        null=True, blank=True,
+        on_delete=models.SET_NULL,
+        related_name='+',
+        help_text = _('image to use as cover of the publication'),
+    )
+    allow_comments = models.BooleanField(
+        _('allow comments'),
+        default = True,
+        help_text = _('allow comments')
+    )
+
+    # panels
+    content_panels = [
+        MultiFieldPanel([
+            FieldPanel('title'),
+            ImageChooserPanel('cover'),
+            FieldPanel('body', classname='full'),
+        ], heading=_('Content'))
+    ]
+    settings_panels = Page.settings_panels + [
+        FieldPanel('allow_comments'),
+    ]
+    search_fields = [
+        index.SearchField('title', partial_match=True),
+        index.SearchField('body', partial_match=True),
+        index.FilterField('live'),
+        index.FilterField('show_in_menus'),
+    ]
+
+    # properties
+    @property
+    def url(self):
+        if not self.live:
+            parent = self.get_parent().specific
+            return parent and parent.url
+        return super().url
+
+    @property
+    def icon(self):
+        return image_url(self.cover, 'fill-64x64')
+
+    @property
+    def small_icon(self):
+        return image_url(self.cover, 'fill-32x32')
+
+    @property
+    def comments(self):
+        return Comment.objects.filter(
+            publication = self,
+            published = True,
+        ).order_by('-date')
+
+    # methods
+    def get_context(self, request, *args, **kwargs):
+        from aircox_cms.forms import CommentForm
+
+        context = super().get_context(request, *args, **kwargs)
+        if self.allow_comments and \
+                WebsiteSettings.for_site(request.site).allow_comments:
+            context['comment_form'] = CommentForm()
+        return context
+
+    def serve(self, request):
+        from aircox_cms.forms import CommentForm
+        if request.POST and 'comment' in request.POST['type']:
+            settings = WebsiteSettings.for_site(request.site)
+            comment_form = CommentForm(request.POST)
+            if comment_form.is_valid():
+                comment = comment_form.save(commit=False)
+                comment.publication = self
+                comment.published = settings.accept_comments
+                comment.save()
+                messages.success(request,
+                    settings.comment_success_message
+                        if comment.published else
+                    settings.comment_wait_message,
+                    fail_silently=True,
+                )
+            else:
+                messages.error(
+                    request, settings.comment_error_message, fail_silently=True
+                )
+        return super().serve(request)
+
+    class Meta:
+        abstract = True
+
+
+#
+# Publications
+#
 class PublicationRelatedLink(RelatedLinkBase,TemplateMixin):
     template = 'aircox_cms/snippets/link.html'
     parent = ParentalKey('Publication', related_name='links')
 
-
 class PublicationTag(TaggedItemBase):
     content_object = ParentalKey('Publication', related_name='tagged_items')
 
-
-class Publication(Page):
+class Publication(BasePage):
     order_field = 'date'
 
     date = models.DateTimeField(
@@ -262,19 +357,6 @@ class Publication(Page):
         help_text = _('allow comments')
     )
 
-    body = RichTextField(
-        _('body'),
-        blank=True,
-        help_text = _('the publication itself')
-    )
-    cover = models.ForeignKey(
-        'wagtailimages.Image',
-        verbose_name = _('cover'),
-        null=True, blank=True,
-        on_delete=models.SET_NULL,
-        related_name='+',
-        help_text = _('image to use as cover of the publication'),
-    )
     headline = models.TextField(
         _('headline'),
         blank = True, null = True,
@@ -309,82 +391,32 @@ class Publication(Page):
         FieldPanel('publish_as'),
         FieldPanel('allow_comments'),
     ]
-    search_fields = [
-        index.SearchField('title', partial_match=True),
-        index.SearchField('body', partial_match=True),
-        index.FilterField('live'),
-        index.FilterField('show_in_menus'),
+    search_fields = BasePage.search_fields + [
+        index.SearchField('headline', partial_match=True),
     ]
 
-    @property
-    def url(self):
-        if not self.live:
-            parent = self.get_parent().specific
-            return parent and parent.url
-        return super().url
-
-    @property
-    def icon(self):
-        return image_url(self.cover, 'fill-64x64')
-
-    @property
-    def small_icon(self):
-        return image_url(self.cover, 'fill-32x32')
 
     @property
     def recents(self):
         return self.get_children().type(Publication).not_in_menu().live() \
                    .order_by('-publication__date')
 
-    @property
-    def comments(self):
-        return Comment.objects.filter(
-            publication = self,
-            published = True,
-        ).order_by('-date')
+    def get_context(self, request, *args, **kwargs):
+        context = super().get_context(request, *args, **kwargs)
+        view = request.GET.get('view')
+        context.update({
+            'view': view,
+            'page': self,
+        })
+        if view == 'list':
+            context.update(BaseList.from_request(request, related = self))
+            context['list_url_args'] += '&view=list'
+        return context
 
     def save(self, *args, **kwargs):
         if not self.date and self.first_published_at:
             self.date = self.first_published_at
-        super().save(*args, **kwargs)
-
-    def get_context(self, request, *args, **kwargs):
-        from aircox_cms.forms import CommentForm
-        context = super().get_context(request, *args, **kwargs)
-        view = request.GET.get('view')
-        page = request.GET.get('page')
-
-        if self.allow_comments and \
-                WebsiteSettings.for_site(request.site).allow_comments:
-            context['comment_form'] = CommentForm()
-
-        if view == 'list':
-            context['object_list'] = ListBase.from_request(
-                request, context = context, related = self
-            )
-        return context
-
-    def serve(self, request):
-        from aircox_cms.forms import CommentForm
-        if request.POST and 'comment' in request.POST['type']:
-            settings = WebsiteSettings.for_site(request.site)
-            comment_form = CommentForm(request.POST)
-            if comment_form.is_valid():
-                comment = comment_form.save(commit=False)
-                comment.publication = self
-                comment.published = settings.accept_comments
-                comment.save()
-                messages.success(request,
-                    settings.comment_success_message
-                        if comment.published else
-                    settings.comment_wait_message,
-                    fail_silently=True,
-                )
-            else:
-                messages.error(
-                    request, settings.comment_error_message, fail_silently=True
-                )
-        return super().serve(request)
+        return super().save(*args, **kwargs)
 
 
 class ProgramPage(Publication):
@@ -393,7 +425,6 @@ class ProgramPage(Publication):
         verbose_name = _('program'),
         related_name = 'page',
         on_delete=models.SET_NULL,
-        unique = True,
         blank=True, null=True,
     )
     # rss = models.URLField()
@@ -488,7 +519,6 @@ class DiffusionPage(Publication):
         aircox.models.Diffusion,
         verbose_name = _('diffusion'),
         related_name = 'page',
-        unique = True,
         null=True,
         # not blank because we enforce the connection to a diffusion
         #   (still users always tend to break sth)
@@ -619,7 +649,18 @@ class DiffusionPage(Publication):
 #
 # Others types of pages
 #
-class DynamicListPage(Page):
+
+class CategoryPage(BasePage, BaseList):
+    content_panels = BasePage.content_panels + BaseList.panels
+
+    def get_context(self, request, *args, **kwargs):
+        context = super().get_context(request, *args, **kwargs)
+        context.update(BaseList.get_context(self, request, paginate = True))
+        context['view'] = 'list'
+        return context
+
+
+class DynamicListPage(BasePage):
     """
     Displays a list of publications using query passed by the url.
     This can be used for search/tags page, and generally only one
@@ -628,46 +669,20 @@ class DynamicListPage(Page):
     If a title is given, use it instead of the generated one.
     """
     # FIXME/TODO: title in template <title></title>
-    body = RichTextField(
-        _('body'),
-        blank = True, null = True,
-        help_text = _('add an extra description for this list')
-    )
-
-    content_panels = [
-        MultiFieldPanel([
-            FieldPanel('title'),
-            FieldPanel('body'),
-        ], heading=_('Content'))
-    ]
-
+    # TODO: personnalized titles depending on request
     class Meta:
         verbose_name = _('Dynamic List Page')
         verbose_name_plural = _('Dynamic List Pages')
 
     def get_context(self, request, *args, **kwargs):
         context = super().get_context(request, *args, **kwargs)
-        qs = ListBase.from_request(request, context=context)
-        context['object_list'] = qs
+        context.update(BaseList.from_request(request))
         return context
 
 
-class DatedListPage(DatedListBase,Page):
-    body = RichTextField(
-        _('body'),
-        blank = True, null = True,
-        help_text = _('add an extra description for this list')
-    )
-
+class DatedListPage(DatedBaseList,BasePage):
     class Meta:
         abstract = True
-
-    content_panels = [
-        MultiFieldPanel([
-            FieldPanel('title'),
-            FieldPanel('body'),
-        ], heading=_('Content')),
-    ] + DatedListBase.panels
 
     def get_queryset(self, request, context):
         """
@@ -702,6 +717,8 @@ class LogsPage(DatedListPage):
     station = models.ForeignKey(
         aircox.models.Station,
         verbose_name = _('station'),
+        null = True, blank = True,
+        on_delete = models.SET_NULL,
         help_text = _('(required) related station')
     )
     age_max = models.IntegerField(
@@ -763,6 +780,8 @@ class TimetablePage(DatedListPage):
     station = models.ForeignKey(
         aircox.models.Station,
         verbose_name = _('station'),
+        on_delete = models.SET_NULL,
+        null = True, blank = True,
         help_text = _('(required) related station')
     )
 

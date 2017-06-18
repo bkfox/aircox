@@ -1,16 +1,9 @@
 {% extends "aircox_cms/sections/section_item.html" %}
 
 {% block content %}
-{% if focus %}
-{% with item=focus item_big_cover=True %}
-{% include "aircox_cms/snippets/list_item.html" %}
-{% endwith %}
-{% endif %}
-
 {% with url=url url_text=self.url_text %}
 {% include "aircox_cms/snippets/list.html" %}
 {% endwith %}
-
 {% endblock %}
 
 
