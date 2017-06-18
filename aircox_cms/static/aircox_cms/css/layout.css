@@ -187,24 +187,12 @@ ul.list, .list > ul {
 
 
 /** content: list items in full page **/
-.content > .list .list_item {
+.content > .list:not(.date_list) .list_item {
     min-width: 20em;
     display: inline-block;
     min-height: 2.5em;
     margin: 0.4em;
 }
-
-.content > .list .date_list_item time {
-    color: #007EDF;
-    display: block;
-    margin-left: -0.5em;
-}
-
-.content > .list .date_list_item {
-    width: 100%;
-}
-
-
 
 /** content: date list **/
 .date_list nav {
@@ -244,6 +232,40 @@ ul.list, .list > ul {
 
 .date_list_item h3 {
     margin-top: 0em;
+}
+
+.date_list_item time {
+    color: #007EDF;
+}
+
+
+.date_list_item.now {
+    font-size: 1.2em;
+}
+
+    .date_list_item img.now {
+        width: 1.3em;
+        vertical-align: middle;
+    }
+
+
+/** content: date list in full page **/
+.content > .date_list .date_list_item time {
+    color: #007EDF;
+    font-size: 1.1em;
+    display: block;
+}
+
+
+.content > .date_list .date_list_item:nth-child(2n+1) {
+    box-shadow: inset 0em 0em 3em rgba(0, 124, 226, 0.1);
+    background-color: rgba(0, 124, 226, 0.05);
+}
+
+.content > .date_list {
+    padding: 0 10%;
+    margin: auto;
+    width: 80%;
 }
 
 

@@ -222,11 +222,16 @@ class GenericMenu(Menu):
         """
         pass
 
+    @staticmethod
+    def page_of(item):
+        return item.page
+
     def page_url(self, item):
-        if item.page.count():
+        page = self.page_of(item)
+        if page:
             name =  'wagtailadmin_explore' \
                     if self.explore else 'wagtailadmin_pages:edit'
-            return reverse(name, args=[item.page.first().id])
+            return reverse(name, args=[page.id])
 
         parent_page = self.get_parent(item)
         if not parent_page:
@@ -311,7 +316,7 @@ class TodayMenu(GenericMenu):
 
         attrs = {}
 
-        qs = PageRevision.objects.filter(page = item.page.first())
+        qs = PageRevision.objects.filter(page = item.page)
         if qs.count():
             headline = qs.latest('created_at').content_json
             headline = json.loads(headline).get('headline')

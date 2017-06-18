@@ -21,6 +21,7 @@ This file is used as a reminder, can be used as crappy documentation too.
     - category page
     - for timetable, logs, etc. make station optional
     - django's message css displayed on pages when element is modified (remove bullet)
+    - articles preview in different format
 
 
 # conventions

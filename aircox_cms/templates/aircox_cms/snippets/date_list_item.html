@@ -3,16 +3,24 @@ Configurable item to be put in a dated list. Work like list_item, the layout
 is just a bit different.
 {% endcomment %}
 
+{% load static %}
+{% load i18n %}
+
 {% load wagtailimages_tags %}
 
 <a {% if item.url %}href="{{ item.url }}" {% endif %}
-    class="list_item date_list_item {% if not item_big_cover %}flex_row {% endif %}{% if item.css_class %}{{ item.css_class }}{% endif %}"
+    class="list_item date_list_item {{ item.css_class|default_if_none:"" }}{% if not item_big_cover %} flex_row{% endif %}"
     title="{{ item.date|date:"l d F Y" }}"
     >
 
     {% if not item.show_in_menus and item.date and item_date_format != '' %}
     {% with date_format=item_date_format|default_if_none:'l d F, H:i' %}
     <time datetime="{{ item.date }}">
+        {% if item.now %}
+        <img src="{% static "aircox/images/play.png" %}"
+            title="{% trans "happening now!" %}"
+            alt="{% trans "happening now!" %}" class="now">
+        {% endif %}
         {{ item.date|date:date_format }}
     </time>
     {% endwith %}

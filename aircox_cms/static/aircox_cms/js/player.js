@@ -148,8 +148,10 @@ Playlist.prototype = {
         this.playlist.removeChild(sound.item);
         this.save();
 
-        this.player.stop()
-        this.next(false);
+        if(this.sound == sound) {
+            this.player.stop()
+            this.next(false);
+        }
     },
 
     select: function(sound, play = true) {

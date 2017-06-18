@@ -922,7 +922,7 @@ class Diffusion(models.Model):
             return super().save(*args, **kwargs)
 
         if self.initial:
-            # force link to the top initial diffusion
+            # force link to the first diffusion
             if self.initial.initial:
                 self.initial = self.initial.initial
             self.program = self.initial.program

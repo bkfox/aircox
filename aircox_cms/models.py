@@ -420,7 +420,7 @@ class Publication(BasePage):
 
 
 class ProgramPage(Publication):
-    program = models.ForeignKey(
+    program = models.OneToOneField(
         aircox.models.Program,
         verbose_name = _('program'),
         related_name = 'page',
@@ -515,11 +515,11 @@ class Track(aircox.models.Track,Orderable):
 class DiffusionPage(Publication):
     order_field = 'diffusion__start'
 
-    diffusion = models.ForeignKey(
+    diffusion = models.OneToOneField(
         aircox.models.Diffusion,
         verbose_name = _('diffusion'),
         related_name = 'page',
-        null=True,
+        null=True, blank = True,
         # not blank because we enforce the connection to a diffusion
         #   (still users always tend to break sth)
         on_delete=models.SET_NULL,
@@ -548,6 +548,9 @@ class DiffusionPage(Publication):
         ], heading=_('Content')),
         InlinePanel('links', label=_('Links'))
     ] + Page.promote_panels
+    settings_panels = Publication.settings_panels + [
+        FieldPanel('diffusion')
+    ]
 
     @classmethod
     def from_diffusion(cl, diff, model = None, **kwargs):
@@ -572,8 +575,8 @@ class DiffusionPage(Publication):
         """
         initial = diff.initial or diff
 
-        if initial.page.all().count():
-            item = initial.page.all().first()
+        if hasattr(initial, 'page'):
+            item = initial.page
         else:
             item = cl.from_diffusion(diff, ListItem)
             item.live = True
@@ -590,6 +593,13 @@ class DiffusionPage(Publication):
 
         item.date = diff.start
         item.css_class = 'diffusion'
+
+        now = tz.now()
+        if diff.start <= now <= diff.end:
+            print('now!', diff)
+            item.css_class = ' now'
+            item.now = True
+
         return item
 
     def get_archive(self):
@@ -721,7 +731,7 @@ class LogsPage(DatedListPage):
         on_delete = models.SET_NULL,
         help_text = _('(required) related station')
     )
-    age_max = models.IntegerField(
+    max_age = models.IntegerField(
         _('maximum age'),
         default=15,
         help_text = _('maximum days in the past allowed to be shown. '
@@ -740,7 +750,7 @@ class LogsPage(DatedListPage):
     content_panels = DatedListPage.content_panels + [
         MultiFieldPanel([
             FieldPanel('station'),
-            FieldPanel('age_max'),
+            FieldPanel('max_age'),
             FieldPanel('reverse'),
         ], heading=_('Configuration')),
     ]
@@ -749,20 +759,21 @@ class LogsPage(DatedListPage):
         """
         Return a list of dates availables for the navigation
         """
-        # there might be a bug if age_max < nav_days
+        # there might be a bug if max_age < nav_days
         today = tz.now().date()
         first = min(date, today)
-        first = max( first - tz.timedelta(days = self.nav_days-1),
-                     today - tz.timedelta(days = self.age_max))
+        first = first - tz.timedelta(days = self.nav_days-1)
+        if self.max_age:
+             first = max(first, today - tz.timedelta(days = self.max_age))
         return [ first + tz.timedelta(days=i)
                     for i in range(0, self.nav_days) ]
 
     def get_queryset(self, request, context):
         today = tz.now().date()
-        if context['nav_dates']['next'] > today:
+        if self.max_age and context['nav_dates']['next'] > today:
             context['nav_dates']['next'] = None
-        if context['nav_dates']['prev'] < \
-                today - tz.timedelta(days = self.age_max):
+        if self.max_age and context['nav_dates']['prev'] < \
+                today - tz.timedelta(days = self.max_age):
             context['nav_dates']['prev'] = None
 
         logs = []
