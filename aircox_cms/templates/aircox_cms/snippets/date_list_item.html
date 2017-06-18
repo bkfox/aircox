@@ -18,8 +18,8 @@ is just a bit different.
     <time datetime="{{ item.date }}">
         {% if item.now %}
         <img src="{% static "aircox/images/play.png" %}"
-            title="{% trans "happening now!" %}"
-            alt="{% trans "happening now!" %}" class="now">
+            title="{% trans "on air" %}"
+            alt="{% trans "on air" %}" class="now">
         {% endif %}
         {{ item.date|date:date_format }}
     </time>

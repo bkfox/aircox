@@ -596,7 +596,6 @@ class DiffusionPage(Publication):
 
         now = tz.now()
         if diff.start <= now <= diff.end:
-            print('now!', diff)
             item.css_class = ' now'
             item.now = True
 

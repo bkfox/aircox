@@ -240,12 +240,12 @@ ul.list, .list > ul {
 
 
 .date_list_item.now {
-    font-size: 1.2em;
+    padding: 0.4em;    
 }
 
     .date_list_item img.now {
         width: 1.3em;
-        vertical-align: middle;
+        vertical-align: bottom;
     }
 
 
@@ -257,7 +257,8 @@ ul.list, .list > ul {
 }
 
 
-.content > .date_list .date_list_item:nth-child(2n+1) {
+.content > .date_list .date_list_item:nth-child(2n+1),
+.date_list_item.now {
     box-shadow: inset 0em 0em 3em rgba(0, 124, 226, 0.1);
     background-color: rgba(0, 124, 226, 0.05);
 }
