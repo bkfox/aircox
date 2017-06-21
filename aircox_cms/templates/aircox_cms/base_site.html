@@ -90,8 +90,10 @@
                 {% endif %}
                 {% endblock %}
 
-                {% block content_extras %}
-                {% endblock %}
+                {% if view != 'list' %}
+                    {% block content_extras %}
+                    {% endblock %}
+                {% endif %}
 
                 <div class="post_content">
                 {% render_sections position="post_content" %}

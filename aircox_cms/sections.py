@@ -182,6 +182,7 @@ class BaseList(models.Model):
         none = 0x00
         subpages = 0x01
         siblings = 0x02
+        subpages_or_siblings = 0x03
 
     # rendering
     use_focus = models.BooleanField(
@@ -277,11 +278,14 @@ class BaseList(models.Model):
     def __get_related(self, qs):
         related = self.related and self.related.specific
 
-        if self.relation == self.RelationFilter.siblings:
-            qs = qs.sibling_of(related)
+        filter = self.RelationFilter
+
+        if self.relation in (filter.subpages, filter.subpages_or_siblings):
+            qs =  qs.descendant_of(related)
+            if not qs.count() and self.relation == filter.subpages_or_siblings:
+                qs = qs.sibling_of(related)
         else:
-        # elif self.relation == RelatedFilter.subpages:
-            qs = qs.descendant_of(related)
+            qs = qs.sibling_of(related)
 
         date = related.date if hasattr(related, 'date') else \
                 related.first_published_at
@@ -316,8 +320,8 @@ class BaseList(models.Model):
             qs = qs.filter(date__gte = date)
 
         # sort
-            qs = qs.order_by('date', 'pk') \
-                    if self.asc else qs.order_by('-date', '-pk')
+        qs = qs.order_by('date', 'pk') \
+                if self.asc else qs.order_by('-date', '-pk')
 
         # tags
         if self.tags:
@@ -398,7 +402,7 @@ class BaseList(models.Model):
         }
         params.update(kwargs)
 
-        if params.get('related'):
+        if self.related:
             params['related'] = True
 
         params = '&'.join([
