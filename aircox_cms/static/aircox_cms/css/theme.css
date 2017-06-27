@@ -153,10 +153,10 @@ main.detail {
 
     main > header .background img {
         position: absolute;
-        top: -40%;
-        left: -40%;
-        width: 250%;
-        min-height: 250%;
+        /*! top: -40%; */
+        /*! left: -40%; */
+        width: 100%;
+        min-height: 100%;
         filter: blur(20px);
         opacity: 0.3;
     }
