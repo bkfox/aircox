@@ -231,11 +231,11 @@ class Station(Nameable):
         self.__prepare()
         return self.__streamer
 
-    def played(self, models, archives = True):
+    def played(self, models, archives = True, include_live = True):
         """
         Call Log.objects.played for this station
         """
-        return Log.objects.played(self, models, archives)
+        return Log.objects.played(self, models, archives, include_live)
 
     @staticmethod
     def __mix_logs_and_diff(diffs, logs, count = 0):
@@ -867,7 +867,7 @@ class Diffusion(models.Model):
         """
         List of archives' path; uses get_archives
         """
-        return [ sound.path for sound in self.get_archives() ]
+        return self.get_archives().values_list('path', flat = True)
 
     def get_archives(self):
         """
@@ -1260,7 +1260,7 @@ class LogManager(RelatedManager):
         qs = self.get_for(station, object, model, qs)
         return self._at(date, qs)
 
-    def played(self, station, models, archives = True):
+    def played(self, station, models, archives = True, include_live = True):
         """
         Return a queryset of the played elements' log for the given
         station and model. This queryset is ordered by date ascending
@@ -1270,8 +1270,12 @@ class LogManager(RelatedManager):
         * archives: if false, exclude log of diffusion's archives from
             the queryset;
         """
-        qs = self.get_for(station, model = models) \
-                 .filter(type = Log.Type.play)
+        if include_live:
+            qs = self.get_for(station, model = models) \
+                     .filter(type__in = (Log.Type.play, Log.Type.live))
+        else:
+            qs = self.get_for(station, model = models) \
+                     .filter(type = Log.Type.play)
 
         if not archives and station.dealer:
             qs = qs.exclude(
@@ -1303,7 +1307,11 @@ class Log(Related):
         """
         Source starts to be preload related_object
         """
-        other = 0x03
+        live = 0x03
+        """
+        A diffusion occured, but in live (no sound played by Aircox)
+        """
+        other = 0x04
         """
         Other log
         """

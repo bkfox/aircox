@@ -18,6 +18,13 @@ from django.utils import timezone as tz
 from aircox.models import Station, Diffusion, Track, Sound, Log
 
 
+class Tracer:
+    """
+    Keep trace of played item and update logs in adequation to it
+    """
+    pass
+
+
 class Monitor:
     """
     Log and launch diffusions for the given station.
@@ -65,11 +72,12 @@ class Monitor:
         self.sync_playlists()
         self.handle()
 
-    def log(self, **kwargs):
+    def log(self, date = None, **kwargs):
         """
         Create a log using **kwargs, and print info
         """
-        log = Log(station = self.station, **kwargs)
+        log = Log(station = self.station, date = date or tz.now(),
+                  **kwargs)
         log.save()
         log.print()
 
@@ -147,8 +155,8 @@ class Monitor:
         for source in self.station.sources:
             if source == self.station.dealer:
                 continue
-            playlist = [ sound.path for sound in
-                            source.program.sound_set.all() ]
+            playlist = source.program.sound_set.all() \
+                             .values_list('path', flat = True)
             source.playlist = playlist
 
     def trace_canceled(self):
@@ -187,52 +195,78 @@ class Monitor:
         station = self.station
         now = tz.now()
 
-        diff_log = station.played(models = Diffusion) \
-                          .order_by('date').last()
-        if not diff_log or \
-                not diff_log.related.is_date_in_range(now):
+        log = station.played(models = Diffusion).order_by('date').last()
+        if not log or not log.related.is_date_in_range(now):
+            # not running anymore
             return None, []
 
         # sound has switched? assume it has been (forced to) stopped
         sounds = station.played(models = Sound) \
-                        .filter(date__gte = diff_log.date) \
+                        .filter(date__gte = log.date) \
                         .order_by('date')
 
-        if sounds.last() and sounds.last().source != diff_log.source:
-            return diff_log, []
+        # last sound source change: end of file reached
+        if sounds.count() and sounds.last().source != log.source:
+            # diffusion is finished: end of sound file reached
+            return None, []
 
-        # last diff is still playing: get the remaining playlist
-        sounds = sounds.filter(
-            source = diff_log.source, pk__gt = diff_log.pk
-        )
-        sounds = [
-            sound.related.path for sound in sounds
-            if sound.related.type != Sound.Type.removed
-        ]
+        # last diff is still playing: get remaining playlist
+        sounds = sounds \
+            .filter(source = log.source, pk__gt = diff_log.pk) \
+            .exclude(related__type = Sound.Type.removed)
+            .values_list('related__path', flat = True)
+        remaining = log.related.get_archives().exclude(path__in = sounds)
 
-        return (
-            diff_log.related,
-            [ path for path in diff_log.related.playlist
-                if path not in sounds ]
-        )
+        return log.related, remaining
 
     def __next_diff(self, diff):
         """
-        Return the tuple with the next diff that should be played and
-        the playlist
-
-        Note: diff is a log
+        Return the next diffusion to be played as tuple of (diff, playlist).
+        If diff is given, it is the one to be played right after it.
         """
         station = self.station
         now = tz.now()
 
-        args = {'start__gt': diff.date } if diff else {}
-        diff = Diffusion.objects.at(station, now).filter(
-            type = Diffusion.Type.normal,
-            sound__type = Sound.Type.archive,
-            **args
-        ).distinct().order_by('start').first()
-        return (diff, diff and diff.playlist or [])
+        kwargs = {'start__gte': diff.end } if diff else {}
+        diff = Diffusion.objects \
+            .at(station, now) \
+            .filter(type = Diffusion.Type.normal,
+                    sound_type = Sound.Type.archive, **kwargs) \
+            .distinct().order_by('start').first()
+        return diff
+
+    def handle_pl_sync(self, source, playlist, diff = None, date = None):
+        """
+        Update playlist of a source if required, and handle logging when
+        it is needed.
+        """
+        dealer = self.station.dealer
+        if dealer.playlist != playlist:
+            dealer.playlist = playlist
+            if diff and not diff.is_live():
+                self.log(type = Log.Type.load, source = source.id,
+                         related = diff, date = date)
+
+    def handle_diff_start(self, source, diff, date):
+        """
+        Enable dealer in order to play a given diffusion if required,
+        handle start of diffusion
+        """
+        if not diff or not diff.start <= now:
+            return
+
+        # live: just log it
+        if diff.is_live():
+            if not Log.get_for(object = diff).count():
+                self.log(type = Log.Type.live, source = source.id,
+                         related = diff, date = date)
+            return
+
+        # enable dealer
+        if not dealer.active:
+            dealer.active = True
+            self.log(type = Log.Type.play, source = source.id,
+                     related = diff, date = date)
 
     def handle(self):
         """
@@ -246,33 +280,15 @@ class Monitor:
         now = tz.now()
 
         # current and next diffs
-        diff, playlist = self.__current_diff()
-        dealer.active = bool(playlist)
+        current_diff, current_pl = self.__current_diff()
+        next_diff, next_pl = self.__next_diff(diff)
 
-        next_diff, next_playlist = self.__next_diff(diff)
-        playlist += next_playlist
+        # playlist
+        dealer.active = bool(current_pl)
+        playlist = current_pl + next_pl
 
-        # playlist update
-        if dealer.playlist != playlist:
-            dealer.playlist = playlist
-            if next_diff:
-                self.log(
-                    type = Log.Type.load,
-                    source = dealer.id,
-                    date = now,
-                    related = next_diff
-                )
-
-        # dealer.on when next_diff start <= now
-        if next_diff and not dealer.active and \
-                next_diff.start <= now:
-            dealer.active = True
-            self.log(
-                type = Log.Type.play,
-                source = dealer.id,
-                date = now,
-                related = next_diff,
-            )
+        self.handle_pl_sync(dealer, playlist, next_diff, now)
+        self.handle_diff_start(dealer, next_diff)
 
 
 class Command (BaseCommand):
