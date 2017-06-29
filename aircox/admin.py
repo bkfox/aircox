@@ -183,8 +183,8 @@ class StationAdmin(admin.ModelAdmin):
 
 @admin.register(Log)
 class LogAdmin(admin.ModelAdmin):
-    list_display = ['id', 'date', 'station', 'source', 'type', 'comment', 'related']
-    list_filter = ['date', 'source', 'related_type']
+    list_display = ['id', 'date', 'station', 'source', 'type', 'comment', 'diffusion', 'sound', 'track']
+    list_filter = ['date', 'source', 'diffusion', 'sound', 'track']
 
 admin.site.register(Port)
 

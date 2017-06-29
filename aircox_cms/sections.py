@@ -957,16 +957,16 @@ class SectionLogsList(SectionItem):
         Supports: Log/Track, Diffusion
         """
         from aircox_cms.models import DiffusionPage
-        if type(log) == aircox.models.Diffusion:
-            return DiffusionPage.as_item(log)
+        if log.diffusion:
+            return DiffusionPage.as_item(log.diffusion)
 
-        related = log.related
+        track = log.track
         return ListItem(
             title = '{artist} -- {title}'.format(
-                artist = related.artist,
-                title = related.title,
+                artist = track.artist,
+                title = track.title,
             ),
-            headline = related.info,
+            headline = track.info,
             date = log.date,
             info = '♫',
             css_class = 'track'

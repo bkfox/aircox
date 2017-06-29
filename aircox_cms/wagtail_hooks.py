@@ -327,7 +327,7 @@ class TodayMenu(GenericMenu):
         return MenuItem(label, self.page_url(item), attrs = attrs)
 
     def get_parent(self, item):
-        return item.program.page.first()
+        return item.program.page
 
 
 @hooks.register('register_admin_menu_item')
