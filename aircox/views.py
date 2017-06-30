@@ -40,12 +40,12 @@ def on_air(request):
     else:
         station = stations.stations.first()
 
-    last = station.on_air(count = 10)
-    if not last:
+    on_air = station.on_air(count = 10).select_related('track','diffusion')
+    if not on_air.count():
         return HttpResponse('')
 
-    last = last[0]
-    if type(last) == models.Log:
+    last = on_air.last()
+    if last.track:
         last = {
             'type': 'track',
             'artist': last.related.artist,
@@ -54,11 +54,12 @@ def on_air(request):
         }
     else:
         try:
+            diff = last.diffusion
             publication = None
             if cms:
                 publication = \
                     cms.DiffusionPage.objects.filter(
-                        diffusion = last.initial or last).first() or \
+                        diffusion = diff.initial or diff).first() or \
                     cms.ProgramPage.objects.filter(
                         program = last.program).first()
         except:
@@ -66,8 +67,8 @@ def on_air(request):
 
         last = {
             'type': 'diffusion',
-            'title': last.program.name,
-            'date': last.start,
+            'title': diff.program.name,
+            'date': diff.start,
             'url': publication.specific.url if publication else None,
         }
 

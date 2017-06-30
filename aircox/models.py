@@ -50,7 +50,6 @@ class RelatedManager(models.Manager):
             qs = qs.filter(related_id = object.pk)
         return qs
 
-
 class Related(models.Model):
     """
     Add a field "related" of type GenericForeignKey, plus utilities.
@@ -148,7 +147,6 @@ class Track(Related):
         verbose_name = _('Track')
         verbose_name_plural = _('Tracks')
 
-
 #
 # Station related classes
 #
@@ -180,7 +178,7 @@ class Station(Nameable):
     __dealer = None
     __streamer = None
 
-    def __prepare(self):
+    def __prepare_controls(self):
         import aircox.controllers as controllers
         if not self.__streamer:
             self.__streamer = controllers.Streamer(station = self)
@@ -215,12 +213,12 @@ class Station(Nameable):
         """
         Audio sources, dealer included
         """
-        self.__prepare()
+        self.__prepare_controls()
         return self.__sources
 
     @property
     def dealer(self):
-        self.__prepare()
+        self.__prepare_controls()
         return self.__dealer
 
     @property
@@ -228,86 +226,25 @@ class Station(Nameable):
         """
         Audio controller for the station
         """
-        self.__prepare()
+        self.__prepare_controls()
         return self.__streamer
 
-    def played(self, models, archives = True):
+    def played(self, *args, **kwargs):
         """
         Call Log.objects.played for this station
         """
-        return Log.objects.played(self, models, archives)
-
-    @staticmethod
-    def __mix_logs_and_diff(diffs, logs, count = 0):
-        """
-        Mix together logs and diffusion items of the same day,
-        ordered by their date.
-
-        Diffs and Logs are assumed to be ordered by -date, and so is
-        the resulting list
-        """
-        # we fill a list with diff and retrieve logs that happened between
-        # each to put them too there.
-        # we do the algorithm in the reverse way in order to be able to limit
-        # process calculations using count if needed.
-        diff_ = None
-        now = tz.now()
-        items = []
-
-        logs = logs.order_by('-date')
-        for diff in diffs.order_by('-start'):
-            if diff_:
-                logs_ = logs.filter(date__gt = diff.end, date__lt = diff_.start)
-            else:
-                logs_ = logs.filter(date__gt = diff.end)
-
-            if diff.end < now:
-                # a log can be started before the end of the diffusion and still
-                # is running. We can't say if it has been properly finished
-                # before the end of the diffusion, but we assume that in most
-                # cases this is true.
-                # We just check if there is some other log after this partial
-                # one.
-                partial = logs.filter(
-                    date__gt = diff.start, date__lt = diff.end
-                ).last()
-                if partial:
-                    next_log = logs.filter(pk__gt = partial.pk).first()
-                    if not next_log or next_log.date > diff.end:
-                        partial.date = diff.end
-                        logs_ = list(logs_) + [partial]
-
-            # append to list
-            diff_ = diff
-            items.extend(logs_)
-            items.append(diff)
-            if count and len(items) >= count:
-                break
-
-        if diff_:
-            if count and len(items) >= count:
-                return items[:count]
-            logs_ = logs.filter(date__lt = diff_.start)
-        else:
-            logs_ = logs.all()
-
-        items.extend(logs_)
-        return items[:count] if count else items
+        return Log.objects.played(self, *args, **kwargs)
 
     def on_air(self, date = None, count = 0):
         """
-        Return a list of what happened on air, based on logs and
-        diffusions informations. The list is sorted by -date.
+        Return a queryset of what happened on air, based on logs and
+        diffusions informations. The queryset is sorted by -date.
 
         * date: only for what happened on this date;
         * count: number of items to retrieve if not zero;
 
         If date is not specified, count MUST be set to a non-zero value.
         Be careful with what you which for: the result is a plain list.
-
-        The list contains:
-        * track logs: for the streamed programs;
-        * diffusion: for the scheduled diffusions;
         """
         # FIXME: as an iterator?
         # TODO argument to get sound instead of tracks
@@ -315,21 +252,39 @@ class Station(Nameable):
             raise ValueError('at least one argument must be set')
 
         # FIXME can be a potential source of bug
+        if date:
+            date = utils.cast_date(date, to_datetime = False)
+
         if date and date > datetime.date.today():
             return []
 
         if date:
-            logs = Log.objects.at_for(self, date, model = Track)
-            diffs = Diffusion.objects.at(self, date)
+            logs = Log.objects.at(self, date)
+            diffs = Diffusion.objects.at(self, date, type = Diffusion.Type.normal) \
+                             .order_by('-start')
         else:
-            logs = Log.objects.get_for(self, model = Track)
-            diffs = Diffusion.objects
-        logs = logs.filter(station = self)
+            logs = Log.objects
+            diffs = Diffusion.objects.filter(type = Diffusion.Type.normal,
+                                             start__lte = tz.now()) \
+                             .order_by('-start')[:count]
 
-        diffs = diffs.filter(program__station = self) \
-                     .filter(type = Diffusion.Type.normal) \
-                     .filter(start__lte = tz.now())
-        return self.__mix_logs_and_diff(diffs, logs, count)
+        q = models.Q(diffusion__isnull = False) | \
+            models.Q(track__isnull = False)
+        logs = logs.filter(q).order_by('-date')
+
+        # filter out tracks played when there was a diffusion
+        n = 0
+        q = models.Q()
+        for diff in diffs:
+            if count and n >= count:
+                break
+            q = q | models.Q(date__gte = diff.start, date__lte = diff.end)
+            n += 1
+        logs = logs.exclude(q, diffusion__isnull = True)
+
+        if count:
+            logs = logs[:count]
+        return logs
 
     def save(self, make_sources = True, *args, **kwargs):
         if not self.path:
@@ -348,9 +303,9 @@ class Station(Nameable):
 
 
 class ProgramManager(models.Manager):
-    def station(self, station, qs = None):
+    def station(self, station, qs = None, **kwargs):
         qs = self if qs is None else qs
-        return qs.filter(station = station)
+        return qs.filter(station = station, **kwargs)
 
 class Program(Nameable):
     """
@@ -730,11 +685,11 @@ class Schedule(models.Model):
 
 
 class DiffusionManager(models.Manager):
-    def station(self, station, qs = None):
+    def station(self, station, qs = None, **kwargs):
         qs = self if qs is None else qs
-        return qs.filter(program__station = station)
+        return qs.filter(program__station = station, **kwargs)
 
-    def at(self, station, date = None, next = False, qs = None):
+    def at(self, station, date = None, next = False, qs = None, **kwargs):
         """
         Return diffusions occuring at the given date, ordered by +start
 
@@ -770,7 +725,7 @@ class DiffusionManager(models.Manager):
             if next:
                 # include also diffusions of the next day
                 filters |= models.Q(start__gte = start)
-            qs = qs.filter(filters)
+            qs = qs.filter(filters, **kwargs)
         return self.station(station, qs).order_by('start').distinct()
 
     def after(self, station, date = None, qs = None):
@@ -867,7 +822,12 @@ class Diffusion(models.Model):
         """
         List of archives' path; uses get_archives
         """
-        return [ sound.path for sound in self.get_archives() ]
+        playlist = self.get_archives().values_list('path', flat = True)
+        return list(playlist)
+
+    def is_live(self):
+        return self.type == self.Type.normal and \
+                not self.get_archives().count()
 
     def get_archives(self):
         """
@@ -1229,59 +1189,51 @@ class Port (models.Model):
         )
 
 
-class LogManager(RelatedManager):
-    def station(self, station, qs = None):
+class LogManager(models.Manager):
+    def station(self, station, qs = None, **kwargs):
         qs = self if qs is None else qs
-        return qs.filter(station = station)
+        return qs.filter(station = station, **kwargs)
 
-    def get_for(self, station, *args, **kwargs):
-        qs = super().get_for(*args, **kwargs)
-        return self.station(station, qs) if station else qs
-
-    def _at(self, date = None, qs = None):
+    def _at(self, date = None, qs = None, **kwargs):
         start, end = utils.date_range(date)
         qs = self if qs is None else qs
-        return qs.filter(date__gte = start,
-                         date__lte = end)
+        return qs.filter(date__gte = start, date__lte = end, **kwargs)
 
-    def at(self, station = None, date = None, qs = None):
+    def at(self, station = None, date = None, qs = None, **kwargs):
         """
         Return a queryset of logs that have the given date
         in their range.
         """
-        qs = self._at(date, qs)
+        qs = self._at(date, qs, **kwargs)
         return self.station(station, qs) if station else qs
 
-    def at_for(self, station, date, object = None, model = None, qs = None):
-        """
-        Return a queryset of logs that occured at the given date
-        for the given model or object.
-        """
-        qs = self.get_for(station, object, model, qs)
-        return self._at(date, qs)
-
-    def played(self, station, models, archives = True):
+    def played(self, station, archives = True, include_live = True,
+                **kwargs):
         """
         Return a queryset of the played elements' log for the given
         station and model. This queryset is ordered by date ascending
 
         * station: related station
-        * models: a model or a list of models
         * archives: if false, exclude log of diffusion's archives from
             the queryset;
+        * include_live: include diffusion that have no archive
+        * kwargs: extra filter kwargs
         """
-        qs = self.get_for(station, model = models) \
-                 .filter(type = Log.Type.play)
+        if include_live:
+            qs = self.filter(type__in = (Log.Type.play, Log.Type.on_air),
+                             **kwargs)
+        else:
+            qs = self.filter(type = Log.Type.play, **kwargs)
 
         if not archives and station.dealer:
             qs = qs.exclude(
                 source = station.dealer.id,
-                related_type = ContentType.objects.get_for_model(Sound)
+                sound__isnull = False
             )
         return qs.order_by('date')
 
 
-class Log(Related):
+class Log(models.Model):
     """
     Log sounds and diffusions that are played on the station.
 
@@ -1303,14 +1255,18 @@ class Log(Related):
         """
         Source starts to be preload related_object
         """
-        other = 0x03
+        on_air = 0x03
+        """
+        A diffusion occured, but in live (no sound played by Aircox)
+        """
+        other = 0x04
         """
         Other log
         """
 
     type = models.SmallIntegerField(
         verbose_name = _('type'),
-        choices = [ (int(y), _(x)) for x,y in Type.__members__.items() ],
+        choices = [ (int(y), _(x.replace('_',' '))) for x,y in Type.__members__.items() ],
         blank = True, null = True,
     )
     station = models.ForeignKey(
@@ -1329,11 +1285,31 @@ class Log(Related):
     date = models.DateTimeField(
         _('date'),
         default=tz.now,
+        db_index = True,
     )
     comment = models.CharField(
         _('comment'),
         max_length = 512,
         blank = True, null = True,
+    )
+
+    diffusion = models.ForeignKey(
+        Diffusion,
+        verbose_name = _('Diffusion'),
+        blank = True, null = True,
+        db_index = True,
+    )
+    sound = models.ForeignKey(
+        Sound,
+        verbose_name = _('Sound'),
+        blank = True, null = True,
+        db_index = True,
+    )
+    track = models.ForeignKey(
+        Track,
+        verbose_name = _('Track'),
+        blank = True, null = True,
+        db_index = True,
     )
 
     objects = LogManager()
@@ -1343,11 +1319,15 @@ class Log(Related):
         """
         Calculated end using self.related informations
         """
-        if self.related_type == Diffusion:
-            return self.related.end
-        if self.related_type == Sound:
-            return self.date + to_timedelta(self.duration)
+        if self.diffusion:
+            return self.diffusion.end
+        if self.sound:
+            return self.date + to_timedelta(sound.duration)
         return self.date
+
+    @property
+    def related(self):
+        return self.diffusion or self.sound or self.track
 
     def is_expired(self, date = None):
         """
@@ -1359,16 +1339,23 @@ class Log(Related):
         return self.end < date
 
     def print(self):
+        r = []
+        if self.diffusion:
+            r.append('diff: ' + str(self.diffusion_id))
+        if self.sound:
+            r.append('sound: ' + str(self.sound_id))
+        if self.track:
+            r.append('track: ' + str(self.track_id))
+
+
         logger.info('log #%s: %s%s',
             str(self),
             self.comment or '',
-            ' -- {} #{}'.format(self.related_type, self.related_id)
-                if self.related else ''
+            ' (' + ', '.join(r) + ')' if r else ''
         )
 
     def __str__(self):
         return '#{} ({}, {})'.format(
                 self.pk, self.date.strftime('%Y/%m/%d %H:%M'), self.source
         )
-
 

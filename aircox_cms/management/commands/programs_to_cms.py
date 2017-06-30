@@ -64,7 +64,7 @@ class Command (BaseCommand):
                 initial__isnull = True
             ).exclude(type = Diffusion.Type.unconfirmed)
             for diffusion in qs:
-                if not diffusion.program.page.count():
+                if not diffusion.program.page:
                     if not hasattr(diffusion.program, '__logged_diff_error'):
                         logger.warning(
                             'the program {} has no page; skip the creation of '
@@ -80,7 +80,7 @@ class Command (BaseCommand):
                     page = DiffusionPage.from_diffusion(
                         diffusion, live = False
                     )
-                    diffusion.program.page.first().add_child(instance = page)
+                    diffusion.program.page.add_child(instance = page)
                 except:
                     import sys
                     e = sys.exc_info()[0]

@@ -118,7 +118,7 @@ def station_post_saved(sender, instance, created, *args, **kwargs):
 
 @receiver(post_save, sender=aircox.Program)
 def program_post_saved(sender, instance, created, *args, **kwargs):
-    if not created or instance.page.count():
+    if not created or instance.page:
         return
 
     settings = utils.get_station_settings(instance.station)
@@ -191,7 +191,7 @@ def diffusion_post_saved(sender, instance, created, *args, **kwargs):
     page = models.DiffusionPage.from_diffusion(
         instance, live = False
     )
-    instance.program.page.first().add_child(
+    instance.program.page.add_child(
         instance = page
     )
 

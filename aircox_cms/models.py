@@ -452,10 +452,8 @@ class ProgramPage(Publication):
 
     def diffs_to_page(self, diffs):
         for diff in diffs:
-            if diff.page.count():
-                diff.page_ = diff.page.first()
-            else:
-                diff.page_ = ListItem(
+            if not diff.page:
+                diff.page = ListItem(
                     title = '{}, {}'.format(
                         self.program.name, diff.date.strftime('%d %B %Y')
                     ),
@@ -464,7 +462,7 @@ class ProgramPage(Publication):
                     date = diff.start,
                 )
         return [
-            diff.page_ for diff in diffs if diff.page_.live
+            diff.page for diff in diffs if diff.page.live
         ]
 
     @property
@@ -560,8 +558,8 @@ class DiffusionPage(Publication):
             'title': '{}, {}'.format(
                 diff.program.name, tz.localtime(diff.date).strftime('%d %B %Y')
             ),
-            'cover': (diff.program.page.count() and \
-                        diff.program.page.first().cover) or None,
+            'cover': (diff.program.page and \
+                        diff.program.page.cover) or None,
             'date': diff.start,
         }
         model_kwargs.update(kwargs)
@@ -637,7 +635,7 @@ class DiffusionPage(Publication):
         if self.diffusion:
             # set publish_as
             if not self.pk:
-                self.publish_as = self.diffusion.program.page.first()
+                self.publish_as = self.diffusion.program.page
 
             # sync date
             self.date = self.diffusion.start
@@ -777,8 +775,9 @@ class LogsPage(DatedListPage):
 
         logs = []
         for date in context['nav_dates']['dates']:
-            items = [ SectionLogsList.as_item(item)
-                        for item in self.station.on_air(date = date) ]
+            items = self.station.on_air(date = date) \
+                        .select_related('track','diffusion')
+            items = [ SectionLogsList.as_item(item) for item in items ]
             logs.append(
                 (date, reversed(items) if self.reverse else items)
             )
