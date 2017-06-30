@@ -262,7 +262,7 @@ class Monitor:
             diff_ = Log.objects.station(self.station) \
                        .filter(diffusion = diff)
             if not diff_.count():
-                self.log(type = Log.Type.live, source = source.id,
+                self.log(type = Log.Type.on_air, source = source.id,
                          diffusion = diff, date = date)
             return
 

@@ -1220,7 +1220,7 @@ class LogManager(models.Manager):
         * kwargs: extra filter kwargs
         """
         if include_live:
-            qs = self.filter(type__in = (Log.Type.play, Log.Type.live),
+            qs = self.filter(type__in = (Log.Type.play, Log.Type.on_air),
                              **kwargs)
         else:
             qs = self.filter(type = Log.Type.play, **kwargs)
@@ -1255,7 +1255,7 @@ class Log(models.Model):
         """
         Source starts to be preload related_object
         """
-        live = 0x03
+        on_air = 0x03
         """
         A diffusion occured, but in live (no sound played by Aircox)
         """
@@ -1266,7 +1266,7 @@ class Log(models.Model):
 
     type = models.SmallIntegerField(
         verbose_name = _('type'),
-        choices = [ (int(y), _(x)) for x,y in Type.__members__.items() ],
+        choices = [ (int(y), _(x.replace('_',' '))) for x,y in Type.__members__.items() ],
         blank = True, null = True,
     )
     station = models.ForeignKey(

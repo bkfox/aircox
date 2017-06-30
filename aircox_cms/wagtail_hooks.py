@@ -127,8 +127,8 @@ class LogAdmin(ModelAdmin):
     menu_label = _('Logs')
     menu_icon = 'time'
     menu_order = 300
-    list_display = ['date', 'station', 'source', 'type', 'comment', 'related']
-    list_filter = ['date', 'source', 'related_type']
+    list_display = ['id', 'date', 'station', 'source', 'type', 'comment', 'diffusion', 'sound', 'track']
+    list_filter = ['date', 'source', 'diffusion', 'sound', 'track']
 
 aircox.models.Log.panels = [
     MultiFieldPanel([
@@ -139,11 +139,12 @@ aircox.models.Log.panels = [
         ]),
         FieldPanel('type'),
         FieldPanel('comment'),
-        FieldRowPanel([
-            FieldPanel('related_type'),
-            FieldPanel('related_id')
-        ]),
     ], heading = _('Log')),
+    MultiFieldPanel([
+        FieldPanel('diffusion'),
+        FieldPanel('sound'),
+        FieldPanel('track'),
+    ], heading = _('Related objects')),
 ]
 
 
