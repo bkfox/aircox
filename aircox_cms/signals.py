@@ -185,7 +185,7 @@ def diffusion_post_saved(sender, instance, created, *args, **kwargs):
             page.save()
         return
 
-    if instance.page:
+    if hasattr(instance, 'page'):
         return
 
     page = models.DiffusionPage.from_diffusion(

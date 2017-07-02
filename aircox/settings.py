@@ -6,6 +6,9 @@ from django.conf import settings
 def ensure (key, default):
     globals()[key] = getattr(settings, key, default)
 
+########################################################################
+# Global & misc
+########################################################################
 # group to assign to users at their creation, along with the permissions
 # to add to each group.
 ensure('AIRCOX_DEFAULT_USER_GROUPS', {
@@ -23,6 +26,24 @@ ensure('AIRCOX_DEFAULT_USER_GROUPS', {
 ensure('AIRCOX_PROGRAMS_DIR',
        os.path.join(settings.MEDIA_ROOT, 'programs'))
 
+# Directory for working data
+ensure('AIRCOX_DATA_DIR',
+       os.path.join(settings.PROJECT_ROOT, 'data'))
+
+########################################################################
+# Logs & Archives
+########################################################################
+# Directory where to save logs' archives
+ensure('AIRCOX_LOGS_ARCHIVES_DIR',
+       os.path.join(AIRCOX_DATA_DIR, 'archives')
+)
+# In days, minimal age of a log before it is archived
+ensure('AIRCOX_LOGS_ARCHIVES_MIN_AGE', 60)
+
+
+########################################################################
+# Sounds
+########################################################################
 # Default directory for the sounds that not linked to a program
 ensure('AIRCOX_SOUND_DEFAULT_DIR',
        os.path.join(AIRCOX_PROGRAMS_DIR, 'defaults')),
@@ -54,22 +75,26 @@ ensure(
     ('.ogg','.flac','.wav','.mp3','.opus')
 )
 
-# Stream for the scheduled diffusions
-ensure('AIRCOX_SCHEDULED_STREAM', 0)
+
+########################################################################
+# Streamer & Controllers
+########################################################################
+# Controllers working directory
+ensure('AIRCOX_CONTROLLERS_WORKING_DIR', '/tmp/aircox')
 
 
-# Import playlist: columns for CSV file
+########################################################################
+# Playlist import from CSV
+########################################################################
+# Columns for CSV file
 ensure(
     'AIRCOX_IMPORT_PLAYLIST_CSV_COLS',
     ('artist', 'title', 'minutes', 'seconds', 'tags', 'info')
 )
-# Import playlist: column delimiter of csv text files
+# Column delimiter of csv text files
 ensure('AIRCOX_IMPORT_PLAYLIST_CSV_DELIMITER', ';')
-# Import playlist: text delimiter of csv text files
+# Text delimiter of csv text files
 ensure('AIRCOX_IMPORT_PLAYLIST_CSV_TEXT_QUOTE', '"')
 
-
-# Controllers working directory
-ensure('AIRCOX_CONTROLLERS_WORKING_DIR', '/tmp/aircox')
 
 

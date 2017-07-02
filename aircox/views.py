@@ -37,14 +37,17 @@ def on_air(request):
     station = request.GET.get('station');
     if station:
         station = stations.stations.filter(name = station)
+        if not station.count():
+            return HttpResponse('')
     else:
-        station = stations.stations.first()
+        station = stations.stations
 
+    station = station.first()
     on_air = station.on_air(count = 10).select_related('track','diffusion')
     if not on_air.count():
         return HttpResponse('')
 
-    last = on_air.last()
+    last = on_air.first()
     if last.track:
         last = {
             'type': 'track',

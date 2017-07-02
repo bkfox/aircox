@@ -278,7 +278,7 @@ class Station(Nameable):
         for diff in diffs:
             if count and n >= count:
                 break
-            q = q | models.Q(date__gte = diff.start, date__lte = diff.end)
+            q = q | models.Q(date__gte = diff.start, end__lte = diff.end)
             n += 1
         logs = logs.exclude(q, diffusion__isnull = True)
 
@@ -1197,6 +1197,8 @@ class LogManager(models.Manager):
     def _at(self, date = None, qs = None, **kwargs):
         start, end = utils.date_range(date)
         qs = self if qs is None else qs
+        # return qs.filter(models.Q(end__gte = start) |
+        #                 models.Q(date__lte = end))
         return qs.filter(date__gte = start, date__lte = end, **kwargs)
 
     def at(self, station = None, date = None, qs = None, **kwargs):
@@ -1207,8 +1209,7 @@ class LogManager(models.Manager):
         qs = self._at(date, qs, **kwargs)
         return self.station(station, qs) if station else qs
 
-    def played(self, station, archives = True, include_live = True,
-                **kwargs):
+    def played(self, station, archives = True, **kwargs):
         """
         Return a queryset of the played elements' log for the given
         station and model. This queryset is ordered by date ascending
@@ -1219,11 +1220,8 @@ class LogManager(models.Manager):
         * include_live: include diffusion that have no archive
         * kwargs: extra filter kwargs
         """
-        if include_live:
-            qs = self.filter(type__in = (Log.Type.play, Log.Type.on_air),
-                             **kwargs)
-        else:
-            qs = self.filter(type = Log.Type.play, **kwargs)
+        qs = self.filter(type__in = (Log.Type.play, Log.Type.on_air),
+                         **kwargs)
 
         if not archives and station.dealer:
             qs = qs.exclude(
@@ -1247,9 +1245,8 @@ class Log(models.Model):
         """
         play = 0x01
         """
-        Source has been started/changed and is running related_object
-        If no related_object is available, comment is used to designate
-        the sound.
+        The related item has been started by the streamer or manually,
+        and occured on air.
         """
         load = 0x02
         """
@@ -1257,7 +1254,7 @@ class Log(models.Model):
         """
         on_air = 0x03
         """
-        A diffusion occured, but in live (no sound played by Aircox)
+        The related item has been detected occuring on air
         """
         other = 0x04
         """
@@ -1284,6 +1281,12 @@ class Log(models.Model):
     )
     date = models.DateTimeField(
         _('date'),
+        default=tz.now,
+        db_index = True,
+    )
+    # date of the next diffusion: used in order to ease on_air algo's
+    end = models.DateTimeField(
+        _('end'),
         default=tz.now,
         db_index = True,
     )
@@ -1314,15 +1317,14 @@ class Log(models.Model):
 
     objects = LogManager()
 
-    @property
-    def end(self):
+    def estimate_end(self):
         """
         Calculated end using self.related informations
         """
         if self.diffusion:
             return self.diffusion.end
         if self.sound:
-            return self.date + to_timedelta(sound.duration)
+            return self.date + utils.to_timedelta(self.sound.duration)
         return self.date
 
     @property
@@ -1347,7 +1349,6 @@ class Log(models.Model):
         if self.track:
             r.append('track: ' + str(self.track_id))
 
-
         logger.info('log #%s: %s%s',
             str(self),
             self.comment or '',
@@ -1358,4 +1359,9 @@ class Log(models.Model):
         return '#{} ({}, {})'.format(
                 self.pk, self.date.strftime('%Y/%m/%d %H:%M'), self.source
         )
+
+    def save(self, *args, **kwargs):
+        if not self.end:
+            self.end = self.estimate_end()
+        return super().save(*args, **kwargs)
 

@@ -54,9 +54,17 @@ class Monitor:
     Datetime of the next sync
     """
 
+    _last_log = None
+    """
+    Last emitted log
+    """
+
     def __init__(self, station, **kwargs):
         self.station = station
         self.__dict__.update(kwargs)
+
+        self._last_log = Log.objects.station(station).order_by('date') \
+                            .last()
 
     def monitor(self):
         """
@@ -80,6 +88,12 @@ class Monitor:
                   **kwargs)
         log.save()
         log.print()
+
+        # update last log
+        if log.type != Log.Type.other and \
+                self._last_log and not self._last_log.end:
+            self._last_log.end = log.date
+        self._last_log = log
 
     def trace(self):
         """
@@ -106,12 +120,12 @@ class Monitor:
                 log.sound.path == current_sound):
             return
 
-        sound = Sound.objects.filter(path = current_sound)
+        sound = Sound.objects.filter(path = current_sound).first()
         self.log(
-            type = Log.Type.play,
+            type = Log.Type.on_air,
             source = current_source.id,
             date = tz.now(),
-            sound = sound[0] if sound else None,
+            sound = sound,
             # keep sound path (if sound is removed, we keep that info)
             comment = current_sound,
         )
@@ -135,14 +149,13 @@ class Monitor:
         now = tz.now()
         for track in tracks:
             pos = log.date + tz.timedelta(seconds = track.position)
-            if pos < now:
-                self.log(
-                    type = Log.Type.play,
-                    source = log.source,
-                    date = pos,
-                    track = track,
-                    comment = track,
-                )
+            if pos > now:
+                break
+            self.log(
+                type = Log.Type.on_air, source = log.source,
+                date = pos, track = track,
+                comment = track,
+            )
 
     def sync_playlists(self):
         """
@@ -243,11 +256,16 @@ class Monitor:
         it is needed.
         """
         dealer = self.station.dealer
-        if dealer.playlist != playlist:
-            dealer.playlist = playlist
-            if diff and not diff.is_live():
-                self.log(type = Log.Type.load, source = source.id,
-                         diffusion = diff, date = date)
+        if dealer.playlist == playlist:
+            return
+
+        dealer.playlist = playlist
+        if diff and not diff.is_live():
+            self.log(type = Log.Type.load,
+                     source = source.id,
+                     diffusion = diff,
+                     date = date,
+                     comment = '\n'.join(playlist))
 
     def handle_diff_start(self, source, diff, date):
         """
@@ -257,18 +275,22 @@ class Monitor:
         if not diff or diff.start > date:
             return
 
+        # TODO: user has not yet put the diffusion sound when diff started
+        #       => live logged; what we want: if user put a sound after it
+        #       has been logged as live, load and start this sound
+
         # live: just log it
         if diff.is_live():
             diff_ = Log.objects.station(self.station) \
-                       .filter(diffusion = diff)
+                       .filter(diffusion = diff, type = Log.Type.on_air)
             if not diff_.count():
                 self.log(type = Log.Type.on_air, source = source.id,
                          diffusion = diff, date = date)
             return
 
         # enable dealer
-        if not dealer.active:
-            dealer.active = True
+        if not source.active:
+            source.active = True
             self.log(type = Log.Type.play, source = source.id,
                      diffusion = diff, date = date)
 
