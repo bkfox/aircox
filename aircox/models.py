@@ -141,7 +141,7 @@ class Track(Related):
     )
 
     def __str__(self):
-        return '{self.artist} -- {self.title}'.format(self=self)
+        return '{self.artist} -- {self.title} -- {self.position}'.format(self=self)
 
     class Meta:
         verbose_name = _('Track')
@@ -245,6 +245,10 @@ class Station(Nameable):
 
         If date is not specified, count MUST be set to a non-zero value.
         Be careful with what you which for: the result is a plain list.
+
+        It is different from Station.played method since it filters out
+        elements that should have not been on air, such as a stream that
+        has been played when there was a live diffusion.
         """
         # FIXME: as an iterator?
         # TODO argument to get sound instead of tracks
@@ -1209,7 +1213,8 @@ class LogManager(models.Manager):
         qs = self._at(date, qs, **kwargs)
         return self.station(station, qs) if station else qs
 
-    def played(self, station, archives = True, **kwargs):
+    # TODO: rename on_air + rename Station.on_air into sth like regular_on_air
+    def played(self, station, archives = True, date = None, **kwargs):
         """
         Return a queryset of the played elements' log for the given
         station and model. This queryset is ordered by date ascending
@@ -1217,11 +1222,18 @@ class LogManager(models.Manager):
         * station: related station
         * archives: if false, exclude log of diffusion's archives from
             the queryset;
+        * date: get played logs at the given date only
         * include_live: include diffusion that have no archive
         * kwargs: extra filter kwargs
         """
-        qs = self.filter(type__in = (Log.Type.play, Log.Type.on_air),
-                         **kwargs)
+        if date:
+            qs = self.at(station, date)
+        else:
+            qs = self
+
+        qs = qs.filter(
+            type__in = (Log.Type.start, Log.Type.on_air), **kwargs
+        )
 
         if not archives and station.dealer:
             qs = qs.exclude(
@@ -1229,6 +1241,73 @@ class LogManager(models.Manager):
                 sound__isnull = False
             )
         return qs.order_by('date')
+
+    @staticmethod
+    def _get_archive_path(station, date):
+        # note: station name is not included in order to avoid problems
+        #       of retrieving archive when it changes
+        return os.path.join(
+            settings.AIRCOX_LOGS_ARCHIVES_DIR,
+            # FIXME: number format
+            '{}{}{}_{}.log.gz'.format(
+                date.year, date.month, date.day, station.pk
+            )
+        )
+
+    def load_archive(self, station, date):
+        """
+        Return archived logs for a specific date as a list
+        """
+        import yaml
+        import gzip
+
+        path = self._get_archive_path(station, date)
+        if not os.path.exists(path):
+            return []
+
+        with gzip.open(path, 'rb') as archive:
+            data = archive.read()
+            logs = yaml.load(data)
+            return logs
+
+    def make_archive(self, station, date, force = False, keep = False):
+        """
+        Archive logs of the given date. If the archive exists, it does
+        not overwrite it except if "force" is given. In this case, the
+        new elements will be appended to the existing archives.
+
+        Return the number of archived logs, -1 if archive could not be
+        created.
+        """
+        import yaml
+        import gzip
+
+        os.makedirs(settings.AIRCOX_LOGS_ARCHIVES_DIR, exist_ok = True)
+        path = self._get_archive_path(station, date);
+        if os.path.exists(path) and not force:
+            return -1
+
+        qs = self.at(station, date)
+        if not qs.exists():
+            return 0
+
+        fields = Log._meta.get_fields()
+        logs = [
+            {
+                i.attname: getattr(log, i.attname)
+                for i in fields
+            }
+            for log in qs
+        ]
+
+        with gzip.open(path, 'ab') as archive:
+            data = yaml.dump(logs).encode('utf8')
+            archive.write(data)
+            # TODO: delete logs
+
+        if not keep:
+            qs.delete()
+        return len(logs)
 
 
 class Log(models.Model):
@@ -1241,20 +1320,25 @@ class Log(models.Model):
     class Type(IntEnum):
         stop = 0x00
         """
-        Source has been stopped (only when there is no more sound)
+        Source has been stopped, e.g. manually
         """
-        play = 0x01
+        start = 0x01
         """
-        The related item has been started by the streamer or manually,
-        and occured on air.
+        The diffusion or sound has been triggered by the streamer or
+        manually.
         """
         load = 0x02
         """
-        Source starts to be preload related_object
+        A playlist has updated, and loading started. A related Diffusion
+        does not means that the playlist is only for it (e.g. after a
+        crash, it can reload previous remaining sound files + thoses of
+        the next diffusion)
         """
         on_air = 0x03
         """
-        The related item has been detected occuring on air
+        The sound or diffusion has been detected occurring on air. Can
+        also designate live diffusion, although Liquidsoap did not play
+        them since they don't have an attached sound archive.
         """
         other = 0x04
         """
@@ -1336,9 +1420,15 @@ class Log(models.Model):
         Return True if the log is expired. Note that it only check
         against the date, so it is still possible that the expiration
         occured because of a Stop or other source.
+
+        For sound logs, also check against sound duration when
+        end == date (e.g after a crash)
         """
         date = utils.date_or_default(date)
-        return self.end < date
+        end = self.end
+        if end == self.date and self.sound:
+            end = self.date + to_timedelta(self.sound.duration)
+        return end < date
 
     def print(self):
         r = []
@@ -1349,15 +1439,18 @@ class Log(models.Model):
         if self.track:
             r.append('track: ' + str(self.track_id))
 
-        logger.info('log #%s: %s%s',
+        logger.info('log %s: %s%s',
             str(self),
             self.comment or '',
             ' (' + ', '.join(r) + ')' if r else ''
         )
 
     def __str__(self):
-        return '#{} ({}, {})'.format(
-                self.pk, self.date.strftime('%Y/%m/%d %H:%M'), self.source
+        return '#{} ({}, {}, {})'.format(
+                self.pk,
+                self.get_type_display(),
+                self.source,
+                self.date.strftime('%Y/%m/%d %H:%M'),
         )
 
     def save(self, *args, **kwargs):

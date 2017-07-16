@@ -14,6 +14,7 @@ from argparse import RawTextHelpFormatter
 from django.conf import settings as main_settings
 from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone as tz
+from django.utils.functional import cached_property
 
 from aircox.models import Station, Diffusion, Track, Sound, Log #, DiffusionLog, SoundLog
 
@@ -54,17 +55,41 @@ class Monitor:
     Datetime of the next sync
     """
 
-    _last_log = None
-    """
-    Last emitted log
-    """
+
+    def _last_log(self, **kwargs):
+        return Log.objects.station(self.station, **kwargs) \
+                  .select_related('diffusion', 'sound') \
+                  .order_by('date').last()
+
+    @property
+    def last_log(self):
+        """
+        Last log of monitored station
+        """
+        return self._last_log()
+
+    @property
+    def last_sound(self):
+        """
+        Last sound log of monitored station that occurred on_air
+        """
+        return self._last_log(type = Log.Type.on_air,
+                              sound__isnull = False)
+
+    @property
+    def last_diff_start(self):
+        """
+        Log of last triggered item (sound or diffusion)
+        """
+        return self._last_log(type = Log.Type.start,
+                              diffusion__isnull = False)
+
 
     def __init__(self, station, **kwargs):
         self.station = station
         self.__dict__.update(kwargs)
 
-        self._last_log = Log.objects.station(station).order_by('date') \
-                            .last()
+        now = tz.now()
 
     def monitor(self):
         """
@@ -91,9 +116,9 @@ class Monitor:
 
         # update last log
         if log.type != Log.Type.other and \
-                self._last_log and not self._last_log.end:
-            self._last_log.end = log.date
-        self._last_log = log
+                self.last_log and not self.last_log.end:
+            self.last_log.end = log.date
+        return log
 
     def trace(self):
         """
@@ -106,51 +131,59 @@ class Monitor:
         if not current_sound or not current_source:
             return
 
-        log = Log.objects.station(self.station, sound__isnull = False) \
-                         .select_related('sound') \
-                         .order_by('date').last()
+        # last log can be anything, so we need to keep track of the last
+        # sound log too
+        # sound on air can be of a diffusion or a stream.
 
-        # only streamed ns
-        if log and not log.sound.diffusion:
+        log = self.last_log
+
+        # sound on air changed
+        if log.source != current_source.id or \
+                (log.sound and log.sound.path != current_sound):
+            sound = Sound.objects.filter(path = current_sound).first()
+
+            # find diff
+            last_diff = self.last_diff_start
+            diff = None
+            if not last_diff.is_expired():
+                archives = last_diff.diffusion.get_archives()
+                if archives.filter(pk = sound.pk).exists():
+                    diff = last_diff.diffusion
+
+            # log sound on air
+            log = self.log(
+                type = Log.Type.on_air,
+                source = current_source.id,
+                date = tz.now(),
+                sound = sound,
+                diffusion = diff,
+                # keep sound path (if sound is removed, we keep that info)
+                comment = current_sound,
+            )
+
+        # tracks -- only for sound's
+        if not log.diffusion:
             self.trace_sound_tracks(log)
 
-        # TODO: expiration
-        if log and (log.source == current_source.id and \
-                log.sound and
-                log.sound.path == current_sound):
-            return
-
-        sound = Sound.objects.filter(path = current_sound).first()
-        self.log(
-            type = Log.Type.on_air,
-            source = current_source.id,
-            date = tz.now(),
-            sound = sound,
-            # keep sound path (if sound is removed, we keep that info)
-            comment = current_sound,
-        )
 
     def trace_sound_tracks(self, log):
         """
-        Log tracks for the given sound (for streamed programs); Called by
-        self.trace
+        Log tracks for the given sound log (for streamed programs).
+        Called by self.trace
         """
-        logs = Log.objects.station(self.station,
-                                   track__isnull = False,
-                                   pk__gt = log.pk) \
-                          .values_list('sound__pk', flat = True)
-
         tracks = Track.objects.get_for(object = log.sound) \
                               .filter(in_seconds = True)
-        if tracks and len(tracks) == len(logs):
+        if not tracks.exists():
             return
 
-        tracks = tracks.exclude(pk__in = logs).order_by('position')
+        tracks = tracks.exclude(log__station = self.station,
+                                log__pk__gt = log.pk)
         now = tz.now()
         for track in tracks:
             pos = log.date + tz.timedelta(seconds = track.position)
             if pos > now:
                 break
+            # log track on air
             self.log(
                 type = Log.Type.on_air, source = log.source,
                 date = pos, track = track,
@@ -195,6 +228,7 @@ class Monitor:
             if diff.start < now:
                 diff.type = Diffusion.Type.canceled
                 diff.save()
+                # log canceled diffusion
                 self.log(
                     type = Log.Type.other,
                     diffusion = diff,
@@ -254,13 +288,17 @@ class Monitor:
         """
         Update playlist of a source if required, and handle logging when
         it is needed.
+
+        - source: source on which it happens
+        - playlist: list of sounds to use to update
+        - diff: related diffusion
         """
-        dealer = self.station.dealer
-        if dealer.playlist == playlist:
+        if source.playlist == playlist:
             return
 
-        dealer.playlist = playlist
+        source.playlist = playlist
         if diff and not diff.is_live():
+            # log diffusion archive load
             self.log(type = Log.Type.load,
                      source = source.id,
                      diffusion = diff,
@@ -284,6 +322,7 @@ class Monitor:
             diff_ = Log.objects.station(self.station) \
                        .filter(diffusion = diff, type = Log.Type.on_air)
             if not diff_.count():
+                # log live diffusion
                 self.log(type = Log.Type.on_air, source = source.id,
                          diffusion = diff, date = date)
             return
@@ -291,8 +330,11 @@ class Monitor:
         # enable dealer
         if not source.active:
             source.active = True
-            self.log(type = Log.Type.play, source = source.id,
-                     diffusion = diff, date = date)
+            last_start = self.last_start
+            if last_start.diffusion_id != diff.pk:
+                # log triggered diffusion
+                self.log(type = Log.Type.start, source = source.id,
+                         diffusion = diff, date = date)
 
     def handle(self):
         """
