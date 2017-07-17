@@ -26,7 +26,6 @@
 </form>
 </header>
 
-
 {% for stats in statistics %}
 <section class="station">
     <header>
@@ -54,7 +53,7 @@
             </tr>
 
             {% for track in item.tracks %}
-            <tr class="subdata">
+            <tr class="subdata" tags="{{ track.tags.all|join:', '}}">
                 <td>{{ track.date|time:"H:i" }}</td>
                 <td>{% trans "Track" %}</td>
                 <td>{{ track.artist }} -- <emph>{{ track.title }}</emph> {{ track.version }}</td>
@@ -74,6 +73,23 @@
                 {% endblocktrans %}
                 {% endwith %}
                 {% endwith %}
+            </th>
+            <th>
+            <script>
+            var tracks = document.querySelectorAll('.subdata[tags]');
+            var tags = {}
+            for(var i = 0; i < tracks.length; i++) {
+                var tags_ = tracks[i].getAttribute('tags').split(', ');
+                for(var j = 0; j < tags_.length; j++) {
+                    var tag = tags_[j];
+                    tags[tag] = (tags[tag] || 0) + 1;
+                }
+            }
+
+            for(var tag in tags) {
+                document.write('<span>' + tag + ': <b>' + tags[tag] + '</b><br>');
+            }
+            </script>
             </th>
             <th>{% for tag, count, average in stats.tags %}
                 <span>{{ tag }}: <b>{{ average|floatformat }}%</b> ({{ count }})<br>

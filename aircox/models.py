@@ -229,11 +229,11 @@ class Station(Nameable):
         self.__prepare_controls()
         return self.__streamer
 
-    def played(self, *args, **kwargs):
+    def raw_on_air(self, *args, **kwargs):
         """
-        Call Log.objects.played for this station
+        Forward call to Log.objects.on_air for this station
         """
-        return Log.objects.played(self, *args, **kwargs)
+        return Log.objects.on_air(self, *args, **kwargs)
 
     def on_air(self, date = None, count = 0):
         """
@@ -244,11 +244,10 @@ class Station(Nameable):
         * count: number of items to retrieve if not zero;
 
         If date is not specified, count MUST be set to a non-zero value.
-        Be careful with what you which for: the result is a plain list.
 
-        It is different from Station.played method since it filters out
-        elements that should have not been on air, such as a stream that
-        has been played when there was a live diffusion.
+        It is different from Station.raw_on_air method since it filters
+        out elements that should have not been on air, such as a stream
+        that has been played when there was a live diffusion.
         """
         # FIXME: as an iterator?
         # TODO argument to get sound instead of tracks
@@ -264,7 +263,9 @@ class Station(Nameable):
 
         if date:
             logs = Log.objects.at(self, date)
-            diffs = Diffusion.objects.at(self, date, type = Diffusion.Type.normal) \
+            diffs = Diffusion.objects \
+                             .at(self, date,
+                                 type = Diffusion.Type.normal) \
                              .order_by('-start')
         else:
             logs = Log.objects
@@ -274,7 +275,7 @@ class Station(Nameable):
 
         q = models.Q(diffusion__isnull = False) | \
             models.Q(track__isnull = False)
-        logs = logs.filter(q).order_by('-date')
+        logs = logs.filter(q, type = Log.Type.on_air).order_by('-date')
 
         # filter out tracks played when there was a diffusion
         n = 0
@@ -508,6 +509,7 @@ class Schedule(models.Model):
         'self',
         verbose_name = _('initial schedule'),
         blank = True, null = True,
+        on_delete=models.SET_NULL,
         help_text = 'this schedule is a rerun of this one',
     )
 
@@ -793,12 +795,14 @@ class Diffusion(models.Model):
         'self',
         verbose_name = _('initial diffusion'),
         blank = True, null = True,
+        on_delete=models.SET_NULL,
         help_text = _('the diffusion is a rerun of this one')
     )
     # port = models.ForeignKey(
     #    'self',
     #    verbose_name = _('port'),
     #    blank = True, null = True,
+    #    on_delete=models.SET_NULL,
     #    help_text = _('use this input port'),
     # )
     conflicts = models.ManyToManyField(
@@ -934,6 +938,7 @@ class Sound(Nameable):
         'Diffusion',
         verbose_name = _('diffusion'),
         blank = True, null = True,
+        on_delete=models.SET_NULL,
         help_text = _('initial diffusion related it')
     )
     type = models.SmallIntegerField(
@@ -1214,16 +1219,13 @@ class LogManager(models.Manager):
         return self.station(station, qs) if station else qs
 
     # TODO: rename on_air + rename Station.on_air into sth like regular_on_air
-    def played(self, station, archives = True, date = None, **kwargs):
+    def on_air(self, station, date = None, **kwargs):
         """
         Return a queryset of the played elements' log for the given
         station and model. This queryset is ordered by date ascending
 
-        * station: related station
-        * archives: if false, exclude log of diffusion's archives from
-            the queryset;
-        * date: get played logs at the given date only
-        * include_live: include diffusion that have no archive
+        * station: return logs occuring on this station
+        * date: only return logs that occured at this date
         * kwargs: extra filter kwargs
         """
         if date:
@@ -1231,15 +1233,7 @@ class LogManager(models.Manager):
         else:
             qs = self
 
-        qs = qs.filter(
-            type__in = (Log.Type.start, Log.Type.on_air), **kwargs
-        )
-
-        if not archives and station.dealer:
-            qs = qs.exclude(
-                source = station.dealer.id,
-                sound__isnull = False
-            )
+        qs = qs.filter(type = Log.Type.on_air, **kwargs)
         return qs.order_by('date')
 
     @staticmethod
@@ -1300,10 +1294,11 @@ class LogManager(models.Manager):
             for log in qs
         ]
 
+        # Note: since we use Yaml, we can just append new logs when file
+        # exists yet <3
         with gzip.open(path, 'ab') as archive:
             data = yaml.dump(logs).encode('utf8')
             archive.write(data)
-            # TODO: delete logs
 
         if not keep:
             qs.delete()
@@ -1385,18 +1380,21 @@ class Log(models.Model):
         verbose_name = _('Diffusion'),
         blank = True, null = True,
         db_index = True,
+        on_delete=models.SET_NULL,
     )
     sound = models.ForeignKey(
         Sound,
         verbose_name = _('Sound'),
         blank = True, null = True,
         db_index = True,
+        on_delete=models.SET_NULL,
     )
     track = models.ForeignKey(
         Track,
         verbose_name = _('Track'),
         blank = True, null = True,
         db_index = True,
+        on_delete=models.SET_NULL,
     )
 
     objects = LogManager()

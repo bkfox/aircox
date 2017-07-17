@@ -51,13 +51,14 @@ Python modules:
 * `Pillow`: `aircox.cms` (needed by `wagtail`)
 * Django's required database modules (remember to install `mysqlclient` if you plan to use a MySql database server)
 
-External applications:
+External applications & modules:
 * `liquidsoap`: `aircox` (generation of the audio streams)
 * `sox`: `aircox` (check sounds quality and metadatas)
 * `gunicorn`: WSGI server to be used in production (installed along as dependency)
 * `supervisord`: supervisor
 * note there might be external dependencies for python's Pillow too
 * sqlite, mysql or any database library that you need to run a database, that is supported by Django (+ eventual python deps)
+* gzip: archive logs
 
 ### Setup environment
 All scripts and files assumes that:

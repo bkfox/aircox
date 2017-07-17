@@ -131,10 +131,6 @@ class Monitor:
         if not current_sound or not current_source:
             return
 
-        # last log can be anything, so we need to keep track of the last
-        # sound log too
-        # sound on air can be of a diffusion or a stream.
-
         log = self.last_log
 
         # sound on air changed
@@ -142,7 +138,7 @@ class Monitor:
                 (log.sound and log.sound.path != current_sound):
             sound = Sound.objects.filter(path = current_sound).first()
 
-            # find diff
+            # find an eventual diff
             last_diff = self.last_diff_start
             diff = None
             if not last_diff.is_expired():
@@ -157,11 +153,11 @@ class Monitor:
                 date = tz.now(),
                 sound = sound,
                 diffusion = diff,
-                # keep sound path (if sound is removed, we keep that info)
+                # if sound is removed, we keep sound path info
                 comment = current_sound,
             )
 
-        # tracks -- only for sound's
+        # tracks -- only for streams
         if not log.diffusion:
             self.trace_sound_tracks(log)
 
@@ -219,7 +215,7 @@ class Monitor:
             type = Diffusion.Type.normal,
             sound__type = Sound.Type.archive,
         )
-        logs = station.played(diffusion__isnull = False)
+        logs = station.raw_on_air(diffusion__isnull = False)
 
         date = tz.now() - datetime.timedelta(seconds = self.cancel_timeout)
         for diff in diffs:
@@ -244,7 +240,7 @@ class Monitor:
         station = self.station
         now = tz.now()
 
-        log = station.played(diffusion__isnull = False) \
+        log = station.raw_on_air(diffusion__isnull = False) \
                      .select_related('diffusion') \
                      .order_by('date').last()
         if not log or not log.diffusion.is_date_in_range(now):
@@ -252,7 +248,7 @@ class Monitor:
             return None, []
 
         # last sound source change: end of file reached or forced to stop
-        sounds = station.played(sound__isnull = False) \
+        sounds = station.raw_on_air(sound__isnull = False) \
                         .filter(date__gte = log.date) \
                         .order_by('date')
 

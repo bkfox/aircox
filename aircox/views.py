@@ -1,3 +1,4 @@
+import os
 import json
 import datetime
 
@@ -10,6 +11,7 @@ from django.utils.translation import ugettext as _, ugettext_lazy
 from django.utils import timezone as tz
 
 import aircox.models as models
+import aircox.settings as settings
 
 
 class Stations:
@@ -136,40 +138,25 @@ class Monitor(View,TemplateResponseMixin,LoginRequiredMixin):
 
 
 class StatisticsView(View,TemplateResponseMixin,LoginRequiredMixin):
+    """
+    View for statistics.
+    """
+    # we cannot manipulate queryset, since we have to be able to read from archives
     template_name = 'aircox/controllers/stats.html'
 
-    class Taggable:
-        tags = None
-
-        def add_tags(self, qs):
-            if not self.tags:
-                self.tags = {}
-
-            qs = qs.values('tags__name').annotate(count = Count('tags__name')) \
-                    .order_by('tags__name')
-            for q in qs:
-                key = q['tags__name']
-                if not key:
-                    continue
-
-                value = q['count']
-                if key not in self.tags:
-                    self.tags[key] = value
-                else:
-                    self.tags[key] += value
-
-    class Item (Taggable):
-        type = ''
+    class Item:
         date = None
+        end = None
         name = None
         related = None
         tracks = None
         tags = None
+        col = None
 
         def __init__(self, **kwargs):
             self.__dict__.update(kwargs)
 
-    class Stats (Taggable):
+    class Stats:
         station = None
         date = None
         items = None
@@ -180,10 +167,29 @@ class StatisticsView(View,TemplateResponseMixin,LoginRequiredMixin):
             - tracks_count: total count of tracks
         """
         count = 0
+        #rows = None
 
         def __init__(self, **kwargs):
             self.items = []
+        #    self.rows = []
             self.__dict__.update(kwargs)
+
+        # Note: one row contains a column for diffusions and one for streams
+        #def append(self, log):
+        #    if log.col == 0:
+        #        self.rows.append((log, []))
+        #        return
+        #
+        #    if self.rows:
+        #        row = self.rows[len(self.rows)-1]
+        #        last = row[0] or row[1][len(row[1])-1]
+        #        if last.date < log.date < last.end:
+        #            row[1].append(log)
+        #            return
+        #
+        #    # all other cases: new row
+        #    self.rows.append((None, [log]))
+
 
     def get_stats(self, station, date):
         """
@@ -192,53 +198,50 @@ class StatisticsView(View,TemplateResponseMixin,LoginRequiredMixin):
         stats = self.Stats(station = station, date = date,
                            items = [], tags = {})
 
-        last_item = None
-        for elm in reversed(station.on_air(date)):
-            qs = None
+        qs = station.raw_on_air(date = date) \
+                    .prefetch_related('diffusion', 'sound', 'track',
+                                      'track__tags')
+        sound_log = None
+        for log in qs:
+            rel = None
             item = None
-            if type(elm) == models.Diffusion:
-                qs = models.Track.objects.get_for(object = elm)
+
+            if log.diffusion:
+                rel = log.diffusion
                 item = self.Item(
+                    name = rel.program.name,
                     type = _('Diffusion'),
-                    date = elm.date,
-                    name = elm.program.name,
-                    related = elm,
-                    tracks = qs[:]
+                    col = 0,
+                    tracks = models.Track.objects.get_for(object = rel)
+                                         .prefetch_related('tags'),
                 )
-                item.add_tags(qs)
-                stats.items.append(item)
-                stats.count += len(item.tracks)
-            else:
-                # type is Track (related object of a track is a sound)
-                stream = elm.related.related
-                qs = models.Track.objects.filter(pk = elm.related.pk)
+                sound_log = None
+            elif log.sound:
+                rel = log.sound
+                item = self.Item(
+                    name = rel.program.name + ': ' + os.path.basename(rel.path),
+                    type = _('Stream'),
+                    col = 1,
+                    tracks = [],
+                )
+                sound_log = item
+            elif log.track:
+                # append to last sound log
+                if not sound_log:
+                    # TODO: create item ? should never happen
+                    continue
 
-                if last_item and last_item.related == stream:
-                    item = last_item
-                else:
-                    item = self.Item(
-                        type = _('Stream'),
-                        date = elm.date,
-                        name = stream.path,
-                        related = stream,
-                        tracks = []
-                    )
-                    stats.items.append(item)
+                sound_log.tracks.append(log.track)
+                sound_log.end = log.end
+                sound_log
+                continue
 
-                elm.related.date = elm.date
-                item.tracks.append(elm.related)
-                item.date = min(elm.date, item.date)
-                item.add_tags(qs)
-                stats.count += 1
+            item.date = log.date
+            item.end = log.end
+            item.related = rel
+            # stats.append(item)
+            stats.items.append(item)
 
-            last_item = item
-            stats.add_tags(qs)
-
-        stats.tags = [
-            (name, count, count / stats.count * 100)
-            for name, count in stats.tags.items()
-        ]
-        stats.tags.sort(key=lambda s: s[0])
         return stats
 
     def get_context_data(self, **kwargs):
