@@ -15,6 +15,7 @@ from django.conf import settings as main_settings
 from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone as tz
 from django.utils.functional import cached_property
+from django.db import models
 
 from aircox.models import Station, Diffusion, Track, Sound, Log #, DiffusionLog, SoundLog
 
@@ -56,8 +57,8 @@ class Monitor:
     """
 
 
-    def _last_log(self, **kwargs):
-        return Log.objects.station(self.station, **kwargs) \
+    def get_last_log(self, *args, **kwargs):
+        return Log.objects.station(self.station, *args, **kwargs) \
                   .select_related('diffusion', 'sound') \
                   .order_by('date').last()
 
@@ -66,23 +67,23 @@ class Monitor:
         """
         Last log of monitored station
         """
-        return self._last_log()
+        return self.get_last_log()
 
     @property
     def last_sound(self):
         """
         Last sound log of monitored station that occurred on_air
         """
-        return self._last_log(type = Log.Type.on_air,
-                              sound__isnull = False)
+        return self.get_last_log(type = Log.Type.on_air,
+                                 sound__isnull = False)
 
     @property
     def last_diff_start(self):
         """
         Log of last triggered item (sound or diffusion)
         """
-        return self._last_log(type = Log.Type.start,
-                              diffusion__isnull = False)
+        return self.get_last_log(type = Log.Type.start,
+                                 diffusion__isnull = False)
 
 
     def __init__(self, station, **kwargs):
@@ -129,9 +130,11 @@ class Monitor:
         current_sound = self.streamer.current_sound
         current_source = self.streamer.current_source
         if not current_sound or not current_source:
+            print('no source / no sound', current_sound, current_source)
             return
 
-        log = self.last_log
+        log = self.get_last_log(models.Q(diffusion__isnull = False) |
+                                models.Q(sound__isnull = False))
 
         # sound on air changed
         if log.source != current_source.id or \
@@ -167,6 +170,7 @@ class Monitor:
         Log tracks for the given sound log (for streamed programs).
         Called by self.trace
         """
+        # TODO take restart in account
         tracks = Track.objects.get_for(object = log.sound) \
                               .filter(in_seconds = True)
         if not tracks.exists():

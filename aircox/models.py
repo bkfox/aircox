@@ -235,7 +235,7 @@ class Station(Nameable):
         """
         return Log.objects.on_air(self, *args, **kwargs)
 
-    def on_air(self, date = None, count = 0):
+    def on_air(self, date = None, count = 0, no_cache = False):
         """
         Return a queryset of what happened on air, based on logs and
         diffusions informations. The queryset is sorted by -date.
@@ -261,16 +261,18 @@ class Station(Nameable):
         if date and date > datetime.date.today():
             return []
 
+        now = tz.now()
         if date:
             logs = Log.objects.at(self, date)
             diffs = Diffusion.objects \
-                             .at(self, date,
-                                 type = Diffusion.Type.normal) \
+                             .at(self, date, type = Diffusion.Type.normal) \
+                             .filter(start__lte = now) \
                              .order_by('-start')
         else:
             logs = Log.objects
-            diffs = Diffusion.objects.filter(type = Diffusion.Type.normal,
-                                             start__lte = tz.now()) \
+            diffs = Diffusion.objects \
+                             .filter(type = Diffusion.Type.normal,
+                                     start__lte = now) \
                              .order_by('-start')[:count]
 
         q = models.Q(diffusion__isnull = False) | \
@@ -1199,24 +1201,22 @@ class Port (models.Model):
 
 
 class LogManager(models.Manager):
-    def station(self, station, qs = None, **kwargs):
-        qs = self if qs is None else qs
-        return qs.filter(station = station, **kwargs)
+    def station(self, station, *args, **kwargs):
+        return self.filter(*args, station = station, **kwargs)
 
-    def _at(self, date = None, qs = None, **kwargs):
+    def _at(self, date = None, *args, **kwargs):
         start, end = utils.date_range(date)
-        qs = self if qs is None else qs
         # return qs.filter(models.Q(end__gte = start) |
         #                 models.Q(date__lte = end))
-        return qs.filter(date__gte = start, date__lte = end, **kwargs)
+        return self.filter(*args, date__gte = start, date__lte = end, **kwargs)
 
-    def at(self, station = None, date = None, qs = None, **kwargs):
+    def at(self, station = None, date = None, *args, **kwargs):
         """
         Return a queryset of logs that have the given date
         in their range.
         """
-        qs = self._at(date, qs, **kwargs)
-        return self.station(station, qs) if station else qs
+        qs = self._at(date, *args, **kwargs)
+        return qs.filter(station = station) if station else qs
 
     # TODO: rename on_air + rename Station.on_air into sth like regular_on_air
     def on_air(self, station, date = None, **kwargs):

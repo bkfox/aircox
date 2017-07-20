@@ -49,8 +49,7 @@ class TrackInline(GenericTabularInline):
     ct_fk_field = 'related_id'
     model = Track
     extra = 0
-    fields = ('artist', 'title', 'info', 'position')
-    readonly_fields = ('position',)
+    fields = ('artist', 'title', 'info', 'position', 'in_seconds', 'tags')
 
 
 @admin.register(Sound)
