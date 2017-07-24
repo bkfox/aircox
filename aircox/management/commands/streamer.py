@@ -136,9 +136,19 @@ class Monitor:
         log = self.get_last_log(models.Q(diffusion__isnull = False) |
                                 models.Q(sound__isnull = False))
 
-        # sound on air changed
-        if log.source != current_source.id or \
-                (log.sound and log.sound.path != current_sound):
+        # check if sound on air changed
+        try:
+            on_air = current_source.metadata and \
+                        current_source.metadata.get('on_air')
+            on_air = tz.datetime.strptime(on_air, "%Y/%m/%d %H:%M:%S")
+            on_air = tz.make_aware(on_air)
+
+            is_diff = log.date != on_air
+        except:
+            is_diff = log.source != current_source.id or \
+                        (log.sound and log.sound.path != current_sound)
+
+        if is_diff:
             sound = Sound.objects.filter(path = current_sound).first()
 
             # find an eventual diff
@@ -149,11 +159,12 @@ class Monitor:
                 if archives.filter(pk = sound.pk).exists():
                     diff = last_diff.diffusion
 
+
             # log sound on air
             log = self.log(
                 type = Log.Type.on_air,
                 source = current_source.id,
-                date = tz.now(),
+                date =  on_air or tz.now(),
                 sound = sound,
                 diffusion = diff,
                 # if sound is removed, we keep sound path info

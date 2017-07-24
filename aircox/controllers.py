@@ -101,6 +101,7 @@ class Streamer:
                 if source.rid == rid),
             self.current_source
         )
+        self.current_source.metadata = data
 
     def push(self, config = True):
         """
@@ -233,6 +234,11 @@ class Source:
     """
     Connector to Liquidsoap server
     """
+    metadata = None
+    """
+    Dict of file's metadata given by Liquidsoap. Set by Stream when
+    fetch()ing
+    """
 
     @property
     def id(self):
@@ -343,6 +349,8 @@ class Source:
 
         self.rid = data.get('rid')
         self.current_sound = data.get('initial_uri')
+
+        # TODO: get metadata
 
     def push(self):
         """
