@@ -11,7 +11,6 @@ class TemplateMixinMeta(models.base.ModelBase):
     one, and throw error if there is an error in the template.
     """
     def __new__(cls, name, bases, attrs):
-        from django.template.loader import get_template
         from django.template import TemplateDoesNotExist
 
         cl = super().__new__(cls, name, bases, attrs)
@@ -26,9 +25,11 @@ class TemplateMixinMeta(models.base.ModelBase):
             )
             if name != 'SectionItem':
                 try:
+                    from django.template.loader import get_template
                     get_template(cl.template)
-                except TemplateDoesNotExist:
+                except (TemplateDoesNotExist, InvalidTemplateLirary) as e:
                     cl.template = 'aircox_cms/sections/section_item.html'
+                    print('TemplateMixin error:', e)
         return cl
 
 
