@@ -201,6 +201,9 @@ class StatisticsView(View,TemplateResponseMixin,LoginRequiredMixin):
         qs = station.raw_on_air(date = date) \
                     .prefetch_related('diffusion', 'sound', 'track',
                                       'track__tags')
+        if not qs.exists():
+            qs = models.Log.objects.load_archive(station, date)
+
         sound_log = None
         for log in qs:
             rel = None

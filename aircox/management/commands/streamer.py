@@ -145,6 +145,7 @@ class Monitor:
 
             is_diff = log.date != on_air
         except:
+            on_air = None
             is_diff = log.source != current_source.id or \
                         (log.sound and log.sound.path != current_sound)
 
@@ -159,12 +160,11 @@ class Monitor:
                 if archives.filter(pk = sound.pk).exists():
                     diff = last_diff.diffusion
 
-
             # log sound on air
             log = self.log(
                 type = Log.Type.on_air,
                 source = current_source.id,
-                date =  on_air or tz.now(),
+                date = on_air or tz.now(),
                 sound = sound,
                 diffusion = diff,
                 # if sound is removed, we keep sound path info
@@ -181,7 +181,6 @@ class Monitor:
         Log tracks for the given sound log (for streamed programs).
         Called by self.trace
         """
-        # TODO take restart in account
         tracks = Track.objects.get_for(object = log.sound) \
                               .filter(in_seconds = True)
         if not tracks.exists():

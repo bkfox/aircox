@@ -225,7 +225,7 @@ class GenericMenu(Menu):
 
     @staticmethod
     def page_of(item):
-        return item.page
+        return hasattr(item, 'page') and item.page
 
     def page_url(self, item):
         page = self.page_of(item)
@@ -317,8 +317,9 @@ class TodayMenu(GenericMenu):
 
         attrs = {}
 
-        qs = PageRevision.objects.filter(page = item.page)
-        if qs.count():
+        qs = hasattr(item, 'page') and \
+                PageRevision.objects.filter(page = item.page)
+        if qs and qs.count():
             headline = qs.latest('created_at').content_json
             headline = json.loads(headline).get('headline')
             attrs['title'] = headline

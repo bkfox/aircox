@@ -1242,11 +1242,27 @@ class LogManager(models.Manager):
         #       of retrieving archive when it changes
         return os.path.join(
             settings.AIRCOX_LOGS_ARCHIVES_DIR,
-            # FIXME: number format
-            '{}{}{}_{}.log.gz'.format(
-                date.year, date.month, date.day, station.pk
-            )
+            '{}_{}.log.gz'.format(date.strftime("%Y%m%d"), station.pk)
         )
+
+    @staticmethod
+    def _get_rel_objects(logs, type, attr):
+        """
+        From a list of dict representing logs, retrieve related objects
+        of the given type.
+
+        Example: _get_rel_objects([{..},..], Diffusion, 'diffusion')
+        """
+        attr_id = attr + '_id'
+        return {
+            rel.pk: rel
+            for rel in type.objects.filter(
+                pk__in = (
+                    log[attr_id]
+                    for log in logs if attr_id in log
+                )
+            )
+        }
 
     def load_archive(self, station, date):
         """
@@ -1262,7 +1278,28 @@ class LogManager(models.Manager):
         with gzip.open(path, 'rb') as archive:
             data = archive.read()
             logs = yaml.load(data)
-            return logs
+
+            # we need to preload diffusions, sounds and tracks
+            # we get them all at once, in order to reduce db calls
+            rels = {
+                'diffusion': self._get_rel_objects(logs, Diffusion, 'diffusion'),
+                'sound': self._get_rel_objects(logs, Sound, 'sound'),
+                'track': self._get_rel_objects(logs, Track, 'track'),
+            }
+
+            def rel_obj(log, attr):
+                attr_id = attr + '_id'
+                rel_id = log.get(attr + '_id')
+                return rels[attr][rel_id] if rel_id else None
+
+            # make logs
+            return [
+                Log(diffusion = rel_obj(log, 'diffusion'),
+                    sound = rel_obj(log, 'sound'),
+                    track = rel_obj(log, 'track'),
+                    **log)
+                for log in logs
+            ]
 
     def make_archive(self, station, date, force = False, keep = False):
         """
