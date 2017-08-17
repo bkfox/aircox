@@ -660,7 +660,7 @@ class Section(ClusterableModel):
 
 
 @register_snippet
-class SectionItem(models.Model,TemplateMixin):
+class SectionItem(TemplateMixin):
     """
     Base class for a section item.
     """

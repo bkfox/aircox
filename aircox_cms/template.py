@@ -3,39 +3,33 @@ from django.template.loader import render_to_string
 from wagtail.wagtailcore.utils import camelcase_to_underscore
 
 
-class TemplateMixinMeta(models.base.ModelBase):
-    """
-    Metaclass for SectionItem, assigning needed values such as `template`.
-
-    It needs to load the item's template if the section uses the default
-    one, and throw error if there is an error in the template.
-    """
-    def __new__(cls, name, bases, attrs):
-        from django.template import TemplateDoesNotExist
-
-        cl = super().__new__(cls, name, bases, attrs)
-        if not hasattr(cl, '_meta'):
-            return cl
-
-        if not 'template' in attrs:
-            cl.snake_name = camelcase_to_underscore(name)
-            cl.template = '{}/sections/{}.html'.format(
-                cl._meta.app_label,
-                cl.snake_name,
-            )
-            if name != 'SectionItem':
-                try:
-                    from django.template.loader import get_template
-                    get_template(cl.template)
-                except (TemplateDoesNotExist, InvalidTemplateLirary) as e:
-                    cl.template = 'aircox_cms/sections/section_item.html'
-                    print('TemplateMixin error:', e)
-        return cl
-
-
-class TemplateMixin(models.Model,metaclass=TemplateMixinMeta):
+class TemplateMixin(models.Model):
     class Meta:
         abstract = True
+
+    template_name = None
+    """
+    Template to use for the mixin. If not given, use
+    "app_label/sections/section_class.html"
+    """
+
+    @classmethod
+    def get_template_name(cl):
+        if not self.template_name:
+            snake_name = camelcase_to_underscore(cl.__name__)
+            cl.template_name = '{}/sections/{}.html'.format(
+                cl._meta.app_label, snake_name
+            )
+
+            if snake_name != 'section_item':
+                from django.template import TemplateDoesNotExist
+                try:
+                    from django.template.loader import get_template
+                    get_template(cl.template_name)
+                except TemplateDoesNotExist:
+                    cl.template = 'aircox_cms/sections/section_item.html'
+
+        return self.template_name
 
     def get_context(self, request, page):
         """
@@ -71,6 +65,6 @@ class TemplateMixin(models.Model,metaclass=TemplateMixinMeta):
 
         if context_.get('hide'):
             return ''
-        return render_to_string(self.template, context_)
+        return render_to_string(self.get_template_name(), context_)
 
 
