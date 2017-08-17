@@ -32,7 +32,10 @@ class TemplateMixinMeta(models.base.ModelBase):
         return cl
 
 
-class TemplateMixin(metaclass=TemplateMixinMeta):
+class TemplateMixin(models.Model,metaclass=TemplateMixinMeta):
+    class Meta:
+        abstract = True
+
     def get_context(self, request, page):
         """
         Default context attributes:
