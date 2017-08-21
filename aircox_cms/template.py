@@ -15,7 +15,7 @@ class TemplateMixin(models.Model):
 
     @classmethod
     def get_template_name(cl):
-        if not self.template_name:
+        if not cl.template_name:
             snake_name = camelcase_to_underscore(cl.__name__)
             cl.template_name = '{}/sections/{}.html'.format(
                 cl._meta.app_label, snake_name
