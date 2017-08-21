@@ -32,6 +32,7 @@
 
         <title>{{ page.title }}</title>
     </head>
+    {% spaceless %}
     <body>
         <div class="menu top">
             {% render_sections position="top" %}
@@ -120,4 +121,5 @@
         </footer>
         {% endblock %}
     </body>
+    {% endspaceless %}
 </html>
