@@ -25,7 +25,7 @@ class TemplateMixin(models.Model):
                 cl._meta.app_label, cl.snake_name
             )
 
-            if snake_name != 'section_item':
+            if cl.snake_name != 'section_item':
                 from django.template import TemplateDoesNotExist
                 try:
                     from django.template.loader import get_template
