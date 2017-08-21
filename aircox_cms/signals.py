@@ -118,7 +118,7 @@ def station_post_saved(sender, instance, created, *args, **kwargs):
 
 @receiver(post_save, sender=aircox.Program)
 def program_post_saved(sender, instance, created, *args, **kwargs):
-    if not created or not hasattr(instance, 'page'):
+    if not created or hasattr(instance, 'page'):
         return
 
     settings = utils.get_station_settings(instance.station)
