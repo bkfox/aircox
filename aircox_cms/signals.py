@@ -165,7 +165,7 @@ def clean_page_of(instance):
 
 @receiver(pre_delete, sender=aircox.Program)
 def program_post_deleted(sender, instance, *args, **kwargs):
-    clean_page_of(instance.page)
+    clean_page_of(instance)
 
 
 @receiver(post_save, sender=aircox.Diffusion)
@@ -191,5 +191,5 @@ def diffusion_post_saved(sender, instance, created, *args, **kwargs):
 
 @receiver(pre_delete, sender=aircox.Diffusion)
 def diffusion_pre_deleted(sender, instance, *args, **kwargs):
-    clean_page_of(instance.page)
+    clean_page_of(instance)
 
