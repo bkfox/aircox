@@ -1008,8 +1008,9 @@ class SectionTimetable(SectionItem,DatedBaseList):
     panels = SectionItem.panels + DatedBaseList.panels + [
         MultiFieldPanel([
             FieldPanel('nav_visible'),
+            FieldPanel('station'),
             FieldPanel('target'),
-        ], heading=_('Navigation')),
+        ], heading=_('Timetable')),
     ]
 
     def get_queryset(self, context):
