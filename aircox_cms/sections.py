@@ -870,7 +870,7 @@ class SectionLink(RelatedLinkBase,TemplateMixin):
     Render a link to a page or a given url.
     Can either be used standalone or in a SectionLinkList
     """
-    template = 'aircox_cms/snippets/link.html'
+    template_name = 'aircox_cms/snippets/link.html'
     parent = ParentalKey(
         'SectionLinkList', related_name = 'links',
         null = True
