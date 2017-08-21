@@ -128,7 +128,7 @@ body > .header {
 
 
 .page_left { margin-right: 2em; }
-.page_right { margin-right: 2em; }
+.page_right { margin-left: 2em; }
 
 .page_left, .page_right {
     max-width: 16em;

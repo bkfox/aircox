@@ -229,7 +229,7 @@ class BaseList(models.Model):
         ),
         related_name = '+'
     )
-    relation = models.BooleanField(
+    relation = models.SmallIntegerField(
         verbose_name = _('relation'),
         choices = [ (int(y), _(x.replace('_', ' ')))
                         for x,y in RelationFilter.__members__.items() ],
