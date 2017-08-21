@@ -28,8 +28,7 @@ class TemplateMixin(models.Model):
                     get_template(cl.template_name)
                 except TemplateDoesNotExist:
                     cl.template = 'aircox_cms/sections/section_item.html'
-
-        return self.template_name
+        return cl.template_name
 
     def get_context(self, request, page):
         """
