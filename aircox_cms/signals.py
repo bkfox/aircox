@@ -118,7 +118,7 @@ def station_post_saved(sender, instance, created, *args, **kwargs):
 
 @receiver(post_save, sender=aircox.Program)
 def program_post_saved(sender, instance, created, *args, **kwargs):
-    if not created or instance.page:
+    if not created or not hasattr(instance 'page'):
         return
 
     settings = utils.get_station_settings(instance.station)
@@ -143,35 +143,29 @@ def program_post_saved(sender, instance, created, *args, **kwargs):
     parent.add_child(instance = page)
 
 
-def void_pages_of(page_set):
+def clean_page_of(instance):
     """
-    Return a queryset from page_set that select only empty pages. If
-    `inverse` is True, select only pages that are not empty.
+    Delete empty pages for the given instance object; we assume instance
+    has a One-To-One relationship with a page.
 
     Empty is defined on theses parameters:
         - `numchild = 0` => no children
         - no headline
         - no body
     """
-    if not page_set.count():
+    if not hasattr(instance, 'page'):
         return
 
-    page_set = page_set.filter(numchild = 0)
+    page = instance.page
+    if page.numchild > 0 or page.headline or page.body:
+        return
 
-    # as publications
-    page_set = models.Publication.objects.filter(
-        page_ptr_id__in = page_set.values('pk')
-    )
-
-    # only empty
-    q = (Q(headline__isnull = True) | Q(headline = '')) & \
-        (Q(body__isnull = True) | Q(body = ''))
-    return page_set.filter(q)
+    page.delete()
 
 
 @receiver(pre_delete, sender=aircox.Program)
 def program_post_deleted(sender, instance, *args, **kwargs):
-    void_pages_of(instance.page).delete()
+    clean_page_of(instance.page)
 
 
 @receiver(post_save, sender=aircox.Diffusion)
@@ -197,5 +191,5 @@ def diffusion_post_saved(sender, instance, created, *args, **kwargs):
 
 @receiver(pre_delete, sender=aircox.Diffusion)
 def diffusion_pre_deleted(sender, instance, *args, **kwargs):
-    void_pages_of(instance.page).delete()
+    clean_page_of(instance.page)
 
