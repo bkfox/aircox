@@ -484,6 +484,7 @@ class ProgramPage(Publication):
     def save(self, *args, **kwargs):
         # set publish_as
         if self.program and not self.pk:
+            super().save()
             self.publish_as = self
         super().save(*args, **kwargs)
 

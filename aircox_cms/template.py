@@ -12,13 +12,17 @@ class TemplateMixin(models.Model):
     Template to use for the mixin. If not given, use
     "app_label/sections/section_class.html"
     """
+    snake_name = None
+    """
+    Used in template as class
+    """
 
     @classmethod
     def get_template_name(cl):
         if not cl.template_name:
-            snake_name = camelcase_to_underscore(cl.__name__)
+            cl.snake_name = camelcase_to_underscore(cl.__name__)
             cl.template_name = '{}/sections/{}.html'.format(
-                cl._meta.app_label, snake_name
+                cl._meta.app_label, cl.snake_name
             )
 
             if snake_name != 'section_item':

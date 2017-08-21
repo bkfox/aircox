@@ -67,6 +67,10 @@ ul {
     padding: 0.4em;
 }
 
+.menu:empty {
+    display: none;
+}
+
     body > .top *,
     body > .header * {
         vertical-align: middle;
@@ -122,6 +126,9 @@ body > .header {
         margin-right: -0.4em;
     }
 
+
+.page_left { margin-right: 2em; }
+.page_right { margin-right: 2em; }
 
 .page_left, .page_right {
     max-width: 16em;
