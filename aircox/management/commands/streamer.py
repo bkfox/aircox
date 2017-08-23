@@ -19,6 +19,10 @@ from django.db import models
 
 from aircox.models import Station, Diffusion, Track, Sound, Log #, DiffusionLog, SoundLog
 
+# force using UTC
+import pytz
+timezone.activate(pytz.UTC)
+
 
 class Tracer:
     """

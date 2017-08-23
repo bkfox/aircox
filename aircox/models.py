@@ -486,6 +486,11 @@ class Schedule(models.Model):
         _('date'),
         help_text = _('date of the first diffusion')
     )
+    timezone = models.CharField(
+        _('timezone'),
+        max_length = 100, blank=True,
+        help_text = _('timezone used for the date')
+    )
     duration = models.TimeField(
         _('duration'),
         help_text = _('regular duration'),
@@ -573,6 +578,16 @@ class Schedule(models.Model):
             return self.frequency == 0b1111
         return (self.frequency & (0b0001 << week) > 0)
 
+    @property
+    def tz(self):
+        """
+        Return pytz timezone for this schedule.
+        """
+        if not hasattr(self, '_tz') or self._tz.zone != self.timezone:
+            import pytz
+            self._tz = pytz.timezone('Europe/Brussels')
+        return self._tz
+
     def normalize(self, date):
         """
         Set the time of a datetime to the schedule's one
@@ -580,7 +595,9 @@ class Schedule(models.Model):
         """
         date = tz.datetime(date.year, date.month, date.day,
                            self.date.hour, self.date.minute, 0, 0)
-        return date if tz.is_aware(date) else tz.make_aware(date)
+        date = self.tz.localize(date)
+        date = self.tz.normalize(date)
+        return date
 
     def dates_of_month(self, date = None):
         """
@@ -685,6 +702,8 @@ class Schedule(models.Model):
             self.duration = self.initial.duration
             if not self.frequency:
                 self.frequency = self.initial.frequency
+
+        self.timezone = self.date.tzinfo.zone
         super().save(*args, **kwargs)
 
     class Meta:
