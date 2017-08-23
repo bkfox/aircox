@@ -521,6 +521,17 @@ class Schedule(models.Model):
     )
 
     @property
+    def local_date(self):
+        """
+        Return a version of self.date that is localized to self.timezone;
+        This is needed since datetime are stored as UTC date and we want
+        to get it as local time.
+        """
+        if not hasattr(self, '_local_date') or self._tz.zone != self.timezone:
+            self._local_date = tz.localtime(self.date, self.tz)
+        return self._local_date
+
+    @property
     def tz(self):
         """
         Pytz timezone of the schedule.
@@ -598,8 +609,9 @@ class Schedule(models.Model):
         Set the time of a datetime to the schedule's one
         Ensure timezone awareness.
         """
+        local_date = self.local_date
         date = tz.datetime(date.year, date.month, date.day,
-                           self.date.hour, self.date.minute, 0, 0)
+                           local_date.hour, local_date.minute, 0, 0)
         date = self.tz.localize(date)
         date = self.tz.normalize(date)
         return date
