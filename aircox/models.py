@@ -520,6 +520,21 @@ class Schedule(models.Model):
         help_text = 'this schedule is a rerun of this one',
     )
 
+    @property
+    def tz(self):
+        """
+        Pytz timezone of the schedule.
+        """
+        if not hasattr(self, '_tz') or self._tz.zone != self.timezone:
+            import pytz
+            if not self.timezone:
+                self.timezone = \
+                    self.date.tzinfo.zone \
+                        if self.date and hasattr(self.date, 'tzinfo') else \
+                    tz.get_current_timezone_name()
+            self._tz = pytz.timezone(self.timezone or self.date.tzinfo.zone)
+        return self._tz
+
     # initial cached data
     __initial = None
 
@@ -577,16 +592,6 @@ class Schedule(models.Model):
             # fifth week: return if for every week
             return self.frequency == 0b1111
         return (self.frequency & (0b0001 << week) > 0)
-
-    @property
-    def tz(self):
-        """
-        Return pytz timezone for this schedule.
-        """
-        if not hasattr(self, '_tz') or self._tz.zone != self.timezone:
-            import pytz
-            self._tz = pytz.timezone('Europe/Brussels')
-        return self._tz
 
     def normalize(self, date):
         """
