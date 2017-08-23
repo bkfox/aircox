@@ -1,24 +1,22 @@
-/*
-input, textarea, select, .richtext, .tagit {
-    padding: 0.4em;
-    font-size: 1em;
+.nav-submenu h2 {
+  display: none;
 }
 
-label {
-    padding-top: 0em;
+.nav-submenu .menu-item .info {
+  margin-right: 1em;
 }
 
-.fields > li, .field-col {
-    padding-top: 0.2em;
-    padding-bottom: 0.2em;
+.nav-submenu .menu-item a {
+  white-space: normal;
+  padding: 0.9em 1em 0.9em 1em;
 }
 
-.full input, .full textarea, .full .richtext {
-    padding-top: 0.4em;
-    padding-bottom: 0.4em;
+.nav-submenu .menu-item a:hover {
+  background-color: rgba(100, 100, 100, 0.2);
 }
 
-.title input, .title textarea, .title .richtext {
-    font-size: 1.2em;
+.nav-submenu li {
+  border: 0;
 }
-*/
+
+
