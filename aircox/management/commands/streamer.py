@@ -21,7 +21,7 @@ from aircox.models import Station, Diffusion, Track, Sound, Log #, DiffusionLog,
 
 # force using UTC
 import pytz
-timezone.activate(pytz.UTC)
+tz.activate(pytz.UTC)
 
 
 class Tracer:
@@ -140,26 +140,32 @@ class Monitor:
         log = self.get_last_log(models.Q(diffusion__isnull = False) |
                                 models.Q(sound__isnull = False))
 
-        # check if sound on air changed
-        try:
-            on_air = current_source.metadata and \
-                        current_source.metadata.get('on_air')
-            on_air = tz.datetime.strptime(on_air, "%Y/%m/%d %H:%M:%S")
-            on_air = tz.make_aware(on_air)
+        if log:
+            # check if sound on air changed compared to logged one
+            try:
+                # FIXME: TO-check liquidsoap ensure we have utc time
+                on_air = current_source.metadata and \
+                            current_source.metadata.get('on_air')
+                on_air = tz.datetime.strptime(on_air, "%Y/%m/%d %H:%M:%S")
+                on_air = tz.make_aware(on_air)
 
-            is_diff = log.date != on_air
-        except:
-            on_air = None
-            is_diff = log.source != current_source.id or \
-                        (log.sound and log.sound.path != current_sound)
+                is_diff = log.date != on_air
+            except:
+                on_air = None
+                is_diff = log.source != current_source.id or \
+                            (log.sound and log.sound.path != current_sound)
+        else:
+            # no log: sound is different
+            is_diff = True
 
         if is_diff:
             sound = Sound.objects.filter(path = current_sound).first()
 
-            # find an eventual diff
+            # find an eventual diffusion associated to current sound
+            # => check using last (started) diffusion's archives
             last_diff = self.last_diff_start
             diff = None
-            if not last_diff.is_expired():
+            if last_diff and not last_diff.is_expired():
                 archives = last_diff.diffusion.get_archives()
                 if archives.filter(pk = sound.pk).exists():
                     diff = last_diff.diffusion
@@ -344,8 +350,8 @@ class Monitor:
         # enable dealer
         if not source.active:
             source.active = True
-            last_start = self.last_start
-            if last_start.diffusion_id != diff.pk:
+            last_start = self.last_diff_start
+            if not last_start or last_start.diffusion_id != diff.pk:
                 # log triggered diffusion
                 self.log(type = Log.Type.start, source = source.id,
                          diffusion = diff, date = date)

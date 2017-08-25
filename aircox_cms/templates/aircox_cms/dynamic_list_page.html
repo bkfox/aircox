@@ -14,9 +14,9 @@
     {% blocktrans with terms=list_selector.terms trimmed %}
     Search in publications for <i>{{ terms }}</i>
     {% endblocktrans %}
-{% elif list_selector.filter_related %}
+{% elif list_selector.related %}
 {# should never happen #}
-    {% blocktrans with title=list_selector.filter_related.title url=list_selector.filter_related.url trimmed %}
+    {% blocktrans with title=list_selector.related.title url=list_selector.related.url trimmed %}
     Related to <a href="{{ url }}">{{ title }}</a>
     {% endblocktrans %}
 {% else %}
@@ -27,7 +27,8 @@
 
 
 {% block content %}
-{% with related=list_selector.filter_related %}
+{# if there is a related, print related content, otherwise use dynpage #}
+{% with related=list_selector.related %}
     {% if related %}
         <div class="body headline">
             {% image related.cover fill-128x128 class="cover item_cover" %}
@@ -36,6 +37,7 @@
         </div>
     {% elif page.body %}
         <div class="body">
+        {% image page.cover fill-128x128 class="cover item_cover" %}
         {{ page.body|richtext }}
         </div>
     {% endif %}

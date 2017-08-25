@@ -31,7 +31,7 @@ class TemplateMixin(models.Model):
                     from django.template.loader import get_template
                     get_template(cl.template_name)
                 except TemplateDoesNotExist:
-                    cl.template = 'aircox_cms/sections/section_item.html'
+                    cl.template_name = 'aircox_cms/sections/section_item.html'
         return cl.template_name
 
     def get_context(self, request, page):

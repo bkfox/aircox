@@ -300,6 +300,8 @@ class BaseList(models.Model):
         Get queryset based on the arguments. This class is intended to be
         reusable by other classes if needed.
         """
+        # FIXME: check if related is published
+
         from aircox_cms.models import Publication
         # model
         if self.model:
@@ -359,12 +361,7 @@ class BaseList(models.Model):
             # keep empty queryset
             context['object_list'] = qs
         context['list_url_args'] = self.to_url(full_url = False)
-        #context['list_selector'] = {
-        #    attr: getattr(self, attr) for attr in (
-        #        'asc', 'date_filter', 'model', 'related', 'relation',
-        #        'tags', 'search',
-        #    )
-        #}
+        context['list_selector'] = self
         return context
 
     def paginate(self, request, qs):
@@ -381,12 +378,12 @@ class BaseList(models.Model):
             'object_list': qs
         }
 
-    def to_url(self, page = None, full_url = True, **kwargs):
+    def to_url(self, page = None, **kwargs):
         """
         Return a url to a given page with GET corresponding to this
         list's parameters.
         @param page: if given use it to prepend url with page's url instead of giving only
-                        GET parameters
+                     GET parameters
         @param **kwargs: override list parameters
 
         If there is related field use it to get the page, otherwise use
@@ -403,21 +400,14 @@ class BaseList(models.Model):
         params.update(kwargs)
 
         if self.related:
-            params['related'] = True
+            params['related'] = self.related.pk
 
         params = '&'.join([
             key if value == True else '{}={}'.format(key, value)
             for key, value in params.items() if value
         ])
-        if not full_url:
-            return params
-
-        page = page or self.page
         if not page:
-            raise ValueError(
-                "full_url = True requires either list.related or "
-                "method's argument `page` to be given"
-            )
+            return params
         return page.url + '?' + params
 
     @classmethod
@@ -438,17 +428,25 @@ class BaseList(models.Model):
         * date_filter: one of DateFilter attribute's key.
         * model:    ['program','diffusion','event'] type of the publication
         * relation: one of RelationFilter attribute's key
-        * related:  list is related to the method's argument `related`
+        * related:  list is related to the method's argument `related`.
+                    It can be a page id.
 
         * tag:      tag to search for
         * search:   query to search in the publications
         * page:     page number
         """
-        # FIXME: page argument to select a page
-        # FIXME: related
         date_filter = request.GET.get('date_filter')
         model = request.GET.get('model')
         relation = request.GET.get('relation')
+
+        related_= request.GET.get('related')
+        if related_:
+            try:
+                related_ = int(related_)
+                related_ = Page.objects.filter(pk = related_).first()
+                related_ = related_ and related_.specific
+            except:
+                related_ = None
 
         kwargs = {
             'asc': 'asc' in request.GET,
@@ -460,7 +458,7 @@ class BaseList(models.Model):
                 ProgramPage if model == 'program' else
                 DiffusionPage if model == 'diffusion' else
                 EventPage if model == 'event' else None,
-            'related': 'related' in request.GET and related,
+            'related': related_,
             'relation':
                 int(getattr(cl.RelationFilter, relation))
                 if relation and hasattr(cl.RelationFilter, relation)
@@ -908,7 +906,8 @@ class SectionList(BaseList, SectionRelativeItem):
 
     def get_context(self, request, page):
         import aircox_cms.models as cms
-        if self.is_related:
+        if self.is_related and not self.related:
+            # set current page if there is not yet a related page only
             self.related = page
 
         context = BaseList.get_context(self, request, paginate = False)
@@ -917,10 +916,15 @@ class SectionList(BaseList, SectionRelativeItem):
 
         context.update(SectionRelativeItem.get_context(self, request, page))
         if self.url_text:
-            if not self.is_related or not page:
+            self.related = self.related.specific
+            target = None
+            if self.related and hasattr(self.related, 'get_list_page'):
+                target = self.related.get_list_page()
+
+            if not target:
                 settings = cms.WebsiteSettings.for_site(request.site)
-                page = settings.list_page
-            context['url'] = self.to_url(page = page) + '&view=list'
+                target = settings.list_page
+            context['url'] = self.to_url(page = target) + '&view=list'
         return context
 
 SectionList._meta.get_field('count').default = 5

@@ -991,6 +991,7 @@ class Sound(Nameable):
                                     .replace('.', r'\.') + ')$',
         recursive = True,
         blank = True, null = True,
+        unique = True,
         max_length = 256
     )
     embed = models.TextField(

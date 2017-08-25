@@ -286,6 +286,13 @@ class BasePage(Page):
         ).order_by('-date')
 
     # methods
+    def get_list_page(self):
+        """
+        Return the page that should be used for lists related to this
+        page. If None is returned, use a default one.
+        """
+        return None
+
     def get_context(self, request, *args, **kwargs):
         from aircox_cms.forms import CommentForm
 
@@ -659,13 +666,23 @@ class DiffusionPage(Publication):
 #
 
 class CategoryPage(BasePage, BaseList):
+    # TODO: hide related in panels?
     content_panels = BasePage.content_panels + BaseList.panels
+
+    def get_list_page(self):
+        return self
 
     def get_context(self, request, *args, **kwargs):
         context = super().get_context(request, *args, **kwargs)
         context.update(BaseList.get_context(self, request, paginate = True))
         context['view'] = 'list'
         return context
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # we force related attribute
+        if not self.related:
+            self.related = self
 
 
 class DynamicListPage(BasePage):
