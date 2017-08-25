@@ -9,11 +9,13 @@ from django.http import HttpResponse, Http404
 from django.shortcuts import render
 from django.utils.translation import ugettext as _, ugettext_lazy
 from django.utils import timezone as tz
+from django.views.decorators.cache import never_cache, cache_page
 
 import aircox.models as models
 import aircox.settings as settings
 
 
+# FIXME usefull?
 class Stations:
     stations = models.Station.objects.all()
     update_timeout = None
@@ -30,6 +32,7 @@ class Stations:
 stations = Stations()
 
 
+@cache_page(10)
 def on_air(request):
     try:
         import aircox_cms.models as cms
@@ -38,6 +41,7 @@ def on_air(request):
 
     station = request.GET.get('station');
     if station:
+        # FIXME: by name???
         station = stations.stations.filter(name = station)
         if not station.count():
             return HttpResponse('')
