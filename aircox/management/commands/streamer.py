@@ -24,11 +24,11 @@ import pytz
 tz.activate(pytz.UTC)
 
 
-class Tracer:
-    """
-    Keep trace of played item and update logs in adequation to it
-    """
-    pass
+# FIXME liquidsoap does not manage timezones -- we have to convert
+#       'on_air' metadata we get from it into utc one in order to work
+#       correctly.
+import tzlocal
+local_tz = tzlocal.get_localzone()
 
 
 class Monitor:
@@ -143,11 +143,11 @@ class Monitor:
         if log:
             # check if sound on air changed compared to logged one
             try:
-                # FIXME: TO-check liquidsoap ensure we have utc time
+                # FIXME: liquidsoap does not have timezone
                 on_air = current_source.metadata and \
                             current_source.metadata.get('on_air')
                 on_air = tz.datetime.strptime(on_air, "%Y/%m/%d %H:%M:%S")
-                on_air = tz.make_aware(on_air)
+                on_air = local_tz.localize(on_air)
 
                 is_diff = log.date != on_air
             except:
