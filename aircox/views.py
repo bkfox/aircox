@@ -44,7 +44,7 @@ def on_air(request):
         # FIXME: by name???
         station = stations.stations.filter(name = station)
         if not station.count():
-            return HttpResponse('')
+            return HttpResponse('{}')
     else:
         station = stations.stations
 

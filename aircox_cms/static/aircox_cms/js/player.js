@@ -348,7 +348,7 @@ Player.prototype = {
         var self = this;
         window.setTimeout(function() {
             self.update_on_air();
-        }, 60*2000);
+        }, 60*5000);
 
         if(!this.playlist.on_air)
             return;
@@ -358,6 +358,9 @@ Player.prototype = {
         req.onreadystatechange = function() {
             if(req.readyState != 4 || (req.status != 200 &&
                     req.status != 0))
+                return;
+
+            if(!req.responseText.length)
                 return;
 
             var data = JSON.parse(req.responseText)

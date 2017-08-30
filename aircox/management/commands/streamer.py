@@ -137,11 +137,15 @@ class Monitor:
             print('no source / no sound', current_sound, current_source)
             return
 
-        log = self.get_last_log(sound__isnull = False)
+        log = self.get_last_log(
+            models.Q(sound__isnull = False) |
+            models.Q(diffusion__isnull = False),
+            type = Log.Type.on_air
+        )
 
         on_air = None
         if log:
-            # we always check difference in sound
+            # we always check difference in sound info
             is_diff = log.source != current_source.id or \
                         (log.sound and log.sound.path != current_sound)
 

@@ -47,6 +47,8 @@ class SoundInfo:
     year = None
     month = None
     day = None
+    hour = None
+    minute = None
     n = None
     duration = None
 
@@ -65,6 +67,7 @@ class SoundInfo:
         r = re.search('^(?P<year>[0-9]{4})'
                       '(?P<month>[0-9]{2})'
                       '(?P<day>[0-9]{2})'
+                      '(_(?P<hour>[0-9]{2})h(?P<minute>[0-9]{2}))?'
                       '(_(?P<n>[0-9]+))?'
                       '_?(?P<name>.*)$',
                       file_name)
@@ -80,11 +83,14 @@ class SoundInfo:
         self.year = int(r.get('year')) if 'year' in r else None
         self.month = int(r.get('month')) if 'month' in r else None
         self.day = int(r.get('day')) if 'day' in r else None
+        self.hour = int(r.get('hour')) if 'hour' in r else None
+        self.minute = int(r.get('minute')) if 'minute' in r else None
         self.n = r.get('n')
         return r
 
-    def __init__(self, path = ''):
+    def __init__(self, path = '', sound = None):
         self.path = path
+        self.sound = sound
 
     def get_duration(self):
         p = subprocess.Popen(['soxi', '-D', self.path],
@@ -161,9 +167,16 @@ class SoundInfo:
             start__month = self.month,
             start__day = self.day,
         )
+
+        if self.hour is not None:
+            diffusion = diffusion.filter(
+                hour = self.hour,
+                minute = self.minute
+            )
+
+        diffusion = diffusion.first()
         if not diffusion:
             return
-        diffusion = diffusion[0]
 
         logger.info('diffusion %s mathes to sound -> %s', str(diffusion),
                     self.sound.path)
@@ -203,8 +216,9 @@ class MonitorHandler(PatternMatchingEventHandler):
         si = SoundInfo(event.src_path)
         self.sound_kwargs['program'] = program
         si.get_sound(save = True, **self.sound_kwargs)
-        if si.year != None:
+        if si.year is not None:
             si.find_diffusion(program)
+        si.sound.save(True)
 
     def on_deleted(self, event):
         logger.info('sound deleted: %s', event.src_path)
@@ -225,6 +239,12 @@ class MonitorHandler(PatternMatchingEventHandler):
 
         sound = sound[0]
         sound.path = event.dest_path
+        if not sound.diffusion:
+            program = Program.get_from_path(event.src_path)
+            if program:
+                si = SoundInfo(sound.path, sound = sound)
+                if si.year is not None:
+                    si.find_diffusion(program)
         sound.save()
 
 
@@ -321,7 +341,7 @@ class Command(BaseCommand):
             si = SoundInfo(path)
             sound_kwargs['program'] = program
             si.get_sound(save = True, **sound_kwargs)
-            si.find_diffusion(program)
+            si.find_diffusion(program, save = True)
             si.find_playlist(si.sound)
             sounds.append(si.sound.pk)
 
