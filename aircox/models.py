@@ -992,7 +992,7 @@ class Sound(Nameable):
         recursive = True,
         blank = True, null = True,
         unique = True,
-        max_length = 256
+        max_length = 255
     )
     embed = models.TextField(
         _('embed HTML code'),

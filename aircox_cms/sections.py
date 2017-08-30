@@ -916,7 +916,7 @@ class SectionList(BaseList, SectionRelativeItem):
 
         context.update(SectionRelativeItem.get_context(self, request, page))
         if self.url_text:
-            self.related = self.related.specific
+            self.related = self.related and self.related.specific
             target = None
             if self.related and hasattr(self.related, 'get_list_page'):
                 target = self.related.get_list_page()
