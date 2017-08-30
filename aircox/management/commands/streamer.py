@@ -64,7 +64,7 @@ class Monitor:
     def get_last_log(self, *args, **kwargs):
         return Log.objects.station(self.station, *args, **kwargs) \
                   .select_related('diffusion', 'sound') \
-                  .order_by('date').last()
+                  .order_by('pk').last()
 
     @property
     def last_log(self):
@@ -137,23 +137,29 @@ class Monitor:
             print('no source / no sound', current_sound, current_source)
             return
 
-        log = self.get_last_log(models.Q(diffusion__isnull = False) |
-                                models.Q(sound__isnull = False))
+        log = self.get_last_log(sound__isnull = False)
 
+        on_air = None
         if log:
-            # check if sound on air changed compared to logged one
-            try:
-                # FIXME: liquidsoap does not have timezone
-                on_air = current_source.metadata and \
-                            current_source.metadata.get('on_air')
-                on_air = tz.datetime.strptime(on_air, "%Y/%m/%d %H:%M:%S")
-                on_air = local_tz.localize(on_air)
+            # we always check difference in sound
+            is_diff = log.source != current_source.id or \
+                        (log.sound and log.sound.path != current_sound)
 
-                is_diff = log.date != on_air
-            except:
-                on_air = None
-                is_diff = log.source != current_source.id or \
-                            (log.sound and log.sound.path != current_sound)
+            # check if sound 'on air' time has changed compared to logged one.
+            # in some cases, there can be a gap between liquidsoap on_air and
+            # log's date; to avoid duplicate we allow a difference of 5 seconds
+            if not is_diff:
+                try:
+                    # FIXME: liquidsoap does not have timezone
+                    on_air = current_source.metadata and \
+                                current_source.metadata.get('on_air')
+                    on_air = tz.datetime.strptime(on_air, "%Y/%m/%d %H:%M:%S")
+                    on_air = local_tz.localize(on_air)
+                    on_air = on_air.astimezone(pytz.utc)
+
+                    is_diff = is_diff or ((log.date - on_air).total_seconds() > 5)
+                except:
+                    pass
         else:
             # no log: sound is different
             is_diff = True
