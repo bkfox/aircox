@@ -80,11 +80,13 @@ class SoundInfo:
 
         self._path = value
         self.name = r['name'].replace('_', ' ').capitalize()
-        self.year = int(r.get('year')) if 'year' in r else None
-        self.month = int(r.get('month')) if 'month' in r else None
-        self.day = int(r.get('day')) if 'day' in r else None
-        self.hour = int(r.get('hour')) if 'hour' in r else None
-        self.minute = int(r.get('minute')) if 'minute' in r else None
+
+        for key in ('year', 'month', 'day', 'hour', 'minute'):
+            value = r.get(key)
+            if value is not None:
+                value = int(value)
+            setattr(self, key, value)
+
         self.n = r.get('n')
         return r
 
