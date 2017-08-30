@@ -47,7 +47,10 @@ class Importer:
             logger.info('start reading csv ' + path)
             self.path = path
             self.data = list(csv.DictReader(
-                (row for row in file if not row.startswith('#')),
+                (row for row in file
+                    if not (row.startswith('#') or row.startswith('\ufeff#'))
+                            and row.strip()
+                ),
                 fieldnames = settings.AIRCOX_IMPORT_PLAYLIST_CSV_COLS,
                 delimiter = settings.AIRCOX_IMPORT_PLAYLIST_CSV_DELIMITER,
                 quotechar = settings.AIRCOX_IMPORT_PLAYLIST_CSV_TEXT_QUOTE,
