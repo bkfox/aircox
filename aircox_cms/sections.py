@@ -277,13 +277,14 @@ class BaseList(models.Model):
 
     def __get_related(self, qs):
         related = self.related and self.related.specific
-
         filter = self.RelationFilter
 
         if self.relation in (filter.subpages, filter.subpages_or_siblings):
-            qs =  qs.descendant_of(related)
-            if not qs.count() and self.relation == filter.subpages_or_siblings:
-                qs = qs.sibling_of(related)
+            qs_ = qs.descendant_of(related)
+            if self.relation == filter.subpages_or_siblings and \
+                    not qs.count():
+                qs_ = qs.sibling_of(related)
+            qs = qs_
         else:
             qs = qs.sibling_of(related)
 
@@ -393,7 +394,7 @@ class BaseList(models.Model):
             'asc': self.asc,
             'date_filter': self.get_date_filter_display(),
             'model': self.model and self.model.model,
-            'relation': self.get_relation_display(),
+            'relation': self.relation,
             'search': self.search,
             'tags': self.tags
         }
@@ -437,7 +438,13 @@ class BaseList(models.Model):
         """
         date_filter = request.GET.get('date_filter')
         model = request.GET.get('model')
+
         relation = request.GET.get('relation')
+        if relation is not None:
+            try:
+                relation = int(relation)
+            except:
+                relation = None
 
         related_= request.GET.get('related')
         if related_:
@@ -459,10 +466,7 @@ class BaseList(models.Model):
                 DiffusionPage if model == 'diffusion' else
                 EventPage if model == 'event' else None,
             'related': related_,
-            'relation':
-                int(getattr(cl.RelationFilter, relation))
-                if relation and hasattr(cl.RelationFilter, relation)
-                else None,
+            'relation': relation,
             'tags': request.GET.get('tags'),
             'search': request.GET.get('search'),
         }

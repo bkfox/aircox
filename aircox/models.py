@@ -527,7 +527,8 @@ class Schedule(models.Model):
         This is needed since datetime are stored as UTC date and we want
         to get it as local time.
         """
-        if not hasattr(self, '_local_date') or self._tz.zone != self.timezone:
+        if not hasattr(self, '_local_date') or \
+                self.changed(fields = ('timezone','date')):
             self._local_date = tz.localtime(self.date, self.tz)
         return self._local_date
 
@@ -549,7 +550,7 @@ class Schedule(models.Model):
     # initial cached data
     __initial = None
 
-    def changed(self, fields = ['date','duration','frequency']):
+    def changed(self, fields = ['date','duration','frequency','timezone']):
         initial = self._Schedule__initial
         if not initial:
             return
@@ -573,9 +574,17 @@ class Schedule(models.Model):
         Return True if the given datetime matches the schedule
         """
         date = utils.date_or_default(date)
-        if self.date.weekday() == date.weekday() and self.match_week(date):
-            return self.date.time() == date.time() if check_time else True
-        return False
+        print('match...', date, self.date, self.match_week(date), self.date.weekday() == date.weekday())
+        if self.date.weekday() != date.weekday() or not self.match_week(date):
+            return False
+
+        if not check_time:
+            return True
+
+        # we check against a normalized version (norm_date will have
+        # schedule's date.
+        norm_date = self.normalize(date)
+        return date == norm_date
 
     def match_week(self, date = None):
         """
@@ -601,13 +610,13 @@ class Schedule(models.Model):
         # weeks of month
         if week == 4:
             # fifth week: return if for every week
-            return self.frequency == 0b1111
+            return self.frequency == self.Frequency.every
         return (self.frequency & (0b0001 << week) > 0)
 
     def normalize(self, date):
         """
-        Set the time of a datetime to the schedule's one
-        Ensure timezone awareness.
+        Return a new datetime with schedule time. Timezone is handled
+        using `schedule.timezone`.
         """
         local_date = self.local_date
         date = tz.datetime(date.year, date.month, date.day,
