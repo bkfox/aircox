@@ -59,7 +59,8 @@ def schedule_post_saved(sender, instance, created, *args, **kwargs):
     delta = instance.date - old_sched.date
 
     # update diffusions...
-    qs = models.Diffusion.objects.after(instance.program.station).filter(
+    qs = models.Diffusion.objects.after(
+        instance.program.station,
         program = instance.program
     )
     for diff in qs:

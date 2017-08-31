@@ -105,14 +105,18 @@ class DiffusionAdmin(admin.ModelAdmin):
             return obj.conflicts.count()
         return ''
 
-    def end_time(self, obj):
-        return obj.end.strftime('%H:%M')
-    end_time.short_description = _('end')
+    def start_date(self, obj):
+        return obj.local_date.strftime('%Y/%m/%d %H:%M')
+    start_date.short_description = _('start')
+
+    def end_date(self, obj):
+        return obj.local_end.strftime('%H:%M')
+    end_date.short_description = _('end')
 
     def first(self, obj):
         return obj.initial.start if obj.initial else ''
 
-    list_display = ('id', 'program', 'start', 'end_time', 'type', 'first', 'archives', 'conflicts_')
+    list_display = ('id', 'program', 'start_date', 'end_date', 'type', 'first', 'archives', 'conflicts_')
     list_filter = ('type', 'start', 'program')
     list_editable = ('type',)
     ordering = ('-start', 'id')

@@ -21,18 +21,20 @@ To check quality of files, call the command sound_quality_check using the
 parameters given by the setting AIRCOX_SOUND_QUALITY. This script requires
 Sox (and soxi).
 """
-import os
-import time
-import re
-import logging
-import subprocess
 from argparse import RawTextHelpFormatter
 import atexit
+import logging
+import os
+import re
+import subprocess
+import time
 
 from watchdog.observers import Observer
 from watchdog.events import PatternMatchingEventHandler, FileModifiedEvent
 
+from django.conf import settings as main_settings
 from django.core.management.base import BaseCommand, CommandError
+from django.utils import timezone as tz
 
 from aircox.models import *
 import aircox.settings as settings
@@ -162,21 +164,19 @@ class SoundInfo:
         if self.year == None or not self.sound or self.sound.diffusion:
             return;
 
-        diffusion = Diffusion.objects.filter(
+        if self.hour is None:
+            date = datetime.date(self.year, self.month, self.day)
+        else:
+            date = datetime.datetime(self.year, self.month, self.day,
+                                     self.hour or 0, self.minute or 0)
+            date = tz.get_current_timezone().localize(date)
+
+        diffusion = Diffusion.objects.after(
+            program.station,
+            date,
             program = program,
             initial__isnull = True,
-            start__year = self.year,
-            start__month = self.month,
-            start__day = self.day,
-        )
-
-        if self.hour is not None:
-            diffusion = diffusion.filter(
-                hour = self.hour,
-                minute = self.minute
-            )
-
-        diffusion = diffusion.first()
+        ).first()
         if not diffusion:
             return
 

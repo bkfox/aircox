@@ -772,26 +772,23 @@ class DiffusionManager(models.Manager):
             qs = qs.filter(filters, **kwargs)
         return self.station(station, qs).order_by('start').distinct()
 
-    def after(self, station, date = None, qs = None):
+    def after(self, station, date = None, **kwargs):
         """
         Return a queryset of diffusions that happen after the given
         date.
         """
-        date = utils.date_or_default(date)
-        return self.station(station, qs).filter(
-            start__gte = date,
-        ).order_by('start')
+        date = utils.date_or_default(date, keep_type = True)
+        return self.station(station, start__gte = date, **kwargs)\
+                   .order_by('start')
 
-    def before(self, station, date = None, qs = None):
+    def before(self, station, date = None, **kwargs):
         """
         Return a queryset of diffusions that finish before the given
         date.
         """
         date = utils.date_or_default(date)
-        qs = self if qs is None else qs
-        return self.station(station, qs).filter(
-            end__lte = date,
-        ).order_by('start')
+        return self.station(station, end__lte = date, **kwargs) \
+                   .order_by('start')
 
 
 class Diffusion(models.Model):
@@ -861,7 +858,33 @@ class Diffusion(models.Model):
 
     @property
     def date(self):
+        """
+        Alias to self.start
+        """
         return self.start
+
+    @property
+    def local_date(self):
+        """
+        Return a version of self.date that is localized to self.timezone;
+        This is needed since datetime are stored as UTC date and we want
+        to get it as local time.
+        """
+        if not hasattr(self, '_local_date'):
+            self._local_date = tz.localtime(self.date, tz.get_current_timezone())
+        return self._local_date
+
+    @property
+    def local_end(self):
+        """
+        Return a version of self.date that is localized to self.timezone;
+        This is needed since datetime are stored as UTC date and we want
+        to get it as local time.
+        """
+        if not hasattr(self, '_local_end'):
+            self._local_end = tz.localtime(self.end, tz.get_current_timezone())
+        return self._local_end
+
 
     @property
     def playlist(self):
@@ -943,7 +966,7 @@ class Diffusion(models.Model):
 
     def __str__(self):
         return '{self.program.name} {date} #{self.pk}'.format(
-            self=self, date=self.date.strftime('%Y-%m-%d %H:%M')
+            self=self, date=self.local_date.strftime('%Y/%m/%d %H:%M%z')
         )
 
     class Meta:
@@ -1487,6 +1510,17 @@ class Log(models.Model):
     def related(self):
         return self.diffusion or self.sound or self.track
 
+    @property
+    def local_date(self):
+        """
+        Return a version of self.date that is localized to self.timezone;
+        This is needed since datetime are stored as UTC date and we want
+        to get it as local time.
+        """
+        if not hasattr(self, '_local_date'):
+            self._local_date = tz.localtime(self.date, tz.get_current_timezone())
+        return self._local_date
+
     def is_expired(self, date = None):
         """
         Return True if the log is expired. Note that it only check
@@ -1522,7 +1556,7 @@ class Log(models.Model):
                 self.pk,
                 self.get_type_display(),
                 self.source,
-                self.date.strftime('%Y/%m/%d %H:%M'),
+                self.local_date.strftime('%Y/%m/%d %H:%M%z'),
         )
 
     def save(self, *args, **kwargs):
