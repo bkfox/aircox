@@ -4,13 +4,15 @@ from django.contrib.auth.models import User, Group, Permission
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import F
 from django.db.models.signals import post_save, pre_save, pre_delete, m2m_changed
-from django.dispatch import receiver
+from django.dispatch import receiver, Signal
 from django.utils import timezone as tz
 from django.utils.translation import ugettext as _, ugettext_lazy
 
 import aircox.models as models
 import aircox.utils as utils
 import aircox.settings as settings
+
+
 
 # Add a default group to a user when it is created. It also assigns a list
 # of permissions to the group if it is created.

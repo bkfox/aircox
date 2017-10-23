@@ -222,3 +222,12 @@ main.detail {
     color: #616161;
 }
 
+section.playlist .artist {
+    display: inline-block;
+    margin-right: 0.4em;
+}
+section.playlist .artist:after {
+    padding-left: 0.2em;
+    content: ':'
+}
+

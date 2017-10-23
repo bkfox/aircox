@@ -519,8 +519,6 @@ class Track(aircox.models.Track,Orderable):
 
 
 class DiffusionPage(Publication):
-    order_field = 'diffusion__start'
-
     diffusion = models.OneToOneField(
         aircox.models.Diffusion,
         verbose_name = _('diffusion'),
@@ -641,6 +639,9 @@ class DiffusionPage(Publication):
 
     def save(self, *args, **kwargs):
         if self.diffusion:
+            # force to sort by diffusion date in wagtail explorer
+            self.latest_revision_created_at = self.diffusion.start
+
             # set publish_as
             if not self.pk:
                 self.publish_as = self.diffusion.program.page

@@ -40,7 +40,7 @@ class Actions:
             items = schedule.diffusions_of_month(date, exclude_saved = True)
             count[0] += len(items)
 
-            # we can't bulk create because we ned signal processing
+            # we can't bulk create because we need signal processing
             for item in items:
                 conflicts = item.get_conflicts()
                 item.type = Diffusion.Type.unconfirmed \

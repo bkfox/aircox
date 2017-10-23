@@ -1,10 +1,11 @@
 from django.db.models import Q
 from django.db.models.signals import post_save, pre_delete
 from django.dispatch import receiver
+from django.utils import timezone as tz
 from django.utils.translation import ugettext as _, ugettext_lazy
 from django.contrib.contenttypes.models import ContentType
 
-from wagtail.wagtailcore.models import Page, Site
+from wagtail.wagtailcore.models import Page, Site, PageRevision
 
 import aircox.models as aircox
 import aircox_cms.models as models
@@ -185,9 +186,15 @@ def diffusion_post_saved(sender, instance, created, *args, **kwargs):
     page = models.DiffusionPage.from_diffusion(
         instance, live = False
     )
-    instance.program.page.add_child(
+    page = instance.program.page.add_child(
         instance = page
     )
+
+    # because wagtail don't have custom order field in explorer
+    rev = PageRevision(page = page,
+                       created_at = page.date - tz.timedelta(days = 365*5),
+                       content_json = '{}')
+    rev.save()
 
 @receiver(pre_delete, sender=aircox.Diffusion)
 def diffusion_pre_deleted(sender, instance, *args, **kwargs):
