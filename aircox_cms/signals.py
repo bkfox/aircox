@@ -190,12 +190,6 @@ def diffusion_post_saved(sender, instance, created, *args, **kwargs):
         instance = page
     )
 
-    # because wagtail don't have custom order field in explorer
-    rev = PageRevision(page = page,
-                       created_at = page.date - tz.timedelta(days = 365*5),
-                       content_json = '{}')
-    rev.save()
-
 @receiver(pre_delete, sender=aircox.Diffusion)
 def diffusion_pre_deleted(sender, instance, *args, **kwargs):
     clean_page_of(instance)
