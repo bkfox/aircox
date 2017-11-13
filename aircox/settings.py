@@ -20,9 +20,9 @@ ensure('AIRCOX_DEFAULT_USER_GROUPS', {
         'add_comment', 'edit_comment', 'delete_comment',
     ),
     # ensure user can log in using Wagtail
-    'Editors': None
+    'Editors': None,
     # ensure user can publish
-    'Moderators': None
+    'Moderators': None,
 })
 
 # Directory for the programs data
