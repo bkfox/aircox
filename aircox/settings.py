@@ -21,6 +21,8 @@ ensure('AIRCOX_DEFAULT_USER_GROUPS', {
     ),
     # ensure user can log in using Wagtail
     'Editors': None
+    # ensure user can publish
+    'Moderators': None
 })
 
 # Directory for the programs data
