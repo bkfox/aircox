@@ -1,44 +1,45 @@
 /**
  *  Define rules for the default layouts, and some useful classes
  */
+
+/** general **/
 body {
-    max-width: 92em;
-    margin: 0em auto;
-    padding: 0em;
+    background-color: #F2F2F2;
+    font-family: "Myriad Pro",Calibri,Helvetica,Arial,sans-serif;
 }
 
 h1, h2, h3, h4, h5 {
+    font-family: "Myriad Pro",Calibri,Helvetica,Arial,sans-serif;
     margin: 0.4em 0em;
 }
 
-ul {
-    margin: 0em;
+h1:first-letter, h2:first-letter, h3:first-letter, h4:first-letter {
+    text-transform: capitalize;
 }
 
+h1 { font-size: 1.4em; }
+h2 { font-size: 1.2em; }
+h3 { font-size: 0.9em; }
+h4 { font-size: 0.8em; }
 
-/** classes **/
-.float_right {
-    float: right;
+h1 > *, h2 > *, h3 > *, h4 > * { vertical-align: middle; }
+
+
+a {
+    cursor: pointer;
+    text-decoration: none;
+    color: #616161;
 }
 
-.float_left {
-    float: left;
-}
+a:hover { color: #007EDF; }
+a:hover > .small_icon { box-shadow: 0em 0em 0.1em #007EDF; }
 
-.small {
-    font-size: 0.8em;
-}
+ul { margin: 0em; }
 
-.icon {
-    max-width: 2em;
-    max-height: 2em;
-    vertical-align: middle;
-}
 
-.small_icon {
-    max-height: 1.5em;
-    vertical-align: middle;
-}
+/**** position & box ****/
+.float_right { float: right; }
+.float_left { float: left; }
 
 
 .flex_row {
@@ -62,7 +63,48 @@ ul {
 }
 
 
-/** content: menus **/
+.small {
+    font-size: 0.8em;
+}
+
+
+
+/**** indicators & info ****/
+time, .tags {
+    font-size: 0.9em;
+    color: #616161;
+}
+
+.info {
+    font-size: 0.9em;
+    padding: 0.1em;
+    color: #007EDF;
+}
+
+.error { color: red; }
+.warning { color: orange; }
+.success { color: green; }
+
+.icon {
+    max-width: 2em;
+    max-height: 2em;
+    vertical-align: middle;
+}
+
+.small_icon {
+    max-height: 1.5em;
+    vertical-align: middle;
+}
+
+
+/** main layout **/
+body > * {
+    max-width: 92em;
+    margin: 0em auto;
+    padding: 0em;
+}
+
+
 .menu {
     padding: 0.4em;
 }
@@ -71,34 +113,39 @@ ul {
     display: none;
 }
 
-    body > .top *,
-    body > .header * {
-        vertical-align: middle;
-    }
 
-    body > .top section,
-    body > .header section {
-        display: inline-block;
-    }
+.menu.row section {
+    display: inline-block;
+}
 
-    body > .top a,
-    body > .header a {
-        display: inline-block;
-        margin: 0.2em 1em;
-    }
+.menu.col > section {
+    margin-bottom: 1em;
+}
 
+
+/**** top + header layout ****/
 body > .top {
     position: fixed;
     z-index: 10000000;
     top: 0;
-    width: calc(100% - 0.8em);
-    max-width: calc(92em - 0.8em);
-    height: 2.5em;
+    left: 0;
+    width: 100%;
+    max-width: 100%;
+
     margin: 0em auto;
     background-color: white;
-    box-shadow: 0em 0em 0.2em black;
+    border-bottom: 0.1em #dfdfdf solid;
+    box-shadow: 0em 0.1em 0.1em rgba(255,255,255,0.7);
+    box-shadow: 0em 0.1em 0.5em rgba(0,0,0,0.1);
+
     transition: opacity 1.5s;
 }
+
+    body > .top > .menu {
+        max-width: 92em;
+        height: 2.5em;
+        margin: 0em auto;
+    }
 
     body[scrollY] > .top {
         opacity: 0.1;
@@ -117,6 +164,7 @@ body > .header {
     margin-bottom: 1em;
 }
 
+    /** FIXME: remove this once image slides impled **/
     body > .header > div {
         width: 15000%;
     }
@@ -127,29 +175,142 @@ body > .header {
     }
 
 
-.page_left { margin-right: 2em; }
-.page_right { margin-left: 2em; }
 
-.page_left, .page_right {
+/**** page layout ****/
+.page {
+    display: flex;
+}
+
+.page > main {
+    flex: auto;
+
+    overflow: hidden;
+    margin: 0em 0em;
+    border-radius: 0.4em;
+    border: 0.1em #dfdfdf solid;
+
+    background-color: rgba(255,255,255,0.9);
+    box-shadow: inset 0.1em 0.1em 0.2em rgba(255, 255, 255, 0.8);
+}
+
+
+.page > nav {
+    flex: 1;
+    width: 20em;
+    overflow: hidden;
     max-width: 16em;
 }
 
-.page_left > section,
-.page_right > section {
-    margin-bottom: 1em;
+    .page > .menu.col:first-child { margin-right: 2em; }
+    .page > main + .menu.col { margin-left: 2em; }
+
+
+
+/**** page main ****/
+main:not(.detail) h1 {
+    margin: 0em 0em 0.4em 0em;
 }
 
-    .page_left .section_link_list a,
-    .page_right .section_link_list a {
-        display: block;
+main .post_content {
+    display: block;
+}
+
+main .post_content section {
+    display: inline-block;
+    width: calc(50% - 1em);
+    vertical-align: top;
+}
+
+
+main.detail {
+    padding: 0em;
+    margin: 0em;
+}
+
+    main > .content {
+        padding: 1em;
+    }
+
+    main > header {
+        margin: 0em;
+        padding: 1em;
+        position: relative;
+    }
+
+    main > header .foreground {
+        position: absolute;
+        left: 0em;
+        top: 0em;
+        width: calc(100% - 2em);
+        padding: 1em;
+    }
+
+    main > header h1 {
+        width: calc(100% - 2em);
+        margin: 0em;
+        margin-bottom: 0.8em;
+    }
+
+    main header .headline {
+        display: inline-block;
+        width: calc(60% - 0.8em);
+        min-height: 1.2em;
+        font-size: 1.2em;
+        font-weight: bold;
+    }
+
+    main > header .background {
+        margin: -1em;
+        height: 17em;
+        overflow: hidden;
+        position: relative;
+    }
+
+    main > header .background img {
+        position: absolute;
+        /*! top: -40%; */
+        /*! left: -40%; */
+        width: 100%;
+        min-height: 100%;
+        filter: blur(20px);
+        opacity: 0.3;
+    }
+
+    main > header .cover {
+        right: 0em;
+        top: 1em;
+        width: auto;
+        max-height: calc(100% - 2em);
+        max-width: calc(40% - 2em);
+        margin: 1em;
+        position: absolute;
+        box-shadow: 0em 0em 4em rgba(0, 0, 0, 0.4);
     }
 
 
+
+/** sections **/
 body section ul {
     padding: 0em;
     padding-left: 1em;
 }
 
+
+/**** link list ****/
+.menu.row .section_link_list > a {
+    display: inline-block;
+    margin: 0.2em 1em;
+}
+
+.menu.col .section_link_list > a {
+    display: block;
+}
+
+
+
+
+
+/** content: menus **/
 /** content: list & items **/
 .list {
     width: 100%;

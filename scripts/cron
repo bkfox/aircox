@@ -9,7 +9,7 @@ scripts/launch_in_venv ./manage.py diffusions --update --next-month --mode auto
 cd -
 
 # - archiver monitoring for the next month
-scripts/launch_in_venv ./manage.py archiver -a 60
+scripts/launch_in_venv ./manage.py archiver -a 90
 cd -
 
 

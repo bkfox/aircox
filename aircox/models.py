@@ -633,7 +633,8 @@ class Schedule(models.Model):
         if self.frequency == Schedule.Frequency.ponctual:
             return []
 
-        date = utils.date_or_default(date, True).replace(day=1)
+        # set to 12h in order to avoid potential bugs with dst
+        date = utils.date_or_default(date, True).replace(day=1, hour=12)
         freq = self.frequency
 
         # last of the month
