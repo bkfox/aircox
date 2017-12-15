@@ -66,7 +66,7 @@ class Actions:
         qs.delete()
 
     @staticmethod
-    def check (date):
+    def check(date):
         qs = Diffusion.objects.filter(type = Diffusion.Type.unconfirmed,
                                       start__gt = date)
         items = []
@@ -83,7 +83,7 @@ class Actions:
             Diffusion.objects.filter(id__in = items).delete()
 
 
-class Command (BaseCommand):
+class Command(BaseCommand):
     help= __doc__
 
     def add_arguments (self, parser):

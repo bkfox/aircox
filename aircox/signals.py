@@ -44,6 +44,7 @@ def user_default_groups(sender, instance, created, *args, **kwargs):
 
 @receiver(post_save, sender=models.Schedule)
 def schedule_post_saved(sender, instance, created, *args, **kwargs):
+    return
     # TODO: case instance.program | instance.frequency has changed
     if not instance.program.sync:
         return
@@ -53,16 +54,18 @@ def schedule_post_saved(sender, instance, created, *args, **kwargs):
         return
 
     if not initial.get('date') or not initial.get('duration') \
-            or not initial.get('frequency'):
+            or not initial.get('frequency') or \
+            initial.frequency != instance.frequency:
         return
 
     # old schedule and timedelta
     old = models.Schedule(**{ key: initial.get(key)
         for key in ('date','timezone','duration','frequency')
     })
-    start_delta = instance.local_date - old.local_date
 
-    old.date = old.local_date.astimezone(pytz.UTC)
+    # change: day, time, duration, frequence => TODO
+    delta = (instance.date - old.date) + \
+            (instance.time - old.time)
 
     qs = models.Diffusion.objects.station(
         instance.program.station,
@@ -70,8 +73,8 @@ def schedule_post_saved(sender, instance, created, *args, **kwargs):
 
     pks = [ item.pk for item in qs if old.match(item.date) ]
     qs.filter(pk__in = pks).update(
-        start = F('start') + start_delta,
-        end = F('start') + start_delta + utils.to_timedelta(instance.duration)
+        start = F('start') + delta,
+        end = F('start') + delta + utils.to_timedelta(instance.duration)
     )
     return
 

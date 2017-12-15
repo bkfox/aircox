@@ -1,18 +1,20 @@
 import datetime
-import calendar
+import logging
 import os
 import shutil
-import logging
-from enum import IntEnum
 
+import calendar
+from enum import IntEnum
+import pytz
+
+from django.conf import settings as main_settings
+from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
+from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.template.defaultfilters import slugify
 from django.utils.translation import ugettext as _, ugettext_lazy
 from django.utils import timezone as tz
 from django.utils.html import strip_tags
-from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
-from django.contrib.contenttypes.models import ContentType
-from django.conf import settings as main_settings
 
 from taggit.managers import TaggableManager
 
@@ -482,12 +484,19 @@ class Schedule(models.Model):
         Program,
         verbose_name = _('related program'),
     )
-    date = models.DateTimeField(
+    time = models.TimeField(
+        _('time'),
+        blank = True, null = True,
+        help_text = _('start time'),
+    )
+    date = models.DateField(
         _('date'),
-        help_text = _('date of the first diffusion')
+        blank = True, null = True,
+        help_text = _('date of the first diffusion'),
     )
     timezone = models.CharField(
         _('timezone'),
+        choices = [(x, x) for x in pytz.all_timezones],
         max_length = 100, blank=True,
         help_text = _('timezone used for the date')
     )
@@ -567,15 +576,15 @@ class Schedule(models.Model):
 
     @property
     def end(self):
-        return self.date + utils.to_timedelta(self.duration)
+        return self.time + utils.to_timedelta(self.duration)
 
     def match(self, date = None, check_time = True):
         """
         Return True if the given datetime matches the schedule
         """
         date = utils.date_or_default(date)
-        print('match...', date, self.date, self.match_week(date), self.date.weekday() == date.weekday())
-        if self.date.weekday() != date.weekday() or not self.match_week(date):
+        if self.date.weekday() != date.weekday() or \
+                not self.match_week(date):
             return False
 
         if not check_time:
@@ -599,6 +608,7 @@ class Schedule(models.Model):
         date = utils.date_or_default(date)
         date += tz.timedelta(days = self.date.weekday() - date.weekday() )
 
+        # FIXME this case
         if self.frequency == Schedule.Frequency.one_on_two:
             # cf notes in date_of_month
             diff = utils.cast_date(date, False) - utils.cast_date(self.date, False)
@@ -618,9 +628,9 @@ class Schedule(models.Model):
         Return a new datetime with schedule time. Timezone is handled
         using `schedule.timezone`.
         """
-        local_date = self.local_date
+        time = self.time or self.date
         date = tz.datetime(date.year, date.month, date.day,
-                           local_date.hour, local_date.minute, 0, 0)
+                           time.hour, time.minute, 0, 0)
         date = self.tz.localize(date)
         date = self.tz.normalize(date)
         return date
@@ -633,8 +643,9 @@ class Schedule(models.Model):
         if self.frequency == Schedule.Frequency.ponctual:
             return []
 
-        # set to 12h in order to avoid potential bugs with dst
-        date = utils.date_or_default(date, True).replace(day=1, hour=12)
+        # first day of month
+        date = utils.date_or_default(date, to_datetime = False) \
+                    .replace(day=1)
         freq = self.frequency
 
         # last of the month
@@ -676,7 +687,7 @@ class Schedule(models.Model):
                 week += 1;
         return [self.normalize(date) for date in dates]
 
-    def diffusions_of_month(self, date, exclude_saved = False):
+    def diffusions_of_month(self, date = None, exclude_saved = False):
         """
         Return a list of Diffusion instances, from month of the given date, that
         can be not in the database.
@@ -721,7 +732,7 @@ class Schedule(models.Model):
     def __str__(self):
         return ' | '.join([ '#' + str(self.id), self.program.name,
                             self.get_frequency_display(),
-                            self.date.strftime('%a %H:%M') ])
+                            self.time.strftime('%a %H:%M') ])
 
     def save(self, *args, **kwargs):
         if self.initial:
@@ -729,8 +740,6 @@ class Schedule(models.Model):
             self.duration = self.initial.duration
             if not self.frequency:
                 self.frequency = self.initial.frequency
-
-        self.timezone = self.date.tzinfo.zone
         super().save(*args, **kwargs)
 
     class Meta:

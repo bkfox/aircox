@@ -156,7 +156,7 @@ class ScheduleAdmin(admin.ModelAdmin):
     program_name.short_description = _('Program')
 
     def day(self, obj):
-        return obj.date.strftime('%A')
+        return '' # obj.date.strftime('%A')
     day.short_description = _('Day')
 
     def rerun(self, obj):
@@ -165,8 +165,8 @@ class ScheduleAdmin(admin.ModelAdmin):
     rerun.boolean = True
 
     list_filter = ['frequency', 'program']
-    list_display = ['id', 'program_name', 'frequency', 'day', 'date', 'duration', 'rerun']
-    list_editable = ['frequency', 'date', 'duration']
+    list_display = ['id', 'program_name', 'frequency', 'day', 'date', 'time', 'timezone', 'duration', 'rerun']
+    list_editable = ['frequency', 'date', 'time', 'timezone', 'duration']
 
 
 @admin.register(Track)
