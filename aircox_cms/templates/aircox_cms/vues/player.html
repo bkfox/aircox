@@ -1,0 +1,82 @@
+{% load staticfiles %}
+{% load i18n %}
+
+<script type="text/x-template" id="template-sound">
+    <div class="sound">
+        <audio preload="metadata" ref="audio"
+            @pause="state = State.Stop"
+            @playing="state = State.Play"
+            @ended="ended"
+            @timeupdate="timeUpdate"
+        >
+            <source v-for="source in track.sources" :src="source">
+        </audio>
+        <img :src="track.cover" v-if="track.cover" class="icon cover">
+        <button class="button" @click="play_stop">
+            <img class="icon pause"
+                 src="{% static "aircox/images/pause.png" %}"
+                 title="{% trans "Click to pause" %}"
+                 v-if="state === State.Play" >
+            <img class="icon loading"
+                 src="{% static "aircox/images/loading.png" %}"
+                 title="{% trans "Loading... Click to pause" %}"
+                 v-else-if="state === State.Loading" >
+            <img class="icon play"
+                 src="{% static "aircox/images/play.png" %}"
+                 title="{% trans "Click to play" %}"
+                 v-else >
+        </button>
+        <div>
+            <h3>
+                <a :href="detail_url">[[ track.name ]]</a>
+            </h3>
+            <span v-if="track.duration" class="info">
+                [[ (track.duration[0] && track.duration[0] + '"') || '' ]]
+                [[ track.duration[1] + "'" + track.duration[2] ]]
+            </span>
+        </div>
+        <div class="actions">
+            <a class="action remove"
+                title="{% trans "Remove from playlist" %}"
+                v-if="this.$parent.modifiable"
+                @click="remove"
+                >✖</a>
+            <a class="action add"
+                title="{% trans "Add to my playlist" %}"
+                @click="add_to_playlist"
+                v-else
+                >+</a>
+        </div>
+        <div class="content flex_row" v-show="track.duration != null">
+            <span v-if="seek_position !== null">[[ seek_position ]]</span>
+            <span v-else>[[ position ]]</span>
+            <progress class="flex_item progress" ref="progress"
+                v-show="track.duration"
+                v-on:click.prevent="progress_clicked"
+                v-on:mousemove = "progress_mouse_move"
+                v-on:mouseout = "progress_mouse_out"
+                :value="position" :max="duration"
+            ></progress>
+        </div>
+    </div>
+</script>
+
+
+<script type="text/x-template" id="template-playlist">
+    <div class="playlist">
+        <a-sound v-for="track in tracks" ref="sounds"
+            :id="track.id" :track="track"
+            @ended="sound_ended"
+            @beforeDestroy="sound_ended"
+        />
+
+        <div v-show="tracks.length > 1" class="playlist_footer">
+            <input type="checkbox" class="single" id="[[ playlist ]]_single_mode"
+                value="true" v-model="single_mode">
+            <label for="[[ playlist ]]_single_mode" class="info"
+                title="{% trans "Enable and disable single mode" %}">↻</label>
+        </div>
+    </div>
+</script>
+
+

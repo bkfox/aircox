@@ -58,7 +58,7 @@ class TemplateMixin(models.Model):
         Rendering is similar to pages, using 'template' attribute set
         by default to the app_label/sections/model_name_snake_case.html
 
-        If the default template is not found, use SectionItem's one,
+        If the default template is not found, use Section's one,
         that can have a context attribute 'content' that is used to render
         content.
         """

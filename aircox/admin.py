@@ -97,7 +97,7 @@ class ProgramAdmin(NameableAdmin):
 @admin.register(Diffusion)
 class DiffusionAdmin(admin.ModelAdmin):
     def archives(self, obj):
-        sounds = [ str(s) for s in obj.get_archives()]
+        sounds = [ str(s) for s in obj.get_sounds(archive=True)]
         return ', '.join(sounds) if sounds else ''
 
     def conflicts_(self, obj):

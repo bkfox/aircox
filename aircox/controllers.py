@@ -297,7 +297,7 @@ class Source:
         A playlist from a program uses all its available archives.
         """
         if diffusion:
-            self.playlist = diffusion.playlist
+            self.playlist = diffusion.get_playlist(archive = True)
             return
 
         program = program or self.program

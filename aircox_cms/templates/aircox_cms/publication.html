@@ -20,11 +20,6 @@
         {% with list_paginator=paginator %}
         {% include "aircox_cms/snippets/list.html" %}
         {% endwith %}
-    {% else %}
-    {# detail view #}
-        {% if page.links.count %}
-        {% include "aircox_cms/sections/section_link_list.html" %}
-        {% endif %}
     {% endif %}
 </div>
 {% endblock %}

@@ -1,4 +1,4 @@
-{% load staticfiles %}
+{% load static %}
 {% load i18n %}
 
 {% load wagtailcore_tags %}
@@ -26,14 +26,33 @@
             {% block css_extras %}{% endblock %}
         {% endblock %}
 
+        {% if settings.DEBUG %}
+        <script src="{% static 'lib/vue.js' %}">
+        {% else %}
+        <script src="{% static 'lib/vue.min.js' %}">
+        {% endif %}
+
         <script src="{% static 'aircox_cms/js/bootstrap.js' %}"></script>
         <script src="{% static 'aircox_cms/js/utils.js' %}"></script>
         <script src="{% static 'aircox_cms/js/player.js' %}"></script>
 
         <title>{{ page.title }}</title>
+
+        {# TODO: include vues somewhere else #}
+        {% include "aircox_cms/vues/player.html" %}
+
+        <script>
+            window.addEventListener('loaded', function() {
+                new Vue({
+                    el: "#app",
+                    delimiters: ['${', '}'],
+                });
+
+            }, false);
+        </script>
     </head>
     {% spaceless %}
-    <body>
+    <body id="app">
         <nav class="top">
             <div class="menu row">
                 {% render_sections position="top" %}

@@ -1,5 +1,6 @@
 {% extends "aircox_cms/publication.html" %}
 {% load i18n %}
+{% load aircox_cms %}
 
 {% block content_extras %}
 {% with tracks=page.tracks.all %}
@@ -32,39 +33,9 @@
 </section>
 {% endif %}
 
-{% with podcasts=self.get_podcasts %}
 {% if podcasts %}
-<section class="podcasts list">
-    <h2>{% trans "Podcasts" %}</h2>
-    <div id="player_diff_{{ page.id }}" class="player">
-        {% include 'aircox_cms/snippets/player.html' %}
-
-        <script>
-        var podcasts = new Player('player_diff_{{ page.id }}', undefined, true)
-        {% for item in podcasts %}
-        {% if not item.embed %}
-            podcasts.playlist.add(new Sound(
-                title='{{ item.name|escape }}',
-                detail='{{ item.detail_url }}',
-                duration={{ item.duration|date:"H*3600+i*60+s" }},
-                streams='{{ item.url }}',
-                {% if page and page.cover %}cover='{{ page.icon }}',{% endif %}
-                undefined
-            ));
-        {% endif %}
-        {% endfor %}
-        </script>
-        <p>
-        {% for item in podcasts %}
-        {% if item.embed %}
-        {{ item.embed|safe }}
-        {% endif %}
-        {% endfor %}
-        </p>
-    </div>
-</section>
+{% render_section section=podcasts %}
 {% endif %}
-{% endwith %}
 {% endblock %}
 
 

@@ -1,15 +1,15 @@
+from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 from django.db.models.signals import post_save, pre_delete
 from django.dispatch import receiver
 from django.utils import timezone as tz
 from django.utils.translation import ugettext as _, ugettext_lazy
-from django.contrib.contenttypes.models import ContentType
 
 from wagtail.wagtailcore.models import Page, Site, PageRevision
 
 import aircox.models as aircox
 import aircox_cms.models as models
-import aircox_cms.sections as sections
+import aircox_cms.models.sections as sections
 import aircox_cms.utils as utils
 
 # on a new diffusion
@@ -88,7 +88,7 @@ def station_post_saved(sender, instance, created, *args, **kwargs):
     )
     homepage.add_child(instance = programs)
 
-    section = sections.Section(
+    section = sections.Region(
         name = _('programs'),
         position = 'post_content',
         page = programs,

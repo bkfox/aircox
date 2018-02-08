@@ -1,3 +1,4 @@
+#! /usr/bin/env python3
 """
 Monitor sound files; For each program, check for:
 - new files;

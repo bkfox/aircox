@@ -59,6 +59,7 @@ class Related(models.Model):
     related_type = models.ForeignKey(
         ContentType,
         blank = True, null = True,
+        on_delete=models.SET_NULL,
     )
     related_id = models.PositiveIntegerField(
         blank = True, null = True,
@@ -332,6 +333,7 @@ class Program(Nameable):
     station = models.ForeignKey(
         Station,
         verbose_name = _('station'),
+        on_delete=models.CASCADE,
     )
     active = models.BooleanField(
         _('active'),
@@ -438,6 +440,7 @@ class Stream(models.Model):
     program = models.ForeignKey(
         Program,
         verbose_name = _('related program'),
+        on_delete=models.CASCADE,
     )
     delay = models.TimeField(
         _('delay'),
@@ -483,6 +486,7 @@ class Schedule(models.Model):
     program = models.ForeignKey(
         Program,
         verbose_name = _('related program'),
+        on_delete=models.CASCADE,
     )
     time = models.TimeField(
         _('time'),
@@ -839,6 +843,7 @@ class Diffusion(models.Model):
     program = models.ForeignKey (
         Program,
         verbose_name = _('program'),
+        on_delete=models.CASCADE,
     )
     # specific
     type = models.SmallIntegerField(
@@ -904,34 +909,31 @@ class Diffusion(models.Model):
             self._local_end = tz.localtime(self.end, tz.get_current_timezone())
         return self._local_end
 
-
-    @property
-    def playlist(self):
-        """
-        List of archives' path; uses get_archives
-        """
-        playlist = self.get_archives().values_list('path', flat = True)
-        return list(playlist)
-
     def is_live(self):
         return self.type == self.Type.normal and \
-                not self.get_archives().count()
+                not self.get_sounds(archive = True).count()
 
-    def get_archives(self):
-        """
-        Return a list of available archives sounds for the given episode,
-        ordered by path.
-        """
-        sounds = self.initial.sound_set if self.initial else self.sound_set
-        return sounds.filter(type = Sound.Type.archive).order_by('path')
 
-    def get_excerpts(self):
+    def get_playlist(self, **types):
         """
-        Return a list of available archives sounds for the given episode,
-        ordered by path.
+        Returns sounds as a playlist (list of *local* file path).
+        The given arguments are passed to ``get_sounds``.
         """
-        sounds = self.initial.sound_set if self.initial else self.sound_set
-        return sounds.filter(type = Sound.Type.excerpt).order_by('path')
+        return list(self.get_sounds(archives = True) \
+                        .filter(path__isnull = False) \
+                        .values_list('path', flat = True))
+
+    def get_sounds(self, **types):
+        """
+        Return a queryset of sounds related to this diffusion,
+        ordered by type then path.
+
+        **types: filter on the given sound types name, as `archive=True`
+        """
+        sounds = (self.initial or self).sound_set.order_by('type', 'path')
+        _in = [ getattr(Sound.Type, name)
+                    for name, value in types.items() if value ]
+        return sounds.filter(type__in = _in)
 
     def is_date_in_range(self, date = None):
         """
@@ -1012,6 +1014,7 @@ class Sound(Nameable):
         Program,
         verbose_name = _('program'),
         blank = True, null = True,
+        on_delete=models.SET_NULL,
         help_text = _('program related to it'),
     )
     diffusion = models.ForeignKey(
@@ -1026,11 +1029,13 @@ class Sound(Nameable):
         choices = [ (int(y), _(x)) for x,y in Type.__members__.items() ],
         blank = True, null = True
     )
+    # FIXME: url() does not use the same directory than here
+    #        should we use FileField for more reliability?
     path = models.FilePathField(
         _('file'),
         path = settings.AIRCOX_PROGRAMS_DIR,
-        match = r'(' + '|'.join(settings.AIRCOX_SOUND_FILE_EXT) \
-                                    .replace('.', r'\.') + ')$',
+        match = r'(' + '|'.join(settings.AIRCOX_SOUND_FILE_EXT)
+                          .replace('.', r'\.') + ')$',
         recursive = True,
         blank = True, null = True,
         unique = True,
@@ -1229,6 +1234,7 @@ class Port (models.Model):
     station = models.ForeignKey(
         Station,
         verbose_name = _('station'),
+        on_delete=models.CASCADE,
     )
     direction = models.SmallIntegerField(
         _('direction'),
@@ -1464,6 +1470,7 @@ class Log(models.Model):
     station = models.ForeignKey(
         Station,
         verbose_name = _('station'),
+        on_delete=models.CASCADE,
         help_text = _('related station'),
     )
     source = models.CharField(

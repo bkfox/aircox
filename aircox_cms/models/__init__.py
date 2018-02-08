@@ -30,9 +30,10 @@ import bleach
 import aircox.models
 import aircox_cms.settings as settings
 
-from aircox_cms.utils import image_url
+from aircox_cms.models.lists import *
+from aircox_cms.models.sections import *
 from aircox_cms.template import TemplateMixin
-from aircox_cms.sections import *
+from aircox_cms.utils import image_url
 
 
 @register_setting
@@ -300,6 +301,10 @@ class BasePage(Page):
         if self.allow_comments and \
                 WebsiteSettings.for_site(request.site).allow_comments:
             context['comment_form'] = CommentForm()
+
+        context['settings'] = {
+            'debug': settings.DEBUG
+        }
         return context
 
     def serve(self, request):
@@ -331,7 +336,7 @@ class BasePage(Page):
 #
 # Publications
 #
-class PublicationRelatedLink(RelatedLinkBase,TemplateMixin):
+class PublicationRelatedLink(RelatedLinkBase,Component):
     template = 'aircox_cms/snippets/link.html'
     parent = ParentalKey('Publication', related_name='links')
 
@@ -392,7 +397,6 @@ class Publication(BasePage):
             FieldPanel('tags'),
             FieldPanel('focus'),
         ], heading=_('Content')),
-        InlinePanel('links', label=_('Links'))
     ] + Page.promote_panels
     settings_panels = Page.settings_panels + [
         FieldPanel('publish_as'),
@@ -550,7 +554,6 @@ class DiffusionPage(Publication):
             FieldPanel('tags'),
             FieldPanel('focus'),
         ], heading=_('Content')),
-        InlinePanel('links', label=_('Links'))
     ] + Page.promote_panels
     settings_panels = Publication.settings_panels + [
         FieldPanel('diffusion')
@@ -605,37 +608,16 @@ class DiffusionPage(Publication):
 
         return item
 
-    def get_archive(self):
-        """
-        Return the diffusion's archive as podcast
-        """
-        if not self.publish_archive or not self.diffusion:
-            return
-
-        sound = self.diffusion.get_archives() \
-                    .filter(public = True).first()
-        if sound:
-            sound.detail_url = self.url
-        return sound
-
-    def get_podcasts(self):
-        """
-        Return a list of podcasts, with archive as the first item of the
-        list when available.
-        """
-        if not self.diffusion:
-            return
-
-        podcasts = []
-        archive = self.get_archive()
-        if archive:
-            podcasts.append(archive)
-
-        qs = self.diffusion.get_excerpts().filter(public = True)
-        podcasts.extend(qs[:])
-        for podcast in podcasts:
-            podcast.detail_url = self.url
-        return podcasts
+    def get_context(self, request, *args, **kwargs):
+        context = super().get_context(request, *args, **kwargs)
+        context['podcasts'] = self.diffusion and SectionPlaylist(
+            title=_('Podcasts'),
+            page = self,
+            sounds = self.diffusion.get_sounds(
+                archive = self.publish_archive, excerpt = True
+            )
+        )
+        return context
 
     def save(self, *args, **kwargs):
         if self.diffusion:

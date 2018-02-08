@@ -176,7 +176,7 @@ class Monitor:
             last_diff = self.last_diff_start
             diff = None
             if last_diff and not last_diff.is_expired():
-                archives = last_diff.diffusion.get_archives()
+                archives = last_diff.diffusion.sounds(archive = True)
                 if archives.filter(pk = sound.pk).exists():
                     diff = last_diff.diffusion
 
@@ -294,7 +294,8 @@ class Monitor:
             .filter(source = log.source, pk__gt = log.pk) \
             .exclude(sound__type = Sound.Type.removed)
 
-        remaining = log.diffusion.get_archives().exclude(pk__in = sounds) \
+        remaining = log.diffusion.sounds(archive = True) \
+                       .exclude(pk__in = sounds) \
                        .values_list('path', flat = True)
         return log.diffusion, list(remaining)
 
@@ -312,7 +313,7 @@ class Monitor:
             .filter(type = Diffusion.Type.normal, **kwargs) \
             .distinct().order_by('start')
         diff = diff.first()
-        return (diff, diff and diff.playlist or [])
+        return (diff, diff and diff.get_playlist(archive = True) or [])
 
     def handle_pl_sync(self, source, playlist, diff = None, date = None):
         """
