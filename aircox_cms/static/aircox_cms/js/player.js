@@ -1,21 +1,13 @@
 /*  Implementation status: -- TODO
- *  - actions:
- *      - add to user playlist
- *      - go to detail
- *      - remove from playlist: for user playlist
- *  - save sound infos:
- *      - while playing: save current position
- *      - otherwise: remove from localstorage
- *      - save playlist in localstorage
  *  - proper design
  *  - mini-button integration in lists (list of diffusion articles)
  */
 
 
 var State = Object.freeze({
-    Stop: Symbol('Stop'),
-    Loading: Symbol('Loading'),
-    Play: Symbol('Play'),
+    Stop: 'stop',
+    Loading: 'loading',
+    Play: 'play',
 });
 
 
@@ -110,28 +102,29 @@ var Sound = Vue.extend({
             state: State.Stop,
             // current position in playing sound
             position: 0,
-            // estimated position when user mouse over progress bar
-            seek_position: null,
             // url to the page related to the sound
             detail_url: '',
+            // estimated position when user mouse over progress bar
+            user_seek: null,
         };
     },
 
     computed: {
         // sound can be seeked
-        seekable: function() {
+        seekable() {
             // seekable: for the moment only when we have a podcast file
             // note: need mounted because $refs is not reactive
             return this.mounted && this.duration && this.$refs.audio.seekable;
         },
 
         // sound duration in seconds
-        duration: function() {
-            if(this.track.duration)
-                return this.track.duration[0] * 3600 +
-                       this.track.duration[1] * 60 +
-                       this.track.duration[2];
-            return null;
+        duration() {
+            return this.track.duration;
+        },
+
+        seek_position() {
+            return (this.user_seek === null && this.position) ||
+                    this.user_seek;
         },
     },
 
@@ -197,6 +190,29 @@ var Sound = Vue.extend({
         },
 
         //
+        // Utils functions
+        //
+        _as_progress_time(event) {
+            bounding = this.$refs.progress.getBoundingClientRect()
+            offset = (event.clientX - bounding.left);
+            return offset * this.$refs.audio.duration / bounding.width;
+        },
+
+        // format seconds into time string such as: [h"m]m'ss
+        format_time(seconds) {
+            seconds = Math.floor(seconds);
+            var hours = Math.floor(seconds / 3600);
+            seconds -= hours * 3600;
+            var minutes = Math.floor(seconds / 60);
+            seconds -= minutes * 60;
+
+            return  (hours ? ((hours < 10 ? '0' + hours : hours) + '"') : '') +
+                    minutes + "'" + seconds
+            ;
+        },
+
+
+        //
         // Events
         //
         timeUpdate() {
@@ -214,21 +230,15 @@ var Sound = Vue.extend({
             this.$emit('ended', this);
         },
 
-        _as_progress_time(event) {
-            bounding = this.$refs.progress.getBoundingClientRect()
-            offset = (event.clientX - bounding.left);
-            return offset * this.$refs.audio.duration / bounding.width;
-        },
-
         progress_mouse_out(event) {
-            this.seek_position = null;
+            this.user_seek = null;
         },
 
         progress_mouse_move(event) {
             if(this.$refs.audio.duration == Infinity ||
                     isNaN(this.$refs.audio.duration))
                return;
-            this.seek_position = this._as_progress_time(event);
+            this.user_seek = this._as_progress_time(event);
         },
 
         progress_clicked(event) {
@@ -250,8 +260,8 @@ var Playlist = Vue.extend({
         return {
             // if true, use this playlist as user's default playlist
             default: false,
-            // single mode enabled
-            single_mode: false,
+            // read all mode enabled
+            read_all: false,
             // playlist can be modified by user
             modifiable: false,
             // if set, save items into localstorage using this root key
@@ -259,6 +269,13 @@ var Playlist = Vue.extend({
             // sounds info
             tracks: [],
         };
+    },
+
+    computed: {
+        // id of the read all mode checkbox switch
+        read_all_id() {
+            return this.id + "_read_all";
+        }
     },
 
     mounted() {
@@ -283,8 +300,8 @@ var Playlist = Vue.extend({
             // ensure sound is stopped (beforeDestroy())
             sound.stop();
 
-            // next only when single mode
-            if(this.single_mode)
+            // next only when read all mode
+            if(!this.read_all)
                 return;
 
             var sounds = this.$refs.sounds;

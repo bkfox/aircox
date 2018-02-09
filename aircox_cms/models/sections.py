@@ -543,9 +543,15 @@ class SectionPlaylist(Section):
         """
         fields = {
             'name': 'name',
-            'duration': lambda e, o: (
-                o.duration.hour, o.duration.minute, o.duration.second
-            ),
+            'embed': 'embed',
+            'duration': lambda e, o:
+                o.duration.hour * 3600 + o.duration.minute * 60 +
+                o.duration.second
+            ,
+            'duration_str': lambda e, o:
+                (str(o.duration.hour) + '"' if o.duration.hour else '') +
+                str(o.duration.minute) + "'" + str(o.duration.second)
+            ,
             'sources': lambda e, o: [ o.url() ],
             'detail_url':
                 lambda e, o: o.diffusion and hasattr(o.diffusion, 'page') \

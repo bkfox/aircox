@@ -19,35 +19,7 @@
 
 /** detail view **/
 
-/** player **/
-.player[state='playing'] .item[selected] .button > img {
-    animation-duration: 4s;
-    animation-iteration-count: infinite;
-    animation-name: blink;
-}
 
-
-@keyframes blink {
-    from {
-        opacity: 1.0;
-    }
-
-    50% {
-        opacity: 0.3;
-    }
-
-    to {
-        opacity: 1.0;
-    }
-}
-
-
-.player[state="loading"] .item[selected] .button > img.loading {
-    animation-duration: 2s;
-    animation-iteration-count: infinite;
-    animation-name: rotate;
-    animation-timing-function: linear;
-}
 
 @keyframes rotate {
     from {

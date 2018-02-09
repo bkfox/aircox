@@ -408,7 +408,7 @@ ul.list, .list > ul {
 
 
 .date_list_item.now {
-    padding: 0.4em;    
+    padding: 0.4em;
 }
 
     .date_list_item img.now {
@@ -486,152 +486,110 @@ ul.list, .list > ul {
     }
 
 
-/** content: player **/
-.player {
+/** component: sound **/
+.component.sound {
+    display: flex;
+    flex-direction: row;
+    margin: 0.2em;
+    width: 100%;
 }
 
-    .player:not([seekable]) > .controls > .progress {
-        display: none;
+    .component.sound[state="play"] button {
+        animation-name: sound-blink;
+        animation-duration: 4s;
+        animation-iteration-count: infinite;
+        animation-direction: alternate;
+    }
+
+    @keyframes sound-blink {
+        from { background-color: rgba(255, 255, 255, 0); }
+        to { background-color: rgba(255, 255, 255, 0.6); }
     }
 
 
-.player .controls {
-    margin-top: 1em;
-    text-align: right;
-}
-    .player .controls > * {
-        margin: 0em 0.2em;
-    }
-
-    .player .controls .single {
-        display: none;
-    }
-
-        .player .controls .single + label {
-            display: inline-block;
-            font-size: 1em;
-            padding: 0.1em;
-            width: 1.5em;
-            height: 1.0em;
-            text-align: center;
-            box-shadow: inset 0em 0em 0.1em #818181;
-        }
-
-        .player .controls .single:not(:checked) + label {
-            border-left: 2px #818181 solid;
-            color: black;
-        }
-
-        .player .controls .single:checked + label {
-            border-right: 2px #818181 solid;
-        }
-
-.player .playlist .item {
-    position: relative;
-    margin: 0em;
-    padding: 0.2em 0.4em;
+.component.sound .button {
+    width: 4em;
+    height: 4em;
     cursor: pointer;
+    position: relative;
+    margin-right: 0.4em;
 }
 
-    .player .playlist .item:hover {
-        color: #007EDF;
-    }
-
-    .player .item > * {
-        vertical-align: middle;
-    }
-
-    .player .playlist .item .actions {
-        display: none;
+    .component.sound .button > img {
+        width: 100%;
         height: 100%;
-        max-width: 2.9em;
+    }
+
+    .component.sound button {
+        transition: background-color 0.5s;
+        background-color: rgba(255,255,255,0.1);
         position: absolute;
-        right: 0px;
-        font-size: 1.2em;
+        cursor: pointer;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        border: 0;
+    }
+
+    .component.sound button:hover {
+        background-color: rgba(255,255,255,0.5);
+    }
+
+    .component.sound button > img {
+        background-color: rgba(255,255,255,0.9);
+        border-radius: 50%;
+    }
+
+.component.sound .content {
+    position: relative;
+}
+
+    .component.sound .info {
         text-align: right;
     }
 
-        .player .playlist .item:hover .actions {
-            display: inline;
-        }
-
-    .player .playlist .item .action {
-        display: inline-block;
-        width: 1.2em;
-        height: 1.2em;
-        border-radius: 0.2em;
-        text-align: center;
-        line-height: 1.2em;
-        background-color: #F2F2F2;
-    }
-
-        .player .playlist .item .action:hover {
-            background-color: rgba(0, 126, 223, 0.1);
-        }
-
-    .player .playlist .duration {
-       text-align: right;
-    }
-
-    .player .playlist progress {
+    .component.sound progress {
         width: 100%;
-    }
-
-
-.player .item[selected] {
-    border-left: 1px #007EDF solid;
-    font-size: 1.0em;
-}
-
-.player .item:not([selected]) {
-}
-
-.player .button {
-    display: inline-block;
-    cursor: pointer;
-    height: 2.0em;
-    background: none;
-    border: none;
-    font-size: 1.4em;
-}
-
-    .player .button > img {
-        max-height: 2.0em;
-    }
-
-    .player:not([state]) .item[selected] .button > img:not(.play),
-    .player[state="paused"] .item[selected] .button > img:not(.play),
-    .player[state="playing"] .item[selected] .button > img:not(.pause),
-    .player[state="loading"] .item[selected] .button > img:not(.loading)
-    {
-        display: none;
-    }
-
-    .player .item:not([selected]) .button > img.play {
-        display: block;
-    }
-
-    .player .item:not([selected]) .button > img:not(.play):not(.cover) {
-        display: none;
-    }
-
-    .player .item .button > img.cover {
-        display: block;
         position: absolute;
-        transition: opacity 0.2s;
+        bottom: 0;
+        height: 0.4em;
     }
 
-    .player .item:hover .button > img.cover {
-        opacity: 0.2;
+    .component.sound progress:hover {
+        height: 1em;
     }
 
 
+/** component: playlist **/
+.component.playlist footer {
+    text-align: right;
+    display: block;
+}
 
-main .player .actions .action:not(.add),
-.section_player .actions .action.add,
-.player .list_item.live:hover .actions {
+.component.playlist .read_all {
     display: none;
 }
+
+    .component.playlist .read_all + label {
+        display: inline-block;
+        padding: 0.1em;
+        margin-left: 0.2em;
+        cursor: pointer;
+        font-size: 1em;
+        box-shadow: inset 0em 0em 0.1em #818181;
+    }
+
+    .component.playlist .read_all:not(:checked) + label {
+        border-left: 0.1em #818181 solid;
+        margin-right: 0em;
+    }
+
+    .component.playlist .read_all:checked + label {
+        border-right: 0.1em #007EDF solid;
+        box-shadow: inset 0em 0em 0.1em #007EDF;
+        margin-right: 0em;
+    }
 
 
 /** content: page **/

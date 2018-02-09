@@ -9,16 +9,21 @@
 <a-playlist class="playlist" id="{{ playlist_id }}">
     <noscript>
         {% for track in tracks %}
-        <li class="item">
-            <span class="name">{{ track.name }} ({{ track.duration|date:"H\"i's" }}): </span>
+        <div class="item">
+            <span class="name">
+                {{ track.data.name }}
+                {% if track.data.duration %}
+                    ({{ track.data.duration_str }})
+                {% endif %}
+            </span>
             <span class="podcast">
-            {% if not track.embed %}
+            {% if not track.data.embed %}
             <audio src="{{ track.url|escape }}" controls>
             {% else %}
             {{ track.embed|safe }}
             {% endif %}
             </span>
-        </li>
+        </div>
         {% endfor %}
     </noscript>
     <script>
