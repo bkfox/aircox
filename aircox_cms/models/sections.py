@@ -627,6 +627,11 @@ class SectionPlayer(Section):
         _('audio streams'),
         help_text = _('one audio stream per line'),
     )
+    icon = models.ImageField(
+        _('icon'),
+        blank = True, null = True,
+        help_text = _('icon to display in the player')
+    )
 
     class Meta:
         verbose_name = _('Section: Player')
@@ -641,7 +646,7 @@ class SectionPlayer(Section):
         context['tracks'] = [SectionPlaylist.Track(
             name = self.live_title,
             sources = self.streams.split('\r\n'),
-            data_url = 'https://aircox.radiocampus.be/aircox/on_air', # reverse('aircox.on_air'),
+            data_url = reverse('aircox.on_air'),
             interval = 10,
             run = True,
         )]

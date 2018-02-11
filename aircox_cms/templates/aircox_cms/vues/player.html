@@ -49,7 +49,7 @@
                 :value="seek_position" :max="duration"
             ></progress>
         </div>
-        <div class="actions">
+        <div class="actions" v-show="duration">
             <a class="action remove"
                 title="{% trans "Remove from playlist" %}"
                 v-if="this.$parent.modifiable"

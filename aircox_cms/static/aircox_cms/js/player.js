@@ -58,12 +58,12 @@ class Track {
                 data = {
                     name: '♫ ' + (data.artist ? data.artist + ' — ' : '') +
                            data.title,
-                    data_url: ''
+                    detail_url: ''
                 }
             else
                 data = {
                     title: data.title,
-                    data_url: data.url
+                    detail_url: data.url
                 }
             Object.assign(self, data);
         };
