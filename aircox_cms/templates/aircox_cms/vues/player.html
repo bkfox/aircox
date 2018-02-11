@@ -32,7 +32,7 @@
         </div>
         <div class="content flex_item">
             <h3 class="flex_item">
-                <a :href="detail_url">[[ track.name ]]</a>
+                <a :href="track.detail_url">[[ track.name ]]</a>
             </h3>
             <div v-if="track.duration" class="info">
                 <span v-if="seek_position !== null">

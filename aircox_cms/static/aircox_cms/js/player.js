@@ -16,6 +16,11 @@ class Track {
     // If url and interval are given, use them to retrieve regularely
     // the track informations
     constructor(data) {
+        Object.assign(this, {
+            'name': '',
+            'detail_url': '',
+        });
+
         Object.assign(this, data);
 
         if(this.data_url) {
@@ -62,7 +67,7 @@ class Track {
                 }
             else
                 data = {
-                    title: data.title,
+                    name: data.title,
                     detail_url: data.url
                 }
             Object.assign(self, data);
@@ -102,8 +107,6 @@ var Sound = Vue.extend({
             state: State.Stop,
             // current position in playing sound
             position: 0,
-            // url to the page related to the sound
-            detail_url: '',
             // estimated position when user mouse over progress bar
             user_seek: null,
         };

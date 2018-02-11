@@ -89,9 +89,12 @@ class Importer:
                 tags = line.get('tags')
                 if tags:
                     track.tags.add(*tags.split(','))
-            except:
-                logger.warning('an error occured for track {index}, it may not '
-                               'have been saved'.format(index = index))
+            except Exception as err:
+                logger.warning(
+                    'an error occured for track {index}, it may not '
+                    'have been saved: {err}'
+                    .format(index = index, err=err)
+                )
                 continue
 
             if save:
