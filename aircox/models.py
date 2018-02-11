@@ -578,10 +578,6 @@ class Schedule(models.Model):
         }
         return before == now
 
-    @property
-    def end(self):
-        return self.time + utils.to_timedelta(self.duration)
-
     def match(self, date = None, check_time = True):
         """
         Return True if the given datetime matches the schedule
