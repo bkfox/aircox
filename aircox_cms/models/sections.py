@@ -638,6 +638,7 @@ class SectionPlayer(Section):
 
     panels = Section.panels + [
         FieldPanel('live_title'),
+        FieldPanel('icon'),
         FieldPanel('streams'),
     ]
 
