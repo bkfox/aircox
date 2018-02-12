@@ -915,7 +915,7 @@ class Diffusion(models.Model):
         Returns sounds as a playlist (list of *local* file path).
         The given arguments are passed to ``get_sounds``.
         """
-        return list(self.get_sounds(**type) \
+        return list(self.get_sounds(**types) \
                         .filter(path__isnull = False) \
                         .values_list('path', flat = True))
 
