@@ -567,14 +567,15 @@ class SectionPlaylist(Section):
         _('user playlist'),
         default = False,
         help_text = _(
-            'if set, this playlist is to be editable by the user'
+            'this is a user playlist, it can be edited and saved by the '
+            'users (the modifications will NOT be registered on the server)'
         )
     )
-    single_mode = models.BooleanField(
-        _('single_mode'),
-        default = False,
+    read_all = models.BooleanField(
+        _('read all'),
+        default = True,
         help_text = _(
-            'enable single mode by default on this playlist'
+            'by default at the end of the sound play the next one'
         )
     )
 
@@ -583,7 +584,7 @@ class SectionPlaylist(Section):
     template_name = 'aircox_cms/sections/playlist.html'
     panels = Section.panels + [
         FieldPanel('user_playlist'),
-        FieldPanel('single_mode'),
+        FieldPanel('read_all'),
     ]
 
     def __init__(self, *args, sounds = None, tracks = None, page = None, **kwargs):
@@ -605,6 +606,7 @@ class SectionPlaylist(Section):
             'is_default': self.user_playlist,
             'modifiable': self.user_playlist,
             'storage_key': self.user_playlist and str(self.pk),
+            'read_all': self.read_all,
             'tracks': self.tracks
         })
         if not self.user_playlist and not self.tracks:

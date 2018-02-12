@@ -174,16 +174,14 @@ class BaseList(models.Model):
         choices = [ (int(y), _(x.replace('_', ' ')))
                         for x,y in DateFilter.__members__.items() ],
         blank = True, null = True,
-        help_text = _(
-            'select pages whose date follows the given constraint'
-        )
+        help_text = _('filter pages on their date')
     )
     model = models.ForeignKey(
         ContentType,
         verbose_name = _('filter on page type'),
         blank = True, null = True,
         on_delete=models.SET_NULL,
-        help_text = _('if set, select only elements that are of this type'),
+        help_text = _('keep only elements of this type'),
         limit_choices_to = related_pages_filter,
     )
     related = models.ForeignKey(

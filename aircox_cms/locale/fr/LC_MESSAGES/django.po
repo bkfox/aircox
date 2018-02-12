@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Aircox 0.1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2017-12-14 15:52+0100\n"
+"POT-Creation-Date: 2018-02-12 00:34+0100\n"
 "PO-Revision-Date: 2016-10-10 16:00+02\n"
 "Last-Translator: Aarys\n"
 "Language-Team: Aircox's translators team\n"
@@ -42,11 +42,11 @@ msgstr "Vous êtes un robot. Pas cool !"
 msgid "No publication found for this comment"
 msgstr "Aucune publication n'a été trouvée pour ce commentaire"
 
-#: aircox_cms/models.py:42
+#: aircox_cms/models/__init__.py:43
 msgid "aircox station"
 msgstr "station aircox"
 
-#: aircox_cms/models.py:47
+#: aircox_cms/models/__init__.py:48
 msgid ""
 "refers to an Aircox's station; it is used to make the link between the "
 "website and Aircox"
@@ -54,64 +54,64 @@ msgstr ""
 "fait référence à une station Aircox; utilisé pour faire le lien entre le "
 "site internet et Aircox"
 
-#: aircox_cms/models.py:54
+#: aircox_cms/models/__init__.py:55
 msgid "favicon"
 msgstr "favicon"
 
-#: aircox_cms/models.py:56
+#: aircox_cms/models/__init__.py:57
 msgid "small logo for the website displayed in the browser"
 msgstr "petit logo pour le site affiché dans le navigateur"
 
-#: aircox_cms/models.py:59 aircox_cms/models.py:373
+#: aircox_cms/models/__init__.py:60 aircox_cms/models/__init__.py:378
 msgid "tags"
 msgstr "tags"
 
-#: aircox_cms/models.py:62
+#: aircox_cms/models/__init__.py:63
 msgid "tags describing the website; used for referencing"
 msgstr "tags pour décrire le site internet; utilisés pour le référencement"
 
-#: aircox_cms/models.py:65
+#: aircox_cms/models/__init__.py:66
 msgid "public description"
 msgstr "description publique"
 
-#: aircox_cms/models.py:68
+#: aircox_cms/models/__init__.py:69
 msgid "public description of the website; used for referencing"
 msgstr "description publique du site internet; utilisée pour le référencement"
 
-#: aircox_cms/models.py:72
+#: aircox_cms/models/__init__.py:73
 msgid "page for lists"
 msgstr "page pour les listes"
 
-#: aircox_cms/models.py:73
+#: aircox_cms/models/__init__.py:74
 msgid "page used to display the results of a search and other lists"
 msgstr ""
 "page utilisée pour afficher les résultats d'une recherche et d'autres listes"
 
-#: aircox_cms/models.py:81 aircox_cms/models.py:85
+#: aircox_cms/models/__init__.py:82 aircox_cms/models/__init__.py:86
 msgid "publish comments automatically without verifying"
 msgstr "publier les commentaires automatiquement sans vérification"
 
-#: aircox_cms/models.py:88
+#: aircox_cms/models/__init__.py:89
 msgid "success message"
 msgstr "message de réussite"
 
-#: aircox_cms/models.py:89
+#: aircox_cms/models/__init__.py:90
 msgid "Your comment has been successfully posted!"
 msgstr "Votre commentaire a bien été posté !"
 
-#: aircox_cms/models.py:91
+#: aircox_cms/models/__init__.py:92
 msgid "message displayed when a comment has been successfully posted"
 msgstr "message à afficher quand un commentaire a bien été posté"
 
-#: aircox_cms/models.py:95
+#: aircox_cms/models/__init__.py:96
 msgid "waiting message"
 msgstr "message d'attente"
 
-#: aircox_cms/models.py:96
+#: aircox_cms/models/__init__.py:97
 msgid "Your comment is awaiting for approval."
 msgstr "Votre message est en attente d'approbation"
 
-#: aircox_cms/models.py:98
+#: aircox_cms/models/__init__.py:99
 msgid ""
 "message displayed when a comment has been sent, but waits for  website "
 "administrators' approval."
@@ -119,16 +119,16 @@ msgstr ""
 "message affiché quand un commentaire a été envoyé, mais est en attente de "
 "l'approbation des administrateurs du site"
 
-#: aircox_cms/models.py:103
+#: aircox_cms/models/__init__.py:104
 msgid "error message"
 msgstr "message d'erreur"
 
-#: aircox_cms/models.py:104
+#: aircox_cms/models/__init__.py:105
 msgid "We could not save your message. Please correct the error(s) below."
 msgstr ""
 "Votre message n'a pas pu être sauvegardé. Veuillez corriger l'erreur suivante"
 
-#: aircox_cms/models.py:106
+#: aircox_cms/models/__init__.py:107
 msgid ""
 "message displayed when the form of the comment has been  submitted but there "
 "is an error, such as an incomplete field"
@@ -136,11 +136,11 @@ msgstr ""
 "message affiché quand le formulaire a été envoyé mais qu'il y a une erreur "
 "telle qu'un champ incomplet"
 
-#: aircox_cms/models.py:112
+#: aircox_cms/models/__init__.py:113
 msgid "synchronize with Aircox"
 msgstr "synchroniser avec Aircox"
 
-#: aircox_cms/models.py:115
+#: aircox_cms/models/__init__.py:116
 msgid ""
 "create publication for each object added to an Aircox's station; for example "
 "when there is a new program, or when a diffusion has been added to the "
@@ -150,13 +150,13 @@ msgstr ""
 "exemple quand il y a un nouveau programme, ou quand une diffusion a été "
 "ajoutée au calendrier. Note: cela ne concerne pas les Stations elles-mêmes"
 
-#: aircox_cms/models.py:125
+#: aircox_cms/models/__init__.py:126
 #, fuzzy
 #| msgid "default program parent page"
 msgid "default programs page"
 msgstr "Page des programmes par défault"
 
-#: aircox_cms/models.py:128
+#: aircox_cms/models/__init__.py:129
 msgid ""
 "when a new program is saved and a publication is created, put this "
 "publication as a child of this page. If no page has been specified, try to "
@@ -168,332 +168,333 @@ msgstr ""
 "été spécifiée, placez cette publication en tant qu'enfant de la page racine "
 "du site (sinon, ne créez pas la page)."
 
-#: aircox_cms/models.py:147
+#: aircox_cms/models/__init__.py:148
 msgid "Promotion"
 msgstr "Promotion"
 
-#: aircox_cms/models.py:154
+#: aircox_cms/models/__init__.py:155
 #: aircox_cms/templates/aircox_cms/snippets/comments.html:6
 #: aircox_cms/wagtail_hooks.py:163
 msgid "Comments"
 msgstr "Commentaires"
 
-#: aircox_cms/models.py:158
+#: aircox_cms/models/__init__.py:159
 msgid "Programs and controls"
 msgstr "Programmes et contrôles"
 
-#: aircox_cms/models.py:162
+#: aircox_cms/models/__init__.py:163
 msgid "website settings"
 msgstr "paramètres du site internet"
 
-#: aircox_cms/models.py:169 aircox_cms/sections.py:611
+#: aircox_cms/models/__init__.py:170 aircox_cms/models/sections.py:63
 msgid "page"
 msgstr "page"
 
-#: aircox_cms/models.py:172
+#: aircox_cms/models/__init__.py:173
 msgid "published"
 msgstr "publié"
 
-#: aircox_cms/models.py:176
+#: aircox_cms/models/__init__.py:177
 msgid "author"
 msgstr "auteur"
 
-#: aircox_cms/models.py:180 aircox_cms/models.py:439
+#: aircox_cms/models/__init__.py:181 aircox_cms/models/__init__.py:443
 msgid "email"
 msgstr "email"
 
-#: aircox_cms/models.py:184
+#: aircox_cms/models/__init__.py:185
 msgid "website"
 msgstr "site internet"
 
-#: aircox_cms/models.py:188 aircox_cms/models.py:345
+#: aircox_cms/models/__init__.py:189 aircox_cms/models/__init__.py:350
 msgid "date"
 msgstr "date"
 
-#: aircox_cms/models.py:192 aircox_cms/models.py:196
+#: aircox_cms/models/__init__.py:193 aircox_cms/models/__init__.py:197
 msgid "comment"
 msgstr "commentaire"
 
-#: aircox_cms/models.py:197
+#: aircox_cms/models/__init__.py:198
 #, fuzzy
 #| msgid "comment"
 msgid "comments"
 msgstr "commentaire"
 
 #. Translators: text shown in the comments list (in admin)
-#: aircox_cms/models.py:201
+#: aircox_cms/models/__init__.py:202
 #, python-brace-format
 msgid "{date}, {author}: {content}..."
 msgstr "{date}, {author}: {content}..."
 
-#: aircox_cms/models.py:229
+#: aircox_cms/models/__init__.py:230
 msgid "body"
 msgstr "corps de texte"
 
-#: aircox_cms/models.py:231
+#: aircox_cms/models/__init__.py:232
 msgid "the publication itself"
 msgstr "contenu de la publication elle-même"
 
-#: aircox_cms/models.py:235
+#: aircox_cms/models/__init__.py:236
 msgid "cover"
 msgstr "couverture"
 
-#: aircox_cms/models.py:239
+#: aircox_cms/models/__init__.py:240
 msgid "image to use as cover of the publication"
 msgstr "image à utiliser comme couverture de la publication"
 
-#: aircox_cms/models.py:242 aircox_cms/models.py:244 aircox_cms/models.py:362
-#: aircox_cms/models.py:364
+#: aircox_cms/models/__init__.py:243 aircox_cms/models/__init__.py:245
+#: aircox_cms/models/__init__.py:367 aircox_cms/models/__init__.py:369
 msgid "allow comments"
 msgstr "autoriser les commentaires"
 
-#: aircox_cms/models.py:253 aircox_cms/models.py:388 aircox_cms/models.py:394
-#: aircox_cms/models.py:552
+#: aircox_cms/models/__init__.py:254 aircox_cms/models/__init__.py:393
+#: aircox_cms/models/__init__.py:399 aircox_cms/models/__init__.py:556
 msgid "Content"
 msgstr "Contenu"
 
-#: aircox_cms/models.py:351
+#: aircox_cms/models/__init__.py:356
 msgid "publish as program"
 msgstr "publier en tant que programme"
 
-#: aircox_cms/models.py:354
+#: aircox_cms/models/__init__.py:359
 msgid "use this program as the author of the publication"
 msgstr "utiliser ce programme en tant qu'auteur de la publication"
 
-#: aircox_cms/models.py:357
+#: aircox_cms/models/__init__.py:362
 msgid "focus"
 msgstr "focus"
 
-#: aircox_cms/models.py:359
+#: aircox_cms/models/__init__.py:364
 msgid "the publication is highlighted;"
 msgstr "la publication est mise en avant;"
 
-#: aircox_cms/models.py:368
+#: aircox_cms/models/__init__.py:373
 msgid "headline"
 msgstr "entête"
 
-#: aircox_cms/models.py:370
+#: aircox_cms/models/__init__.py:375
 msgid "headline of the publication, use it as an introduction"
 msgstr "entête de la publication, utiliée comme introduction"
 
-#: aircox_cms/models.py:379 aircox_cms/models.py:380
+#: aircox_cms/models/__init__.py:384 aircox_cms/models/__init__.py:385
 msgid "Publication"
 msgstr "Publication"
 
-#: aircox_cms/models.py:395 aircox_cms/models.py:553 aircox_cms/sections.py:865
-msgid "Links"
-msgstr "Liens"
-
-#: aircox_cms/models.py:432
+#: aircox_cms/models/__init__.py:436
 msgid "program"
 msgstr "programme"
 
-#: aircox_cms/models.py:442
+#: aircox_cms/models/__init__.py:446
 msgid "email is public"
 msgstr "l'email est public"
 
-#: aircox_cms/models.py:444
+#: aircox_cms/models/__init__.py:448
 msgid "the email addess is accessible to the public"
 msgstr "l'adresse email est accessible au public"
 
-#: aircox_cms/models.py:448 aircox_cms/wagtail_hooks.py:49
+#: aircox_cms/models/__init__.py:452 aircox_cms/wagtail_hooks.py:49
 msgid "Program"
 msgstr "Programme"
 
-#: aircox_cms/models.py:449 aircox_cms/signals.py:87 aircox_cms/signals.py:99
-#: aircox_cms/wagtail_hooks.py:38 aircox_cms/wagtail_hooks.py:377
+#: aircox_cms/models/__init__.py:453 aircox_cms/signals.py:87
+#: aircox_cms/signals.py:99 aircox_cms/wagtail_hooks.py:38
+#: aircox_cms/wagtail_hooks.py:377
 msgid "Programs"
 msgstr "Programmes"
 
-#: aircox_cms/models.py:524
+#: aircox_cms/models/__init__.py:528
 msgid "diffusion"
 msgstr "diffusion"
 
-#: aircox_cms/models.py:535
+#: aircox_cms/models/__init__.py:539
 msgid "publish archive"
 msgstr "publier l'archive"
 
-#: aircox_cms/models.py:537
+#: aircox_cms/models/__init__.py:541
 msgid "publish the podcast of the complete diffusion"
 msgstr "publier le podcast de la diffusion complète"
 
-#: aircox_cms/models.py:541
+#: aircox_cms/models/__init__.py:545
 #: aircox_cms/templates/aircox_cms/snippets/list_item.html:38
 #: aircox_cms/wagtail_hooks.py:80
 msgid "Diffusion"
 msgstr "Diffusion"
 
-#: aircox_cms/models.py:542 aircox_cms/wagtail_hooks.py:55
+#: aircox_cms/models/__init__.py:546 aircox_cms/wagtail_hooks.py:55
 msgid "Diffusions"
 msgstr "Diffusions"
 
-#: aircox_cms/models.py:545
+#: aircox_cms/models/__init__.py:549
 msgid "Tracks"
 msgstr "Pistes"
 
-#: aircox_cms/models.py:591
+#: aircox_cms/models/__init__.py:594
 #, python-format
 msgid "Rerun of %(date)s"
 msgstr "Rediffusion du %(date)s"
 
-#: aircox_cms/models.py:595
+#: aircox_cms/models/__init__.py:598
 msgid "Cancelled"
 msgstr "Annulé"
 
-#: aircox_cms/models.py:700
+#: aircox_cms/models/__init__.py:614
+msgid "Podcasts"
+msgstr "Podcasts"
+
+#: aircox_cms/models/__init__.py:682
 msgid "Dynamic List Page"
 msgstr "Page avec liste dynamique"
 
-#: aircox_cms/models.py:701
+#: aircox_cms/models/__init__.py:683
 msgid "Dynamic List Pages"
 msgstr "Pages avec liste dynamique"
 
-#: aircox_cms/models.py:745 aircox_cms/models.py:810 aircox_cms/sections.py:941
-#: aircox_cms/sections.py:1000
+#: aircox_cms/models/__init__.py:727 aircox_cms/models/__init__.py:792
+#: aircox_cms/models/sections.py:404 aircox_cms/models/sections.py:464
 msgid "station"
 msgstr "station"
 
-#: aircox_cms/models.py:748 aircox_cms/models.py:813
-#: aircox_cms/sections.py:1001
+#: aircox_cms/models/__init__.py:730 aircox_cms/models/__init__.py:795
+#: aircox_cms/models/sections.py:465
 msgid "(required) related station"
 msgstr "(requis) station"
 
-#: aircox_cms/models.py:751
+#: aircox_cms/models/__init__.py:733
 msgid "maximum age"
 msgstr "âge maximum"
 
-#: aircox_cms/models.py:753
+#: aircox_cms/models/__init__.py:735
 msgid "maximum days in the past allowed to be shown. 0 means no limit"
 msgstr ""
 "nombre de jours maximum dans le passé autorisés à être affichés. 0 signifie "
 "qu'il n'y a pas de limite"
 
-#: aircox_cms/models.py:757
+#: aircox_cms/models/__init__.py:739
 msgid "reverse list"
 msgstr "inverser la liste"
 
-#: aircox_cms/models.py:759
+#: aircox_cms/models/__init__.py:741
 msgid "print logs in ascending order by date"
 msgstr "afficher les logs de manière ascendante par date"
 
-#: aircox_cms/models.py:763 aircox_cms/models.py:764
+#: aircox_cms/models/__init__.py:745 aircox_cms/models/__init__.py:746
 #: aircox_cms/wagtail_hooks.py:127
 msgid "Logs"
 msgstr "Logs"
 
-#: aircox_cms/models.py:771 aircox_cms/models.py:819
+#: aircox_cms/models/__init__.py:753 aircox_cms/models/__init__.py:801
 msgid "Configuration"
 msgstr "Configuration"
 
-#: aircox_cms/models.py:823 aircox_cms/models.py:824
-#: aircox_cms/sections.py:1021 aircox_cms/signals.py:73
+#: aircox_cms/models/__init__.py:805 aircox_cms/models/__init__.py:806
+#: aircox_cms/models/sections.py:485 aircox_cms/signals.py:73
 msgid "Timetable"
 msgstr "Grille horaire"
 
-#: aircox_cms/sections.py:82
+#: aircox_cms/models/lists.py:49
 msgid "url"
 msgstr "url"
 
-#: aircox_cms/sections.py:84
+#: aircox_cms/models/lists.py:51
 msgid "URL of the link"
 msgstr "URL du lien"
 
-#: aircox_cms/sections.py:92
+#: aircox_cms/models/lists.py:59
 msgid "Use a page instead of a URL"
 msgstr "Utiliser une page au lieu d'une URL"
 
-#: aircox_cms/sections.py:96
+#: aircox_cms/models/lists.py:63 aircox_cms/models/sections.py:631
 msgid "icon"
 msgstr "icône"
 
-#: aircox_cms/sections.py:101
+#: aircox_cms/models/lists.py:68
 msgid "icon from the gallery"
 msgstr "icône de la gallerie"
 
-#: aircox_cms/sections.py:105
+#: aircox_cms/models/lists.py:72
 msgid "icon path"
 msgstr "chemin de l'icône"
 
-#: aircox_cms/sections.py:109
+#: aircox_cms/models/lists.py:76
 msgid "icon from a given URL or path in the directory of static files"
 msgstr "icône d'une URL donnée ou chemin dans le des fichiers statiques"
 
-#: aircox_cms/sections.py:113
+#: aircox_cms/models/lists.py:80
 msgid "text"
 msgstr "texte"
 
-#: aircox_cms/sections.py:116
+#: aircox_cms/models/lists.py:83
 msgid "text of the link"
 msgstr "texte du lien"
 
-#: aircox_cms/sections.py:119
+#: aircox_cms/models/lists.py:86
 msgid "info"
 msgstr "info"
 
-#: aircox_cms/sections.py:123
+#: aircox_cms/models/lists.py:90
 msgid "description displayed in a popup when the mouse hovers the link"
 msgstr ""
 "description affichée dans une fenêtre popup quand la souris passe au dessus "
 "du lien"
 
-#: aircox_cms/sections.py:139
+#: aircox_cms/models/lists.py:106
 msgid "link"
 msgstr "lien"
 
-#: aircox_cms/sections.py:189
+#: aircox_cms/models/lists.py:156
 msgid "focus available"
 msgstr "focus disponible"
 
-#: aircox_cms/sections.py:191
+#: aircox_cms/models/lists.py:158
 msgid "if true, highlight the first focused article found"
 msgstr "si vrai, surligner le premier article en focus trouvé"
 
-#: aircox_cms/sections.py:194 aircox_cms/sections.py:947
+#: aircox_cms/models/lists.py:161 aircox_cms/models/sections.py:410
 msgid "count"
 msgstr "compte"
 
-#: aircox_cms/sections.py:196
+#: aircox_cms/models/lists.py:163
 msgid "number of items to display in the list"
 msgstr "nombre d'objets à afficher dans la liste"
 
-#: aircox_cms/sections.py:199
+#: aircox_cms/models/lists.py:166
 msgid "ascending order"
 msgstr "ordre ascendant"
 
-#: aircox_cms/sections.py:201
+#: aircox_cms/models/lists.py:168
 msgid "if selected sort list in the ascending order by date"
 msgstr "si selectionné, affiche la liste dans l'ordre ascendant par date"
 
-#: aircox_cms/sections.py:206
+#: aircox_cms/models/lists.py:173
 msgid "filter on date"
 msgstr "filtrer par date"
 
-#: aircox_cms/sections.py:211
-msgid "select pages whose date follows the given constraint"
-msgstr ""
+#: aircox_cms/models/lists.py:178
+msgid "filter pages on their date"
+msgstr "filtrer les pages par leur date"
 
-#: aircox_cms/sections.py:216
-msgid "filter on page type"
-msgstr "filtrer par type de page"
+#: aircox_cms/models/lists.py:183
+msgid "keep only elements of this type"
+msgstr "garder seulement les éléments de ce type"
 
-#: aircox_cms/sections.py:219
+#: aircox_cms/models/lists.py:186
 msgid "if set, select only elements that are of this type"
 msgstr "si actif, séléctionne seulement des éléments de ce type"
 
-#: aircox_cms/sections.py:224
+#: aircox_cms/models/lists.py:191
 msgid "related page"
 msgstr "page apparentée"
 
-#: aircox_cms/sections.py:228
+#: aircox_cms/models/lists.py:195
 msgid "if set, select children or siblings of this page"
 msgstr ""
 "si actif, selectionne les enfants ou les sœurs apparentées à cette page"
 
-#: aircox_cms/sections.py:233
+#: aircox_cms/models/lists.py:200
 msgid "relation"
 msgstr "relation"
 
-#: aircox_cms/sections.py:238
+#: aircox_cms/models/lists.py:205
 msgid ""
 "when the list is related to a page, only select pages that correspond to "
 "this relationship"
@@ -501,46 +502,46 @@ msgstr ""
 "quand une liste est relative à une page, sélectionner uniquement les pages "
 "correspondant à cette relation"
 
-#: aircox_cms/sections.py:243
+#: aircox_cms/models/lists.py:210
 msgid "filter on search"
 msgstr "filtre sur cette recherche"
 
-#: aircox_cms/sections.py:247
+#: aircox_cms/models/lists.py:214
 msgid "keep only pages that matches the given search"
 msgstr "garder seulement les pages qui correspondent à cette recherche"
 
-#: aircox_cms/sections.py:251
+#: aircox_cms/models/lists.py:218
 msgid "filter on tag"
 msgstr "filtrer par date"
 
-#: aircox_cms/sections.py:255
+#: aircox_cms/models/lists.py:222
 msgid "keep only pages with the given tags (separated by a colon)"
 msgstr ""
 "garder seulement les pages avec les tags suivants (séparés par une virgule"
 
-#: aircox_cms/sections.py:264
+#: aircox_cms/models/lists.py:231
 msgid "rendering"
 msgstr "rendu"
 
-#: aircox_cms/sections.py:272
+#: aircox_cms/models/lists.py:239
 msgid "filters"
 msgstr "filtres"
 
-#: aircox_cms/sections.py:486
+#: aircox_cms/models/lists.py:452
 msgid "navigation days count"
 msgstr "compte des jours de navigation"
 
-#: aircox_cms/sections.py:488
+#: aircox_cms/models/lists.py:454
 msgid "number of days to display in the navigation header when we use dates"
 msgstr ""
 "nombre de jours à afficher dans l'entête de la navigation quand des dates "
 "sont utilisées"
 
-#: aircox_cms/sections.py:492
+#: aircox_cms/models/lists.py:458
 msgid "navigation per week"
 msgstr "navigation par semaine"
 
-#: aircox_cms/sections.py:494
+#: aircox_cms/models/lists.py:460
 msgid ""
 "if selected, show dates navigation per weeks instead of show days equally "
 "around the current date"
@@ -548,47 +549,47 @@ msgstr ""
 "si sélectionné, montre les dates de navigation par semaine au lieu de "
 "montrer les date ségalement autour de la date actuelle"
 
-#: aircox_cms/sections.py:498
+#: aircox_cms/models/lists.py:464
 msgid "hide icons"
 msgstr "cacher les icones"
 
-#: aircox_cms/sections.py:500
+#: aircox_cms/models/lists.py:466
 msgid "if selected, images of publications will not be displayed in the list"
 msgstr "si sélectionné, la liste n'affiche pas les images des publications"
 
-#: aircox_cms/sections.py:512
+#: aircox_cms/models/lists.py:478
 msgid "Navigation"
 msgstr "Navigation"
 
-#: aircox_cms/sections.py:584
+#: aircox_cms/models/sections.py:36
 msgid "name"
 msgstr "nom"
 
-#: aircox_cms/sections.py:587
+#: aircox_cms/models/sections.py:39
 msgid "name of this section (not displayed)"
 msgstr "nom de cette section (pas affiché)"
 
-#: aircox_cms/sections.py:590
+#: aircox_cms/models/sections.py:42
 msgid "position"
 msgstr "position"
 
-#: aircox_cms/sections.py:593
+#: aircox_cms/models/sections.py:45
 msgid "name of the template block in which the section must be set"
 msgstr "nom du bloc modèle dans lequel la section doit être activée"
 
-#: aircox_cms/sections.py:597 aircox_cms/sections.py:671
+#: aircox_cms/models/sections.py:49 aircox_cms/models/sections.py:125
 msgid "order"
 msgstr "ordre"
 
-#: aircox_cms/sections.py:599 aircox_cms/sections.py:673
+#: aircox_cms/models/sections.py:51 aircox_cms/models/sections.py:127
 msgid "order of rendering, the higher the latest"
 msgstr "ordre d'affichage, le plus élevé étant affiché en dernier"
 
-#: aircox_cms/sections.py:603
+#: aircox_cms/models/sections.py:55
 msgid "model"
 msgstr "modèle"
 
-#: aircox_cms/sections.py:605
+#: aircox_cms/models/sections.py:57
 msgid ""
 "this section is displayed only when the current page or publication is of "
 "this type"
@@ -596,39 +597,39 @@ msgstr ""
 "cette section n'est affichée que quand la page ou publication courante est "
 "de ce type"
 
-#: aircox_cms/sections.py:613
+#: aircox_cms/models/sections.py:65
 msgid "this section is displayed only on this page"
 msgstr "cette section n'est affichée que sur cette page"
 
-#: aircox_cms/sections.py:622 aircox_cms/sections.py:702
+#: aircox_cms/models/sections.py:74 aircox_cms/models/sections.py:159
 msgid "General"
 msgstr "Général"
 
-#: aircox_cms/sections.py:680
+#: aircox_cms/models/sections.py:134
 msgid "title"
 msgstr "titre"
 
-#: aircox_cms/sections.py:685
+#: aircox_cms/models/sections.py:139
 msgid "show title"
 msgstr "montrer le titre"
 
-#: aircox_cms/sections.py:687
+#: aircox_cms/models/sections.py:141
 msgid "if set show a title at the head of the section"
 msgstr "si actif, montre un titre dans l'entête de cette section"
 
-#: aircox_cms/sections.py:690
+#: aircox_cms/models/sections.py:144
 msgid "CSS class"
 msgstr "classe CSS"
 
-#: aircox_cms/sections.py:693
+#: aircox_cms/models/sections.py:147
 msgid "section container's \"class\" attribute"
 msgstr "attribut \"class\" de la balise HTML de la section"
 
-#: aircox_cms/sections.py:728
+#: aircox_cms/models/sections.py:186
 msgid "is related"
 msgstr "est apparenté"
 
-#: aircox_cms/sections.py:731
+#: aircox_cms/models/sections.py:189
 msgid ""
 "if set, section is related to the page being processed e.g rendering a list "
 "of links will use thoses of the publication instead of an assigned one."
@@ -636,11 +637,11 @@ msgstr ""
 "si actif, la section est apparentée à la page traitée e.g. fournir une liste "
 "de liens utilisera ceux de la publication au lieu de celle assignée"
 
-#: aircox_cms/sections.py:776
+#: aircox_cms/models/sections.py:235
 msgid "image"
 msgstr "image"
 
-#: aircox_cms/sections.py:780
+#: aircox_cms/models/sections.py:239
 msgid ""
 "If this item is related to the current page, this image will be used only "
 "when the page has not a cover"
@@ -648,39 +649,43 @@ msgstr ""
 "Si cet objet est apparenté à la page actuelle, cette page sera utilisée "
 "seulement quand la page n'a pas de couverture"
 
-#: aircox_cms/sections.py:785
+#: aircox_cms/models/sections.py:244
 msgid "width"
 msgstr "largeur"
 
-#: aircox_cms/sections.py:787
+#: aircox_cms/models/sections.py:246
 msgid "if set and > 0, sets a maximum width for the image"
 msgstr "si actif et > 0, fixe une largeur maximum pour l'image"
 
-#: aircox_cms/sections.py:790
+#: aircox_cms/models/sections.py:249
 msgid "height"
 msgstr "hauteur"
 
-#: aircox_cms/sections.py:792
+#: aircox_cms/models/sections.py:251
 msgid "if set 0 and > 0, sets a maximum height for the image"
 msgstr "si actif et > 0, fixe une hauteur maximum pour l'image"
 
-#: aircox_cms/sections.py:795
+#: aircox_cms/models/sections.py:254
 msgid "resize mode"
 msgstr "mode de redimensionnement"
 
-#: aircox_cms/sections.py:798
+#: aircox_cms/models/sections.py:257
 msgid "if the image is resized, set the resizing mode"
 msgstr "si l'image est redimensionnée, fixer le mode de redimensionnement"
 
-#: aircox_cms/sections.py:807
+#: aircox_cms/models/sections.py:266
 msgid "Resizing"
 msgstr "Redimensionner"
 
-#: aircox_cms/sections.py:900
+#: aircox_cms/models/sections.py:325
+msgid "Links"
+msgstr "Liens"
+
+#: aircox_cms/models/sections.py:361
 msgid "text of the url"
 msgstr "texte de l'url"
 
-#: aircox_cms/sections.py:903
+#: aircox_cms/models/sections.py:364
 msgid ""
 "use this text to display an URL to the complete list. If empty, no link is "
 "displayed"
@@ -688,92 +693,118 @@ msgstr ""
 "utiliser ce texte pour afficher un URL dans la liste complète. Si vide "
 "aucune adresse est affichée."
 
-#: aircox_cms/sections.py:944
+#: aircox_cms/models/sections.py:407
 msgid "(required) the station on which the logs happened"
 msgstr "(requis) la station sur laquelle les logs se sont produits"
 
-#: aircox_cms/sections.py:949
+#: aircox_cms/models/sections.py:412
 msgid "number of items to display in the list (max 100)"
 msgstr "nombre d'objets à afficher dans la liste (max 100)"
 
-#: aircox_cms/sections.py:953
+#: aircox_cms/models/sections.py:416
 msgid "list of logs"
 msgstr "liste des logs"
 
-#: aircox_cms/sections.py:954
+#: aircox_cms/models/sections.py:417
 msgid "lists of logs"
 msgstr "listes des logs"
 
-#: aircox_cms/sections.py:995
+#: aircox_cms/models/sections.py:459
 msgid "Section: Timetable"
 msgstr "Section: Grille horaire"
 
-#: aircox_cms/sections.py:996
+#: aircox_cms/models/sections.py:460
 msgid "Sections: Timetable"
 msgstr "Sections: Grilles horaire"
 
-#: aircox_cms/sections.py:1005
+#: aircox_cms/models/sections.py:469
 msgid "timetable page"
 msgstr "Page de Grille horaire"
 
-#: aircox_cms/sections.py:1007
+#: aircox_cms/models/sections.py:471
 msgid "select a timetable page used to show complete timetable"
 msgstr ""
 "sélectionner une page de grille horaire pour afficher l'horaire complet"
 
-#: aircox_cms/sections.py:1010
+#: aircox_cms/models/sections.py:474
 msgid "show date navigation"
 msgstr "afficher les dates de navigation"
 
-#: aircox_cms/sections.py:1012
+#: aircox_cms/models/sections.py:476
 msgid "if checked, navigation dates will be shown"
 msgstr "si coché, les dates de navigation sont affichées"
 
-#: aircox_cms/sections.py:1046
+#: aircox_cms/models/sections.py:511
 msgid "Section: publication's info"
 msgstr "Section: info de la publication"
 
-#: aircox_cms/sections.py:1047
+#: aircox_cms/models/sections.py:512
 msgid "Sections: publication's info"
 msgstr "Sections: info de la publication"
 
-#: aircox_cms/sections.py:1052
+#: aircox_cms/models/sections.py:518
 msgid "default text"
 msgstr "texte par défaut"
 
-#: aircox_cms/sections.py:1054
+#: aircox_cms/models/sections.py:520
 msgid "search"
 msgstr "recherche"
 
-#: aircox_cms/sections.py:1055
+#: aircox_cms/models/sections.py:521
 msgid "text to display when the search field is empty"
 msgstr "texte à afficher quand le champ de recherche est vide"
 
-#: aircox_cms/sections.py:1059
+#: aircox_cms/models/sections.py:525
 msgid "Section: search field"
 msgstr "Section: champ de recherche"
 
-#: aircox_cms/sections.py:1060
+#: aircox_cms/models/sections.py:526
 msgid "Sections: search field"
 msgstr "Sections: champ de recherche"
 
-#: aircox_cms/sections.py:1070
+#: aircox_cms/models/sections.py:567
+msgid "user playlist"
+msgstr "playlist utilisateur/ice"
+
+#: aircox_cms/models/sections.py:570
+msgid ""
+"this is a user playlist, it can be edited and saved by the "
+"users (the modifications will NOT be registered on the server)"
+msgstr ""
+"il s'agit d'une playlist utilisateur/ices qu'ils/elles peuvent éditer "
+" et enregistrer (les modifications ne seront PAS enregistrées sur le serveur)"
+
+#: aircox_cms/models/sections.py:574
+msgid "read all"
+msgstr "tout lire"
+
+#: aircox_cms/models/sections.py:577
+msgid "by default at the end of the sound play the next one"
+msgstr "par défault à la fin d'un son, jouer le suivant"
+
+#: aircox_cms/models/sections.py:622
 msgid "live title"
 msgstr "titre du direct"
 
-#: aircox_cms/sections.py:1072
+#: aircox_cms/models/sections.py:624
 msgid "text to display when it plays live"
 msgstr "texte à afficher quand le direct est activé"
 
-#: aircox_cms/sections.py:1075
+#: aircox_cms/models/sections.py:627
 msgid "audio streams"
 msgstr "streams audio"
 
-#: aircox_cms/sections.py:1076
+#: aircox_cms/models/sections.py:628
 msgid "one audio stream per line"
 msgstr "un stream audio par ligne"
 
-#: aircox_cms/sections.py:1080
+#: aircox_cms/models/sections.py:633
+#, fuzzy
+#| msgid "text to display when it plays live"
+msgid "icon to display in the player"
+msgstr "texte à afficher quand le direct est activé"
+
+#: aircox_cms/models/sections.py:637
 msgid "Section: Player"
 msgstr "Section: Player"
 
@@ -819,17 +850,13 @@ msgstr "Précédemment on air"
 msgid "{program.name} is a program on {station.name}."
 msgstr "{program.name} est un programme sur {station.name}"
 
-#: aircox_cms/templates/aircox_cms/diffusion_page.html:8
+#: aircox_cms/templates/aircox_cms/diffusion_page.html:9
 msgid "Playlist"
 msgstr "Playlist"
 
-#: aircox_cms/templates/aircox_cms/diffusion_page.html:23
+#: aircox_cms/templates/aircox_cms/diffusion_page.html:24
 msgid "Dates of diffusion"
 msgstr "Dates de diffusion"
-
-#: aircox_cms/templates/aircox_cms/diffusion_page.html:38
-msgid "Podcasts"
-msgstr "Podcasts"
 
 #: aircox_cms/templates/aircox_cms/dynamic_list_page.html:14
 #, python-format
@@ -870,48 +897,58 @@ msgstr "Prix"
 msgid "Schedule"
 msgstr "Horaire"
 
-#: aircox_cms/templates/aircox_cms/program_page.html:18
+#: aircox_cms/templates/aircox_cms/program_page.html:19
 #, python-format
 msgid ""
-"%(day)s at %(start)s until %(end)s, <span class=\"info\">%(frequency)s</span>"
+"Diffusion on %(day)s at %(start_hour)s hours %(start_minute)s, "
+"%(frequency)s, and last for %(duration_hour)s hours and %(duration_minute)s "
+"minutes"
 msgstr ""
-"%(day)s de %(start)s à %(end)s, <span class=\"info\">%(frequency)s</span>"
+"Diffusion le %(day)s à %(start_hour)s heures %(start_minute)s, "
+"%(frequency)s, et dure %(duration_hour)s heures et %(duration_minute)s "
 
 #: aircox_cms/templates/aircox_cms/program_page.html:24
+msgid ""
+"%(day)s at %(start)s (%(duration)s),  <span class=\"info\">%(frequency)s</"
+"span>"
+msgstr ""
+"%(day)s à %(start)s (%(duration)s), <span class=\"info\">%(frequency)s</span>"
+
+#: aircox_cms/templates/aircox_cms/program_page.html:28
 msgid "Rerun"
 msgstr "Rediffusion"
 
-#: aircox_cms/templates/aircox_cms/program_page.html:30
+#: aircox_cms/templates/aircox_cms/program_page.html:37
 msgid "This program is no longer active"
 msgstr "Ce programme n'est plus actif"
 
-#: aircox_cms/templates/aircox_cms/sections/section_publication_info.html:14
-#: aircox_cms/templates/aircox_cms/sections/section_publication_info.html:15
+#: aircox_cms/templates/aircox_cms/sections/publication_info.html:14
+#: aircox_cms/templates/aircox_cms/sections/publication_info.html:15
 msgid "Parent pages"
 msgstr "Pages parentes"
 
-#: aircox_cms/templates/aircox_cms/sections/section_publication_info.html:31
-#: aircox_cms/templates/aircox_cms/sections/section_publication_info.html:32
+#: aircox_cms/templates/aircox_cms/sections/publication_info.html:31
+#: aircox_cms/templates/aircox_cms/sections/publication_info.html:32
 msgid "Tags"
 msgstr "Tags"
 
-#: aircox_cms/templates/aircox_cms/sections/section_publication_info.html:49
-#: aircox_cms/templates/aircox_cms/sections/section_publication_info.html:50
+#: aircox_cms/templates/aircox_cms/sections/publication_info.html:49
+#: aircox_cms/templates/aircox_cms/sections/publication_info.html:50
 msgid "Author"
 msgstr "Auteur"
 
-#: aircox_cms/templates/aircox_cms/sections/section_publication_info.html:52
+#: aircox_cms/templates/aircox_cms/sections/publication_info.html:52
 #, python-format
 msgid "Published by %(author)s"
 msgstr "Publié par %(author)s"
 
-#: aircox_cms/templates/aircox_cms/sections/section_publication_info.html:62
-#: aircox_cms/templates/aircox_cms/sections/section_publication_info.html:63
+#: aircox_cms/templates/aircox_cms/sections/publication_info.html:62
+#: aircox_cms/templates/aircox_cms/sections/publication_info.html:63
 msgid "Date of publication"
 msgstr "Date de publication"
 
-#: aircox_cms/templates/aircox_cms/sections/section_publication_info.html:72
-#: aircox_cms/templates/aircox_cms/sections/section_publication_info.html:73
+#: aircox_cms/templates/aircox_cms/sections/publication_info.html:72
+#: aircox_cms/templates/aircox_cms/sections/publication_info.html:73
 msgid "Share"
 msgstr "Partager"
 
@@ -948,41 +985,34 @@ msgstr "page précédente"
 msgid "next page"
 msgstr "page suivante"
 
-#: aircox_cms/templates/aircox_cms/snippets/player.html:5
-msgid "Your browser does not support the <code>audio</code> element."
-msgstr "Votre navigateur ne supporte pas l'élément <code>audio</code>"
-
-#: aircox_cms/templates/aircox_cms/snippets/player.html:16
-msgid "play"
-msgstr "jouer"
-
-#: aircox_cms/templates/aircox_cms/snippets/player.html:18
-msgid "pause"
-msgstr "pause"
-
-#: aircox_cms/templates/aircox_cms/snippets/player.html:20
-msgid "loading..."
-msgstr "chargement..."
-
-#: aircox_cms/templates/aircox_cms/snippets/player.html:32
-msgid "add to the player"
-msgstr "ajouter au player"
-
-#: aircox_cms/templates/aircox_cms/snippets/player.html:33
-msgid "more informations"
-msgstr "plus d'informations"
-
-#: aircox_cms/templates/aircox_cms/snippets/player.html:34
-msgid "remove this sound"
-msgstr "enlever ce son"
-
-#: aircox_cms/templates/aircox_cms/snippets/player.html:47
-msgid "enable and disable single mode"
-msgstr "activer et désactiver le mode solo"
-
 #: aircox_cms/templates/aircox_cms/snippets/sound_list_item.html:39
 msgid "add this sound to the playlist"
 msgstr "ajouter ce son à la playlist"
+
+#: aircox_cms/templates/aircox_cms/vues/player.html:21
+msgid "Click to pause"
+msgstr "Cliquer pour mettre sur pause"
+
+#: aircox_cms/templates/aircox_cms/vues/player.html:25
+msgid "Loading... Click to pause"
+msgstr "Chargement... Cliquer pour mettre sur pause"
+
+#: aircox_cms/templates/aircox_cms/vues/player.html:29
+msgid "Click to play"
+msgstr "Cliquer pour jouer"
+
+#: aircox_cms/templates/aircox_cms/vues/player.html:54
+msgid "Remove from playlist"
+msgstr "Retirer de la playlist"
+
+#: aircox_cms/templates/aircox_cms/vues/player.html:59
+msgid "Add to my playlist"
+msgstr "Ajouter à ma playlist"
+
+#: aircox_cms/templates/aircox_cms/vues/player.html:82
+#| msgid "add to the player"
+msgid "Read all the playlist"
+msgstr "Lire toute la playlist"
 
 #: aircox_cms/wagtail_hooks.py:86
 msgid "Schedules"
@@ -1019,3 +1049,21 @@ msgstr "Diffusions du jour"
 #: aircox_cms/wagtail_hooks.py:410
 msgid "Current Station"
 msgstr "Station courante"
+
+#~ msgid "play"
+#~ msgstr "jouer"
+
+#~ msgid "pause"
+#~ msgstr "pause"
+
+#~ msgid "loading..."
+#~ msgstr "chargement..."
+
+#~ msgid "more informations"
+#~ msgstr "plus d'informations"
+
+#~ msgid "remove this sound"
+#~ msgstr "enlever ce son"
+
+#~ msgid "enable and disable single mode"
+#~ msgstr "activer et désactiver le mode solo"

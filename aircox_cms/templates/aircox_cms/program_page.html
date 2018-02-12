@@ -16,7 +16,7 @@
 
         {% with start_hour=schedule.time.hour start_minute=schedule.time.minute %}
         {% with duration_hour=schedule.duration.hour duration_minute=schedule.duration.minute %}
-        <li aria-label="{% blocktrans trimmed %}Diffusion on {{ day }} at {{ start_hour }} hours {{ start_minute }}, on the {{ frequency }}, and last for {{ duration_hour }} hours and {{ duration_minute }} minutes {% endblocktrans %}">
+        <li aria-label="{% blocktrans trimmed %}Diffusion on {{ day }} at {{ start_hour }} hours {{ start_minute }}, {{ frequency }}, and last for {{ duration_hour }} hours and {{ duration_minute }} minutes {% endblocktrans %}">
         {% endwith %}
         {% endwith %}
 
