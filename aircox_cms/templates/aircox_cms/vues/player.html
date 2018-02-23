@@ -3,7 +3,12 @@
 
 <script type="text/x-template" id="template-sound">
     <div class="component sound flex_row"
+        v-html="track.embed"
+        v-if="track.embed">
+    </div>
+    <div class="component sound flex_row"
          :state="state"
+         v-else
     >
         <audio preload="metadata" ref="audio"
             @pause="state = State.Stop"

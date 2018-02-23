@@ -296,6 +296,8 @@ var Playlist = Vue.extend({
             if(tracks)
                 this.tracks = JSON.parse(tracks);
         }
+
+        console.log(this.tracks)
     },
 
     methods: {
