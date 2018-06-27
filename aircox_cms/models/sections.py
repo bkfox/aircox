@@ -489,8 +489,11 @@ class SectionTimetable(Section,DatedBaseList):
         from aircox_cms.models import DiffusionPage
         diffs = []
         for date in context['nav_dates']['dates']:
-            items = aircox.models.Diffusion.objects.at(self.station, date)
-            items = [ DiffusionPage.as_item(item) for item in items ]
+            items = [
+                DiffusionPage.as_item(item)
+                for item in aircox.models.Diffusion.objects \
+                                  .station(self.station).at(date)
+            ]
             diffs.append((date, items))
         return diffs
 

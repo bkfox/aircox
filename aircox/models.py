@@ -1351,7 +1351,6 @@ class LogQuerySet(models.QuerySet):
             logs = yaml.load(data)
 
             # we need to preload diffusions, sounds and tracks
-            # we get them all at once, in order to reduce db calls
             rels = {
                 'diffusion': self._get_rel_objects(logs, Diffusion, 'diffusion'),
                 'sound': self._get_rel_objects(logs, Sound, 'sound'),
