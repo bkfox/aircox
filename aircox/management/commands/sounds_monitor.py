@@ -172,12 +172,9 @@ class SoundInfo:
                                      self.hour or 0, self.minute or 0)
             date = tz.get_current_timezone().localize(date)
 
-        diffusion = Diffusion.objects.after(
-            program.station,
-            date,
-            program = program,
-            initial__isnull = True,
-        ).first()
+        qs = Diffusion.objects.station(program.station).after(date) \
+                      .filter(program = program, initial__isnull = True)
+        diffusion = qs.first()
         if not diffusion:
             return
 

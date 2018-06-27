@@ -164,9 +164,18 @@ class ScheduleAdmin(admin.ModelAdmin):
     rerun.short_description = _('Rerun')
     rerun.boolean = True
 
+
     list_filter = ['frequency', 'program']
-    list_display = ['id', 'program_name', 'frequency', 'day', 'date', 'time', 'timezone', 'duration', 'rerun']
-    list_editable = ['frequency', 'date', 'time', 'timezone', 'duration']
+    list_display = ['id', 'program_name', 'frequency', 'day', 'date',
+                    'time', 'duration', 'timezone', 'rerun']
+    list_editable = ['time', 'timezone', 'duration']
+
+
+    def get_readonly_fields(self, request, obj=None):
+        if obj:
+            return ['program', 'date', 'frequency']
+        else:
+            return []
 
 
 @admin.register(Track)

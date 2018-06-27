@@ -232,11 +232,11 @@ class Station(Nameable):
         self.__prepare_controls()
         return self.__streamer
 
-    def raw_on_air(self, *args, **kwargs):
+    def raw_on_air(self, **kwargs):
         """
         Forward call to Log.objects.on_air for this station
         """
-        return Log.objects.on_air(self, *args, **kwargs)
+        return Log.objects.station(self).on_air().filter(**kwargs)
 
     def on_air(self, date = None, count = 0, no_cache = False):
         """
@@ -266,11 +266,10 @@ class Station(Nameable):
 
         now = tz.now()
         if date:
-            logs = Log.objects.at(self, date)
-            diffs = Diffusion.objects \
-                             .at(self, date, type = Diffusion.Type.normal) \
-                             .filter(start__lte = now) \
-                             .order_by('-start')
+            logs = Log.objects.station(self).at(date)
+            diffs = Diffusion.objects.station(self).at(date) \
+                        .filter(start__lte = now, type = Diffusion.Type.normal) \
+                        .order_by('-start')
         else:
             logs = Log.objects
             diffs = Diffusion.objects \
@@ -568,15 +567,11 @@ class Schedule(models.Model):
         if not initial:
             return
 
-        before, now = self.__initial, self.__dict__
-        before, now = {
-            f: getattr(before, f) for f in fields
-            if hasattr(before, f)
-        }, {
-            f: getattr(now, f) for f in fields
-            if hasattr(now, f)
-        }
-        return before == now
+        this = self.__dict__
+        for field in fields:
+            if initial.get(field) != this.get(field):
+                return True
+        return False
 
     def match(self, date = None, check_time = True):
         """
@@ -727,7 +722,10 @@ class Schedule(models.Model):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.__initial = self.__dict__.copy()
+
+        # initial only if it has been yet saved
+        if self.pk:
+            self.__initial = self.__dict__.copy()
 
     def __str__(self):
         return ' | '.join([ '#' + str(self.id), self.program.name,
@@ -747,12 +745,14 @@ class Schedule(models.Model):
         verbose_name_plural = _('Schedules')
 
 
-class DiffusionManager(models.Manager):
-    def station(self, station, qs = None, **kwargs):
-        qs = self if qs is None else qs
-        return qs.filter(program__station = station, **kwargs)
+class DiffusionQuerySet(models.QuerySet):
+    def station(self, station, **kwargs):
+        return self.filter(program__station = station, **kwargs)
 
-    def at(self, station, date = None, next = False, qs = None, **kwargs):
+    def program(self, program):
+        return self.filter(program = program)
+
+    def at(self, date = None, next = False, **kwargs):
         """
         Return diffusions occuring at the given date, ordered by +start
 
@@ -768,7 +768,7 @@ class DiffusionManager(models.Manager):
         # note: we work with localtime
         date = utils.date_or_default(date, keep_type = True)
 
-        qs = self if qs is None else qs
+        qs = self
         filters = None
         if isinstance(date, datetime.datetime):
             # use datetime: we want diffusion that occurs around this
@@ -789,25 +789,23 @@ class DiffusionManager(models.Manager):
                 # include also diffusions of the next day
                 filters |= models.Q(start__gte = start)
             qs = qs.filter(filters, **kwargs)
-        return self.station(station, qs).order_by('start').distinct()
+        return qs.order_by('start').distinct()
 
-    def after(self, station, date = None, **kwargs):
+    def after(self, date = None, **kwargs):
         """
         Return a queryset of diffusions that happen after the given
         date.
         """
         date = utils.date_or_default(date, keep_type = True)
-        return self.station(station, start__gte = date, **kwargs)\
-                   .order_by('start')
+        return self.filter(start__gte = date, **kwargs).order_by('start')
 
-    def before(self, station, date = None, **kwargs):
+    def before(self, date = None, **kwargs):
         """
         Return a queryset of diffusions that finish before the given
         date.
         """
         date = utils.date_or_default(date)
-        return self.station(station, end__lte = date, **kwargs) \
-                   .order_by('start')
+        return self.filter(end__lte = date, **kwargs).order_by('start')
 
 
 class Diffusion(models.Model):
@@ -828,7 +826,7 @@ class Diffusion(models.Model):
     - cancel: the diffusion has been canceled
     - stop: the diffusion has been manually stopped
     """
-    objects = DiffusionManager()
+    objects = DiffusionQuerySet.as_manager()
 
     class Type(IntEnum):
         normal = 0x00
@@ -1281,26 +1279,18 @@ class Port (models.Model):
         )
 
 
-class LogManager(models.Manager):
-    def station(self, station, *args, **kwargs):
-        return self.filter(*args, station = station, **kwargs)
+class LogQuerySet(models.QuerySet):
+    def station(self, station):
+        return self.filter(station = station)
 
-    def _at(self, date = None, *args, **kwargs):
+    def at(self, date = None):
         start, end = utils.date_range(date)
         # return qs.filter(models.Q(end__gte = start) |
         #                 models.Q(date__lte = end))
-        return self.filter(*args, date__gte = start, date__lte = end, **kwargs)
-
-    def at(self, station = None, date = None, *args, **kwargs):
-        """
-        Return a queryset of logs that have the given date
-        in their range.
-        """
-        qs = self._at(date, *args, **kwargs)
-        return qs.filter(station = station) if station else qs
+        return self.filter(date__gte = start, date__lte = end)
 
     # TODO: rename on_air + rename Station.on_air into sth like regular_on_air
-    def on_air(self, station, date = None, **kwargs):
+    def on_air(self, date = None):
         """
         Return a queryset of the played elements' log for the given
         station and model. This queryset is ordered by date ascending
@@ -1310,11 +1300,11 @@ class LogManager(models.Manager):
         * kwargs: extra filter kwargs
         """
         if date:
-            qs = self.at(station, date)
+            qs = self.at(date)
         else:
             qs = self
 
-        qs = qs.filter(type = Log.Type.on_air, **kwargs)
+        qs = qs.filter(type = Log.Type.on_air)
         return qs.order_by('date')
 
     @staticmethod
@@ -1399,7 +1389,7 @@ class LogManager(models.Manager):
         if os.path.exists(path) and not force:
             return -1
 
-        qs = self.at(station, date)
+        qs = self.station(station).at(date)
         if not qs.exists():
             return 0
 
@@ -1516,7 +1506,7 @@ class Log(models.Model):
         on_delete=models.SET_NULL,
     )
 
-    objects = LogManager()
+    objects = LogQuerySet.as_manager()
 
     def estimate_end(self):
         """

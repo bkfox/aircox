@@ -245,14 +245,14 @@ class Monitor:
         if not self.cancel_timeout:
             return
 
-        diffs = Diffusions.objects.at(self.station).filter(
+        qs = Diffusions.objects.station(self.station).at().filter(
             type = Diffusion.Type.normal,
             sound__type = Sound.Type.archive,
         )
         logs = station.raw_on_air(diffusion__isnull = False)
 
         date = tz.now() - datetime.timedelta(seconds = self.cancel_timeout)
-        for diff in diffs:
+        for diff in qs:
             if logs.filter(diffusion = diff):
                 continue
             if diff.start < now:
@@ -305,14 +305,13 @@ class Monitor:
         If diff is given, it is the one to be played right after it.
         """
         station = self.station
-        now = tz.now()
 
         kwargs = {'start__gte': diff.end } if diff else {}
-        diff = Diffusion.objects \
-            .at(station, now) \
-            .filter(type = Diffusion.Type.normal, **kwargs) \
-            .distinct().order_by('start')
-        diff = diff.first()
+        kwargs['type'] = Diffusion.Type.normal
+
+        qs = Diffusion.objects.station(station).at().filter(**kwargs) \
+                      .distinct().order_by('start')
+        diff = qs.first()
         return (diff, diff and diff.get_playlist(archive = True) or [])
 
     def handle_pl_sync(self, source, playlist, diff = None, date = None):

@@ -39,62 +39,44 @@ def user_default_groups(sender, instance, created, *args, **kwargs):
         instance.groups.add(group)
 
 
-# FIXME: avoid copy of the code in schedule_post_saved and
-#        schedule_pre_delete
-
 @receiver(post_save, sender=models.Schedule)
-def schedule_post_saved(sender, instance, created, *args, **kwargs):
-    return
-    # TODO: case instance.program | instance.frequency has changed
-    if not instance.program.sync:
+def schedule_post_save(sender, instance, created, *args, **kwargs):
+    """
+    Handles Schedule's time, duration and timezone changes and update
+    corresponding diffusions accordingly.
+    """
+    if created or not instance.program.sync or \
+            not instance.changed(['time','duration','timezone']):
         return
 
     initial = instance._Schedule__initial
-    if not initial or not instance.changed(['date','duration', 'frequency']):
-        return
-
-    if not initial.get('date') or not initial.get('duration') \
-            or not initial.get('frequency') or \
-            initial.frequency != instance.frequency:
-        return
-
-    # old schedule and timedelta
-    old = models.Schedule(**{ key: initial.get(key)
-        for key in ('date','timezone','duration','frequency')
+    initial = models.Schedule(**{ k: v
+        for k, v in instance._Schedule__initial.items()
+            if not k.startswith('_')
     })
 
-    # change: day, time, duration, frequence => TODO
-    delta = (instance.date - old.date) + \
-            (instance.time - old.time)
+    today = tz.datetime.today()
+    delta = instance.normalize(today) - \
+            initial.normalize(today)
 
-    qs = models.Diffusion.objects.station(
-        instance.program.station,
-    )
-
-    pks = [ item.pk for item in qs if old.match(item.date) ]
+    qs = models.Diffusion.objects.program(instance.program).after()
+    pks = [ d.pk for d in qs if initial.match(d.date) ]
     qs.filter(pk__in = pks).update(
         start = F('start') + delta,
         end = F('start') + delta + utils.to_timedelta(instance.duration)
     )
-    return
+
 
 @receiver(pre_delete, sender=models.Schedule)
 def schedule_pre_delete(sender, instance, *args, **kwargs):
+    """
+    Delete later corresponding diffusion to a changed schedule.
+    """
     if not instance.program.sync:
         return
 
-    initial = instance._Schedule__initial
-    if not initial or not instance.changed(['date','duration', 'frequency']):
-        return
-
-    old = models.Schedule(**{ key: initial.get(key)
-        for key in ('date','timezone','duration','frequency')
-    })
-
-    qs = models.Diffusion.objects.station(
-        instance.program.station,
-    )
-
-    pks = [ item.pk for item in qs if old.match(item.date) ]
+    qs = models.Diffusion.objects.program(instance.program).after()
+    pks = [ d.pk for d in qs if instance.match(d.date) ]
     qs.filter(pk__in = pks).delete()
+
 
