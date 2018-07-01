@@ -258,42 +258,6 @@ class Command(BaseCommand):
             logger.info('%s, %s: %s', str(program), str(component),
                         ' '.join([str(c) for c in content]))
 
-    def add_arguments(self, parser):
-        parser.formatter_class=RawTextHelpFormatter
-        parser.add_argument(
-            '-q', '--quality_check', action='store_true',
-            help='Enable quality check using sound_quality_check on all ' \
-                 'sounds marqued as not good'
-        )
-        parser.add_argument(
-            '-s', '--scan', action='store_true',
-            help='Scan programs directories for changes, plus check for a '
-                 ' matching diffusion on sounds that have not been yet assigned'
-        )
-        parser.add_argument(
-            '-m', '--monitor', action='store_true',
-            help='Run in monitor mode, watch for modification in the filesystem '
-                 'and react in consequence'
-        )
-
-    def handle(self, *args, **options):
-        if options.get('scan'):
-            self.scan()
-        if options.get('quality_check'):
-            self.check_quality(check = (not options.get('scan')) )
-        if options.get('monitor'):
-            self.monitor()
-
-    @staticmethod
-    def check_sounds(qs):
-        """
-        Only check for the sound existence or update
-        """
-        # check files
-        for sound in qs:
-            if sound.check_on_file():
-                sound.save(check = False)
-
     def scan(self):
         """
         For all programs, scan dirs
@@ -313,10 +277,6 @@ class Command(BaseCommand):
                 type = Sound.Type.excerpt,
             )
             dirs.append(os.path.join(program.path))
-
-        # extra scan for files that are not in programs' dir anymore
-        # TODO
-
 
     def scan_for_program(self, program, subdir, **sound_kwargs):
         """
@@ -349,6 +309,16 @@ class Command(BaseCommand):
         sounds = Sound.objects.filter(path__startswith = subdir). \
                                exclude(pk__in = sounds)
         self.check_sounds(sounds)
+
+    @staticmethod
+    def check_sounds(qs):
+        """
+        Only check for the sound existence or update
+        """
+        # check files
+        for sound in qs:
+            if sound.check_on_file():
+                sound.save(check = False)
 
     def check_quality(self, check = False):
         """
@@ -419,4 +389,29 @@ class Command(BaseCommand):
         while True:
             time.sleep(1)
 
+    def add_arguments(self, parser):
+        parser.formatter_class=RawTextHelpFormatter
+        parser.add_argument(
+            '-q', '--quality_check', action='store_true',
+            help='Enable quality check using sound_quality_check on all ' \
+                 'sounds marqued as not good'
+        )
+        parser.add_argument(
+            '-s', '--scan', action='store_true',
+            help='Scan programs directories for changes, plus check for a '
+                 ' matching diffusion on sounds that have not been yet assigned'
+        )
+        parser.add_argument(
+            '-m', '--monitor', action='store_true',
+            help='Run in monitor mode, watch for modification in the filesystem '
+                 'and react in consequence'
+        )
+
+    def handle(self, *args, **options):
+        if options.get('scan'):
+            self.scan()
+        if options.get('quality_check'):
+            self.check_quality(check = (not options.get('scan')) )
+        if options.get('monitor'):
+            self.monitor()
 

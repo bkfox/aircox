@@ -15,6 +15,7 @@ from django.template.defaultfilters import slugify
 from django.utils.translation import ugettext as _, ugettext_lazy
 from django.utils import timezone as tz
 from django.utils.html import strip_tags
+from django.utils.functional import cached_property
 
 from taggit.managers import TaggableManager
 
@@ -68,6 +69,9 @@ class Related(models.Model):
         'related_type', 'related_id',
     )
 
+    class Meta:
+        abstract = True
+
     objects = RelatedManager()
 
     @classmethod
@@ -77,15 +81,15 @@ class Related(models.Model):
         """
         return GenericRelation(cl, 'related_id', 'related_type')
 
-    class Meta:
-        abstract = True
-
 
 class Nameable(models.Model):
     name = models.CharField (
         _('name'),
         max_length = 128,
     )
+
+    class Meta:
+        abstract = True
 
     @property
     def slug(self):
@@ -98,9 +102,6 @@ class Nameable(models.Model):
         #if self.pk:
         #    return '#{} {}'.format(self.pk, self.name)
         return '{}'.format(self.name)
-
-    class Meta:
-        abstract = True
 
 
 #
@@ -460,6 +461,8 @@ class Stream(models.Model):
     )
 
 
+
+# BIG FIXME: self.date is still used as datetime
 class Schedule(models.Model):
     """
     A Schedule defines time slots of programs' diffusions. It can be an initial
@@ -499,8 +502,9 @@ class Schedule(models.Model):
     )
     timezone = models.CharField(
         _('timezone'),
+        default = pytz.UTC,
         choices = [(x, x) for x in pytz.all_timezones],
-        max_length = 100, blank=True,
+        max_length = 100,
         help_text = _('timezone used for the date')
     )
     duration = models.TimeField(
@@ -529,35 +533,17 @@ class Schedule(models.Model):
         verbose_name = _('initial schedule'),
         blank = True, null = True,
         on_delete=models.SET_NULL,
-        help_text = 'this schedule is a rerun of this one',
+        help_text = _('this schedule is a rerun of this one'),
     )
 
-    @property
-    def local_date(self):
-        """
-        Return a version of self.date that is localized to self.timezone;
-        This is needed since datetime are stored as UTC date and we want
-        to get it as local time.
-        """
-        if not hasattr(self, '_local_date') or \
-                self.changed(fields = ('timezone','date')):
-            self._local_date = tz.localtime(self.date, self.tz)
-        return self._local_date
 
-    @property
+    @cached_property
     def tz(self):
         """
         Pytz timezone of the schedule.
         """
-        if not hasattr(self, '_tz') or self._tz.zone != self.timezone:
-            import pytz
-            if not self.timezone:
-                self.timezone = \
-                    self.date.tzinfo.zone \
-                        if self.date and hasattr(self.date, 'tzinfo') else \
-                    tz.get_current_timezone_name()
-            self._tz = pytz.timezone(self.timezone or self.date.tzinfo.zone)
-        return self._tz
+        import pytz
+        return pytz.timezone(self.timezone)
 
     # initial cached data
     __initial = None
@@ -881,16 +867,14 @@ class Diffusion(models.Model):
         """
         return self.start
 
-    @property
+    @cached_property
     def local_date(self):
         """
         Return a version of self.date that is localized to self.timezone;
         This is needed since datetime are stored as UTC date and we want
         to get it as local time.
         """
-        if not hasattr(self, '_local_date'):
-            self._local_date = tz.localtime(self.date, tz.get_current_timezone())
-        return self._local_date
+        return tz.localtime(self.date, tz.get_current_timezone())
 
     @property
     def local_end(self):
@@ -899,9 +883,7 @@ class Diffusion(models.Model):
         This is needed since datetime are stored as UTC date and we want
         to get it as local time.
         """
-        if not hasattr(self, '_local_end'):
-            self._local_end = tz.localtime(self.end, tz.get_current_timezone())
-        return self._local_end
+        return tz.localtime(self.end, tz.get_current_timezone())
 
     def is_live(self):
         return self.type == self.Type.normal and \
@@ -1289,7 +1271,6 @@ class LogQuerySet(models.QuerySet):
         #                 models.Q(date__lte = end))
         return self.filter(date__gte = start, date__lte = end)
 
-    # TODO: rename on_air + rename Station.on_air into sth like regular_on_air
     def on_air(self, date = None):
         """
         Return a queryset of the played elements' log for the given
@@ -1528,9 +1509,7 @@ class Log(models.Model):
         This is needed since datetime are stored as UTC date and we want
         to get it as local time.
         """
-        if not hasattr(self, '_local_date'):
-            self._local_date = tz.localtime(self.date, tz.get_current_timezone())
-        return self._local_date
+        return tz.localtime(self.date, tz.get_current_timezone())
 
     def is_expired(self, date = None):
         """

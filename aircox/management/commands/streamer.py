@@ -94,8 +94,6 @@ class Monitor:
         self.station = station
         self.__dict__.update(kwargs)
 
-        now = tz.now()
-
     def monitor(self):
         """
         Run all monitoring functions.
@@ -191,16 +189,18 @@ class Monitor:
                 comment = current_sound,
             )
 
-        # tracks -- only for streams
-        if not log.diffusion:
-            self.trace_sound_tracks(log)
+        # trace tracks
+        self.trace_sound_tracks(log)
 
 
     def trace_sound_tracks(self, log):
         """
-        Log tracks for the given sound log (for streamed programs).
+        Log tracks for the given sound log (for streamed programs only).
         Called by self.trace
         """
+        if log.diffusion:
+            return
+
         tracks = Track.objects.get_for(object = log.sound) \
                               .filter(in_seconds = True)
         if not tracks.exists():
