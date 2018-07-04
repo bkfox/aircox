@@ -62,7 +62,8 @@ class Monitor:
 
 
     def get_last_log(self, *args, **kwargs):
-        return Log.objects.station(self.station, *args, **kwargs) \
+        return Log.objects.station(self.station) \
+                  .filter(*args, **kwargs) \
                   .select_related('diffusion', 'sound') \
                   .order_by('pk').last()
 
