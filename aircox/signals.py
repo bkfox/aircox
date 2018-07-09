@@ -22,6 +22,9 @@ import aircox.settings as settings
 #
 @receiver(post_save, sender=User)
 def user_default_groups(sender, instance, created, *args, **kwargs):
+    """
+    Set users to different default groups
+    """
     if not created or instance.is_superuser:
         return
 
@@ -38,6 +41,13 @@ def user_default_groups(sender, instance, created, *args, **kwargs):
             group.save()
         instance.groups.add(group)
 
+@receiver(post_save, sender=models.Program)
+def program_post_save(sender, instance, created, *args, **kwargs):
+    """
+    Clean-up later diffusions when a program becomes inactive
+    """
+    if not program.active:
+        program.diffusion_set.after().delete()
 
 @receiver(post_save, sender=models.Schedule)
 def schedule_post_save(sender, instance, created, *args, **kwargs):

@@ -60,7 +60,6 @@ class Monitor:
     Datetime of the next sync
     """
 
-
     def get_last_log(self, *args, **kwargs):
         return Log.objects.station(self.station) \
                   .filter(*args, **kwargs) \
