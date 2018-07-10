@@ -46,8 +46,8 @@ def program_post_save(sender, instance, created, *args, **kwargs):
     """
     Clean-up later diffusions when a program becomes inactive
     """
-    if not program.active:
-        program.diffusion_set.after().delete()
+    if not instance.active:
+        instance.diffusion_set.after().delete()
 
 @receiver(post_save, sender=models.Schedule)
 def schedule_post_save(sender, instance, created, *args, **kwargs):
