@@ -617,9 +617,6 @@ class DiffusionPage(Publication):
                 archive = self.publish_archive, excerpt = True
             )
         )
-        print("--", self.diffusion.get_sounds(
-                archive = self.publish_archive, excerpt = True
-        ))
         return context
 
     def save(self, *args, **kwargs):
