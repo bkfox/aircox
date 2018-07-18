@@ -16,8 +16,9 @@ from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone as tz
 from django.utils.functional import cached_property
 from django.db import models
+from django.db.models import Q
 
-from aircox.models import Station, Diffusion, Track, Sound, Log #, DiffusionLog, SoundLog
+from aircox.models import Station, Diffusion, Track, Sound, Log
 
 # force using UTC
 import pytz
@@ -61,17 +62,20 @@ class Monitor:
     """
 
     def get_last_log(self, *args, **kwargs):
+        return self.log_qs.filter(*args, **kwargs).last()
+
+    @property
+    def log_qs(self):
         return Log.objects.station(self.station) \
-                  .filter(*args, **kwargs) \
                   .select_related('diffusion', 'sound') \
-                  .order_by('pk').last()
+                  .order_by('pk')
 
     @property
     def last_log(self):
         """
         Last log of monitored station
         """
-        return self.get_last_log()
+        return self.log_qs.last()
 
     @property
     def last_sound(self):
@@ -104,7 +108,15 @@ class Monitor:
         if not self.streamer.ready():
             return
 
-        self.trace()
+        self.streamer.fetch()
+        source = self.streamer.source
+        if source and source.sound:
+            log = self.trace_sound(source)
+            if log:
+                self.trace_tracks(log)
+        else:
+            print('no source or sound for stream; source = ', source)
+
         self.sync_playlists()
         self.handle()
 
@@ -116,92 +128,57 @@ class Monitor:
                   **kwargs)
         log.save()
         log.print()
-
-        # update last log
-        if log.type != Log.Type.other and \
-                self.last_log and not self.last_log.end:
-            self.last_log.end = log.date
         return log
 
-    def trace(self):
+    def trace_sound(self, source):
         """
-        Check the current_sound of the station and update logs if
-        needed.
+        Return log for current on_air (create and save it if required).
         """
-        self.streamer.fetch()
-        current_sound = self.streamer.current_sound
-        current_source = self.streamer.current_source
-        if not current_sound or not current_source:
-            print('no source / no sound', current_sound, current_source)
-            return
+        sound_path = source.sound
+        air_time = source.air_time
 
-        log = self.get_last_log(
-            models.Q(sound__isnull = False) |
-            models.Q(diffusion__isnull = False),
-            type = Log.Type.on_air
+        # check if there is yet a log for this sound on the source
+        delta = tz.timedelta(seconds=5)
+        air_times = (air_time - delta, air_time + delta)
+
+        log = self.log_qs.on_air().filter(
+            source = source.id, sound__path = sound_path,
+            date__range = air_times,
+        ).last()
+        if log:
+            return log
+
+        # get sound
+        sound = Sound.objects.filter(path = sound_path) \
+                     .select_related('diffusion').first()
+        diff = None
+        if sound and sound.diffusion:
+            diff = sound.diffusion.original
+            # check for reruns
+            if not diff.is_date_in_range(air_time) and not diff.initial:
+                diff = Diffusion.objects.at(air_time) \
+                                .filter(initial = diff).first()
+
+        # log sound on air
+        return self.log(
+            type = Log.Type.on_air,
+            source = source.id,
+            date = source.on_air,
+            sound = sound,
+            diffusion = diff,
+            # if sound is removed, we keep sound path info
+            comment = sound_path,
         )
 
-        on_air = None
-        if log:
-            # we always check difference in sound info
-            is_diff = log.source != current_source.id or \
-                        (log.sound and log.sound.path != current_sound)
 
-            # check if sound 'on air' time has changed compared to logged one.
-            # in some cases, there can be a gap between liquidsoap on_air and
-            # log's date; to avoid duplicate we allow a difference of 5 seconds
-            if not is_diff:
-                try:
-                    # FIXME: liquidsoap does not have timezone
-                    on_air = current_source.metadata and \
-                                current_source.metadata.get('on_air')
-                    on_air = tz.datetime.strptime(on_air, "%Y/%m/%d %H:%M:%S")
-                    on_air = local_tz.localize(on_air)
-                    on_air = on_air.astimezone(pytz.utc)
-
-                    is_diff = is_diff or ((log.date - on_air).total_seconds() > 5)
-                except:
-                    pass
-        else:
-            # no log: sound is different
-            is_diff = True
-
-        if is_diff:
-            sound = Sound.objects.filter(path = current_sound).first()
-
-            # find an eventual diffusion associated to current sound
-            # => check using last (started) diffusion's archives
-            last_diff = self.last_diff_start
-            diff = None
-            if last_diff and not last_diff.is_expired():
-                archives = last_diff.diffusion.sounds(archive = True)
-                if archives.filter(pk = sound.pk).exists():
-                    diff = last_diff.diffusion
-
-            # log sound on air
-            log = self.log(
-                type = Log.Type.on_air,
-                source = current_source.id,
-                date = on_air or tz.now(),
-                sound = sound,
-                diffusion = diff,
-                # if sound is removed, we keep sound path info
-                comment = current_sound,
-            )
-
-        # trace tracks
-        self.trace_sound_tracks(log)
-
-
-    def trace_sound_tracks(self, log):
+    def trace_tracks(self, log):
         """
         Log tracks for the given sound log (for streamed programs only).
-        Called by self.trace
         """
         if log.diffusion:
             return
 
-        tracks = Track.objects.get_for(object = log.sound) \
+        tracks = Track.objects.related(object = log.sound) \
                               .filter(in_seconds = True)
         if not tracks.exists():
             return
@@ -249,7 +226,7 @@ class Monitor:
             type = Diffusion.Type.normal,
             sound__type = Sound.Type.archive,
         )
-        logs = station.raw_on_air(diffusion__isnull = False)
+        logs = Log.objects.station(station).on_air().with_diff()
 
         date = tz.now() - datetime.timedelta(seconds = self.cancel_timeout)
         for diff in qs:
@@ -274,17 +251,17 @@ class Monitor:
         station = self.station
         now = tz.now()
 
-        log = station.raw_on_air(diffusion__isnull = False) \
-                     .select_related('diffusion') \
-                     .order_by('date').last()
+        log = Log.objects.station(station).on_air().with_diff() \
+                         .select_related('diffusion') \
+                         .order_by('date').last()
         if not log or not log.diffusion.is_date_in_range(now):
             # not running anymore
             return None, []
 
         # last sound source change: end of file reached or forced to stop
-        sounds = station.raw_on_air(sound__isnull = False) \
-                        .filter(date__gte = log.date) \
-                        .order_by('date')
+        sounds = Log.objects.station(station).on_air().with_sound() \
+                            .filter(date__gte = log.date) \
+                            .order_by('date')
 
         if sounds.count() and sounds.last().source != log.source:
             return None, []
@@ -294,7 +271,7 @@ class Monitor:
             .filter(source = log.source, pk__gt = log.pk) \
             .exclude(sound__type = Sound.Type.removed)
 
-        remaining = log.diffusion.sounds(archive = True) \
+        remaining = log.diffusion.get_sounds(archive = True) \
                        .exclude(pk__in = sounds) \
                        .values_list('path', flat = True)
         return log.diffusion, list(remaining)

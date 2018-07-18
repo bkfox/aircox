@@ -51,6 +51,9 @@ class TrackInline(GenericTabularInline):
     extra = 0
     fields = ('artist', 'title', 'info', 'position', 'in_seconds', 'tags')
 
+    list_display = ['artist','title','tags','related']
+    list_filter = ['artist','title','tags']
+
 
 @admin.register(Sound)
 class SoundAdmin(NameableAdmin):

@@ -1,17 +1,17 @@
-import os
-import signal
-import re
-import subprocess
-import atexit
-import logging
+import atexit, logging, os, re, signal, subprocess
+
+import tzlocal
 
 from django.template.loader import render_to_string
+from django.utils import timezone as tz
 
 import aircox.models as models
 import aircox.settings as settings
 
 from aircox.connector import Connector
 
+
+local_tz = tzlocal.get_localzone()
 logger = logging.getLogger('aircox.tools')
 
 
@@ -32,19 +32,14 @@ class Streamer:
     """
     Path of the configuration file.
     """
-    current_sound = ''
+    source = None
     """
-    Current sound being played (retrieved by fetch)
-    """
-    current_source = None
-    """
-    Current source object that is responsible of self.current_sound
+    Current source object that is responsible of self.sound
     """
     process = None
     """
     Application's process if ran from Streamer
     """
-
     socket_path = ''
     """
     Path to the connector's socket
@@ -95,13 +90,11 @@ class Streamer:
         if not data:
             return
 
-        self.current_sound = data.get('initial_uri')
-        self.current_source = next(
+        self.source = next(
             iter(source for source in self.station.sources
                 if source.rid == rid),
-            self.current_source
+            self.source
         )
-        self.current_source.metadata = data
 
     def push(self, config = True):
         """
@@ -202,43 +195,25 @@ class Source:
     Controller of a Source. Value are usually updated directly on the
     external side.
     """
-    program = None
-    """
-    Related source
-    """
-    name = ''
-
-    path = ''
-    """
-    Path to the Source's playlist file. Optional.
-    """
-    active = True
-    """
-    Source is available. May be different from the containing Source,
-    e.g. dealer and liquidsoap.
-    """
-    current_sound = ''
-    """
-    Current sound being played (retrieved by fetch)
-    """
-    current_source = None
-    """
-    Current source being responsible of the current sound
-    """
-
-    rid = None
-    """
-    Current request id of the source in LiquidSoap
-    """
+    station = None
     connector = None
-    """
-    Connector to Liquidsoap server
-    """
-    metadata = None
-    """
-    Dict of file's metadata given by Liquidsoap. Set by Stream when
-    fetch()ing
-    """
+    """ Connector to Liquidsoap server """
+    program = None
+    """ Related program """
+    name = ''
+    """ Name of the source """
+    path = ''
+    """ Path to the playlist file. """
+    on_air = None
+
+
+    # retrieved from fetch
+    sound = ''
+    """ (fetched) current sound being played """
+    rid = None
+    """ (fetched) current request id of the source in LiquidSoap """
+    air_time = None
+    """ (fetched) datetime of last on_air """
 
     @property
     def id(self):
@@ -266,12 +241,6 @@ class Source:
 
         if not self.__playlist:
             self.from_db()
-
-    def is_stream(self):
-        return self.program and not self.program.show
-
-    def is_dealer(self):
-        return not self.program
 
     @property
     def playlist(self):
@@ -325,10 +294,18 @@ class Source:
                                 if self.__playlist else []
 
     #
-    # RPC
+    # RPC & States
     #
     def _send(self, *args, **kwargs):
         return self.connector.send(*args, **kwargs)
+
+    @property
+    def is_stream(self):
+        return self.program and not self.program.show
+
+    @property
+    def is_dealer(self):
+        return not self.program
 
     @property
     def active(self):
@@ -348,9 +325,15 @@ class Source:
             return
 
         self.rid = data.get('rid')
-        self.current_sound = data.get('initial_uri')
+        self.sound = data.get('initial_uri')
 
-        # TODO: get metadata
+        # get air_time
+        air_time = data.get('on_air')
+      #  try:
+        air_time = tz.datetime.strptime(air_time, '%Y/%m/%d %H:%M:%S')
+        self.air_time = local_tz.localize(air_time)
+      #  except:
+      #      pass
 
     def push(self):
         """
@@ -383,8 +366,9 @@ class Source:
 
     def stream(self):
         """
-        Return a dict with stream info for a Stream program, or None if there
-        is not. Used in the template.
+        Return dict of info for the current Stream program running on
+        the source. If not, return None.
+        [ used in the templates ]
         """
         # TODO: multiple streams
         stream = self.program.stream_set.all().first()

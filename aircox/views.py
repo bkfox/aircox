@@ -127,7 +127,7 @@ class Monitor(View,TemplateResponseMixin,LoginRequiredMixin):
                 return Http404
 
         station.streamer.fetch()
-        source = source or station.streamer.current_source
+        source = source or station.streamer.source
         if action == 'skip':
             self.actionSkip(request, station, source)
         if action == 'restart':
@@ -202,9 +202,8 @@ class StatisticsView(View,TemplateResponseMixin,LoginRequiredMixin):
         stats = self.Stats(station = station, date = date,
                            items = [], tags = {})
 
-        qs = station.raw_on_air(date = date) \
-                    .prefetch_related('diffusion', 'sound', 'track',
-                                      'track__tags')
+        qs = Log.objects.station(station).on_air() \
+                .prefetch_related('diffusion', 'sound', 'track', 'track__tags')
         if not qs.exists():
             qs = models.Log.objects.load_archive(station, date)
 
@@ -219,7 +218,7 @@ class StatisticsView(View,TemplateResponseMixin,LoginRequiredMixin):
                     name = rel.program.name,
                     type = _('Diffusion'),
                     col = 0,
-                    tracks = models.Track.objects.get_for(object = rel)
+                    tracks = models.Track.objects.related(object = rel)
                                          .prefetch_related('tags'),
                 )
                 sound_log = None

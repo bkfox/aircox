@@ -28,17 +28,15 @@ class AircoxMiddleware(object):
     This middleware must be set after the middleware
         'django.contrib.auth.middleware.AuthenticationMiddleware',
     """
-    default_qs = models.Station.objects.filter(default = True)
-
     def __init__(self, get_response):
         self.get_response = get_response
 
-    def init_station(self, request, aircox):
-        # update current station
+
+    def update_station(self, request):
         station = request.GET.get('aircox.station')
         pk = None
         try:
-            if station:
+            if station is not None:
                 pk = request.GET['aircox.station']
                 if station:
                     pk = int(pk)
@@ -47,28 +45,23 @@ class AircoxMiddleware(object):
         except:
             pass
 
-        # select current station
-        station = None
-        pk = None
+    def init_station(self, request, aircox):
+        self.update_station(request)
+
         try:
             pk = request.session.get('aircox.station')
-            if pk:
-                pk = int(pk)
-                station = models.Station.objects.filter(pk = pk).first()
+            pk = int(pk) if pk else None
         except:
-            pass
-
-        if not station:
             pk = None
-            station = self.default_qs.first() or \
-                        models.Station.objects.first()
 
-        aircox.station = station
+        aircox.station = models.Station.objects.default(pk)
         aircox.default_station = (pk is None)
+
 
     def init_timezone(self, request, aircox):
         # note: later we can use http://freegeoip.net/ on user side if
         # required
+        # TODO: add to request's session
         timezone = None
         try:
             timezone = request.session.get('aircox.timezone')
@@ -80,6 +73,7 @@ class AircoxMiddleware(object):
         if not timezone:
             timezone = tz.get_current_timezone()
             tz.activate(timezone)
+
 
     def __call__(self, request):
         tz.activate(pytz.timezone('Europe/Brussels'))

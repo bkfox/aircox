@@ -19,13 +19,13 @@
 {% endif %}
 {% endwith %}
 
-{% if diffusion.diffusion_set.count %}
+{% if diffusion.reruns.count %}
 <section class="dates">
     <h2>{% trans "Dates of diffusion" %}</h2>
     <ul>
         {% with diffusion=page.diffusion %}
         <li>{{ diffusion.date|date:"l d F Y, H:i" }}</li>
-        {% for diffusion in diffusion.diffusion_set.all %}
+        {% for diffusion in diffusion.reruns.all %}
         <li>{{ diffusion.date|date:"l d F Y, H:i" }}</li>
         {% endfor %}
         {% endwith %}

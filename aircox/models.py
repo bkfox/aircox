@@ -12,7 +12,7 @@ from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelatio
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.template.defaultfilters import slugify
-from django.utils.translation import ugettext as _, ugettext_lazy
+from django.utils.translation import ugettext_lazy as _
 from django.utils import timezone as tz
 from django.utils.html import strip_tags
 from django.utils.functional import cached_property
@@ -29,8 +29,8 @@ logger = logging.getLogger('aircox.core')
 #
 # Abstracts
 #
-class RelatedManager(models.Manager):
-    def get_for(self, object = None, model = None, qs = None):
+class RelatedQuerySet(models.QuerySet):
+    def related(self, object = None, model = None):
         """
         Return a queryset that filter on the given object or model(s)
 
@@ -40,18 +40,18 @@ class RelatedManager(models.Manager):
         if not model and object:
             model = type(object)
 
-        qs = self if qs is None else qs
+        qs = self
         if hasattr(model, '__iter__'):
             model = [ ContentType.objects.get_for_model(m).id
                         for m in model ]
-            qs = qs.filter(related_type__pk__in = model)
+            self = self.filter(related_type__pk__in = model)
         else:
             model = ContentType.objects.get_for_model(model)
-            qs = qs.filter(related_type__pk = model.id)
+            self = self.filter(related_type__pk = model.id)
 
         if object:
-            qs = qs.filter(related_id = object.pk)
-        return qs
+            self = self.filter(related_id = object.pk)
+        return self
 
 class Related(models.Model):
     """
@@ -72,7 +72,7 @@ class Related(models.Model):
     class Meta:
         abstract = True
 
-    objects = RelatedManager()
+    objects = RelatedQuerySet.as_manager()
 
     @classmethod
     def ReverseField(cl):
@@ -154,6 +154,21 @@ class Track(Related):
 #
 # Station related classes
 #
+class StationQuerySet(models.QuerySet):
+    def default(self, station = None):
+        """
+        Return station model instance, using defaults or
+        given one.
+        """
+        if station is None:
+            return self.order_by('-default', 'pk').first()
+        return self.filter(pk = station).first()
+
+def default_station():
+    """ Return default station (used by model fields) """
+    return Station.objects.default()
+
+
 class Station(Nameable):
     """
     Represents a radio station, to which multiple programs are attached
@@ -174,6 +189,8 @@ class Station(Nameable):
         default = True,
         help_text = _('if checked, this station is used as the main one')
     )
+
+    objects = StationQuerySet.as_manager()
 
     #
     # Controllers
@@ -233,12 +250,6 @@ class Station(Nameable):
         self.__prepare_controls()
         return self.__streamer
 
-    def raw_on_air(self, **kwargs):
-        """
-        Forward call to Log.objects.on_air for this station
-        """
-        return Log.objects.station(self).on_air().filter(**kwargs)
-
     def on_air(self, date = None, count = 0, no_cache = False):
         """
         Return a queryset of what happened on air, based on logs and
@@ -249,11 +260,10 @@ class Station(Nameable):
 
         If date is not specified, count MUST be set to a non-zero value.
 
-        It is different from Station.raw_on_air method since it filters
+        It is different from Logs.on_air method since it filters
         out elements that should have not been on air, such as a stream
         that has been played when there was a live diffusion.
         """
-        # FIXME: as an iterator?
         # TODO argument to get sound instead of tracks
         if not date and not count:
             raise ValueError('at least one argument must be set')
@@ -267,7 +277,7 @@ class Station(Nameable):
 
         now = tz.now()
         if date:
-            logs = Log.objects.station(self).at(date)
+            logs = Log.objects.at(date)
             diffs = Diffusion.objects.station(self).at(date) \
                         .filter(start__lte = now, type = Diffusion.Type.normal) \
                         .order_by('-start')
@@ -280,7 +290,7 @@ class Station(Nameable):
 
         q = models.Q(diffusion__isnull = False) | \
             models.Q(track__isnull = False)
-        logs = logs.filter(q, type = Log.Type.on_air).order_by('-date')
+        logs = logs.station(self).on_air().filter(q).order_by('-date')
 
         # filter out tracks played when there was a diffusion
         n = 0
@@ -288,7 +298,9 @@ class Station(Nameable):
         for diff in diffs:
             if count and n >= count:
                 break
-            q = q | models.Q(date__gte = diff.start, end__lte = diff.end)
+            # FIXME: does not catch tracks started before diff end but
+            #        that continued afterwards
+            q = q | models.Q(date__gte = diff.start, date__lte = diff.end)
             n += 1
         logs = logs.exclude(q, diffusion__isnull = True)
 
@@ -316,6 +328,7 @@ class ProgramManager(models.Manager):
     def station(self, station, qs = None, **kwargs):
         qs = self if qs is None else qs
         return qs.filter(station = station, **kwargs)
+
 
 class Program(Nameable):
     """
@@ -461,7 +474,6 @@ class Stream(models.Model):
     )
 
 
-
 # BIG FIXME: self.date is still used as datetime
 class Schedule(models.Model):
     """
@@ -502,7 +514,7 @@ class Schedule(models.Model):
     )
     timezone = models.CharField(
         _('timezone'),
-        default = pytz.UTC,
+        default = tz.get_current_timezone,
         choices = [(x, x) for x in pytz.all_timezones],
         max_length = 100,
         help_text = _('timezone used for the date')
@@ -831,10 +843,10 @@ class Diffusion(models.Model):
         choices = [ (int(y), _(x)) for x,y in Type.__members__.items() ],
     )
     initial = models.ForeignKey (
-        'self',
-        verbose_name = _('initial diffusion'),
+        'self', on_delete=models.SET_NULL,
         blank = True, null = True,
-        on_delete=models.SET_NULL,
+        related_name = 'reruns',
+        verbose_name = _('initial diffusion'),
         help_text = _('the diffusion is a rerun of this one')
     )
     # port = models.ForeignKey(
@@ -885,7 +897,15 @@ class Diffusion(models.Model):
         """
         return tz.localtime(self.end, tz.get_current_timezone())
 
+    @property
+    def original(self):
+        """ Return the original diffusion (self or initial) """
+        return self.initial if self.initial else self
+
     def is_live(self):
+        """
+        True if Diffusion is live (False if there are sounds files)
+        """
         return self.type == self.Type.normal and \
                 not self.get_sounds(archive = True).count()
 
@@ -948,9 +968,8 @@ class Diffusion(models.Model):
             return super().save(*args, **kwargs)
 
         if self.initial:
-            # force link to the first diffusion
-            if self.initial.initial:
-                self.initial = self.initial.initial
+            # enforce link to the original diffusion
+            self.initial = self.initial.original
             self.program = self.initial.program
 
         super().save(*args, **kwargs)
@@ -1271,22 +1290,20 @@ class LogQuerySet(models.QuerySet):
         #                 models.Q(date__lte = end))
         return self.filter(date__gte = start, date__lte = end)
 
-    def on_air(self, date = None):
-        """
-        Return a queryset of the played elements' log for the given
-        station and model. This queryset is ordered by date ascending
+    def on_air(self):
+        return self.filter(type = Log.Type.on_air)
 
-        * station: return logs occuring on this station
-        * date: only return logs that occured at this date
-        * kwargs: extra filter kwargs
-        """
-        if date:
-            qs = self.at(date)
-        else:
-            qs = self
+    def start(self):
+        return self.filter(type = Log.Type.start)
 
-        qs = qs.filter(type = Log.Type.on_air)
-        return qs.order_by('date')
+    def with_diff(self, with_it = True):
+        return self.filter(diffusion__isnull = not with_it)
+
+    def with_sound(self, with_it = True):
+        return self.filter(sound__isnull = not with_it)
+
+    def with_track(self, with_it = True):
+        return self.filter(track__isnull = not with_it)
 
     @staticmethod
     def _get_archive_path(station, date):
@@ -1452,12 +1469,6 @@ class Log(models.Model):
         default=tz.now,
         db_index = True,
     )
-    # date of the next diffusion: used in order to ease on_air algo's
-    end = models.DateTimeField(
-        _('end'),
-        default=tz.now,
-        db_index = True,
-    )
     comment = models.CharField(
         _('comment'),
         max_length = 512,
@@ -1488,16 +1499,6 @@ class Log(models.Model):
 
     objects = LogQuerySet.as_manager()
 
-    def estimate_end(self):
-        """
-        Calculated end using self.related informations
-        """
-        if self.diffusion:
-            return self.diffusion.end
-        if self.sound:
-            return self.date + utils.to_timedelta(self.sound.duration)
-        return self.date
-
     @property
     def related(self):
         return self.diffusion or self.sound or self.track
@@ -1510,21 +1511,6 @@ class Log(models.Model):
         to get it as local time.
         """
         return tz.localtime(self.date, tz.get_current_timezone())
-
-    def is_expired(self, date = None):
-        """
-        Return True if the log is expired. Note that it only check
-        against the date, so it is still possible that the expiration
-        occured because of a Stop or other source.
-
-        For sound logs, also check against sound duration when
-        end == date (e.g after a crash)
-        """
-        date = utils.date_or_default(date)
-        end = self.end
-        if end == self.date and self.sound:
-            end = self.date + to_timedelta(self.sound.duration)
-        return end < date
 
     def print(self):
         r = []
@@ -1548,9 +1534,4 @@ class Log(models.Model):
                 self.source,
                 self.local_date.strftime('%Y/%m/%d %H:%M%z'),
         )
-
-    def save(self, *args, **kwargs):
-        if not self.end:
-            self.end = self.estimate_end()
-        return super().save(*args, **kwargs)
 

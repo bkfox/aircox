@@ -1,57 +1,626 @@
+/**
+ *  Define rules for the default layouts, and some useful classes
+ */
 
+/** general **/
 body {
-    background-color: #373737;
     background-color: #F2F2F2;
-    font-family: 'Myriad Pro', Calibri, Helvetica, Arial, sans-serif;
-    font-size: 18px;
-    line-height: 1.5;
+    font-family: "Myriad Pro",Calibri,Helvetica,Arial,sans-serif;
 }
 
-main {
-    padding: 1em;
+h1, h2, h3, h4, h5 {
+    font-family: "Myriad Pro",Calibri,Helvetica,Arial,sans-serif;
+    margin: 0.4em 0em;
+}
+
+h1:first-letter, h2:first-letter, h3:first-letter, h4:first-letter {
+    text-transform: capitalize;
+}
+
+h1 { font-size: 1.4em; }
+h2 { font-size: 1.2em; }
+h3 { font-size: 0.9em; }
+h4 { font-size: 0.8em; }
+
+h1 > *, h2 > *, h3 > *, h4 > * { vertical-align: middle; }
+
+
+a {
+    cursor: pointer;
+    text-decoration: none;
+    color: #616161;
+}
+
+a:hover { color: #007EDF; }
+a:hover > .small_icon { box-shadow: 0em 0em 0.1em #007EDF; }
+
+ul { margin: 0em; }
+
+
+/**** position & box ****/
+.float_right { float: right; }
+.float_left { float: left; }
+
+
+.flex_row {
+    display: -webkit-flex;
+    display: flex;
+    -webkit-flex-direction: row;
+    flex-direction: row;
+}
+
+.flex_column {
+    display: -webkit-flex;
+    display: flex;
+    -webkit-flex-direction: column;
+    flex-direction: column;
+}
+
+.flex_row > .flex_item,
+.flex_column > .flex_item {
+    -webkit-flex: auto;
+    flex: auto;
 }
 
 
-input {
+.small {
+    font-size: 0.8em;
+}
+
+
+
+/**** indicators & info ****/
+time, .tags {
+    font-size: 0.9em;
+    color: #616161;
+}
+
+.info {
+    font-size: 0.9em;
+    padding: 0.1em;
+    color: #007EDF;
+}
+
+.error { color: red; }
+.warning { color: orange; }
+.success { color: green; }
+
+.icon {
+    max-width: 2em;
+    max-height: 2em;
+    vertical-align: middle;
+}
+
+.small_icon {
+    max-height: 1.5em;
+    vertical-align: middle;
+}
+
+
+/** main layout **/
+body > * {
+    max-width: 92em;
+    margin: 0em auto;
+    padding: 0em;
+}
+
+
+.menu {
     padding: 0.4em;
 }
 
+.menu:empty {
+    display: none;
+}
 
-table {
-    background-color: #f2f2f2;
-    border: 1px black solid;
-    width: 80%;
+
+.menu.row section {
+    display: inline-block;
+}
+
+.menu.col > section {
+    margin-bottom: 1em;
+}
+
+
+/**** top + header layout ****/
+body > .top {
+    position: fixed;
+    z-index: 10000000;
+    top: 0;
+    left: 0;
+    width: 100%;
+    max-width: 100%;
+
+    margin: 0em auto;
+    background-color: white;
+    border-bottom: 0.1em #dfdfdf solid;
+    box-shadow: 0em 0.1em 0.1em rgba(255,255,255,0.7);
+    box-shadow: 0em 0.1em 0.5em rgba(0,0,0,0.1);
+
+    transition: opacity 1.5s;
+}
+
+    body > .top > .menu {
+        max-width: 92em;
+        height: 2.5em;
+        margin: 0em auto;
+    }
+
+    body[scrollY] > .top {
+        opacity: 0.1;
+        transition: opacity 1.5s 1s;
+    }
+
+    body > .top:hover {
+        opacity: 1.0;
+        transition: opacity 1.5s;
+    }
+
+
+body > .header {
+    overflow: hidden;
+    margin-top: 3.3em;
+    margin-bottom: 1em;
+}
+
+    /** FIXME: remove this once image slides impled **/
+    body > .header > div {
+        width: 15000%;
+    }
+
+    body > .header > div > section {
+        margin: 0;
+        margin-right: -0.4em;
+    }
+
+
+
+/**** page layout ****/
+.page {
+    display: flex;
+}
+
+.page > main {
+    flex: auto;
+
+    overflow: hidden;
+    margin: 0em 0em;
+    border-radius: 0.4em;
+    border: 0.1em #dfdfdf solid;
+
+    background-color: rgba(255,255,255,0.9);
+    box-shadow: inset 0.1em 0.1em 0.2em rgba(255, 255, 255, 0.8);
+}
+
+
+.page > nav {
+    flex: 1;
+    width: 50em;
+    overflow: hidden;
+    max-width: 16em;
+}
+
+    .page > .menu.col:first-child { margin-right: 2em; }
+    .page > main + .menu.col { margin-left: 2em; }
+
+
+
+/**** page main ****/
+main:not(.detail) h1 {
+    margin: 0em 0em 0.4em 0em;
+}
+
+main .post_content {
+    display: block;
+}
+
+main .post_content section {
+    display: inline-block;
+    width: calc(50% - 1em);
+    vertical-align: top;
+}
+
+
+main.detail {
+    padding: 0em;
+    margin: 0em;
+}
+
+    main > .content {
+        padding: 1em;
+    }
+
+    main > header {
+        margin: 0em;
+        padding: 1em;
+        position: relative;
+    }
+
+    main > header .foreground {
+        position: absolute;
+        left: 0em;
+        top: 0em;
+        width: calc(100% - 2em);
+        padding: 1em;
+    }
+
+    main > header h1 {
+        width: calc(100% - 2em);
+        margin: 0em;
+        margin-bottom: 0.8em;
+    }
+
+    main header .headline {
+        display: inline-block;
+        width: calc(60% - 0.8em);
+        min-height: 1.2em;
+        font-size: 1.2em;
+        font-weight: bold;
+    }
+
+    main > header .background {
+        margin: -1em;
+        height: 17em;
+        overflow: hidden;
+        position: relative;
+    }
+
+    main > header .background img {
+        position: absolute;
+        /*! top: -40%; */
+        /*! left: -40%; */
+        width: 100%;
+        min-height: 100%;
+        filter: blur(20px);
+        opacity: 0.3;
+    }
+
+    main > header .cover {
+        right: 0em;
+        top: 1em;
+        width: auto;
+        max-height: calc(100% - 2em);
+        max-width: calc(40% - 2em);
+        margin: 1em;
+        position: absolute;
+        box-shadow: 0em 0em 4em rgba(0, 0, 0, 0.4);
+    }
+
+
+
+/** sections **/
+body section ul {
+    padding: 0em;
+    padding-left: 1em;
+}
+
+
+/**** link list ****/
+.menu.row .section_link_list > a {
+    display: inline-block;
+    margin: 0.2em 1em;
+}
+
+.menu.col .section_link_list > a {
+    display: block;
+}
+
+
+
+
+
+/** content: menus **/
+/** content: list & items **/
+.list {
+    width: 100%;
+}
+
+ul.list, .list > ul {
+    padding: 0.4em;
+}
+
+.list_item {
+    margin: 0.4em 0;
+}
+
+.list_item > *:not(:last-child) {
+    margin-right: 0.4em;
+}
+
+.list_item img.cover.big {
+    display: block;
+    max-width: 100%;
+    min-height: 15em;
     margin: auto;
 }
 
-td {
-    margin: 0;
-    padding: 0 0.4em;
+.list_item img.cover.small {
+    margin-right: 0.4em;
+    border-radius: 0.4em;
+    float: left;
+    min-height: 64px;
 }
 
-th {
-    text-align: left;
-    font-weight: normal;
-    margin: 0;
+.list_item > * {
+    margin: 0em 0.2em;
+    vertical-align: middle;
+}
+
+
+.list nav {
+    text-align: center;
+    font-size: 0.9em;
+}
+
+
+/** content: list items in full page **/
+.content > .list:not(.date_list) .list_item {
+    min-width: 20em;
+    display: inline-block;
+    min-height: 2.5em;
+    margin: 0.4em;
+}
+
+/** content: date list **/
+.date_list nav {
+    text-align:center;
+}
+
+    .date_list nav a {
+        display: inline-block;
+        width: 2em;
+    }
+
+    .date_list nav a.date {
+        width: 4em;
+    }
+
+    .date_list nav a[selected] {
+        color: #007EDF;
+        border-bottom: 0.2em #007EDF dotted;
+    }
+
+.date_list ul:not([selected]) {
+    display: none;
+}
+
+.date_list ul:target {
+    display: block;
+}
+
+    .date_list h2 {
+        display: none;
+    }
+
+.date_list_item .cover.small {
+    width: 64px;
+    margin: 0.4em;
+}
+
+.date_list_item h3 {
+    margin-top: 0em;
+}
+
+.date_list_item time {
+    color: #007EDF;
+}
+
+
+.date_list_item.now {
     padding: 0.4em;
 }
 
-tr:not(.header):hover {
-    background-color: rgba(0, 0, 0, 0.1);
+    .date_list_item img.now {
+        width: 1.3em;
+        vertical-align: bottom;
+    }
+
+
+/** content: date list in full page **/
+.content > .date_list .date_list_item time {
+    color: #007EDF;
+    font-size: 1.1em;
+    display: block;
 }
 
-tr.header {
-    background-color: #212121;
-    color: #eee;
+
+.content > .date_list .date_list_item:nth-child(2n+1),
+.date_list_item.now {
+    box-shadow: inset 0em 0em 3em rgba(0, 124, 226, 0.1);
+    background-color: rgba(0, 124, 226, 0.05);
 }
 
-tr.bottom > td {
+.content > .date_list {
+    padding: 0 10%;
+    margin: auto;
+    width: 80%;
+}
+
+
+/** content: comments **/
+.comments form input:not([type=checkbox]),
+.comments form textarea {
+    display: inline-block;
+    width: 100%;
+    max-height: 6em;
+    margin: 0.2em 0em;
+    padding: 0.2em;
+}
+
+.comments form input[type=checkbox],
+.comments form button[type=submit] {
+    vertical-align:bottom;
+    margin: 0.2em 0em;
+    text-align: center;
+}
+
+.comments form button[type=submit] {
+    float: right;
+}
+
+.comments form #show_more:not(:checked) ~ .extra {
+    display: none;
+}
+
+.comments label[for="show_more"] {
+    font-size: 0.8em;
+}
+
+.comments ul {
+    margin-top: 2.5em;
+}
+
+.comment {
+    list-style: none;
+    border: 1px #818181 dotted;
+    margin: 0.4em 0em;
+}
+
+    .comment .metadata {
+        font-size: 0.9em;
+    }
+
+    .comment time {
+        float: right;
+    }
+
+
+/** component: sound **/
+.component.sound {
+    display: flex;
+    flex-direction: row;
+    margin: 0.2em;
+    width: 100%;
+}
+
+    .component.sound[state="play"] button {
+        animation-name: sound-blink;
+        animation-duration: 4s;
+        animation-iteration-count: infinite;
+        animation-direction: alternate;
+    }
+
+    @keyframes sound-blink {
+        from { background-color: rgba(255, 255, 255, 0); }
+        to { background-color: rgba(255, 255, 255, 0.6); }
+    }
+
+
+.component.sound .button {
+    width: 4em;
+    height: 4em;
+    cursor: pointer;
+    position: relative;
+    margin-right: 0.4em;
+}
+
+    .component.sound .button > img {
+        width: 100%;
+        height: 100%;
+    }
+
+    .component.sound button {
+        transition: background-color 0.5s;
+        background-color: rgba(255,255,255,0.1);
+        position: absolute;
+        cursor: pointer;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        border: 0;
+    }
+
+    .component.sound button:hover {
+        background-color: rgba(255,255,255,0.5);
+    }
+
+    .component.sound button > img {
+        background-color: rgba(255,255,255,0.9);
+        border-radius: 50%;
+    }
+
+.component.sound .content {
+    position: relative;
+}
+
+    .component.sound .info {
+        text-align: right;
+    }
+
+    .component.sound progress {
+        width: 100%;
+        position: absolute;
+        bottom: 0;
+        height: 0.4em;
+    }
+
+    .component.sound progress:hover {
+        height: 1em;
+    }
+
+
+/** component: playlist **/
+.component.playlist footer {
+    text-align: right;
+    display: block;
+}
+
+.component.playlist .read_all {
+    display: none;
+}
+
+    .component.playlist .read_all + label {
+        display: inline-block;
+        padding: 0.1em;
+        margin-left: 0.2em;
+        cursor: pointer;
+        font-size: 1em;
+        box-shadow: inset 0em 0em 0.1em #818181;
+    }
+
+    .component.playlist .read_all:not(:checked) + label {
+        border-left: 0.1em #818181 solid;
+        margin-right: 0em;
+    }
+
+    .component.playlist .read_all:checked + label {
+        border-right: 0.1em #007EDF solid;
+        box-shadow: inset 0em 0em 0.1em #007EDF;
+        margin-right: 0em;
+    }
+
+
+/** content: page **/
+main .body ~ section:not(.comments) {
+    width: calc(50% - 1em);
     vertical-align: top;
-    padding: 0.4em;
+    display: inline-block;
 }
 
-tr.subdata {
+.meta .author .headline {
+    display: none;
+}
+
+    .meta .link_list > a {
+        font-size: 0.9em;
+        margin: 0em 0.1em;
+        padding: 0.2em;
+        line-height: 1.4em;
+    }
+
+    .meta .link_list > a:hover {
+        border-radius: 0.2em;
+        background-color: rgba(0, 126, 223, 0.1);
+    }
+
+
+/** content: others **/
+.list_item.track .title {
+    display: inline;
     font-style: italic;
+    font-weight: normal;
     font-size: 0.9em;
 }
 

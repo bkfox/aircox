@@ -125,7 +125,7 @@ Monitor.update(50000);
             <tr>
                 <th class="name" colspan=2>{{ station.name }}</th>
                 <td>
-                    {% with station.streamer.current_source.name as current_source %}
+                    {% with station.streamer.source.name as current_source %}
                     {% blocktrans %}
                     Current source: {{ current_source }}
                     {% endblocktrans %}
@@ -154,7 +154,7 @@ Monitor.update(50000);
                     {% endif %}
                 </td>
                 <td class="source_info">
-                    {% if source.name == station.streamer.current_source.name %}
+                    {% if source.name == station.streamer.source.name %}
                     <img src="{% static "aircox/images/play.png" %}" alt="{% trans "current" %}">
                     {% endif %}
                     {% if source.is_dealer %}
@@ -167,7 +167,7 @@ Monitor.update(50000);
                     {% if source.is_dealer %}
                     {{ source.playlist|join:"<br>" }}
                     {% else %}
-                    {{ source.current_sound }}
+                    {{ source.sound }}
                     {% endif %}
                 </td>
                 <td class="actions">
