@@ -211,6 +211,7 @@ class Monitor:
             if source == self.station.dealer:
                 continue
             playlist = source.program.sound_set.all() \
+                             .filter(type=Sound.Type.archive) \
                              .values_list('path', flat = True)
             source.playlist = list(playlist)
 
