@@ -1,27 +1,25 @@
+import calendar
 import datetime
 import logging
 import os
 import shutil
-
-import calendar
 from enum import IntEnum
-import pytz
 
+import pytz
 from django.conf import settings as main_settings
-from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
+from django.contrib.contenttypes.fields import (GenericForeignKey,
+                                                GenericRelation)
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.template.defaultfilters import slugify
-from django.utils.translation import ugettext_lazy as _
 from django.utils import timezone as tz
-from django.utils.html import strip_tags
 from django.utils.functional import cached_property
+from django.utils.html import strip_tags
+from django.utils.translation import ugettext_lazy as _
 
-from taggit.managers import TaggableManager
-
-import aircox.utils as utils
 import aircox.settings as settings
-
+import aircox.utils as utils
+from taggit.managers import TaggableManager
 
 logger = logging.getLogger('aircox.core')
 
@@ -37,10 +35,12 @@ class RelatedQuerySet(models.QuerySet):
         * object: if given, use its type and pk; match on models only.
         * model: one model or an iterable of models
         """
+
         if not model and object:
             model = type(object)
 
         qs = self
+
         if hasattr(model, '__iter__'):
             model = [ ContentType.objects.get_for_model(m).id
                         for m in model ]
@@ -51,6 +51,7 @@ class RelatedQuerySet(models.QuerySet):
 
         if object:
             self = self.filter(related_id = object.pk)
+
         return self
 
 class Related(models.Model):
@@ -79,6 +80,7 @@ class Related(models.Model):
         """
         Return a GenericRelation object that points to this class
         """
+
         return GenericRelation(cl, 'related_id', 'related_type')
 
 
@@ -96,11 +98,13 @@ class Nameable(models.Model):
         """
         Slug based on the name. We replace '-' by '_'
         """
+
         return slugify(self.name).replace('-', '_')
 
     def __str__(self):
         #if self.pk:
         #    return '#{} {}'.format(self.pk, self.name)
+
         return '{}'.format(self.name)
 
 
@@ -160,12 +164,15 @@ class StationQuerySet(models.QuerySet):
         Return station model instance, using defaults or
         given one.
         """
+
         if station is None:
             return self.order_by('-default', 'pk').first()
+
         return self.filter(pk = station).first()
 
 def default_station():
     """ Return default station (used by model fields) """
+
     return Station.objects.default()
 
 
@@ -201,11 +208,13 @@ class Station(Nameable):
 
     def __prepare_controls(self):
         import aircox.controllers as controllers
+
         if not self.__streamer:
             self.__streamer = controllers.Streamer(station = self)
             self.__dealer = controllers.Source(station = self)
             self.__sources = [ self.__dealer ] + [
                 controllers.Source(station = self, program = program)
+
                 for program in Program.objects.filter(stream__isnull = False)
             ]
 
@@ -214,6 +223,7 @@ class Station(Nameable):
         """
         Return all active input ports of the station
         """
+
         return self.port_set.filter(
             direction = Port.Direction.input,
             active = True
@@ -224,6 +234,7 @@ class Station(Nameable):
         """
         Return all active output ports of the station
         """
+
         return self.port_set.filter(
             direction = Port.Direction.output,
             active = True,
@@ -235,11 +246,13 @@ class Station(Nameable):
         Audio sources, dealer included
         """
         self.__prepare_controls()
+
         return self.__sources
 
     @property
     def dealer(self):
         self.__prepare_controls()
+
         return self.__dealer
 
     @property
@@ -248,6 +261,7 @@ class Station(Nameable):
         Audio controller for the station
         """
         self.__prepare_controls()
+
         return self.__streamer
 
     def on_air(self, date = None, count = 0, no_cache = False):
@@ -265,10 +279,12 @@ class Station(Nameable):
         that has been played when there was a live diffusion.
         """
         # TODO argument to get sound instead of tracks
+
         if not date and not count:
             raise ValueError('at least one argument must be set')
 
         # FIXME can be a potential source of bug
+
         if date:
             date = utils.cast_date(date, to_datetime = False)
 
@@ -276,6 +292,7 @@ class Station(Nameable):
             return []
 
         now = tz.now()
+
         if date:
             logs = Log.objects.at(date)
             diffs = Diffusion.objects.station(self).at(date) \
@@ -295,6 +312,7 @@ class Station(Nameable):
         # filter out tracks played when there was a diffusion
         n = 0
         q = models.Q()
+
         for diff in diffs:
             if count and n >= count:
                 break
@@ -306,6 +324,7 @@ class Station(Nameable):
 
         if count:
             logs = logs[:count]
+
         return logs
 
     def save(self, make_sources = True, *args, **kwargs):
@@ -317,6 +336,7 @@ class Station(Nameable):
 
         if self.default:
             qs = Station.objects.filter(default = True)
+
             if self.pk:
                 qs = qs.exclude(pk = self.pk)
             qs.update(default = False)
@@ -327,6 +347,7 @@ class Station(Nameable):
 class ProgramManager(models.Manager):
     def station(self, station, qs = None, **kwargs):
         qs = self if qs is None else qs
+
         return qs.filter(station = station, **kwargs)
 
 
@@ -366,6 +387,7 @@ class Program(Nameable):
         """
         Return the path to the programs directory
         """
+
         return os.path.join(settings.AIRCOX_PROGRAMS_DIR,
                             self.slug + '_' + str(self.id) )
 
@@ -377,6 +399,7 @@ class Program(Nameable):
         path = os.path.join(self.path, subdir) if subdir else \
                self.path
         os.makedirs(path, exist_ok = True)
+
         return os.path.exists(path)
 
     @property
@@ -396,17 +419,20 @@ class Program(Nameable):
         Return the first schedule that matches a given date.
         """
         schedules = Schedule.objects.filter(program = self)
+
         for schedule in schedules:
             if schedule.match(date, check_time = False):
                 return schedule
 
     def __init__(self, *kargs, **kwargs):
         super().__init__(*kargs, **kwargs)
+
         if self.name:
             self.__original_path = self.path
 
     def save(self, *kargs, **kwargs):
         super().save(*kargs, **kwargs)
+
         if hasattr(self, '__original_path') and \
                 self.__original_path != self.path and \
                 os.path.exists(self.__original_path) and \
@@ -416,6 +442,7 @@ class Program(Nameable):
             shutil.move(self.__original_path, self.path)
 
             sounds = Sounds.objects.filter(path__startswith = self.__original_path)
+
             for sound in sounds:
                 sound.path.replace(self.__original_path, self.path)
                 sound.save()
@@ -427,14 +454,18 @@ class Program(Nameable):
         given in a previous time by this model (Program.path getter).
         """
         path = path.replace(settings.AIRCOX_PROGRAMS_DIR, '')
+
         while path[0] == '/': path = path[1:]
+
         while path[-1] == '/': path = path[:-2]
+
         if '/' in path:
             path = path[:path.index('/')]
 
         path = path.split('_')
         path = path[-1]
         qs = cl.objects.filter(id = int(path))
+
         return qs[0] if qs else None
 
     def is_show(self):
@@ -555,6 +586,7 @@ class Schedule(models.Model):
         Pytz timezone of the schedule.
         """
         import pytz
+
         return pytz.timezone(self.timezone)
 
     # initial cached data
@@ -562,13 +594,16 @@ class Schedule(models.Model):
 
     def changed(self, fields = ['date','duration','frequency','timezone']):
         initial = self._Schedule__initial
+
         if not initial:
             return
 
         this = self.__dict__
+
         for field in fields:
             if initial.get(field) != this.get(field):
                 return True
+
         return False
 
     def match(self, date = None, check_time = True):
@@ -576,8 +611,10 @@ class Schedule(models.Model):
         Return True if the given datetime matches the schedule
         """
         date = utils.date_or_default(date)
+
         if self.date.weekday() != date.weekday() or \
                 not self.match_week(date):
+
             return False
 
         if not check_time:
@@ -586,6 +623,7 @@ class Schedule(models.Model):
         # we check against a normalized version (norm_date will have
         # schedule's date.
         norm_date = self.normalize(date)
+
         return date == norm_date
 
     def match_week(self, date = None):
@@ -594,6 +632,7 @@ class Schedule(models.Model):
         otherwise.
         If the schedule is ponctual, return None.
         """
+
         if self.frequency == Schedule.Frequency.ponctual:
             return False
 
@@ -602,18 +641,23 @@ class Schedule(models.Model):
         date += tz.timedelta(days = self.date.weekday() - date.weekday() )
 
         # FIXME this case
+
         if self.frequency == Schedule.Frequency.one_on_two:
             # cf notes in date_of_month
             diff = utils.cast_date(date, False) - utils.cast_date(self.date, False)
+
             return not (diff.days % 14)
 
         first_of_month = date.replace(day = 1)
         week = date.isocalendar()[1] - first_of_month.isocalendar()[1]
 
         # weeks of month
+
         if week == 4:
             # fifth week: return if for every week
+
             return self.frequency == self.Frequency.every
+
         return (self.frequency & (0b0001 << week) > 0)
 
     def normalize(self, date):
@@ -626,6 +670,7 @@ class Schedule(models.Model):
                            time.hour, time.minute, 0, 0)
         date = self.tz.localize(date)
         date = self.tz.normalize(date)
+
         return date
 
     def dates_of_month(self, date = None):
@@ -633,6 +678,7 @@ class Schedule(models.Model):
         Return a list with all matching dates of date.month (=today)
         Ensure timezone awareness.
         """
+
         if self.frequency == Schedule.Frequency.ponctual:
             return []
 
@@ -642,15 +688,18 @@ class Schedule(models.Model):
         freq = self.frequency
 
         # last of the month
+
         if freq == Schedule.Frequency.last:
             date = date.replace(day=calendar.monthrange(date.year, date.month)[1])
 
             # end of month before the wanted weekday: move one week back
+
             if date.weekday() < self.date.weekday():
                 date -= tz.timedelta(days = 7)
 
             delta = self.date.weekday() - date.weekday()
             date += tz.timedelta(days = delta)
+
             return [self.normalize(date)]
 
         # move to the first day of the month that matches the schedule's weekday
@@ -662,9 +711,11 @@ class Schedule(models.Model):
         month = date.month
 
         dates = []
+
         if freq == Schedule.Frequency.one_on_two:
             # check date base on a diff of dates base on a 14 days delta
             diff = utils.cast_date(date, False) - utils.cast_date(self.date, False)
+
             if diff.days % 14:
                 date += tz.timedelta(days = 7)
 
@@ -673,11 +724,13 @@ class Schedule(models.Model):
                 date += tz.timedelta(days = 14)
         else:
             week = 0
+
             while week < 5 and date.month == month:
                 if freq & (0b1 << week):
                     dates.append(date)
                 date += tz.timedelta(days = 7)
                 week += 1;
+
         return [self.normalize(date) for date in dates]
 
     def diffusions_of_month(self, date = None, exclude_saved = False):
@@ -687,6 +740,7 @@ class Schedule(models.Model):
 
         If exclude_saved, exclude all diffusions that are yet in the database.
         """
+
         if self.frequency == Schedule.Frequency.ponctual:
             return []
 
@@ -694,15 +748,19 @@ class Schedule(models.Model):
         diffusions = []
 
         # existing diffusions
+
         for item in Diffusion.objects.filter(
                 program = self.program, start__in = dates):
+
             if item.start in dates:
                 dates.remove(item.start)
+
             if not exclude_saved:
                 diffusions.append(item)
 
         # new diffusions
         duration = utils.to_timedelta(self.duration)
+
         if self.initial:
             delta = self.date - self.initial.date
         diffusions += [
@@ -716,12 +774,14 @@ class Schedule(models.Model):
                 end = date + duration,
             ) for date in dates
         ]
+
         return diffusions
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         # initial only if it has been yet saved
+
         if self.pk:
             self.__initial = self.__dict__.copy()
 
@@ -734,6 +794,7 @@ class Schedule(models.Model):
         if self.initial:
             self.program = self.initial.program
             self.duration = self.initial.duration
+
             if not self.frequency:
                 self.frequency = self.initial.frequency
         super().save(*args, **kwargs)
@@ -768,10 +829,12 @@ class DiffusionQuerySet(models.QuerySet):
 
         qs = self
         filters = None
+
         if isinstance(date, datetime.datetime):
             # use datetime: we want diffusion that occurs around this
             # range
             filters = { 'start__lte': date, 'end__gte': date }
+
             if next:
                 qs = qs.filter(
                     models.Q(start__gte = date) | models.Q(**filters)
@@ -783,10 +846,12 @@ class DiffusionQuerySet(models.QuerySet):
             start, end = utils.date_range(date)
             filters = models.Q(start__gte = start, start__lte = end) | \
                       models.Q(end__gt = start, end__lt = end)
+
             if next:
                 # include also diffusions of the next day
                 filters |= models.Q(start__gte = start)
             qs = qs.filter(filters, **kwargs)
+
         return qs.order_by('start').distinct()
 
     def after(self, date = None, **kwargs):
@@ -795,6 +860,7 @@ class DiffusionQuerySet(models.QuerySet):
         date.
         """
         date = utils.date_or_default(date, keep_type = True)
+
         return self.filter(start__gte = date, **kwargs).order_by('start')
 
     def before(self, date = None, **kwargs):
@@ -803,6 +869,7 @@ class DiffusionQuerySet(models.QuerySet):
         date.
         """
         date = utils.date_or_default(date)
+
         return self.filter(end__lte = date, **kwargs).order_by('start')
 
 
@@ -877,6 +944,7 @@ class Diffusion(models.Model):
         """
         Alias to self.start
         """
+
         return self.start
 
     @cached_property
@@ -886,6 +954,7 @@ class Diffusion(models.Model):
         This is needed since datetime are stored as UTC date and we want
         to get it as local time.
         """
+
         return tz.localtime(self.date, tz.get_current_timezone())
 
     @property
@@ -895,28 +964,33 @@ class Diffusion(models.Model):
         This is needed since datetime are stored as UTC date and we want
         to get it as local time.
         """
+
         return tz.localtime(self.end, tz.get_current_timezone())
 
     @property
     def original(self):
         """ Return the original diffusion (self or initial) """
+
         return self.initial if self.initial else self
 
     def is_live(self):
         """
         True if Diffusion is live (False if there are sounds files)
         """
+
         return self.type == self.Type.normal and \
                 not self.get_sounds(archive = True).count()
 
 
     def get_playlist(self, **types):
         """
-        Returns sounds as a playlist (list of *local* file path).
+        Returns sounds as a playlist (list of *local* archive file path).
         The given arguments are passed to ``get_sounds``.
         """
+
         return list(self.get_sounds(**types) \
-                        .filter(path__isnull = False) \
+                        .filter(path__isnull = False,
+                                type=Sound.Type.archive) \
                         .values_list('path', flat = True))
 
     def get_sounds(self, **types):
@@ -929,6 +1003,7 @@ class Diffusion(models.Model):
         sounds = (self.initial or self).sound_set.order_by('type', 'path')
         _in = [ getattr(Sound.Type, name)
                     for name, value in types.items() if value ]
+
         return sounds.filter(type__in = _in)
 
     def is_date_in_range(self, date = None):
@@ -937,12 +1012,14 @@ class Diffusion(models.Model):
         range.
         """
         date = date or tz.now()
+
         return self.start < date < self.end
 
     def get_conflicts(self):
         """
         Return a list of conflictual diffusions, based on the scheduled duration.
         """
+
         return Diffusion.objects.filter(
             models.Q(start__lt = self.start,
                      end__gt = self.start) |
@@ -1072,6 +1149,7 @@ class Sound(Nameable):
         mtime = tz.datetime.fromtimestamp(mtime)
         # db does not store microseconds
         mtime = mtime.replace(microsecond = 0)
+
         return tz.make_aware(mtime, tz.get_current_timezone())
 
     def url(self):
@@ -1081,12 +1159,14 @@ class Sound(Nameable):
         # path = self._meta.get_field('path').path
         path = self.path.replace(main_settings.MEDIA_ROOT, '', 1)
         #path = self.path.replace(path, '', 1)
+
         return main_settings.MEDIA_URL + '/' + path
 
     def file_exists(self):
         """
         Return true if the file still exists
         """
+
         return os.path.exists(self.path)
 
     def file_metadata(self):
@@ -1094,6 +1174,7 @@ class Sound(Nameable):
         Get metadata from sound file and return a Track object if succeed,
         else None.
         """
+
         if not self.file_exists():
             return None
 
@@ -1108,6 +1189,7 @@ class Sound(Nameable):
 
         def get_meta(key, cast=str):
             value = meta.get(key)
+
             return cast(value[0]) if value else None
 
         info = '{} ({})'.format(get_meta('album'), get_meta('year')) \
@@ -1123,6 +1205,7 @@ class Sound(Nameable):
             info = info,
             position = get_meta('tracknumber', int) or 0,
         )
+
         return track
 
     def check_on_file(self):
@@ -1130,15 +1213,18 @@ class Sound(Nameable):
         Check sound file info again'st self, and update informations if
         needed (do not save). Return True if there was changes.
         """
+
         if not self.file_exists():
             if self.type == self.Type.removed:
                 return
             logger.info('sound %s: has been removed', self.path)
             self.type = self.Type.removed
+
             return True
 
         # not anymore removed
         changed = False
+
         if self.type == self.Type.removed and self.program:
             changed = True
             self.type = self.Type.archive \
@@ -1147,20 +1233,25 @@ class Sound(Nameable):
 
         # check mtime -> reset quality if changed (assume file changed)
         mtime = self.get_mtime()
+
         if self.mtime != mtime:
             self.mtime = mtime
             self.good_quality = None
             logger.info('sound %s: m_time has changed. Reset quality info',
                         self.path)
+
             return True
+
         return changed
 
     def check_perms(self):
         """
         Check file permissions and update it if the sound is public
         """
+
         if not settings.AIRCOX_SOUND_AUTO_CHMOD or \
                 self.removed or not os.path.exists(self.path):
+
             return
 
         flags = settings.AIRCOX_SOUND_CHMOD_FLAGS[self.public]
@@ -1257,10 +1348,12 @@ class Port (models.Model):
         """
         Return True if the type is available for the given direction.
         """
+
         if self.direction == self.Direction.input:
             return self.type not in (
                 self.Type.icecast, self.Type.file
             )
+
         return self.type not in (
             self.Type.http, self.Type.https
         )
@@ -1270,6 +1363,7 @@ class Port (models.Model):
             raise ValueError(
                 "port type is not allowed with the given port direction"
             )
+
         return super().save(*args, **kwargs)
 
     def __str__(self):
@@ -1288,6 +1382,7 @@ class LogQuerySet(models.QuerySet):
         start, end = utils.date_range(date)
         # return qs.filter(models.Q(end__gte = start) |
         #                 models.Q(date__lte = end))
+
         return self.filter(date__gte = start, date__lte = end)
 
     def on_air(self):
@@ -1309,6 +1404,7 @@ class LogQuerySet(models.QuerySet):
     def _get_archive_path(station, date):
         # note: station name is not included in order to avoid problems
         #       of retrieving archive when it changes
+
         return os.path.join(
             settings.AIRCOX_LOGS_ARCHIVES_DIR,
             '{}_{}.log.gz'.format(date.strftime("%Y%m%d"), station.pk)
@@ -1323,11 +1419,14 @@ class LogQuerySet(models.QuerySet):
         Example: _get_rel_objects([{..},..], Diffusion, 'diffusion')
         """
         attr_id = attr + '_id'
+
         return {
             rel.pk: rel
+
             for rel in type.objects.filter(
                 pk__in = (
                     log[attr_id]
+
                     for log in logs if attr_id in log
                 )
             )
@@ -1341,6 +1440,7 @@ class LogQuerySet(models.QuerySet):
         import gzip
 
         path = self._get_archive_path(station, date)
+
         if not os.path.exists(path):
             return []
 
@@ -1358,14 +1458,17 @@ class LogQuerySet(models.QuerySet):
             def rel_obj(log, attr):
                 attr_id = attr + '_id'
                 rel_id = log.get(attr + '_id')
+
                 return rels[attr][rel_id] if rel_id else None
 
             # make logs
+
             return [
                 Log(diffusion = rel_obj(log, 'diffusion'),
                     sound = rel_obj(log, 'sound'),
                     track = rel_obj(log, 'track'),
                     **log)
+
                 for log in logs
             ]
 
@@ -1383,10 +1486,12 @@ class LogQuerySet(models.QuerySet):
 
         os.makedirs(settings.AIRCOX_LOGS_ARCHIVES_DIR, exist_ok = True)
         path = self._get_archive_path(station, date);
+
         if os.path.exists(path) and not force:
             return -1
 
         qs = self.station(station).at(date)
+
         if not qs.exists():
             return 0
 
@@ -1394,8 +1499,10 @@ class LogQuerySet(models.QuerySet):
         logs = [
             {
                 i.attname: getattr(log, i.attname)
+
                 for i in fields
             }
+
             for log in qs
         ]
 
@@ -1407,6 +1514,7 @@ class LogQuerySet(models.QuerySet):
 
         if not keep:
             qs.delete()
+
         return len(logs)
 
 
@@ -1510,14 +1618,18 @@ class Log(models.Model):
         This is needed since datetime are stored as UTC date and we want
         to get it as local time.
         """
+
         return tz.localtime(self.date, tz.get_current_timezone())
 
     def print(self):
         r = []
+
         if self.diffusion:
             r.append('diff: ' + str(self.diffusion_id))
+
         if self.sound:
             r.append('sound: ' + str(self.sound_id))
+
         if self.track:
             r.append('track: ' + str(self.track_id))
 
@@ -1534,4 +1646,3 @@ class Log(models.Model):
                 self.source,
                 self.local_date.strftime('%Y/%m/%d %H:%M%z'),
         )
-
