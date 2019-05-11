@@ -13,37 +13,41 @@ Including another URLconf
     1. Add an import:  from blog import urls as blog_urls
     2. Add a URL to urlpatterns:  url(r'^blog/', include(blog_urls))
 """
-from django.conf.urls import include, url
+from django.conf import settings
+from django.urls import include, path, re_path
 from django.contrib import admin
-from instance import settings
 
-from wagtail.wagtailadmin import urls as wagtailadmin_urls
-from wagtail.wagtaildocs import urls as wagtaildocs_urls
-from wagtail.wagtailcore import urls as wagtail_urls
-from wagtail.wagtailimages.views.serve import ServeView
+from wagtail.admin import urls as wagtailadmin_urls
+from wagtail.documents import urls as wagtaildocs_urls
+from wagtail.core import urls as wagtail_urls
+from wagtail.images.views.serve import ServeView
 
 import aircox.urls
 
+try:
+    urlpatterns = [
+        path('jet/', include('jet.urls', 'jet')),
+        path('admin/', admin.site.urls),
+        path('aircox/', include(aircox.urls.urls)),
 
-urlpatterns = [
-    url(r'^jet/', include('jet.urls', 'jet')),
-    url(r'^admin/', include(admin.site.urls)),
-    url(r'^aircox/', include(aircox.urls.urls)),
+        # cms
+        path('cms/', include(wagtailadmin_urls)),
+        path('documents/', include(wagtaildocs_urls)),
+        re_path( r'^images/([^/]*)/(\d*)/([^/]*)/[^/]*$', ServeView.as_view(),
+            name='wagtailimages_serve'),
+    ]
 
-    # cms
-    url(r'^cms/', include(wagtailadmin_urls)),
-    url(r'^documents/', include(wagtaildocs_urls)),
-    url( r'^images/([^/]*)/(\d*)/([^/]*)/[^/]*$', ServeView.as_view(),
-        name='wagtailimages_serve'),
-]
-
-if settings.DEBUG:
-    from django.views.static import serve
-    urlpatterns.append(
-        url(r'^media/(?P<path>.*)$', serve,
-            {'document_root': settings.MEDIA_ROOT, 'show_indexes':True}
+    if settings.DEBUG:
+        from django.views.static import serve
+        urlpatterns.append(
+            re_path(r'^media/(?P<path>.*)$', serve,
+                {'document_root': settings.MEDIA_ROOT, 'show_indexes':True}
+            )
         )
-    )
 
-urlpatterns.append(url(r'', include(wagtail_urls)))
+    urlpatterns.append(re_path(r'', include(wagtail_urls)))
+
+except Exception as e:
+    import traceback
+    traceback.print_exc()
 

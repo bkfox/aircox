@@ -1,6 +1,6 @@
 from django.db import models
 from django.template.loader import render_to_string
-from wagtail.wagtailcore.utils import camelcase_to_underscore
+from wagtail.core.utils import camelcase_to_underscore
 
 
 class TemplateMixin(models.Model):

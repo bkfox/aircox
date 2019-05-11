@@ -16,10 +16,10 @@ from django.utils.translation import ugettext as _, ugettext_lazy
 from django.utils import timezone as tz
 from django.utils.functional import cached_property
 
-from wagtail.wagtailadmin.edit_handlers import *
-from wagtail.wagtailcore.models import Page, Orderable
-from wagtail.wagtailimages.models import Image
-from wagtail.wagtailimages.edit_handlers import ImageChooserPanel
+from wagtail.admin.edit_handlers import *
+from wagtail.core.models import Page, Orderable
+from wagtail.images.models import Image
+from wagtail.images.edit_handlers import ImageChooserPanel
 
 from aircox_cms.utils import related_pages_filter
 

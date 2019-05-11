@@ -1,14 +1,14 @@
 import inspect
 
-from django.core.urlresolvers import reverse
-from wagtail.wagtailcore.models import Page
+from django.urls import reverse
+from wagtail.core.models import Page
 
 def image_url(image, filter_spec):
     """
     Return an url for the given image -- shortcut function for
     wagtailimages' serve.
     """
-    from wagtail.wagtailimages.views.serve import generate_signature
+    from wagtail.images.views.serve import generate_signature
     signature = generate_signature(image.id, filter_spec)
     url = reverse('wagtailimages_serve', args=(signature, image.id, filter_spec))
     url += image.file.name[len('original_images/'):]

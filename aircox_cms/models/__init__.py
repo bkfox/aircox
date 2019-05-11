@@ -8,16 +8,16 @@ from django.utils.translation import ugettext as _, ugettext_lazy
 
 # pages and panels
 from wagtail.contrib.settings.models import BaseSetting, register_setting
-from wagtail.wagtailcore.models import Page, Orderable, \
+from wagtail.core.models import Page, Orderable, \
         PageManager, PageQuerySet
-from wagtail.wagtailcore.fields import RichTextField
-from wagtail.wagtailimages.edit_handlers import ImageChooserPanel
-from wagtail.wagtailadmin.edit_handlers import FieldPanel, FieldRowPanel, \
+from wagtail.core.fields import RichTextField
+from wagtail.images.edit_handlers import ImageChooserPanel
+from wagtail.admin.edit_handlers import FieldPanel, FieldRowPanel, \
         MultiFieldPanel, InlinePanel, PageChooserPanel, StreamFieldPanel
-from wagtail.wagtailsearch import index
+from wagtail.search import index
 
 # snippets
-from wagtail.wagtailsnippets.models import register_snippet
+from wagtail.snippets.models import register_snippet
 
 # tags
 from modelcluster.fields import ParentalKey
@@ -40,6 +40,7 @@ from aircox_cms.utils import image_url
 class WebsiteSettings(BaseSetting):
     station = models.OneToOneField(
         aircox.models.Station,
+        models.SET_NULL,
         verbose_name = _('aircox station'),
         related_name = 'website_settings',
         unique = True,
@@ -70,6 +71,7 @@ class WebsiteSettings(BaseSetting):
     )
     list_page = models.ForeignKey(
         'aircox_cms.DynamicListPage',
+        on_delete=models.CASCADE,
         verbose_name = _('page for lists'),
         help_text=_('page used to display the results of a search and other '
                     'lists'),
@@ -121,6 +123,7 @@ class WebsiteSettings(BaseSetting):
             # done manually, when the user edit it.
         )
     )
+
     default_programs_page = ParentalKey(
         Page,
         verbose_name = _('default programs page'),
@@ -133,7 +136,7 @@ class WebsiteSettings(BaseSetting):
             # /doc/ (technicians, admin): if the page has not been created,
             # it still can be created using the `programs_to_cms` command.
         ),
-        limit_choices_to = lambda: {
+        limit_choices_to = {
             'show_in_menus': True,
             'publication__isnull': False,
         },
@@ -167,6 +170,7 @@ class WebsiteSettings(BaseSetting):
 class Comment(models.Model):
     publication = models.ForeignKey(
         Page,
+        on_delete=models.CASCADE,
         verbose_name = _('page')
     )
     published = models.BooleanField(

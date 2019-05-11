@@ -1,19 +1,19 @@
 import json
 
-from django.utils import timezone as tz
-from django.utils.translation import ugettext_lazy as _
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.forms import SelectMultiple, TextInput
 from django.contrib.staticfiles.templatetags.staticfiles import static
 from django.utils.html import format_html
+from django.utils import timezone as tz
 from django.utils.safestring import mark_safe
+from django.utils.translation import ugettext_lazy as _
 
-from wagtail.wagtailcore import hooks
-from wagtail.wagtailadmin.menu import MenuItem, Menu, SubmenuMenuItem
-from wagtail.wagtailcore.models import PageRevision
+from wagtail.core import hooks
+from wagtail.admin.menu import MenuItem, Menu, SubmenuMenuItem
+from wagtail.core.models import PageRevision
 from wagtail.contrib.modeladmin.options import \
     ModelAdmin, ModelAdminGroup, modeladmin_register
-from wagtail.wagtailadmin.edit_handlers import FieldPanel, FieldRowPanel, \
+from wagtail.admin.edit_handlers import FieldPanel, FieldRowPanel, \
         MultiFieldPanel, InlinePanel, PageChooserPanel, StreamFieldPanel
 
 

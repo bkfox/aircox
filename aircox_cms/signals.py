@@ -5,7 +5,7 @@ from django.dispatch import receiver
 from django.utils import timezone as tz
 from django.utils.translation import ugettext as _, ugettext_lazy
 
-from wagtail.wagtailcore.models import Page, Site, PageRevision
+from wagtail.core.models import Page, Site, PageRevision
 
 import aircox.models as aircox
 import aircox_cms.models as models

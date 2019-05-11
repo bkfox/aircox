@@ -10,11 +10,11 @@ from django.urls import reverse
 from modelcluster.models import ClusterableModel
 from modelcluster.fields import ParentalKey
 
-from wagtail.wagtailadmin.edit_handlers import *
-from wagtail.wagtailimages.edit_handlers import ImageChooserPanel
-from wagtail.wagtailcore.models import Page
-from wagtail.wagtailcore.fields import RichTextField
-from wagtail.wagtailsnippets.models import register_snippet
+from wagtail.admin.edit_handlers import *
+from wagtail.images.edit_handlers import ImageChooserPanel
+from wagtail.core.models import Page
+from wagtail.core.fields import RichTextField
+from wagtail.snippets.models import register_snippet
 
 import aircox.models
 from aircox_cms.models.lists import *
@@ -52,6 +52,7 @@ class Region(ClusterableModel):
     )
     model = models.ForeignKey(
         ContentType,
+        on_delete=models.CASCADE,
         verbose_name = _('model'),
         blank = True, null = True,
         help_text=_('this section is displayed only when the current '
@@ -60,6 +61,7 @@ class Region(ClusterableModel):
     )
     page = models.ForeignKey(
         Page,
+        on_delete=models.CASCADE,
         verbose_name = _('page'),
         blank = True, null = True,
         help_text=_('this section is displayed only on this page'),
@@ -218,7 +220,7 @@ class SectionText(Section):
     ]
 
     def get_context(self, request, page):
-        from wagtail.wagtailcore.rich_text import expand_db_html
+        from wagtail.core.rich_text import expand_db_html
         context = super().get_context(request, page)
         context['content'] = expand_db_html(self.body)
         return context
@@ -232,6 +234,7 @@ class SectionImage(SectionRelativeItem):
 
     image = models.ForeignKey(
         'wagtailimages.Image',
+        on_delete=models.CASCADE,
         verbose_name = _('image'),
         related_name='+',
         blank=True, null=True,
@@ -307,7 +310,7 @@ class SectionImage(SectionRelativeItem):
         return self.cache
 
     def get_context(self, request, page):
-        from wagtail.wagtailimages.views.serve import generate_signature
+        from wagtail.images.views.serve import generate_signature
         context = super().get_context(request, page)
 
         image = self.related_attr(page, 'cover') or self.image
@@ -461,11 +464,13 @@ class SectionTimetable(Section,DatedBaseList):
 
     station = models.ForeignKey(
         aircox.models.Station,
+        on_delete=models.CASCADE,
         verbose_name = _('station'),
         help_text = _('(required) related station')
     )
     target = models.ForeignKey(
         'aircox_cms.TimetablePage',
+        on_delete=models.CASCADE,
         verbose_name = _('timetable page'),
         blank = True, null = True,
         help_text = _('select a timetable page used to show complete timetable'),

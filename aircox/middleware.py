@@ -79,7 +79,7 @@ class AircoxMiddleware(object):
         tz.activate(pytz.timezone('Europe/Brussels'))
         aircox = AircoxInfo()
 
-        if request.user.is_authenticated():
+        if request.user.is_authenticated:
             self.init_station(request, aircox)
         self.init_timezone(request, aircox)
 
