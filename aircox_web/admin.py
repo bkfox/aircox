@@ -13,9 +13,12 @@ from aircox.admin.playlist import TracksInline
 from aircox.admin.mixins import UnrelatedInlineMixin
 
 
-@admin.register(models.SiteSettings)
-class SettingsAdmin(admin.ModelAdmin):
-    pass
+@admin.register(models.Site)
+class SiteAdmin(ContentEditor):
+    inlines = [
+        plugins.richtext.RichTextInline.create(models.SiteRichText),
+        plugins.image.ImageInline.create(models.SiteImage),
+    ]
 
 
 class PageDiffusionPlaylist(UnrelatedInlineMixin, TracksInline):
@@ -55,8 +58,8 @@ class PageAdmin(ContentEditor, TreeAdmin):
     )
 
     inlines = [
-        plugins.richtext.RichTextInline.create(models.RichText),
-        plugins.image.ImageInline.create(models.Image),
+        plugins.richtext.RichTextInline.create(models.PageRichText),
+        plugins.image.ImageInline.create(models.PageImage),
     ]
 
     def get_inline_instances(self, request, obj=None):

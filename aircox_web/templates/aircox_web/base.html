@@ -1,11 +1,11 @@
-{% load static thumbnail %}
+{% load static thumbnail feincms3 %}
 <html>
     <head>
         <meta charset="utf-8">
         <meta name="application-name" content="aircox">
-        <meta name="description" content="{{ site_settings.description }}">
-        <meta name="keywords" content="{{ site_settings.tags }}">
-        <link rel="icon" href="{% thumbnail site_settings.favicon 32x32 crop %}" />
+        <meta name="description" content="{{ site.description }}">
+        <meta name="keywords" content="{{ site.tags }}">
+        <link rel="icon" href="{% thumbnail site.favicon 32x32 crop %}" />
 
         {% block assets %}
         <link rel="stylesheet" type="text/css" href="{% static "aircox_web/assets/main.css" %}"/>
@@ -15,19 +15,26 @@
         <script src="{% static "aircox_web/assets/vendor.js" %}"></script>
         {% endblock %}
 
-        <title>{% block title %}{{ site_settings.title }}{% endblock %}</title>
+        <title>{% block title %}{{ site.title }}{% endblock %}</title>
 
         {% block extra_head %}{% endblock %}
     </head>
     <body id="app">
         <nav class="navbar" role="navigation" aria-label="main navigation">
+            {% render_region regions "topnav" %}
         </nav>
 
-        <main>
-            {% block main %}
-
-            {% endblock main %}
-        </main>
+        <div class="columns">
+            <aside class="column">
+                {% render_region regions "sidenav" %}
+            </aside>
+            <main class="column is-three-quarters">
+                {% block main %}
+                <h1>{{ page.title }}</h1>
+                {% render_region page_regions "main" %}
+                {% endblock main %}
+            </main>
+        </div>
     </body>
 </html>
 

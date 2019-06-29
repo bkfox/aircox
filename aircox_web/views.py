@@ -2,8 +2,8 @@ from django.shortcuts import get_object_or_404, render
 
 from feincms3.regions import Regions
 
-from .models import SiteSettings, Page
-from .renderer import renderer
+from .models import Site, Page
+from .renderer import site_renderer, page_renderer
 
 
 def page_detail(request, path=None):
@@ -12,11 +12,11 @@ def page_detail(request, path=None):
         Page.objects.all(),
         path="/{}/".format(path) if path else "/",
     )
+    site = Site.objects.all().first()
     return render(request, "aircox_web/page.html", {
-        'site_settings': SiteSettings.objects.all().first(),
+        'site': site,
+        "regions": Regions.from_item(site, renderer=site_renderer, timeout=60),
         "page": page,
-        "regions": Regions.from_item(
-            page, renderer=renderer, timeout=60
-        ),
+        "page_regions": Regions.from_item(page, renderer=page_renderer, timeout=60),
     })
 

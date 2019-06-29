@@ -10,11 +10,10 @@ from model_utils.models import TimeStampedModel, StatusModel
 from model_utils import Choices
 from filer.fields.image import FilerImageField
 
-
 from aircox import models as aircox
 
 
-class SiteSettings(models.Model):
+class Site(models.Model):
     station = models.ForeignKey(
         aircox.Station, on_delete=models.SET_NULL, null=True,
     )
@@ -45,15 +44,28 @@ class SiteSettings(models.Model):
         blank=True, null=True,
     )
 
+    regions = [
+        Region(key='topnav', title=_('Navigation'), inherited=True),
+        Region(key='sidenav', title=_('Side Navigation'), inherited=True),
+    ]
+
+
+SitePlugin = create_plugin_base(Site)
+
+class SiteRichText(plugins.richtext.RichText, SitePlugin):
+    pass
+
+
+class SiteImage(plugins.image.Image, SitePlugin):
+    caption = models.CharField(_("caption"), max_length=200, blank=True)
+
 
 
 class Page(AbstractPage, TimeStampedModel, StatusModel):
     STATUS = Choices('draft', 'published')
     regions = [
         Region(key="main", title=_("Content")),
-        Region(key="sidebar", title=_("Sidebar")),
     ]
-
 
     # metadata
     by = models.ForeignKey(
@@ -96,22 +108,20 @@ class Page(AbstractPage, TimeStampedModel, StatusModel):
         aircox.Diffusion, models.CASCADE,
         blank=True, null=True,
     )
+    program = models.OneToOneField(
+        aircox.Program, models.CASCADE,
+        blank=True, null=True,
+    )
+
 
 PagePlugin = create_plugin_base(Page)
 
-
-class RichText(plugins.richtext.RichText, PagePlugin):
+class PageRichText(plugins.richtext.RichText, PagePlugin):
     pass
 
 
-class Image(plugins.image.Image, PagePlugin):
+class PageImage(plugins.image.Image, PagePlugin):
     caption = models.CharField(_("caption"), max_length=200, blank=True)
 
-
-
-class ProgramPage(Page):
-    program = models.OneToOneField(
-        aircox.Program, models.CASCADE,
-    )
 
 
