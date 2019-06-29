@@ -43,6 +43,7 @@ import aircox.utils as utils
 
 logger = logging.getLogger('aircox.tools')
 
+
 class SoundInfo:
     name = ''
     sound = None
@@ -76,7 +77,7 @@ class SoundInfo:
                       file_name)
 
         if not (r and r.groupdict()):
-            r = { 'name': file_name }
+            r = {'name': file_name}
             logger.info('file name can not be parsed -> %s', value)
         else:
             r = r.groupdict()
@@ -93,7 +94,7 @@ class SoundInfo:
         self.n = r.get('n')
         return r
 
-    def __init__(self, path = '', sound = None):
+    def __init__(self, path='', sound=None):
         self.path = path
         self.sound = sound
 
@@ -107,7 +108,7 @@ class SoundInfo:
             self.duration = duration
             return duration
 
-    def get_sound(self, save = True, **kwargs):
+    def get_sound(self, save=True, **kwargs):
         """
         Get or create a sound using self info.
 
@@ -115,8 +116,8 @@ class SoundInfo:
         (if save is True, sync to DB), and check for a playlist file.
         """
         sound, created = Sound.objects.get_or_create(
-            path = self.path,
-            defaults = kwargs
+            path=self.path,
+            defaults=kwargs
         )
         if created or sound.check_on_file():
             logger.info('sound is new or have been modified -> %s', self.path)
@@ -127,7 +128,7 @@ class SoundInfo:
         self.sound = sound
         return sound
 
-    def find_playlist(self, sound, use_default = True):
+    def find_playlist(self, sound, use_default=True):
         """
         Find a playlist file corresponding to the sound path, such as:
             my_sound.ogg => my_sound.csv
@@ -135,11 +136,11 @@ class SoundInfo:
         If use_default is True and there is no playlist find found,
         use sound file's metadata.
         """
-        if sound.tracks.count():
+        if sound.track_set.count():
             return
 
         import aircox.management.commands.import_playlist \
-                as import_playlist
+            as import_playlist
 
         # no playlist, try to retrieve metadata
         path = os.path.splitext(self.sound.path)[0] + '.csv'
@@ -151,9 +152,9 @@ class SoundInfo:
             return
 
         # else, import
-        import_playlist.Importer(sound, path, save=True)
+        import_playlist.Importer(path, sound=sound).run()
 
-    def find_diffusion(self, program, save = True):
+    def find_diffusion(self, program, save=True):
         """
         For a given program, check if there is an initial diffusion
         to associate to, using the date info we have. Update self.sound
@@ -163,7 +164,7 @@ class SoundInfo:
         rerun.
         """
         if self.year == None or not self.sound or self.sound.diffusion:
-            return;
+            return
 
         if self.hour is None:
             date = datetime.date(self.year, self.month, self.day)
@@ -173,7 +174,7 @@ class SoundInfo:
             date = tz.get_current_timezone().localize(date)
 
         qs = Diffusion.objects.station(program.station).after(date) \
-                      .filter(program = program, initial__isnull = True)
+                      .filter(program=program, initial__isnull=True)
         diffusion = qs.first()
         if not diffusion:
             return
@@ -190,18 +191,19 @@ class MonitorHandler(PatternMatchingEventHandler):
     """
     Event handler for watchdog, in order to be used in monitoring.
     """
+
     def __init__(self, subdir):
         """
         subdir: AIRCOX_SOUND_ARCHIVES_SUBDIR or AIRCOX_SOUND_EXCERPTS_SUBDIR
         """
         self.subdir = subdir
         if self.subdir == settings.AIRCOX_SOUND_ARCHIVES_SUBDIR:
-            self.sound_kwargs = { 'type': Sound.Type.archive }
+            self.sound_kwargs = {'type': Sound.Type.archive}
         else:
-            self.sound_kwargs = { 'type': Sound.Type.excerpt }
+            self.sound_kwargs = {'type': Sound.Type.excerpt}
 
         patterns = ['*/{}/*{}'.format(self.subdir, ext)
-                    for ext in settings.AIRCOX_SOUND_FILE_EXT ]
+                    for ext in settings.AIRCOX_SOUND_FILE_EXT]
         super().__init__(patterns=patterns, ignore_directories=True)
 
     def on_created(self, event):
@@ -215,14 +217,14 @@ class MonitorHandler(PatternMatchingEventHandler):
 
         si = SoundInfo(event.src_path)
         self.sound_kwargs['program'] = program
-        si.get_sound(save = True, **self.sound_kwargs)
+        si.get_sound(save=True, **self.sound_kwargs)
         if si.year is not None:
             si.find_diffusion(program)
         si.sound.save(True)
 
     def on_deleted(self, event):
         logger.info('sound deleted: %s', event.src_path)
-        sound = Sound.objects.filter(path = event.src_path)
+        sound = Sound.objects.filter(path=event.src_path)
         if sound:
             sound = sound[0]
             sound.type = sound.Type.removed
@@ -230,7 +232,7 @@ class MonitorHandler(PatternMatchingEventHandler):
 
     def on_moved(self, event):
         logger.info('sound moved: %s -> %s', event.src_path, event.dest_path)
-        sound = Sound.objects.filter(path = event.src_path)
+        sound = Sound.objects.filter(path=event.src_path)
         if not sound:
             self.on_modified(
                 FileModifiedEvent(event.dest_path)
@@ -242,18 +244,19 @@ class MonitorHandler(PatternMatchingEventHandler):
         if not sound.diffusion:
             program = Program.get_from_path(event.src_path)
             if program:
-                si = SoundInfo(sound.path, sound = sound)
+                si = SoundInfo(sound.path, sound=sound)
                 if si.year is not None:
                     si.find_diffusion(program)
         sound.save()
 
 
 class Command(BaseCommand):
-    help= __doc__
+    help = __doc__
 
-    def report(self, program = None, component = None, *content):
+    def report(self, program=None, component=None, *content):
         if not component:
-            logger.info('%s: %s', str(program), ' '.join([str(c) for c in content]))
+            logger.info('%s: %s', str(program),
+                        ' '.join([str(c) for c in content]))
         else:
             logger.info('%s, %s: %s', str(program), str(component),
                         ' '.join([str(c) for c in content]))
@@ -270,11 +273,11 @@ class Command(BaseCommand):
             logger.info('#%d %s', program.id, program.name)
             self.scan_for_program(
                 program, settings.AIRCOX_SOUND_ARCHIVES_SUBDIR,
-                type = Sound.Type.archive,
+                type=Sound.Type.archive,
             )
             self.scan_for_program(
                 program, settings.AIRCOX_SOUND_EXCERPTS_SUBDIR,
-                type = Sound.Type.excerpt,
+                type=Sound.Type.excerpt,
             )
             dirs.append(os.path.join(program.path))
 
@@ -300,14 +303,14 @@ class Command(BaseCommand):
 
             si = SoundInfo(path)
             sound_kwargs['program'] = program
-            si.get_sound(save = True, **sound_kwargs)
-            si.find_diffusion(program, save = True)
+            si.get_sound(save=True, **sound_kwargs)
+            si.find_diffusion(program, save=True)
             si.find_playlist(si.sound)
             sounds.append(si.sound.pk)
 
         # sounds in db & unchecked
-        sounds = Sound.objects.filter(path__startswith = subdir). \
-                               exclude(pk__in = sounds)
+        sounds = Sound.objects.filter(path__startswith=subdir). \
+            exclude(pk__in=sounds)
         self.check_sounds(sounds)
 
     @staticmethod
@@ -318,18 +321,18 @@ class Command(BaseCommand):
         # check files
         for sound in qs:
             if sound.check_on_file():
-                sound.save(check = False)
+                sound.save(check=False)
 
-    def check_quality(self, check = False):
+    def check_quality(self, check=False):
         """
         Check all files where quality has been set to bad
         """
         import aircox.management.commands.sounds_quality_check \
-                as quality_check
+            as quality_check
 
         # get available sound files
-        sounds = Sound.objects.filter(good_quality = False) \
-                      .exclude(type = Sound.Type.removed)
+        sounds = Sound.objects.filter(good_quality=False) \
+                      .exclude(type=Sound.Type.removed)
         if check:
             self.check_sounds(sounds)
 
@@ -341,11 +344,12 @@ class Command(BaseCommand):
         # check quality
         logger.info('quality check...',)
         cmd = quality_check.Command()
-        cmd.handle( files = files,
-                    **settings.AIRCOX_SOUND_QUALITY )
+        cmd.handle(files=files,
+                   **settings.AIRCOX_SOUND_QUALITY)
 
         # update stats
         logger.info('update stats in database')
+
         def update_stats(sound_info, sound):
             stats = sound_info.get_file_stats()
             if stats:
@@ -353,25 +357,25 @@ class Command(BaseCommand):
                 sound.duration = utils.seconds_to_time(duration)
 
         for sound_info in cmd.good:
-            sound = Sound.objects.get(path = sound_info.path)
+            sound = Sound.objects.get(path=sound_info.path)
             sound.good_quality = True
             update_stats(sound_info, sound)
-            sound.save(check = False)
+            sound.save(check=False)
 
         for sound_info in cmd.bad:
-            sound = Sound.objects.get(path = sound_info.path)
+            sound = Sound.objects.get(path=sound_info.path)
             update_stats(sound_info, sound)
-            sound.save(check = False)
+            sound.save(check=False)
 
     def monitor(self):
         """
         Run in monitor mode
         """
         archives_handler = MonitorHandler(
-            subdir = settings.AIRCOX_SOUND_ARCHIVES_SUBDIR
+            subdir=settings.AIRCOX_SOUND_ARCHIVES_SUBDIR
         )
         excerpts_handler = MonitorHandler(
-            subdir = settings.AIRCOX_SOUND_EXCERPTS_SUBDIR
+            subdir=settings.AIRCOX_SOUND_EXCERPTS_SUBDIR
         )
 
         observer = Observer()
@@ -390,10 +394,10 @@ class Command(BaseCommand):
             time.sleep(1)
 
     def add_arguments(self, parser):
-        parser.formatter_class=RawTextHelpFormatter
+        parser.formatter_class = RawTextHelpFormatter
         parser.add_argument(
             '-q', '--quality_check', action='store_true',
-            help='Enable quality check using sound_quality_check on all ' \
+            help='Enable quality check using sound_quality_check on all '
                  'sounds marqued as not good'
         )
         parser.add_argument(
@@ -411,7 +415,6 @@ class Command(BaseCommand):
         if options.get('scan'):
             self.scan()
         if options.get('quality_check'):
-            self.check_quality(check = (not options.get('scan')) )
+            self.check_quality(check=(not options.get('scan')))
         if options.get('monitor'):
             self.monitor()
-

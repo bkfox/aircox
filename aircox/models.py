@@ -11,6 +11,7 @@ from django.contrib.contenttypes.fields import (GenericForeignKey,
                                                 GenericRelation)
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
+from django.db.transaction import atomic
 from django.template.defaultfilters import slugify
 from django.utils import timezone as tz
 from django.utils.functional import cached_property
@@ -24,70 +25,10 @@ from taggit.managers import TaggableManager
 logger = logging.getLogger('aircox.core')
 
 
-#
-# Abstracts
-#
-class RelatedQuerySet(models.QuerySet):
-    def related(self, object = None, model = None):
-        """
-        Return a queryset that filter on the given object or model(s)
-
-        * object: if given, use its type and pk; match on models only.
-        * model: one model or an iterable of models
-        """
-
-        if not model and object:
-            model = type(object)
-
-        qs = self
-
-        if hasattr(model, '__iter__'):
-            model = [ ContentType.objects.get_for_model(m).id
-                        for m in model ]
-            self = self.filter(related_type__pk__in = model)
-        else:
-            model = ContentType.objects.get_for_model(model)
-            self = self.filter(related_type__pk = model.id)
-
-        if object:
-            self = self.filter(related_id = object.pk)
-
-        return self
-
-class Related(models.Model):
-    """
-    Add a field "related" of type GenericForeignKey, plus utilities.
-    """
-    related_type = models.ForeignKey(
-        ContentType,
-        blank = True, null = True,
-        on_delete=models.SET_NULL,
-    )
-    related_id = models.PositiveIntegerField(
-        blank = True, null = True,
-    )
-    related = GenericForeignKey(
-        'related_type', 'related_id',
-    )
-
-    class Meta:
-        abstract = True
-
-    objects = RelatedQuerySet.as_manager()
-
-    @classmethod
-    def ReverseField(cl):
-        """
-        Return a GenericRelation object that points to this class
-        """
-
-        return GenericRelation(cl, 'related_id', 'related_type')
-
-
 class Nameable(models.Model):
-    name = models.CharField (
+    name = models.CharField(
         _('name'),
-        max_length = 128,
+        max_length=128,
     )
 
     class Meta:
@@ -98,81 +39,30 @@ class Nameable(models.Model):
         """
         Slug based on the name. We replace '-' by '_'
         """
-
         return slugify(self.name).replace('-', '_')
 
     def __str__(self):
-        #if self.pk:
+        # if self.pk:
         #    return '#{} {}'.format(self.pk, self.name)
-
         return '{}'.format(self.name)
 
-
-#
-# Small common models
-#
-class Track(Related):
-    """
-    Track of a playlist of an object. The position can either be expressed
-    as the position in the playlist or as the moment in seconds it started.
-    """
-    # There are no nice solution for M2M relations ship (even without
-    # through) in django-admin. So we unfortunately need to make one-
-    # to-one relations and add a position argument
-    title = models.CharField (
-        _('title'),
-        max_length = 128,
-    )
-    artist = models.CharField(
-        _('artist'),
-        max_length = 128,
-    )
-    tags = TaggableManager(
-        verbose_name=_('tags'),
-        blank=True,
-    )
-    info = models.CharField(
-        _('information'),
-        max_length = 128,
-        blank = True, null = True,
-        help_text=_('additional informations about this track, such as '
-                    'the version, if is it a remix, features, etc.'),
-    )
-    position = models.SmallIntegerField(
-        default = 0,
-        help_text=_('position in the playlist'),
-    )
-    in_seconds = models.BooleanField(
-        _('in seconds'),
-        default = False,
-        help_text=_('position in the playlist is expressed in seconds')
-    )
-
-    def __str__(self):
-        return '{self.artist} -- {self.title} -- {self.position}'.format(self=self)
-
-    class Meta:
-        verbose_name = _('Track')
-        verbose_name_plural = _('Tracks')
 
 #
 # Station related classes
 #
 class StationQuerySet(models.QuerySet):
-    def default(self, station = None):
+    def default(self, station=None):
         """
         Return station model instance, using defaults or
         given one.
         """
-
         if station is None:
             return self.order_by('-default', 'pk').first()
+        return self.filter(pk=station).first()
 
-        return self.filter(pk = station).first()
 
 def default_station():
     """ Return default station (used by model fields) """
-
     return Station.objects.default()
 
 
@@ -187,14 +77,14 @@ class Station(Nameable):
     """
     path = models.CharField(
         _('path'),
-        help_text = _('path to the working directory'),
-        max_length = 256,
-        blank = True,
+        help_text=_('path to the working directory'),
+        max_length=256,
+        blank=True,
     )
     default = models.BooleanField(
         _('default station'),
-        default = True,
-        help_text = _('if checked, this station is used as the main one')
+        default=True,
+        help_text=_('if checked, this station is used as the main one')
     )
 
     objects = StationQuerySet.as_manager()
@@ -208,14 +98,13 @@ class Station(Nameable):
 
     def __prepare_controls(self):
         import aircox.controllers as controllers
-
         if not self.__streamer:
-            self.__streamer = controllers.Streamer(station = self)
-            self.__dealer = controllers.Source(station = self)
-            self.__sources = [ self.__dealer ] + [
-                controllers.Source(station = self, program = program)
+            self.__streamer = controllers.Streamer(station=self)
+            self.__dealer = controllers.Source(station=self)
+            self.__sources = [self.__dealer] + [
+                controllers.Source(station=self, program=program)
 
-                for program in Program.objects.filter(stream__isnull = False)
+                for program in Program.objects.filter(stream__isnull=False)
             ]
 
     @property
@@ -223,10 +112,9 @@ class Station(Nameable):
         """
         Return all active input ports of the station
         """
-
         return self.port_set.filter(
-            direction = Port.Direction.input,
-            active = True
+            direction=Port.Direction.input,
+            active=True
         )
 
     @property
@@ -234,10 +122,9 @@ class Station(Nameable):
         """
         Return all active output ports of the station
         """
-
         return self.port_set.filter(
-            direction = Port.Direction.output,
-            active = True,
+            direction=Port.Direction.output,
+            active=True,
         )
 
     @property
@@ -246,13 +133,11 @@ class Station(Nameable):
         Audio sources, dealer included
         """
         self.__prepare_controls()
-
         return self.__sources
 
     @property
     def dealer(self):
         self.__prepare_controls()
-
         return self.__dealer
 
     @property
@@ -261,10 +146,9 @@ class Station(Nameable):
         Audio controller for the station
         """
         self.__prepare_controls()
-
         return self.__streamer
 
-    def on_air(self, date = None, count = 0, no_cache = False):
+    def on_air(self, date=None, count=0):
         """
         Return a queryset of what happened on air, based on logs and
         diffusions informations. The queryset is sorted by -date.
@@ -279,55 +163,47 @@ class Station(Nameable):
         that has been played when there was a live diffusion.
         """
         # TODO argument to get sound instead of tracks
-
         if not date and not count:
             raise ValueError('at least one argument must be set')
 
         # FIXME can be a potential source of bug
-
         if date:
-            date = utils.cast_date(date, to_datetime = False)
-
+            date = utils.cast_date(date, to_datetime=False)
         if date and date > datetime.date.today():
             return []
 
         now = tz.now()
-
         if date:
             logs = Log.objects.at(date)
             diffs = Diffusion.objects.station(self).at(date) \
-                        .filter(start__lte = now, type = Diffusion.Type.normal) \
-                        .order_by('-start')
+                .filter(start__lte=now, type=Diffusion.Type.normal) \
+                .order_by('-start')
         else:
             logs = Log.objects
             diffs = Diffusion.objects \
-                             .filter(type = Diffusion.Type.normal,
-                                     start__lte = now) \
+                             .filter(type=Diffusion.Type.normal,
+                                     start__lte=now) \
                              .order_by('-start')[:count]
 
-        q = models.Q(diffusion__isnull = False) | \
-            models.Q(track__isnull = False)
+        q = models.Q(diffusion__isnull=False) | \
+            models.Q(track__isnull=False)
         logs = logs.station(self).on_air().filter(q).order_by('-date')
 
         # filter out tracks played when there was a diffusion
-        n = 0
-        q = models.Q()
-
+        n, q = 0, models.Q()
         for diff in diffs:
             if count and n >= count:
                 break
             # FIXME: does not catch tracks started before diff end but
             #        that continued afterwards
-            q = q | models.Q(date__gte = diff.start, date__lte = diff.end)
+            q = q | models.Q(date__gte=diff.start, date__lte=diff.end)
             n += 1
-        logs = logs.exclude(q, diffusion__isnull = True)
-
+        logs = logs.exclude(q, diffusion__isnull=True)
         if count:
             logs = logs[:count]
-
         return logs
 
-    def save(self, make_sources = True, *args, **kwargs):
+    def save(self, make_sources=True, *args, **kwargs):
         if not self.path:
             self.path = os.path.join(
                 settings.AIRCOX_CONTROLLERS_WORKING_DIR,
@@ -335,20 +211,20 @@ class Station(Nameable):
             )
 
         if self.default:
-            qs = Station.objects.filter(default = True)
+            qs = Station.objects.filter(default=True)
 
             if self.pk:
-                qs = qs.exclude(pk = self.pk)
-            qs.update(default = False)
+                qs = qs.exclude(pk=self.pk)
+            qs.update(default=False)
 
         super().save(*args, **kwargs)
 
 
 class ProgramManager(models.Manager):
-    def station(self, station, qs = None, **kwargs):
+    def station(self, station, qs=None, **kwargs):
         qs = self if qs is None else qs
 
-        return qs.filter(station = station, **kwargs)
+        return qs.filter(station=station, **kwargs)
 
 
 class Program(Nameable):
@@ -366,39 +242,39 @@ class Program(Nameable):
     """
     station = models.ForeignKey(
         Station,
-        verbose_name = _('station'),
+        verbose_name=_('station'),
         on_delete=models.CASCADE,
     )
     active = models.BooleanField(
         _('active'),
-        default = True,
-        help_text = _('if not checked this program is no longer active')
+        default=True,
+        help_text=_('if not checked this program is no longer active')
     )
     sync = models.BooleanField(
         _('syncronise'),
-        default = True,
-        help_text = _('update later diffusions according to schedule changes')
+        default=True,
+        help_text=_('update later diffusions according to schedule changes')
     )
 
     objects = ProgramManager()
 
+    # TODO: use unique slug
     @property
     def path(self):
         """
         Return the path to the programs directory
         """
-
         return os.path.join(settings.AIRCOX_PROGRAMS_DIR,
-                            self.slug + '_' + str(self.id) )
+                            self.slug + '_' + str(self.id))
 
-    def ensure_dir(self, subdir = None):
+    def ensure_dir(self, subdir=None):
         """
         Make sur the program's dir exists (and optionally subdir). Return True
         if the dir (or subdir) exists.
         """
         path = os.path.join(self.path, subdir) if subdir else \
-               self.path
-        os.makedirs(path, exist_ok = True)
+            self.path
+        os.makedirs(path, exist_ok=True)
 
         return os.path.exists(path)
 
@@ -418,10 +294,10 @@ class Program(Nameable):
         """
         Return the first schedule that matches a given date.
         """
-        schedules = Schedule.objects.filter(program = self)
+        schedules = Schedule.objects.filter(program=self)
 
         for schedule in schedules:
-            if schedule.match(date, check_time = False):
+            if schedule.match(date, check_time=False):
                 return schedule
 
     def __init__(self, *kargs, **kwargs):
@@ -441,7 +317,8 @@ class Program(Nameable):
                         self.id, self.name)
             shutil.move(self.__original_path, self.path)
 
-            sounds = Sounds.objects.filter(path__startswith = self.__original_path)
+            sounds = Sound.objects.filter(
+                path__startswith=self.__original_path)
 
             for sound in sounds:
                 sound.path.replace(self.__original_path, self.path)
@@ -455,16 +332,18 @@ class Program(Nameable):
         """
         path = path.replace(settings.AIRCOX_PROGRAMS_DIR, '')
 
-        while path[0] == '/': path = path[1:]
+        while path[0] == '/':
+            path = path[1:]
 
-        while path[-1] == '/': path = path[:-2]
+        while path[-1] == '/':
+            path = path[:-2]
 
         if '/' in path:
             path = path[:path.index('/')]
 
         path = path.split('_')
         path = path[-1]
-        qs = cl.objects.filter(id = int(path))
+        qs = cl.objects.filter(id=int(path))
 
         return qs[0] if qs else None
 
@@ -483,25 +362,25 @@ class Stream(models.Model):
     """
     program = models.ForeignKey(
         Program,
-        verbose_name = _('related program'),
+        verbose_name=_('related program'),
         on_delete=models.CASCADE,
     )
     delay = models.TimeField(
         _('delay'),
-        blank = True, null = True,
-        help_text = _('minimal delay between two sound plays')
+        blank=True, null=True,
+        help_text=_('minimal delay between two sound plays')
     )
     begin = models.TimeField(
         _('begin'),
-        blank = True, null = True,
-        help_text = _('used to define a time range this stream is'
-                      'played')
+        blank=True, null=True,
+        help_text=_('used to define a time range this stream is'
+                    'played')
     )
     end = models.TimeField(
         _('end'),
-        blank = True, null = True,
-        help_text = _('used to define a time range this stream is'
-                      'played')
+        blank=True, null=True,
+        help_text=_('used to define a time range this stream is'
+                    'played')
     )
 
 
@@ -529,56 +408,50 @@ class Schedule(models.Model):
         one_on_two = 0b100000
 
     program = models.ForeignKey(
-        Program,
-        verbose_name = _('related program'),
-        on_delete=models.CASCADE,
+        Program, models.CASCADE,
+        verbose_name=_('related program'),
     )
     time = models.TimeField(
         _('time'),
-        blank = True, null = True,
-        help_text = _('start time'),
+        blank=True, null=True,
+        help_text=_('start time'),
     )
     date = models.DateField(
         _('date'),
-        blank = True, null = True,
-        help_text = _('date of the first diffusion'),
+        blank=True, null=True,
+        help_text=_('date of the first diffusion'),
     )
     timezone = models.CharField(
         _('timezone'),
-        default = tz.get_current_timezone,
-        choices = [(x, x) for x in pytz.all_timezones],
-        max_length = 100,
-        help_text = _('timezone used for the date')
+        default=tz.get_current_timezone, max_length=100,
+        choices=[(x, x) for x in pytz.all_timezones],
+        help_text=_('timezone used for the date')
     )
     duration = models.TimeField(
         _('duration'),
-        help_text = _('regular duration'),
+        help_text=_('regular duration'),
     )
     frequency = models.SmallIntegerField(
         _('frequency'),
-        choices = [
-            (int(y), {
-                'ponctual': _('ponctual'),
-                'first': _('first week of the month'),
-                'second': _('second week of the month'),
-                'third': _('third week of the month'),
-                'fourth': _('fourth week of the month'),
-                'last': _('last week of the month'),
-                'first_and_third': _('first and third weeks of the month'),
-                'second_and_fourth': _('second and fourth weeks of the month'),
-                'every': _('every week'),
-                'one_on_two': _('one week on two'),
-            }[x]) for x,y in Frequency.__members__.items()
-        ],
+        choices=[(int(y), {
+            'ponctual': _('ponctual'),
+            'first': _('first week of the month'),
+            'second': _('second week of the month'),
+            'third': _('third week of the month'),
+            'fourth': _('fourth week of the month'),
+            'last': _('last week of the month'),
+            'first_and_third': _('first and third weeks of the month'),
+            'second_and_fourth': _('second and fourth weeks of the month'),
+            'every': _('every week'),
+            'one_on_two': _('one week on two'),
+        }[x]) for x, y in Frequency.__members__.items()],
     )
     initial = models.ForeignKey(
-        'self',
-        verbose_name = _('initial schedule'),
-        blank = True, null = True,
-        on_delete=models.SET_NULL,
-        help_text = _('this schedule is a rerun of this one'),
+        'self', models.SET_NULL,
+        verbose_name=_('initial schedule'),
+        blank=True, null=True,
+        help_text=_('this schedule is a rerun of this one'),
     )
-
 
     @cached_property
     def tz(self):
@@ -592,7 +465,7 @@ class Schedule(models.Model):
     # initial cached data
     __initial = None
 
-    def changed(self, fields = ['date','duration','frequency','timezone']):
+    def changed(self, fields=['date', 'duration', 'frequency', 'timezone']):
         initial = self._Schedule__initial
 
         if not initial:
@@ -606,7 +479,7 @@ class Schedule(models.Model):
 
         return False
 
-    def match(self, date = None, check_time = True):
+    def match(self, date=None, check_time=True):
         """
         Return True if the given datetime matches the schedule
         """
@@ -622,11 +495,10 @@ class Schedule(models.Model):
 
         # we check against a normalized version (norm_date will have
         # schedule's date.
-        norm_date = self.normalize(date)
 
-        return date == norm_date
+        return date == self.normalize(date)
 
-    def match_week(self, date = None):
+    def match_week(self, date=None):
         """
         Return True if the given week number matches the schedule, False
         otherwise.
@@ -638,17 +510,18 @@ class Schedule(models.Model):
 
         # since we care only about the week, go to the same day of the week
         date = utils.date_or_default(date)
-        date += tz.timedelta(days = self.date.weekday() - date.weekday() )
+        date += tz.timedelta(days=self.date.weekday() - date.weekday())
 
         # FIXME this case
 
         if self.frequency == Schedule.Frequency.one_on_two:
             # cf notes in date_of_month
-            diff = utils.cast_date(date, False) - utils.cast_date(self.date, False)
+            diff = utils.cast_date(date, False) - \
+                utils.cast_date(self.date, False)
 
             return not (diff.days % 14)
 
-        first_of_month = date.replace(day = 1)
+        first_of_month = date.replace(day=1)
         week = date.isocalendar()[1] - first_of_month.isocalendar()[1]
 
         # weeks of month
@@ -673,7 +546,7 @@ class Schedule(models.Model):
 
         return date
 
-    def dates_of_month(self, date = None):
+    def dates_of_month(self, date=None):
         """
         Return a list with all matching dates of date.month (=today)
         Ensure timezone awareness.
@@ -683,22 +556,23 @@ class Schedule(models.Model):
             return []
 
         # first day of month
-        date = utils.date_or_default(date, to_datetime = False) \
+        date = utils.date_or_default(date, to_datetime=False) \
                     .replace(day=1)
         freq = self.frequency
 
         # last of the month
 
         if freq == Schedule.Frequency.last:
-            date = date.replace(day=calendar.monthrange(date.year, date.month)[1])
+            date = date.replace(
+                day=calendar.monthrange(date.year, date.month)[1])
 
             # end of month before the wanted weekday: move one week back
 
             if date.weekday() < self.date.weekday():
-                date -= tz.timedelta(days = 7)
+                date -= tz.timedelta(days=7)
 
             delta = self.date.weekday() - date.weekday()
-            date += tz.timedelta(days = delta)
+            date += tz.timedelta(days=delta)
 
             return [self.normalize(date)]
 
@@ -706,34 +580,35 @@ class Schedule(models.Model):
         # check on SO#3284452 for the formula
         first_weekday = date.weekday()
         sched_weekday = self.date.weekday()
-        date += tz.timedelta(days = (7 if first_weekday > sched_weekday else 0) \
-                                    - first_weekday + sched_weekday)
+        date += tz.timedelta(days=(7 if first_weekday > sched_weekday else 0)
+                             - first_weekday + sched_weekday)
         month = date.month
 
         dates = []
 
         if freq == Schedule.Frequency.one_on_two:
             # check date base on a diff of dates base on a 14 days delta
-            diff = utils.cast_date(date, False) - utils.cast_date(self.date, False)
+            diff = utils.cast_date(date, False) - \
+                utils.cast_date(self.date, False)
 
             if diff.days % 14:
-                date += tz.timedelta(days = 7)
+                date += tz.timedelta(days=7)
 
             while date.month == month:
                 dates.append(date)
-                date += tz.timedelta(days = 14)
+                date += tz.timedelta(days=14)
         else:
             week = 0
 
             while week < 5 and date.month == month:
                 if freq & (0b1 << week):
                     dates.append(date)
-                date += tz.timedelta(days = 7)
-                week += 1;
+                date += tz.timedelta(days=7)
+                week += 1
 
         return [self.normalize(date) for date in dates]
 
-    def diffusions_of_month(self, date = None, exclude_saved = False):
+    def diffusions_of_month(self, date=None, exclude_saved=False):
         """
         Return a list of Diffusion instances, from month of the given date, that
         can be not in the database.
@@ -750,7 +625,7 @@ class Schedule(models.Model):
         # existing diffusions
 
         for item in Diffusion.objects.filter(
-                program = self.program, start__in = dates):
+                program=self.program, start__in=dates):
 
             if item.start in dates:
                 dates.remove(item.start)
@@ -765,13 +640,12 @@ class Schedule(models.Model):
             delta = self.date - self.initial.date
         diffusions += [
             Diffusion(
-                program = self.program,
-                type = Diffusion.Type.unconfirmed,
-                initial = \
-                    Diffusion.objects.filter(start = date - delta).first() \
-                        if self.initial else None,
-                start = date,
-                end = date + duration,
+                program=self.program,
+                type=Diffusion.Type.unconfirmed,
+                initial=Diffusion.objects.filter(start=date - delta).first()
+                if self.initial else None,
+                start=date,
+                end=date + duration,
             ) for date in dates
         ]
 
@@ -786,9 +660,9 @@ class Schedule(models.Model):
             self.__initial = self.__dict__.copy()
 
     def __str__(self):
-        return ' | '.join([ '#' + str(self.id), self.program.name,
-                            self.get_frequency_display(),
-                            self.time.strftime('%a %H:%M') ])
+        return ' | '.join(['#' + str(self.id), self.program.name,
+                           self.get_frequency_display(),
+                           self.time.strftime('%a %H:%M')])
 
     def save(self, *args, **kwargs):
         if self.initial:
@@ -806,12 +680,12 @@ class Schedule(models.Model):
 
 class DiffusionQuerySet(models.QuerySet):
     def station(self, station, **kwargs):
-        return self.filter(program__station = station, **kwargs)
+        return self.filter(program__station=station, **kwargs)
 
     def program(self, program):
-        return self.filter(program = program)
+        return self.filter(program=program)
 
-    def at(self, date = None, next = False, **kwargs):
+    def at(self, date=None, next=False, **kwargs):
         """
         Return diffusions occuring at the given date, ordered by +start
 
@@ -825,7 +699,7 @@ class DiffusionQuerySet(models.QuerySet):
         the given moment.
         """
         # note: we work with localtime
-        date = utils.date_or_default(date, keep_type = True)
+        date = utils.date_or_default(date, keep_type=True)
 
         qs = self
         filters = None
@@ -833,44 +707,44 @@ class DiffusionQuerySet(models.QuerySet):
         if isinstance(date, datetime.datetime):
             # use datetime: we want diffusion that occurs around this
             # range
-            filters = { 'start__lte': date, 'end__gte': date }
+            filters = {'start__lte': date, 'end__gte': date}
 
             if next:
                 qs = qs.filter(
-                    models.Q(start__gte = date) | models.Q(**filters)
+                    models.Q(start__gte=date) | models.Q(**filters)
                 )
             else:
                 qs = qs.filter(**filters)
         else:
             # use date: we want diffusions that occurs this day
             start, end = utils.date_range(date)
-            filters = models.Q(start__gte = start, start__lte = end) | \
-                      models.Q(end__gt = start, end__lt = end)
+            filters = models.Q(start__gte=start, start__lte=end) | \
+                models.Q(end__gt=start, end__lt=end)
 
             if next:
                 # include also diffusions of the next day
-                filters |= models.Q(start__gte = start)
+                filters |= models.Q(start__gte=start)
             qs = qs.filter(filters, **kwargs)
 
         return qs.order_by('start').distinct()
 
-    def after(self, date = None, **kwargs):
+    def after(self, date=None, **kwargs):
         """
         Return a queryset of diffusions that happen after the given
         date.
         """
-        date = utils.date_or_default(date, keep_type = True)
+        date = utils.date_or_default(date, keep_type=True)
 
-        return self.filter(start__gte = date, **kwargs).order_by('start')
+        return self.filter(start__gte=date, **kwargs).order_by('start')
 
-    def before(self, date = None, **kwargs):
+    def before(self, date=None, **kwargs):
         """
         Return a queryset of diffusions that finish before the given
         date.
         """
         date = utils.date_or_default(date)
 
-        return self.filter(end__lte = date, **kwargs).order_by('start')
+        return self.filter(end__lte=date, **kwargs).order_by('start')
 
 
 class Diffusion(models.Model):
@@ -899,22 +773,22 @@ class Diffusion(models.Model):
         canceled = 0x02
 
     # common
-    program = models.ForeignKey (
+    program = models.ForeignKey(
         Program,
-        verbose_name = _('program'),
+        verbose_name=_('program'),
         on_delete=models.CASCADE,
     )
     # specific
     type = models.SmallIntegerField(
-        verbose_name = _('type'),
-        choices = [ (int(y), _(x)) for x,y in Type.__members__.items() ],
+        verbose_name=_('type'),
+        choices=[(int(y), _(x)) for x, y in Type.__members__.items()],
     )
-    initial = models.ForeignKey (
+    initial = models.ForeignKey(
         'self', on_delete=models.SET_NULL,
-        blank = True, null = True,
-        related_name = 'reruns',
-        verbose_name = _('initial diffusion'),
-        help_text = _('the diffusion is a rerun of this one')
+        blank=True, null=True,
+        related_name='reruns',
+        verbose_name=_('initial diffusion'),
+        help_text=_('the diffusion is a rerun of this one')
     )
     # port = models.ForeignKey(
     #    'self',
@@ -925,15 +799,13 @@ class Diffusion(models.Model):
     # )
     conflicts = models.ManyToManyField(
         'self',
-        verbose_name = _('conflicts'),
-        blank = True,
-        help_text = _('conflicts'),
+        verbose_name=_('conflicts'),
+        blank=True,
+        help_text=_('conflicts'),
     )
 
-    start = models.DateTimeField( _('start of the diffusion') )
-    end = models.DateTimeField( _('end of the diffusion') )
-
-    tracks = Track.ReverseField()
+    start = models.DateTimeField(_('start of the diffusion'))
+    end = models.DateTimeField(_('end of the diffusion'))
 
     @property
     def duration(self):
@@ -979,8 +851,7 @@ class Diffusion(models.Model):
         """
 
         return self.type == self.Type.normal and \
-                not self.get_sounds(archive = True).count()
-
+            not self.get_sounds(archive=True).count()
 
     def get_playlist(self, **types):
         """
@@ -988,10 +859,10 @@ class Diffusion(models.Model):
         The given arguments are passed to ``get_sounds``.
         """
 
-        return list(self.get_sounds(**types) \
-                        .filter(path__isnull = False,
-                                type=Sound.Type.archive) \
-                        .values_list('path', flat = True))
+        return list(self.get_sounds(**types)
+                        .filter(path__isnull=False,
+                                type=Sound.Type.archive)
+                        .values_list('path', flat=True))
 
     def get_sounds(self, **types):
         """
@@ -1001,12 +872,12 @@ class Diffusion(models.Model):
         **types: filter on the given sound types name, as `archive=True`
         """
         sounds = (self.initial or self).sound_set.order_by('type', 'path')
-        _in = [ getattr(Sound.Type, name)
-                    for name, value in types.items() if value ]
+        _in = [getattr(Sound.Type, name)
+               for name, value in types.items() if value]
 
-        return sounds.filter(type__in = _in)
+        return sounds.filter(type__in=_in)
 
-    def is_date_in_range(self, date = None):
+    def is_date_in_range(self, date=None):
         """
         Return true if the given date is in the diffusion's start-end
         range.
@@ -1021,11 +892,11 @@ class Diffusion(models.Model):
         """
 
         return Diffusion.objects.filter(
-            models.Q(start__lt = self.start,
-                     end__gt = self.start) |
-            models.Q(start__gt = self.start,
-                     start__lt = self.end)
-        )
+            models.Q(start__lt=self.start,
+                     end__gt=self.start) |
+            models.Q(start__gt=self.start,
+                     start__lt=self.end)
+        ).exclude(pk=self.pk).distinct()
 
     def check_conflicts(self):
         conflicts = self.get_conflicts()
@@ -1040,7 +911,7 @@ class Diffusion(models.Model):
             'end': self.end,
         }
 
-    def save(self, no_check = False, *args, **kwargs):
+    def save(self, no_check=False, *args, **kwargs):
         if no_check:
             return super().save(*args, **kwargs)
 
@@ -1056,7 +927,6 @@ class Diffusion(models.Model):
                     self.end != self.__initial['end']:
                 self.check_conflicts()
 
-
     def __str__(self):
         return '{self.program.name} {date} #{self.pk}'.format(
             self=self, date=self.local_date.strftime('%Y/%m/%d %H:%M%z')
@@ -1065,7 +935,6 @@ class Diffusion(models.Model):
     class Meta:
         verbose_name = _('Diffusion')
         verbose_name_plural = _('Diffusions')
-
         permissions = (
             ('programming', _('edit the diffusion\'s planification')),
         )
@@ -1084,62 +953,60 @@ class Sound(Nameable):
 
     program = models.ForeignKey(
         Program,
-        verbose_name = _('program'),
-        blank = True, null = True,
+        verbose_name=_('program'),
+        blank=True, null=True,
         on_delete=models.SET_NULL,
-        help_text = _('program related to it'),
+        help_text=_('program related to it'),
     )
     diffusion = models.ForeignKey(
         'Diffusion',
-        verbose_name = _('diffusion'),
-        blank = True, null = True,
+        verbose_name=_('diffusion'),
+        blank=True, null=True,
         on_delete=models.SET_NULL,
-        help_text = _('initial diffusion related it')
+        help_text=_('initial diffusion related it')
     )
     type = models.SmallIntegerField(
-        verbose_name = _('type'),
-        choices = [ (int(y), _(x)) for x,y in Type.__members__.items() ],
-        blank = True, null = True
+        verbose_name=_('type'),
+        choices=[(int(y), _(x)) for x, y in Type.__members__.items()],
+        blank=True, null=True
     )
     # FIXME: url() does not use the same directory than here
     #        should we use FileField for more reliability?
     path = models.FilePathField(
         _('file'),
-        path = settings.AIRCOX_PROGRAMS_DIR,
-        match = r'(' + '|'.join(settings.AIRCOX_SOUND_FILE_EXT)
-                          .replace('.', r'\.') + ')$',
-        recursive = True,
-        blank = True, null = True,
-        unique = True,
-        max_length = 255
+        path=settings.AIRCOX_PROGRAMS_DIR,
+        match=r'(' + '|'.join(settings.AIRCOX_SOUND_FILE_EXT)
+        .replace('.', r'\.') + ')$',
+        recursive=True,
+        blank=True, null=True,
+        unique=True,
+        max_length=255
     )
     embed = models.TextField(
         _('embed HTML code'),
-        blank = True, null = True,
-        help_text = _('HTML code used to embed a sound from external plateform'),
+        blank=True, null=True,
+        help_text=_('HTML code used to embed a sound from external plateform'),
     )
     duration = models.TimeField(
         _('duration'),
-        blank = True, null = True,
-        help_text = _('duration of the sound'),
+        blank=True, null=True,
+        help_text=_('duration of the sound'),
     )
     mtime = models.DateTimeField(
         _('modification time'),
-        blank = True, null = True,
-        help_text = _('last modification date and time'),
+        blank=True, null=True,
+        help_text=_('last modification date and time'),
     )
     good_quality = models.NullBooleanField(
         _('good quality'),
-        help_text = _('sound\'s quality is okay'),
-        blank = True, null = True
+        help_text=_('sound\'s quality is okay'),
+        blank=True, null=True
     )
     public = models.BooleanField(
         _('public'),
-        default = False,
-        help_text = _('the sound is accessible to the public')
+        default=False,
+        help_text=_('the sound is accessible to the public')
     )
-
-    tracks = Track.ReverseField()
 
     def get_mtime(self):
         """
@@ -1148,7 +1015,7 @@ class Sound(Nameable):
         mtime = os.stat(self.path).st_mtime
         mtime = tz.datetime.fromtimestamp(mtime)
         # db does not store microseconds
-        mtime = mtime.replace(microsecond = 0)
+        mtime = mtime.replace(microsecond=0)
 
         return tz.make_aware(mtime, tz.get_current_timezone())
 
@@ -1174,7 +1041,6 @@ class Sound(Nameable):
         Get metadata from sound file and return a Track object if succeed,
         else None.
         """
-
         if not self.file_exists():
             return None
 
@@ -1189,24 +1055,19 @@ class Sound(Nameable):
 
         def get_meta(key, cast=str):
             value = meta.get(key)
-
             return cast(value[0]) if value else None
 
         info = '{} ({})'.format(get_meta('album'), get_meta('year')) \
-                    if meta and ('album' and 'year' in meta) else \
+            if meta and ('album' and 'year' in meta) else \
                get_meta('album') \
-                    if 'album' else \
+            if 'album' else \
                ('year' in meta) and get_meta('year') or ''
 
-        track = Track(
-            related = self,
-            title = get_meta('title') or self.name,
-            artist = get_meta('artist') or _('unknown'),
-            info = info,
-            position = get_meta('tracknumber', int) or 0,
-        )
-
-        return track
+        return Track(sound=self,
+                     position=get_meta('tracknumber', int) or 0,
+                     title=get_meta('title') or self.name,
+                     artist=get_meta('artist') or _('unknown'),
+                     info=info)
 
     def check_on_file(self):
         """
@@ -1229,7 +1090,7 @@ class Sound(Nameable):
             changed = True
             self.type = self.Type.archive \
                 if self.path.startswith(self.program.archives_path) else \
-                    self.Type.excerpt
+                self.Type.excerpt
 
         # check mtime -> reset quality if changed (assume file changed)
         mtime = self.get_mtime()
@@ -1276,7 +1137,7 @@ class Sound(Nameable):
         super().__init__(*args, **kwargs)
         self.__check_name()
 
-    def save(self, check = True, *args, **kwargs):
+    def save(self, check=True, *args, **kwargs):
         if check:
             self.check_on_file()
         self.__check_name()
@@ -1289,6 +1150,64 @@ class Sound(Nameable):
         verbose_name = _('Sound')
         verbose_name_plural = _('Sounds')
 
+
+class Track(models.Model):
+    """
+    Track of a playlist of an object. The position can either be expressed
+    as the position in the playlist or as the moment in seconds it started.
+    """
+    diffusion = models.ForeignKey(
+        Diffusion, models.CASCADE, blank=True, null=True,
+        verbose_name=_('diffusion'),
+    )
+    sound = models.ForeignKey(
+        Sound, models.CASCADE, blank=True, null=True,
+        verbose_name=_('sound'),
+    )
+    position = models.PositiveSmallIntegerField(
+        _('order'),
+        default=0,
+        help_text=_('position in the playlist'),
+    )
+    timestamp = models.PositiveSmallIntegerField(
+        _('timestamp'),
+        blank=True, null=True,
+        help_text=_('position in seconds')
+    )
+    title = models.CharField(
+        _('title'),
+        max_length=128,
+    )
+    artist = models.CharField(
+        _('artist'),
+        max_length=128,
+    )
+    tags = TaggableManager(
+        verbose_name=_('tags'),
+        blank=True,
+    )
+    info = models.CharField(
+        _('information'),
+        max_length=128,
+        blank=True, null=True,
+        help_text=_('additional informations about this track, such as '
+                    'the version, if is it a remix, features, etc.'),
+    )
+
+    class Meta:
+        verbose_name = _('Track')
+        verbose_name_plural = _('Tracks')
+        ordering = ('position',)
+
+    def __str__(self):
+        return '{self.artist} -- {self.title} -- {self.position}'.format(
+               self=self)
+
+    def save(self, *args, **kwargs):
+        if (self.sound is None and self.diffusion is None) or \
+                (self.sound is not None and self.diffusion is not None):
+            raise ValueError('sound XOR diffusion is required')
+        super().save(*args, **kwargs)
 
 #
 # Controls and audio input/output
@@ -1319,29 +1238,29 @@ class Port (models.Model):
 
     station = models.ForeignKey(
         Station,
-        verbose_name = _('station'),
+        verbose_name=_('station'),
         on_delete=models.CASCADE,
     )
     direction = models.SmallIntegerField(
         _('direction'),
-        choices = [ (int(y), _(x)) for x,y in Direction.__members__.items() ],
+        choices=[(int(y), _(x)) for x, y in Direction.__members__.items()],
     )
     type = models.SmallIntegerField(
         _('type'),
         # we don't translate the names since it is project names.
-        choices = [ (int(y), x) for x,y in Type.__members__.items() ],
+        choices=[(int(y), x) for x, y in Type.__members__.items()],
     )
     active = models.BooleanField(
         _('active'),
-        default = True,
-        help_text = _('this port is active')
+        default=True,
+        help_text=_('this port is active')
     )
     settings = models.TextField(
         _('port settings'),
-        help_text = _('list of comma separated params available; '
-                      'this is put in the output config file as raw code; '
-                      'plugin related'),
-        blank = True, null = True
+        help_text=_('list of comma separated params available; '
+                    'this is put in the output config file as raw code; '
+                    'plugin related'),
+        blank=True, null=True
     )
 
     def is_valid_type(self):
@@ -1368,37 +1287,37 @@ class Port (models.Model):
 
     def __str__(self):
         return "{direction}: {type} #{id}".format(
-            direction = self.get_direction_display(),
-            type = self.get_type_display(),
-            id = self.pk or ''
+            direction=self.get_direction_display(),
+            type=self.get_type_display(),
+            id=self.pk or ''
         )
 
 
 class LogQuerySet(models.QuerySet):
     def station(self, station):
-        return self.filter(station = station)
+        return self.filter(station=station)
 
-    def at(self, date = None):
+    def at(self, date=None):
         start, end = utils.date_range(date)
         # return qs.filter(models.Q(end__gte = start) |
         #                 models.Q(date__lte = end))
 
-        return self.filter(date__gte = start, date__lte = end)
+        return self.filter(date__gte=start, date__lte=end)
 
     def on_air(self):
-        return self.filter(type = Log.Type.on_air)
+        return self.filter(type=Log.Type.on_air)
 
     def start(self):
-        return self.filter(type = Log.Type.start)
+        return self.filter(type=Log.Type.start)
 
-    def with_diff(self, with_it = True):
-        return self.filter(diffusion__isnull = not with_it)
+    def with_diff(self, with_it=True):
+        return self.filter(diffusion__isnull=not with_it)
 
-    def with_sound(self, with_it = True):
-        return self.filter(sound__isnull = not with_it)
+    def with_sound(self, with_it=True):
+        return self.filter(sound__isnull=not with_it)
 
-    def with_track(self, with_it = True):
-        return self.filter(track__isnull = not with_it)
+    def with_track(self, with_it=True):
+        return self.filter(track__isnull=not with_it)
 
     @staticmethod
     def _get_archive_path(station, date):
@@ -1424,7 +1343,7 @@ class LogQuerySet(models.QuerySet):
             rel.pk: rel
 
             for rel in type.objects.filter(
-                pk__in = (
+                pk__in=(
                     log[attr_id]
 
                     for log in logs if attr_id in log
@@ -1464,15 +1383,15 @@ class LogQuerySet(models.QuerySet):
             # make logs
 
             return [
-                Log(diffusion = rel_obj(log, 'diffusion'),
-                    sound = rel_obj(log, 'sound'),
-                    track = rel_obj(log, 'track'),
+                Log(diffusion=rel_obj(log, 'diffusion'),
+                    sound=rel_obj(log, 'sound'),
+                    track=rel_obj(log, 'track'),
                     **log)
 
                 for log in logs
             ]
 
-    def make_archive(self, station, date, force = False, keep = False):
+    def make_archive(self, station, date, force=False, keep=False):
         """
         Archive logs of the given date. If the archive exists, it does
         not overwrite it except if "force" is given. In this case, the
@@ -1484,8 +1403,8 @@ class LogQuerySet(models.QuerySet):
         import yaml
         import gzip
 
-        os.makedirs(settings.AIRCOX_LOGS_ARCHIVES_DIR, exist_ok = True)
-        path = self._get_archive_path(station, date);
+        os.makedirs(settings.AIRCOX_LOGS_ARCHIVES_DIR, exist_ok=True)
+        path = self._get_archive_path(station, date)
 
         if os.path.exists(path) and not force:
             return -1
@@ -1496,15 +1415,8 @@ class LogQuerySet(models.QuerySet):
             return 0
 
         fields = Log._meta.get_fields()
-        logs = [
-            {
-                i.attname: getattr(log, i.attname)
-
-                for i in fields
-            }
-
-            for log in qs
-        ]
+        logs = [{i.attname: getattr(log, i.attname)
+                 for i in fields} for log in qs]
 
         # Note: since we use Yaml, we can just append new logs when file
         # exists yet <3
@@ -1554,55 +1466,46 @@ class Log(models.Model):
         """
 
     type = models.SmallIntegerField(
-        verbose_name = _('type'),
-        choices = [ (int(y), _(x.replace('_',' '))) for x,y in Type.__members__.items() ],
-        blank = True, null = True,
+        choices=[(int(y), _(x.replace('_', ' ')))
+                 for x, y in Type.__members__.items()],
+        blank=True, null=True,
+        verbose_name=_('type'),
     )
     station = models.ForeignKey(
-        Station,
-        verbose_name = _('station'),
-        on_delete=models.CASCADE,
-        help_text = _('related station'),
+        Station, on_delete=models.CASCADE,
+        verbose_name=_('station'),
+        help_text=_('related station'),
     )
     source = models.CharField(
         # we use a CharField to avoid loosing logs information if the
         # source is removed
-        _('source'),
-        max_length=64,
-        help_text = _('identifier of the source related to this log'),
-        blank = True, null = True,
+        max_length=64, blank=True, null=True,
+        verbose_name=_('source'),
+        help_text=_('identifier of the source related to this log'),
     )
     date = models.DateTimeField(
-        _('date'),
-        default=tz.now,
-        db_index = True,
+        default=tz.now, db_index=True,
+        verbose_name=_('date'),
     )
     comment = models.CharField(
-        _('comment'),
-        max_length = 512,
-        blank = True, null = True,
+        max_length=512, blank=True, null=True,
+        verbose_name=_('comment'),
     )
 
     diffusion = models.ForeignKey(
-        Diffusion,
-        verbose_name = _('Diffusion'),
-        blank = True, null = True,
-        db_index = True,
-        on_delete=models.SET_NULL,
+        Diffusion, on_delete=models.SET_NULL,
+        blank=True, null=True, db_index=True,
+        verbose_name=_('Diffusion'),
     )
     sound = models.ForeignKey(
-        Sound,
-        verbose_name = _('Sound'),
-        blank = True, null = True,
-        db_index = True,
-        on_delete=models.SET_NULL,
+        Sound, on_delete=models.SET_NULL,
+        blank=True, null=True, db_index=True,
+        verbose_name=_('Sound'),
     )
     track = models.ForeignKey(
-        Track,
-        verbose_name = _('Track'),
-        blank = True, null = True,
-        db_index = True,
-        on_delete=models.SET_NULL,
+        Track, on_delete=models.SET_NULL,
+        blank=True, null=True, db_index=True,
+        verbose_name=_('Track'),
     )
 
     objects = LogQuerySet.as_manager()
@@ -1618,31 +1521,22 @@ class Log(models.Model):
         This is needed since datetime are stored as UTC date and we want
         to get it as local time.
         """
-
         return tz.localtime(self.date, tz.get_current_timezone())
 
     def print(self):
         r = []
-
         if self.diffusion:
             r.append('diff: ' + str(self.diffusion_id))
-
         if self.sound:
             r.append('sound: ' + str(self.sound_id))
-
         if self.track:
             r.append('track: ' + str(self.track_id))
-
-        logger.info('log %s: %s%s',
-            str(self),
-            self.comment or '',
-            ' (' + ', '.join(r) + ')' if r else ''
-        )
+        logger.info('log %s: %s%s', str(self), self.comment or '',
+                    ' (' + ', '.join(r) + ')' if r else '')
 
     def __str__(self):
         return '#{} ({}, {}, {})'.format(
-                self.pk,
-                self.get_type_display(),
-                self.source,
-                self.local_date.strftime('%Y/%m/%d %H:%M%z'),
+            self.pk, self.get_type_display(),
+            self.source,
+            self.local_date.strftime('%Y/%m/%d %H:%M%z'),
         )

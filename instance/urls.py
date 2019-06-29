@@ -17,24 +17,18 @@ from django.conf import settings
 from django.urls import include, path, re_path
 from django.contrib import admin
 
-from wagtail.admin import urls as wagtailadmin_urls
-from wagtail.documents import urls as wagtaildocs_urls
-from wagtail.core import urls as wagtail_urls
-from wagtail.images.views.serve import ServeView
+#from wagtail.admin import urls as wagtailadmin_urls
+#from wagtail.documents import urls as wagtaildocs_urls
+#from wagtail.core import urls as wagtail_urls
+#from wagtail.images.views.serve import ServeView
 
 import aircox.urls
+import aircox_web.urls
 
 try:
     urlpatterns = [
-        path('jet/', include('jet.urls', 'jet')),
         path('admin/', admin.site.urls),
         path('aircox/', include(aircox.urls.urls)),
-
-        # cms
-        path('cms/', include(wagtailadmin_urls)),
-        path('documents/', include(wagtaildocs_urls)),
-        re_path( r'^images/([^/]*)/(\d*)/([^/]*)/[^/]*$', ServeView.as_view(),
-            name='wagtailimages_serve'),
     ]
 
     if settings.DEBUG:
@@ -45,7 +39,8 @@ try:
             )
         )
 
-    urlpatterns.append(re_path(r'', include(wagtail_urls)))
+    urlpatterns.append(path('filer/', include('filer.urls')))
+    urlpatterns += aircox_web.urls.urlpatterns
 
 except Exception as e:
     import traceback

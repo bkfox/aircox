@@ -29,62 +29,65 @@ class Importer:
     path = None
     data = None
     tracks = None
+    track_kwargs = {}
 
-    def __init__(self, related = None, path = None, save = False):
-        if path:
-            self.read(path)
-            if related:
-                self.make_playlist(related, save)
+    def __init__(self, path=None, **track_kwargs):
+        self.path = path
+        self.track_kwargs = track_kwargs
 
     def reset(self):
         self.data = None
         self.tracks = None
 
-    def read(self, path):
-        if not os.path.exists(path):
+    def run(self):
+        self.read()
+        if self.track_kwargs.get('sound') is not None:
+            self.make_playlist()
+
+    def read(self):
+        if not os.path.exists(self.path):
             return True
-        with open(path, 'r') as file:
-            logger.info('start reading csv ' + path)
-            self.path = path
+        with open(self.path, 'r') as file:
+            logger.info('start reading csv ' + self.path)
             self.data = list(csv.DictReader(
                 (row for row in file
                     if not (row.startswith('#') or row.startswith('\ufeff#'))
-                            and row.strip()
-                ),
-                fieldnames = settings.AIRCOX_IMPORT_PLAYLIST_CSV_COLS,
-                delimiter = settings.AIRCOX_IMPORT_PLAYLIST_CSV_DELIMITER,
-                quotechar = settings.AIRCOX_IMPORT_PLAYLIST_CSV_TEXT_QUOTE,
+                    and row.strip()),
+                fieldnames=settings.AIRCOX_IMPORT_PLAYLIST_CSV_COLS,
+                delimiter=settings.AIRCOX_IMPORT_PLAYLIST_CSV_DELIMITER,
+                quotechar=settings.AIRCOX_IMPORT_PLAYLIST_CSV_TEXT_QUOTE,
             ))
 
-    def make_playlist(self, related, save = False):
+    def make_playlist(self):
         """
         Make a playlist from the read data, and return it. If save is
         true, save it into the database
         """
+        if self.track_kwargs.get('sound') is None:
+            logger.error('related track\'s sound is missing. Skip import of ' +
+                         self.path + '.')
+            return
+
         maps = settings.AIRCOX_IMPORT_PLAYLIST_CSV_COLS
         tracks = []
 
         logger.info('parse csv file ' + self.path)
-        in_seconds = ('minutes' or 'seconds') in maps
+        has_timestamp = ('minutes' or 'seconds') in maps
         for index, line in enumerate(self.data):
             if ('title' or 'artist') not in line:
                 return
-
             try:
-                position = \
-                    int(line.get('minutes') or 0) * 60 + \
-                    int(line.get('seconds') or 0) \
-                    if in_seconds else index
+                timestamp = int(line.get('minutes') or 0) * 60 + \
+                            int(line.get('seconds') or 0) \
+                            if has_timestamp else None
 
                 track, created = Track.objects.get_or_create(
-                    related_type = ContentType.objects.get_for_model(related),
-                    related_id = related.pk,
-                    title = line.get('title'),
-                    artist = line.get('artist'),
-                    position = position,
+                    title=line.get('title'),
+                    artist=line.get('artist'),
+                    position=index,
+                    **self.track_kwargs
                 )
-
-                track.in_seconds = in_seconds
+                track.timestamp = timestamp
                 track.info = line.get('info')
                 tags = line.get('tags')
                 if tags:
@@ -97,8 +100,7 @@ class Importer:
                 )
                 continue
 
-            if save:
-                track.save()
+            track.save()
             tracks.append(track)
         self.tracks = tracks
         return tracks
@@ -107,10 +109,8 @@ class Importer:
 class Command (BaseCommand):
     help= __doc__
 
-    def add_arguments (self, parser):
+    def add_arguments(self, parser):
         parser.formatter_class=RawTextHelpFormatter
-        now = tz.datetime.today()
-
         parser.add_argument(
             'path', metavar='PATH', type=str,
             help='path of the input playlist to read'
@@ -128,27 +128,24 @@ class Command (BaseCommand):
     def handle (self, path, *args, **options):
         # FIXME: absolute/relative path of sounds vs given path
         if options.get('sound'):
-            related = Sound.objects.filter(
-                path__icontains = options.get('sound')
+            sound = Sound.objects.filter(
+                path__icontains=options.get('sound')
             ).first()
         else:
             path_, ext = os.path.splitext(path)
-            related = Sound.objects.filter(path__icontains = path_).first()
+            sound = Sound.objects.filter(path__icontains=path_).first()
 
-        if not related:
+        if not sound:
             logger.error('no sound found in the database for the path ' \
                          '{path}'.format(path=path))
             return
 
-        if options.get('diffusion') and related.diffusion:
-            related = related.diffusion
+        if options.get('diffusion') and sound.diffusion:
+            sound = sound.diffusion
 
-        importer = Importer(related = related, path = path, save = True)
+        importer = Importer(path, sound=sound).run()
         for track in importer.tracks:
-            logger.info('imported track at {pos}: {title}, by '
-                        '{artist}'.format(
-                    pos = track.position,
-                    title = track.title, artist = track.artist
-                )
-            )
+            logger.info('track #{pos} imported: {title}, by {artist}'.format(
+                pos=track.position, title=track.title, artist=track.artist
+            ))
 

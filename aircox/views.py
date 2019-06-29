@@ -25,7 +25,7 @@ class Stations:
         if self.fetch_timeout and self.fetch_timeout > tz.now():
             return
 
-        self.fetch_timeout = tz.now() + tz.timedelta(seconds = 5)
+        self.fetch_timeout = tz.now() + tz.timedelta(seconds=5)
         for station in self.stations:
             station.streamer.fetch()
 
@@ -39,62 +39,54 @@ def on_air(request):
     except:
         cms = None
 
-    station = request.GET.get('station');
+    station = request.GET.get('station')
     if station:
         # FIXME: by name???
-        station = stations.stations.filter(name = station)
+        station = stations.stations.filter(name=station)
         if not station.count():
             return HttpResponse('{}')
     else:
         station = stations.stations
 
     station = station.first()
-    on_air = station.on_air(count = 10).select_related('track','diffusion')
+    on_air = station.on_air(count=10).select_related('track', 'diffusion')
     if not on_air.count():
         return HttpResponse('')
 
     last = on_air.first()
     if last.track:
-        last = {
-            'type': 'track',
-            'artist': last.related.artist,
-            'title': last.related.title,
-            'date': last.date,
-        }
+        last = {'date': last.date, 'type': 'track',
+                'artist': last.track.artist, 'title': last.track.title}
     else:
         try:
             diff = last.diffusion
             publication = None
+            # FIXME CMS
             if cms:
                 publication = \
                     cms.DiffusionPage.objects.filter(
-                        diffusion = diff.initial or diff).first() or \
+                        diffusion=diff.initial or diff).first() or \
                     cms.ProgramPage.objects.filter(
-                        program = last.program).first()
+                        program=last.program).first()
         except:
             pass
-
-        last = {
-            'type': 'diffusion',
-            'title': diff.program.name,
-            'date': diff.start,
-            'url': publication.specific.url if publication else None,
-        }
-
+        last = {'date': diff.start, 'type': 'diffusion',
+                'title': diff.program.name,
+                'url': publication.specific.url if publication else None}
     last['date'] = str(last['date'])
     return HttpResponse(json.dumps(last))
 
 
 # TODO:
 #   - login url
-class Monitor(View,TemplateResponseMixin,LoginRequiredMixin):
+class Monitor(View, TemplateResponseMixin, LoginRequiredMixin):
     template_name = 'aircox/controllers/monitor.html'
 
     def get_context_data(self, **kwargs):
         stations.fetch()
-        return { 'stations': stations.stations }
+        return {'stations': stations.stations}
 
-    def get(self, request = None, **kwargs):
+    def get(self, request=None, **kwargs):
         if not request.user.is_active:
             return Http404()
 
@@ -102,7 +94,7 @@ class Monitor(View,TemplateResponseMixin,LoginRequiredMixin):
         context = self.get_context_data(**kwargs)
         return render(request, self.template_name, context)
 
-    def post(self, request = None, **kwargs):
+    def post(self, request=None, **kwargs):
         if not request.user.is_active:
             return Http404()
 
@@ -113,15 +105,15 @@ class Monitor(View,TemplateResponseMixin,LoginRequiredMixin):
         controller = POST.get('controller')
         action = POST.get('action')
 
-        station = stations.stations.filter(name = POST.get('station')) \
+        station = stations.stations.filter(name=POST.get('station')) \
                                    .first()
         if not station:
             return Http404()
 
         source = None
         if 'source' in POST:
-            source = [ s for s in station.sources
-                        if s.name == POST['source'] ]
+            source = [s for s in station.sources
+                      if s.name == POST['source']]
             source = source[0]
             if not source:
                 return Http404
@@ -141,11 +133,11 @@ class Monitor(View,TemplateResponseMixin,LoginRequiredMixin):
         source.restart()
 
 
-class StatisticsView(View,TemplateResponseMixin,LoginRequiredMixin):
+class StatisticsView(View, TemplateResponseMixin, LoginRequiredMixin):
     """
     View for statistics.
     """
-    # we cannot manipulate queryset, since we have to be able to read from archives
+    # we cannot manipulate queryset: we have to be able to read from archives
     template_name = 'aircox/controllers/stats.html'
 
     class Item:
@@ -179,7 +171,7 @@ class StatisticsView(View,TemplateResponseMixin,LoginRequiredMixin):
             self.__dict__.update(kwargs)
 
         # Note: one row contains a column for diffusions and one for streams
-        #def append(self, log):
+        # def append(self, log):
         #    if log.col == 0:
         #        self.rows.append((log, []))
         #        return
@@ -194,13 +186,12 @@ class StatisticsView(View,TemplateResponseMixin,LoginRequiredMixin):
         #    # all other cases: new row
         #    self.rows.append((None, [log]))
 
-
     def get_stats(self, station, date):
         """
         Return statistics for the given station and date.
         """
-        stats = self.Stats(station = station, date = date,
-                           items = [], tags = {})
+        stats = self.Stats(station=station, date=date,
+                           items=[], tags={})
 
         qs = Log.objects.station(station).on_air() \
                 .prefetch_related('diffusion', 'sound', 'track', 'track__tags')
@@ -209,37 +200,26 @@ class StatisticsView(View,TemplateResponseMixin,LoginRequiredMixin):
 
         sound_log = None
         for log in qs:
-            rel = None
-            item = None
-
+            rel, item = None, None
             if log.diffusion:
-                rel = log.diffusion
-                item = self.Item(
-                    name = rel.program.name,
-                    type = _('Diffusion'),
-                    col = 0,
-                    tracks = models.Track.objects.related(object = rel)
-                                         .prefetch_related('tags'),
+                rel, item = log.diffusion, self.Item(
+                    name=rel.program.name, type=_('Diffusion'), col=0,
+                    tracks=models.Track.objects.filter(diffusion=log.diffusion)
+                                       .prefetch_related('tags'),
                 )
                 sound_log = None
             elif log.sound:
-                rel = log.sound
-                item = self.Item(
-                    name = rel.program.name + ': ' + os.path.basename(rel.path),
-                    type = _('Stream'),
-                    col = 1,
-                    tracks = [],
+                rel, item = log.sound, self.Item(
+                    name=rel.program.name + ': ' + os.path.basename(rel.path),
+                    type=_('Stream'), col=1, tracks=[],
                 )
                 sound_log = item
             elif log.track:
                 # append to last sound log
                 if not sound_log:
-                    # TODO: create item ? should never happen
                     continue
-
                 sound_log.tracks.append(log.track)
                 sound_log.end = log.end
-                sound_log
                 continue
 
             item.date = log.date
@@ -247,7 +227,6 @@ class StatisticsView(View,TemplateResponseMixin,LoginRequiredMixin):
             item.related = rel
             # stats.append(item)
             stats.items.append(item)
-
         return stats
 
     def get_context_data(self, **kwargs):
@@ -270,13 +249,12 @@ class StatisticsView(View,TemplateResponseMixin,LoginRequiredMixin):
 
         return context
 
-    def get(self, request = None, **kwargs):
+    def get(self, request=None, **kwargs):
         if not request.user.is_active:
             return Http404()
 
         self.request = request
         context = self.get_context_data(**kwargs)
         return render(request, self.template_name, context)
-
 
 

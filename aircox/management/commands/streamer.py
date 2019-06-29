@@ -82,17 +82,14 @@ class Monitor:
         """
         Last sound log of monitored station that occurred on_air
         """
-        return self.get_last_log(type = Log.Type.on_air,
-                                 sound__isnull = False)
+        return self.get_last_log(type=Log.Type.on_air, sound__isnull=False)
 
     @property
     def last_diff_start(self):
         """
         Log of last triggered item (sound or diffusion)
         """
-        return self.get_last_log(type = Log.Type.start,
-                                 diffusion__isnull = False)
-
+        return self.get_last_log(type=Log.Type.start, diffusion__isnull=False)
 
     def __init__(self, station, **kwargs):
         self.station = station
@@ -120,12 +117,11 @@ class Monitor:
         self.sync_playlists()
         self.handle()
 
-    def log(self, date = None, **kwargs):
+    def log(self, date=None, **kwargs):
         """
         Create a log using **kwargs, and print info
         """
-        log = Log(station = self.station, date = date or tz.now(),
-                  **kwargs)
+        log = Log(station=self.station, date=date or tz.now(), **kwargs)
         log.save()
         log.print()
         return log
@@ -142,14 +138,14 @@ class Monitor:
         air_times = (air_time - delta, air_time + delta)
 
         log = self.log_qs.on_air().filter(
-            source = source.id, sound__path = sound_path,
-            date__range = air_times,
+            source=source.id, sound__path=sound_path,
+            date__range=air_times,
         ).last()
         if log:
             return log
 
         # get sound
-        sound = Sound.objects.filter(path = sound_path) \
+        sound = Sound.objects.filter(path=sound_path) \
                      .select_related('diffusion').first()
         diff = None
         if sound and sound.diffusion:
@@ -157,19 +153,15 @@ class Monitor:
             # check for reruns
             if not diff.is_date_in_range(air_time) and not diff.initial:
                 diff = Diffusion.objects.at(air_time) \
-                                .filter(initial = diff).first()
+                                .filter(initial=diff).first()
 
         # log sound on air
         return self.log(
-            type = Log.Type.on_air,
-            source = source.id,
-            date = source.on_air,
-            sound = sound,
-            diffusion = diff,
+            type=Log.Type.on_air, source=source.id, date=source.on_air,
+            sound=sound, diffusion=diff,
             # if sound is removed, we keep sound path info
-            comment = sound_path,
+            comment=sound_path,
         )
-
 
     def trace_tracks(self, log):
         """
@@ -178,23 +170,21 @@ class Monitor:
         if log.diffusion:
             return
 
-        tracks = Track.objects.related(object = log.sound) \
-                              .filter(in_seconds = True)
+        tracks = Track.objects.filter(sound=log.sound, timestamp_isnull=False)
         if not tracks.exists():
             return
 
-        tracks = tracks.exclude(log__station = self.station,
-                                log__pk__gt = log.pk)
+        tracks = tracks.exclude(log__station=self.station, log__pk__gt=log.pk)
         now = tz.now()
         for track in tracks:
-            pos = log.date + tz.timedelta(seconds = track.position)
+            pos = log.date + tz.timedelta(seconds=track.position)
             if pos > now:
                 break
             # log track on air
             self.log(
-                type = Log.Type.on_air, source = log.source,
-                date = pos, track = track,
-                comment = track,
+                type=Log.Type.on_air, source=log.source,
+                date=pos, track=track,
+                comment=track,
             )
 
     def sync_playlists(self):
