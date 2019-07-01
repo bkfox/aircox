@@ -1,35 +1,18 @@
 from django.utils.html import format_html, mark_safe
-from feincms3.renderer import TemplatePluginRenderer
+from content_editor.renderer import PluginRenderer
 
 from .models import *
 
 
-site_renderer = TemplatePluginRenderer()
-site_renderer.register_string_renderer(
-    SiteRichText,
-    lambda plugin: mark_safe(plugin.text),
-)
-site_renderer.register_string_renderer(
-    SiteImage,
-    lambda plugin: format_html(
-        '<figure><img src="{}" alt=""/><figcaption>{}</figcaption></figure>',
-        plugin.image.url,
-        plugin.caption,
-    ),
-)
+site_renderer = PluginRenderer()
+site_renderer._renderers.clear()
+site_renderer.register(SiteRichText, lambda plugin: mark_safe(plugin.text))
+site_renderer.register(SiteImage, lambda plugin: plugin.render())
+site_renderer.register(SiteLink, lambda plugin: plugin.render())
 
 
-page_renderer = TemplatePluginRenderer()
-page_renderer.register_string_renderer(
-    PageRichText,
-    lambda plugin: mark_safe(plugin.text),
-)
-page_renderer.register_string_renderer(
-    PageImage,
-    lambda plugin: format_html(
-        '<figure><img src="{}" alt=""/><figcaption>{}</figcaption></figure>',
-        plugin.image.url,
-        plugin.caption,
-    ),
-)
+page_renderer = PluginRenderer()
+page_renderer._renderers.clear()
+page_renderer.register(PageRichText, lambda plugin: mark_safe(plugin.text))
+page_renderer.register(PageImage, lambda plugin: plugin.render())
 

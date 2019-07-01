@@ -48,9 +48,10 @@ module.exports = (env, argv) => Object({
                 sideEffects: false
             },
             {
-                test: /\.css$/,
+                test: /\.scss$/,
                 use: [ { loader: MiniCssExtractPlugin.loader },
-                       'css-loader' ]
+                       { loader: 'css-loader' },
+                       { loader: 'sass-loader' , options: { sourceMap: true }} ],
             },
             {
                 // TODO: remove ttf eot svg
@@ -70,8 +71,6 @@ module.exports = (env, argv) => Object({
     resolve: {
         alias: {
             js: path.resolve(__dirname, 'assets/js'),
-            vue: path.resolve(__dirname, 'assets/vue'),
-            css: path.resolve(__dirname, 'assets/css'),
             vue: 'vue/dist/vue.esm.browser.js',
             // buefy: 'buefy/dist/buefy.js',
         },

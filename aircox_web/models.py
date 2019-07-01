@@ -1,16 +1,18 @@
+from django.core.validators import RegexValidator
 from django.db import models
+from django.db.models import F
+from django.db.models.functions import Concat, Substr
 from django.utils.translation import ugettext_lazy as _
-from django.contrib.auth import models as auth
 
 from content_editor.models import Region, create_plugin_base
-from feincms3 import plugins
-from feincms3.pages import AbstractPage
 
 from model_utils.models import TimeStampedModel, StatusModel
+from model_utils.managers import InheritanceManager
 from model_utils import Choices
 from filer.fields.image import FilerImageField
 
 from aircox import models as aircox
+from . import plugins
 
 
 class Site(models.Model):
@@ -34,6 +36,11 @@ class Site(models.Model):
         related_name='+',
     )
 
+    default = models.BooleanField(_('default site'),
+        default=False,
+        help_text=_('Use as default site'),
+    )
+
     # meta descriptors
     description = models.CharField(
         _('Description'), max_length=128,
@@ -52,38 +59,119 @@ class Site(models.Model):
 
 SitePlugin = create_plugin_base(Site)
 
-class SiteRichText(plugins.richtext.RichText, SitePlugin):
+class SiteRichText(plugins.RichText, SitePlugin):
     pass
 
+class SiteImage(plugins.Image, SitePlugin):
+    pass
 
-class SiteImage(plugins.image.Image, SitePlugin):
-    caption = models.CharField(_("caption"), max_length=200, blank=True)
+class SiteLink(plugins.Link, SitePlugin):
+    css_class="navbar-item"
 
 
+#-----------------------------------------------------------------------
+class BasePage(StatusModel):
+    """
+    Base abstract class for views whose url path is defined by users.
+    Page parenting is based on foreignkey to parent and page path.
 
-class Page(AbstractPage, TimeStampedModel, StatusModel):
-    STATUS = Choices('draft', 'published')
+    Inspired by Feincms3.
+    """
+    STATUS = Choices('draft', 'announced', 'published')
+
+    parent = models.ForeignKey(
+        'self', models.CASCADE,
+        verbose_name=_('parent page'),
+        blank=True, null=True,
+    )
+    title = models.CharField(max_length=128)
+    slug = models.SlugField(_('slug'))
+    path = models.CharField(
+        _("path"), max_length=1000,
+        blank=True, db_index=True, unique=True,
+        validators=[
+            RegexValidator(
+                regex=r"^/(|.+/)$",
+                message=_("Path must start and end with a slash (/)."),
+            )
+        ],
+    )
+    static_path = models.BooleanField(
+        _('static path'), default=False,
+        help_text=_('Update path using parent\'s page path and page title')
+    )
+
+    objects = InheritanceManager()
+
+    class Meta:
+        abstract = True
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._initial_path = self.path
+        self._initial_parent = self.parent
+        self._initial_slug = self.slug
+
+    def view(self, request, *args, **kwargs):
+        """ Page view function """
+        from django.http import HttpResponse
+        return HttpResponse('Not implemented')
+
+    def update_descendants(self):
+        """ Update descendants pages' path if required. """
+        if self.path == self._initial_path:
+            return
+
+        # FIXME: draft -> draft children?
+        expr = Concat(self.path, Substr(F('path'), len(self._initial_path)))
+        BasePage.objects.filter(path__startswith=self._initial_path) \
+                        .update(path=expr)
+
+    def sync_generations(self, update_descendants=True):
+        """
+        Update fields (path, ...) based on parent. Update childrens if
+        ``update_descendants`` is True.
+        """
+        # TODO: set parent based on path (when static path)
+        # TODO: ensure unique path fallback
+        if self.path == self._initial_path and \
+                self.slug == self._initial_slug and \
+                self.parent == self._initial_parent:
+            return
+
+        if not self.title or not self.path or self.static_path and \
+                self.slug != self._initial_slug:
+            self.path = self.parent.path + '/' + self.slug \
+                if self.parent is not None else '/' + self.slug
+
+        if self.path[-1] != '/':
+            self.path += '/'
+        if self.path[0] != '/':
+            self.path = '/' + self.path
+        if update_descendants:
+            self.update_descendants()
+
+    def save(self, *args, update_descendants=True, **kwargs):
+        self.sync_generations(update_descendants)
+        super().save(*args, **kwargs)
+
+
+class Page(BasePage, TimeStampedModel):
+    """ User's pages """
     regions = [
         Region(key="main", title=_("Content")),
     ]
 
     # metadata
-    by = models.ForeignKey(
-        auth.User, models.SET_NULL, blank=True, null=True,
-        verbose_name=_('Author'),
-    )
-    by_program = models.ForeignKey(
+    as_program = models.ForeignKey(
         aircox.Program, models.SET_NULL, blank=True, null=True,
-        related_name='authored_pages',
+        related_name='published_pages',
         limit_choices_to={'schedule__isnull': False},
         verbose_name=_('Show program as author'),
-        help_text=_("If nothing is selected, display user's name"),
+        help_text=_("Show program as author"),
     )
 
     # options
-    show_author = models.BooleanField(
-        _('Show author'), default=True,
-    )
     featured = models.BooleanField(
         _('featured'), default=False,
     )
@@ -92,36 +180,46 @@ class Page(AbstractPage, TimeStampedModel, StatusModel):
     )
 
     # content
-    title = models.CharField(
-        _('title'), max_length=64,
-    )
-    summary = models.TextField(
-        _('Summary'),
-        max_length=128, blank=True, null=True,
+    headline = models.TextField(
+        _('headline'), max_length=128, blank=True, null=True,
     )
     cover = FilerImageField(
         on_delete=models.SET_NULL, null=True, blank=True,
         verbose_name=_('Cover'),
     )
 
+    def get_view_class(self):
+        from .views import PageView
+        return PageView
+
+    def view(self, request, *args, **kwargs):
+        """ Page view function """
+        view = self.get_view_class().as_view()
+        return view(request, *args, **kwargs)
+
+
+class DiffusionPage(Page):
     diffusion = models.OneToOneField(
         aircox.Diffusion, models.CASCADE,
         blank=True, null=True,
     )
+
+
+class ProgramPage(Page):
     program = models.OneToOneField(
         aircox.Program, models.CASCADE,
         blank=True, null=True,
     )
 
 
+#-----------------------------------------------------------------------
 PagePlugin = create_plugin_base(Page)
 
-class PageRichText(plugins.richtext.RichText, PagePlugin):
+class PageRichText(plugins.RichText, PagePlugin):
     pass
 
-
-class PageImage(plugins.image.Image, PagePlugin):
-    caption = models.CharField(_("caption"), max_length=200, blank=True)
+class PageImage(plugins.Image, PagePlugin):
+    pass
 
 
 

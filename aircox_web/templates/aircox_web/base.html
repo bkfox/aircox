@@ -1,4 +1,4 @@
-{% load static thumbnail feincms3 %}
+{% load static i18n thumbnail %}
 <html>
     <head>
         <meta charset="utf-8">
@@ -9,7 +9,7 @@
 
         {% block assets %}
         <link rel="stylesheet" type="text/css" href="{% static "aircox_web/assets/main.css" %}"/>
-        <link rel="stylesheet" type="text/css" href="{% static "aircox_web/assets/vendor.css" %}"/>
+        <!-- <link rel="stylesheet" type="text/css" href="{% static "aircox_web/assets/vendor.css" %}"/> -->
 
         <script src="{% static "aircox_web/assets/main.js" %}"></script>
         <script src="{% static "aircox_web/assets/vendor.js" %}"></script>
@@ -20,18 +20,27 @@
         {% block extra_head %}{% endblock %}
     </head>
     <body id="app">
-        <nav class="navbar" role="navigation" aria-label="main navigation">
-            {% render_region regions "topnav" %}
+        <nav class="navbar has-shadow" role="navigation" aria-label="main navigation">
+            <div class="navbar-brand">
+                <a href="/" title="{% trans "Home" %}" class="navbar-item">
+                    <img src="{{ site.logo.url }}" class="logo"/>
+                </a>
+            </div>
+            <div class="navbar-menu">
+                <div class="navbar-start">
+                    {{ site_regions.topnav }}
+                </div>
+            </div>
         </nav>
 
         <div class="columns">
             <aside class="column">
-                {% render_region regions "sidenav" %}
+                {{ site_regions.sidenav }}
             </aside>
             <main class="column is-three-quarters">
                 {% block main %}
                 <h1>{{ page.title }}</h1>
-                {% render_region page_regions "main" %}
+                {{ regions.main }}
                 {% endblock main %}
             </main>
         </div>
