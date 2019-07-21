@@ -20,7 +20,7 @@ from django.contrib.contenttypes.models import ContentType
 
 from aircox.models import *
 import aircox.settings as settings
-__doc__ = __doc__.format(settings = settings)
+__doc__ = __doc__.format(settings=settings)
 
 logger = logging.getLogger('aircox.tools')
 
@@ -78,8 +78,8 @@ class Importer:
                 return
             try:
                 timestamp = int(line.get('minutes') or 0) * 60 + \
-                            int(line.get('seconds') or 0) \
-                            if has_timestamp else None
+                    int(line.get('seconds') or 0) \
+                    if has_timestamp else None
 
                 track, created = Track.objects.get_or_create(
                     title=line.get('title'),
@@ -88,6 +88,7 @@ class Importer:
                     **self.track_kwargs
                 )
                 track.timestamp = timestamp
+                print('track', track, timestamp)
                 track.info = line.get('info')
                 tags = line.get('tags')
                 if tags:
@@ -96,7 +97,7 @@ class Importer:
                 logger.warning(
                     'an error occured for track {index}, it may not '
                     'have been saved: {err}'
-                    .format(index = index, err=err)
+                    .format(index=index, err=err)
                 )
                 continue
 
@@ -107,10 +108,10 @@ class Importer:
 
 
 class Command (BaseCommand):
-    help= __doc__
+    help = __doc__
 
     def add_arguments(self, parser):
-        parser.formatter_class=RawTextHelpFormatter
+        parser.formatter_class = RawTextHelpFormatter
         parser.add_argument(
             'path', metavar='PATH', type=str,
             help='path of the input playlist to read'
@@ -125,7 +126,7 @@ class Command (BaseCommand):
             help='try to get the diffusion relative to the sound if it exists'
         )
 
-    def handle (self, path, *args, **options):
+    def handle(self, path, *args, **options):
         # FIXME: absolute/relative path of sounds vs given path
         if options.get('sound'):
             sound = Sound.objects.filter(
@@ -136,7 +137,7 @@ class Command (BaseCommand):
             sound = Sound.objects.filter(path__icontains=path_).first()
 
         if not sound:
-            logger.error('no sound found in the database for the path ' \
+            logger.error('no sound found in the database for the path '
                          '{path}'.format(path=path))
             return
 
@@ -148,4 +149,3 @@ class Command (BaseCommand):
             logger.info('track #{pos} imported: {title}, by {artist}'.format(
                 pos=track.position, title=track.title, artist=track.artist
             ))
-

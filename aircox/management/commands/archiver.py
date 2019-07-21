@@ -16,14 +16,14 @@ logger = logging.getLogger('aircox.tools')
 
 
 class Command (BaseCommand):
-    help= __doc__
+    help = __doc__
 
-    def add_arguments (self, parser):
-        parser.formatter_class=RawTextHelpFormatter
+    def add_arguments(self, parser):
+        parser.formatter_class = RawTextHelpFormatter
         group = parser.add_argument_group('actions')
         group.add_argument(
             '-a', '--age', type=int,
-            default = settings.AIRCOX_LOGS_ARCHIVES_MIN_AGE,
+            default=settings.AIRCOX_LOGS_ARCHIVES_MIN_AGE,
             help='minimal age in days of logs to archive. Default is '
                  'settings.AIRCOX_LOGS_ARCHIVES_MIN_AGE'
         )
@@ -36,22 +36,21 @@ class Command (BaseCommand):
             help='keep logs in database instead of deleting them'
         )
 
-    def handle (self, *args, age, force, keep, **options):
-        date = tz.now() - tz.timedelta(days = age)
+    def handle(self, *args, age, force, keep, **options):
+        date = tz.now() - tz.timedelta(days=age)
 
         while True:
             date = date.replace(
-                hour = 0, minute = 0, second = 0, microsecond = 0
+                hour=0, minute=0, second=0, microsecond=0
             )
 
             logger.info('archive log at date %s', date)
             for station in Station.objects.all():
                 Log.objects.make_archive(
-                    station, date, force = force, keep = keep
+                    station, date, force=force, keep=keep
                 )
 
-            qs = Log.objects.filter(date__lt = date)
+            qs = Log.objects.filter(date__lt=date)
             if not qs.exists():
                 break
             date = qs.order_by('-date').first().date
-

@@ -15,6 +15,8 @@ from aircox.admin.mixins import UnrelatedInlineMixin
 
 @admin.register(models.Site)
 class SiteAdmin(ContentEditor):
+    list_display = ['title', 'station']
+
     inlines = [
         ContentEditorInline.create(models.SiteRichText),
         ContentEditorInline.create(models.SiteImage),
@@ -37,14 +39,26 @@ class PageDiffusionPlaylist(UnrelatedInlineMixin, TracksInline):
 
 
 @admin.register(models.Page)
-class PageAdmin(ContentEditor):
+class PageAdmin(admin.ModelAdmin):
     list_display = ["title", "parent", "status"]
+    list_editable = ['status']
     prepopulated_fields = {"slug": ("title",)}
-    # readonly_fields = ('diffusion',)
 
     fieldsets = (
         (_('Main'), {
-            'fields': ['title', 'slug', 'as_program', 'headline'],
+            'fields': ['title', 'slug']
+        }),
+        (_('Settings'), {
+            'fields': ['status', 'static_path', 'path'],
+        }),
+    )
+
+
+@admin.register(models.Article)
+class ArticleAdmin(ContentEditor, PageAdmin):
+    fieldsets = (
+        (_('Main'), {
+            'fields': ['title', 'slug', 'as_program', 'cover', 'headline'],
             'classes': ('tabbed', 'uncollapse')
         }),
         (_('Settings'), {
@@ -59,36 +73,27 @@ class PageAdmin(ContentEditor):
     )
 
     inlines = [
-        ContentEditorInline.create(models.PageRichText),
-        ContentEditorInline.create(models.PageImage),
+        ContentEditorInline.create(models.ArticleRichText),
+        ContentEditorInline.create(models.ArticleImage),
     ]
 
 
 @admin.register(models.DiffusionPage)
-class DiffusionPageAdmin(PageAdmin):
-    fieldsets = copy.deepcopy(PageAdmin.fieldsets)
+class DiffusionPageAdmin(ArticleAdmin):
+    fieldsets = copy.deepcopy(ArticleAdmin.fieldsets)
     fieldsets[1][1]['fields'].insert(0, 'diffusion')
 
-    inlines = PageAdmin.inlines + [
-        PageDiffusionPlaylist
-    ]
-
     # TODO: permissions
-    #def get_inline_instances(self, request, obj=None):
-    #    inlines = super().get_inline_instances(request, obj)
-    #    if obj and obj.diffusion:
-    #        inlines.insert(0, PageDiffusionPlaylist(self.model, self.admin_site))
-    #    return inlines
+    def get_inline_instances(self, request, obj=None):
+        inlines = super().get_inline_instances(request, obj)
+        if obj and obj.diffusion:
+            inlines.insert(0, PageDiffusionPlaylist(self.model, self.admin_site))
+        return inlines
 
 
 @admin.register(models.ProgramPage)
-class DiffusionPageAdmin(PageAdmin):
-    fieldsets = copy.deepcopy(PageAdmin.fieldsets)
+class ProgramPageAdmin(ArticleAdmin):
+    fieldsets = copy.deepcopy(ArticleAdmin.fieldsets)
     fieldsets[1][1]['fields'].insert(0, 'program')
-
-    inlines = PageAdmin.inlines + [
-        PageDiffusionPlaylist
-    ]
-
 
 

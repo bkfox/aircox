@@ -34,7 +34,7 @@ class DiffusionAdmin(admin.ModelAdmin):
     conflicts_count.short_description = _('Conflicts')
 
     def start_date(self, obj):
-        return obj.local_date.strftime('%Y/%m/%d %H:%M')
+        return obj.local_start.strftime('%Y/%m/%d %H:%M')
     start_date.short_description = _('start')
 
     def end_date(self, obj):

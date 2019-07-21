@@ -3,9 +3,12 @@ import Buefy from 'buefy';
 
 Vue.use(Buefy);
 
-var app = new Vue({
-  el: '#app',
-})
+window.addEventListener('load', () => {
+    var app = new Vue({
+      el: '#app',
+      delimiters: [ '[[', ']]' ],
+    })
+});
 
 
 

@@ -10,8 +10,11 @@ $body-background-color: $light;
 }
 
 .navbar.has-shadow {
-    box-shadow: 0em 0.1em 0.5em rgba(0,0,0,0.1);
+    box-shadow: 0em 0.05em 0.5em rgba(0,0,0,0.1);
 }
+
+/*
+
 
 .navbar-brand img {
     min-height: 6em;
@@ -20,5 +23,22 @@ $body-background-color: $light;
 .navbar-menu .navbar-item:not(:last-child) {
     border-right: 1px $grey solid;
 }
+*/
 
+
+/** page **/
+img.cover {
+    border: 0.2em black solid;
+}
+
+
+.headline {
+    font-size: 1.2em;
+    padding: 0.2em 0em;
+}
+
+img.cover {
+    float: right;
+    max-width: 40%;
+}
 

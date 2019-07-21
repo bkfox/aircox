@@ -793,10 +793,10 @@ class TimetablePage(DatedListPage):
     template = 'aircox_cms/dated_list_page.html'
     station = models.ForeignKey(
         aircox.models.Station,
-        verbose_name = _('station'),
-        on_delete = models.SET_NULL,
-        null = True, blank = True,
-        help_text = _('(required) related station')
+        verbose_name=_('station'),
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        help_text=_('(required) related station')
     )
 
     content_panels = DatedListPage.content_panels + [

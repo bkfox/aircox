@@ -6,6 +6,7 @@ used to:
 - cancels Diffusions that have an archive but could not have been played;
 - run Liquidsoap
 """
+import tzlocal
 import time
 import re
 
@@ -28,7 +29,6 @@ tz.activate(pytz.UTC)
 # FIXME liquidsoap does not manage timezones -- we have to convert
 #       'on_air' metadata we get from it into utc one in order to work
 #       correctly.
-import tzlocal
 local_tz = tzlocal.get_localzone()
 
 
@@ -118,10 +118,12 @@ class Monitor:
         self.handle()
 
     def log(self, date=None, **kwargs):
-        """
-        Create a log using **kwargs, and print info
-        """
+        """ Create a log using **kwargs, and print info """
         log = Log(station=self.station, date=date or tz.now(), **kwargs)
+        if log.type == Log.Type.on_air and log.diffusion is None:
+            log.collision = Diffusion.objects.station(log.station) \
+                                     .on_air().at(log.date).first()
+
         log.save()
         log.print()
         return log
@@ -153,7 +155,7 @@ class Monitor:
             # check for reruns
             if not diff.is_date_in_range(air_time) and not diff.initial:
                 diff = Diffusion.objects.at(air_time) \
-                                .filter(initial=diff).first()
+                                .on_air().filter(initial=diff).first()
 
         # log sound on air
         return self.log(
@@ -170,14 +172,14 @@ class Monitor:
         if log.diffusion:
             return
 
-        tracks = Track.objects.filter(sound=log.sound, timestamp_isnull=False)
+        tracks = Track.objects.filter(sound=log.sound, timestamp__isnull=False)
         if not tracks.exists():
             return
 
         tracks = tracks.exclude(log__station=self.station, log__pk__gt=log.pk)
         now = tz.now()
         for track in tracks:
-            pos = log.date + tz.timedelta(seconds=track.position)
+            pos = log.date + tz.timedelta(seconds=track.timestamp)
             if pos > now:
                 break
             # log track on air
@@ -195,14 +197,14 @@ class Monitor:
         if self.sync_next and self.sync_next < now:
             return
 
-        self.sync_next = now + tz.timedelta(seconds = self.sync_timeout)
+        self.sync_next = now + tz.timedelta(seconds=self.sync_timeout)
 
         for source in self.station.sources:
             if source == self.station.dealer:
                 continue
             playlist = source.program.sound_set.all() \
                              .filter(type=Sound.Type.archive) \
-                             .values_list('path', flat = True)
+                             .values_list('path', flat=True)
             source.playlist = list(playlist)
 
     def trace_canceled(self):
@@ -214,24 +216,24 @@ class Monitor:
             return
 
         qs = Diffusions.objects.station(self.station).at().filter(
-            type = Diffusion.Type.normal,
-            sound__type = Sound.Type.archive,
+            type=Diffusion.Type.normal,
+            sound__type=Sound.Type.archive,
         )
         logs = Log.objects.station(station).on_air().with_diff()
 
-        date = tz.now() - datetime.timedelta(seconds = self.cancel_timeout)
+        date = tz.now() - datetime.timedelta(seconds=self.cancel_timeout)
         for diff in qs:
-            if logs.filter(diffusion = diff):
+            if logs.filter(diffusion=diff):
                 continue
             if diff.start < now:
                 diff.type = Diffusion.Type.canceled
                 diff.save()
                 # log canceled diffusion
                 self.log(
-                    type = Log.Type.other,
-                    diffusion = diff,
-                    comment = 'Diffusion canceled after {} seconds' \
-                              .format(self.cancel_timeout)
+                    type=Log.Type.other,
+                    diffusion=diff,
+                    comment='Diffusion canceled after {} seconds'
+                    .format(self.cancel_timeout)
                 )
 
     def __current_diff(self):
@@ -251,7 +253,7 @@ class Monitor:
 
         # last sound source change: end of file reached or forced to stop
         sounds = Log.objects.station(station).on_air().with_sound() \
-                            .filter(date__gte = log.date) \
+                            .filter(date__gte=log.date) \
                             .order_by('date')
 
         if sounds.count() and sounds.last().source != log.source:
@@ -259,12 +261,12 @@ class Monitor:
 
         # last diff is still playing: get remaining playlist
         sounds = sounds \
-            .filter(source = log.source, pk__gt = log.pk) \
-            .exclude(sound__type = Sound.Type.removed)
+            .filter(source=log.source, pk__gt=log.pk) \
+            .exclude(sound__type=Sound.Type.removed)
 
-        remaining = log.diffusion.get_sounds(archive = True) \
-                       .exclude(pk__in = sounds) \
-                       .values_list('path', flat = True)
+        remaining = log.diffusion.get_sounds(archive=True) \
+                       .exclude(pk__in=sounds) \
+                       .values_list('path', flat=True)
         return log.diffusion, list(remaining)
 
     def __next_diff(self, diff):
@@ -273,16 +275,14 @@ class Monitor:
         If diff is given, it is the one to be played right after it.
         """
         station = self.station
-
-        kwargs = {'start__gte': diff.end } if diff else {}
-        kwargs['type'] = Diffusion.Type.normal
-
-        qs = Diffusion.objects.station(station).at().filter(**kwargs) \
+        kwargs = {'start__gte': diff.end} if diff else {}
+        qs = Diffusion.objects.station(station) \
+                      .on_air().at().filter(**kwargs) \
                       .distinct().order_by('start')
         diff = qs.first()
-        return (diff, diff and diff.get_playlist(archive = True) or [])
+        return (diff, diff and diff.get_playlist(archive=True) or [])
 
-    def handle_pl_sync(self, source, playlist, diff = None, date = None):
+    def handle_pl_sync(self, source, playlist, diff=None, date=None):
         """
         Update playlist of a source if required, and handle logging when
         it is needed.
@@ -297,11 +297,11 @@ class Monitor:
         source.playlist = playlist
         if diff and not diff.is_live():
             # log diffusion archive load
-            self.log(type = Log.Type.load,
-                     source = source.id,
-                     diffusion = diff,
-                     date = date,
-                     comment = '\n'.join(playlist))
+            self.log(type=Log.Type.load,
+                     source=source.id,
+                     diffusion=diff,
+                     date=date,
+                     comment='\n'.join(playlist))
 
     def handle_diff_start(self, source, diff, date):
         """
@@ -318,11 +318,11 @@ class Monitor:
         # live: just log it
         if diff.is_live():
             diff_ = Log.objects.station(self.station) \
-                       .filter(diffusion = diff, type = Log.Type.on_air)
+                       .filter(diffusion=diff, type=Log.Type.on_air)
             if not diff_.count():
                 # log live diffusion
-                self.log(type = Log.Type.on_air, source = source.id,
-                         diffusion = diff, date = date)
+                self.log(type=Log.Type.on_air, source=source.id,
+                         diffusion=diff, date=date)
             return
 
         # enable dealer
@@ -331,8 +331,8 @@ class Monitor:
             last_start = self.last_diff_start
             if not last_start or last_start.diffusion_id != diff.pk:
                 # log triggered diffusion
-                self.log(type = Log.Type.start, source = source.id,
-                         diffusion = diff, date = date)
+                self.log(type=Log.Type.start, source=source.id,
+                         diffusion=diff, date=date)
 
     def handle(self):
         """
@@ -358,10 +358,10 @@ class Monitor:
 
 
 class Command (BaseCommand):
-    help= __doc__
+    help = __doc__
 
-    def add_arguments (self, parser):
-        parser.formatter_class=RawTextHelpFormatter
+    def add_arguments(self, parser):
+        parser.formatter_class = RawTextHelpFormatter
         group = parser.add_argument_group('actions')
         group.add_argument(
             '-c', '--config', action='store_true',
@@ -396,25 +396,25 @@ class Command (BaseCommand):
                  'check'
         )
 
-    def handle (self, *args,
-                config = None, run = None, monitor = None,
-                station = [], delay = 1000, timeout = 600,
-                **options):
+    def handle(self, *args,
+               config=None, run=None, monitor=None,
+               station=[], delay=1000, timeout=600,
+               **options):
 
-        stations = Station.objects.filter(name__in = station)[:] \
-                    if station else Station.objects.all()[:]
+        stations = Station.objects.filter(name__in=station)[:] \
+            if station else Station.objects.all()[:]
 
         for station in stations:
             # station.prepare()
-            if config and not run: # no need to write it twice
+            if config and not run:  # no need to write it twice
                 station.streamer.push()
             if run:
                 station.streamer.process_run()
 
         if monitor:
             monitors = [
-                Monitor(station, cancel_timeout = timeout)
-                    for station in stations
+                Monitor(station, cancel_timeout=timeout)
+                for station in stations
             ]
             delay = delay / 1000
             while True:
@@ -425,4 +425,3 @@ class Command (BaseCommand):
         if run:
             for station in stations:
                 station.controller.process_wait()
-

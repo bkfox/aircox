@@ -18,11 +18,10 @@ class TracksInline(SortableInlineAdminMixin, admin.TabularInline):
 
 @admin.register(Track)
 class TrackAdmin(admin.ModelAdmin):
-    # TODO: url to filter by tag
     def tag_list(self, obj):
         return u", ".join(o.name for o in obj.tags.all())
 
-    list_display = ['pk', 'artist', 'title', 'tag_list', 'diffusion', 'sound']
+    list_display = ['pk', 'artist', 'title', 'tag_list', 'diffusion', 'sound', 'timestamp']
     list_editable = ['artist', 'title']
     list_filter = ['sound', 'diffusion', 'artist', 'title', 'tags']
     fieldsets = [

@@ -15,6 +15,7 @@ planified before the (given) month.
 - "check" will remove all diffusions that are unconfirmed and have been planified
 from the (given) month and later.
 """
+import time
 import logging
 from argparse import RawTextHelpFormatter
 
@@ -25,53 +26,52 @@ from aircox.models import *
 
 logger = logging.getLogger('aircox.tools')
 
-import time
 
 class Actions:
     @classmethod
-    def update (cl, date, mode):
+    def update(cl, date, mode):
         manual = (mode == 'manual')
 
         count = [0, 0]
-        for schedule in Schedule.objects.filter(program__active = True) \
+        for schedule in Schedule.objects.filter(program__active=True) \
                 .order_by('initial'):
             # in order to allow rerun links between diffusions, we save items
             # by schedule;
-            items = schedule.diffusions_of_month(date, exclude_saved = True)
+            items = schedule.diffusions_of_month(date, exclude_saved=True)
             count[0] += len(items)
 
             # we can't bulk create because we need signal processing
             for item in items:
                 conflicts = item.get_conflicts()
                 item.type = Diffusion.Type.unconfirmed \
-                                if manual or conflicts.count() else \
-                            Diffusion.Type.normal
-                item.save(no_check = True)
+                    if manual or conflicts.count() else \
+                    Diffusion.Type.normal
+                item.save(no_check=True)
                 if conflicts.count():
                     item.conflicts.set(conflicts.all())
 
             logger.info('[update] schedule %s: %d new diffusions',
-                    str(schedule), len(items),
-                 )
+                        str(schedule), len(items),
+                        )
 
         logger.info('[update] %d diffusions have been created, %s', count[0],
-              'do not forget manual approval' if manual else
-                '{} conflicts found'.format(count[1]))
+                    'do not forget manual approval' if manual else
+                    '{} conflicts found'.format(count[1]))
 
     @staticmethod
-    def clean (date):
-        qs = Diffusion.objects.filter(type = Diffusion.Type.unconfirmed,
-                                      start__lt = date)
+    def clean(date):
+        qs = Diffusion.objects.filter(type=Diffusion.Type.unconfirmed,
+                                      start__lt=date)
         logger.info('[clean] %d diffusions will be removed', qs.count())
         qs.delete()
 
     @staticmethod
     def check(date):
-        qs = Diffusion.objects.filter(type = Diffusion.Type.unconfirmed,
-                                      start__gt = date)
+        qs = Diffusion.objects.filter(type=Diffusion.Type.unconfirmed,
+                                      start__gt=date)
         items = []
         for diffusion in qs:
-            schedules = Schedule.objects.filter(program = diffusion.program)
+            schedules = Schedule.objects.filter(program=diffusion.program)
             for schedule in schedules:
                 if schedule.match(diffusion.start):
                     break
@@ -80,14 +80,14 @@ class Actions:
 
         logger.info('[check] %d diffusions will be removed', len(items))
         if len(items):
-            Diffusion.objects.filter(id__in = items).delete()
+            Diffusion.objects.filter(id__in=items).delete()
 
 
 class Command(BaseCommand):
-    help= __doc__
+    help = __doc__
 
-    def add_arguments (self, parser):
-        parser.formatter_class=RawTextHelpFormatter
+    def add_arguments(self, parser):
+        parser.formatter_class = RawTextHelpFormatter
         now = tz.datetime.today()
 
         group = parser.add_argument_group('action')
@@ -130,23 +130,22 @@ class Command(BaseCommand):
                  'diffusions except those that conflicts with others'
         )
 
-    def handle (self, *args, **options):
-        date = tz.datetime(year = options.get('year'),
-                                 month = options.get('month'),
-                                 day = 1)
+    def handle(self, *args, **options):
+        date = tz.datetime(year=options.get('year'),
+                           month=options.get('month'),
+                           day=1)
         date = tz.make_aware(date)
         if options.get('next_month'):
             month = options.get('month')
-            date += tz.timedelta(days = 28)
+            date += tz.timedelta(days=28)
             if date.month == month:
-                date += tz.timedelta(days = 28)
+                date += tz.timedelta(days=28)
 
-            date = date.replace(day = 1)
+            date = date.replace(day=1)
 
         if options.get('update'):
-            Actions.update(date, mode = options.get('mode'))
+            Actions.update(date, mode=options.get('mode'))
         if options.get('clean'):
             Actions.clean(date)
         if options.get('check'):
             Actions.check(date)
-

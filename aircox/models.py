@@ -11,6 +11,7 @@ from django.contrib.contenttypes.fields import (GenericForeignKey,
                                                 GenericRelation)
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
+from django.db.models import Q
 from django.db.transaction import atomic
 from django.template.defaultfilters import slugify
 from django.utils import timezone as tz
@@ -119,9 +120,7 @@ class Station(Nameable):
 
     @property
     def outputs(self):
-        """
-        Return all active output ports of the station
-        """
+        """ Return all active output ports of the station """
         return self.port_set.filter(
             direction=Port.Direction.output,
             active=True,
@@ -129,9 +128,7 @@ class Station(Nameable):
 
     @property
     def sources(self):
-        """
-        Audio sources, dealer included
-        """
+        """ Audio sources, dealer included """
         self.__prepare_controls()
         return self.__sources
 
@@ -168,7 +165,7 @@ class Station(Nameable):
 
         # FIXME can be a potential source of bug
         if date:
-            date = utils.cast_date(date, to_datetime=False)
+            date = utils.cast_date(date, datetime.date)
         if date and date > datetime.date.today():
             return []
 
@@ -185,18 +182,17 @@ class Station(Nameable):
                                      start__lte=now) \
                              .order_by('-start')[:count]
 
-        q = models.Q(diffusion__isnull=False) | \
-            models.Q(track__isnull=False)
+        q = Q(diffusion__isnull=False) | Q(track__isnull=False)
         logs = logs.station(self).on_air().filter(q).order_by('-date')
 
         # filter out tracks played when there was a diffusion
-        n, q = 0, models.Q()
+        n, q = 0, Q()
         for diff in diffs:
             if count and n >= count:
                 break
             # FIXME: does not catch tracks started before diff end but
             #        that continued afterwards
-            q = q | models.Q(date__gte=diff.start, date__lte=diff.end)
+            q = q | Q(date__gte=diff.start, date__lte=diff.end)
             n += 1
         logs = logs.exclude(q, diffusion__isnull=True)
         if count:
@@ -411,15 +407,11 @@ class Schedule(models.Model):
         Program, models.CASCADE,
         verbose_name=_('related program'),
     )
-    time = models.TimeField(
-        _('time'),
-        blank=True, null=True,
-        help_text=_('start time'),
-    )
     date = models.DateField(
-        _('date'),
-        blank=True, null=True,
-        help_text=_('date of the first diffusion'),
+        _('date'), help_text=_('date of the first diffusion'),
+    )
+    time = models.TimeField(
+        _('time'), help_text=_('start time'),
     )
     timezone = models.CharField(
         _('timezone'),
@@ -462,6 +454,12 @@ class Schedule(models.Model):
 
         return pytz.timezone(self.timezone)
 
+    @property
+    def datetime(self):
+        """ Datetime for this schedule (timezone unaware) """
+        import datetime
+        return datetime.datetime.combine(self.date, self.time)
+
     # initial cached data
     __initial = None
 
@@ -481,22 +479,18 @@ class Schedule(models.Model):
 
     def match(self, date=None, check_time=True):
         """
-        Return True if the given datetime matches the schedule
+        Return True if the given date(time) matches the schedule.
         """
-        date = utils.date_or_default(date)
+        date = utils.date_or_default(
+            date, tz.datetime if check_time else datetime.date)
 
         if self.date.weekday() != date.weekday() or \
                 not self.match_week(date):
-
             return False
-
-        if not check_time:
-            return True
 
         # we check against a normalized version (norm_date will have
         # schedule's date.
-
-        return date == self.normalize(date)
+        return date == self.normalize(date) if check_time else True
 
     def match_week(self, date=None):
         """
@@ -509,15 +503,14 @@ class Schedule(models.Model):
             return False
 
         # since we care only about the week, go to the same day of the week
-        date = utils.date_or_default(date)
+        date = utils.date_or_default(date, datetime.date)
         date += tz.timedelta(days=self.date.weekday() - date.weekday())
 
         # FIXME this case
 
         if self.frequency == Schedule.Frequency.one_on_two:
             # cf notes in date_of_month
-            diff = utils.cast_date(date, False) - \
-                utils.cast_date(self.date, False)
+            diff = date - utils.cast_date(self.date, datetime.date)
 
             return not (diff.days % 14)
 
@@ -556,8 +549,7 @@ class Schedule(models.Model):
             return []
 
         # first day of month
-        date = utils.date_or_default(date, to_datetime=False) \
-                    .replace(day=1)
+        date = utils.date_or_default(date, datetime.date).replace(day=1)
         freq = self.frequency
 
         # last of the month
@@ -588,8 +580,8 @@ class Schedule(models.Model):
 
         if freq == Schedule.Frequency.one_on_two:
             # check date base on a diff of dates base on a 14 days delta
-            diff = utils.cast_date(date, False) - \
-                utils.cast_date(self.date, False)
+            diff = utils.cast_date(date, datetime.date) - \
+                utils.cast_date(self.date, datetime.date)
 
             if diff.days % 14:
                 date += tz.timedelta(days=7)
@@ -636,13 +628,17 @@ class Schedule(models.Model):
         # new diffusions
         duration = utils.to_timedelta(self.duration)
 
+        delta = None
         if self.initial:
-            delta = self.date - self.initial.date
+            delta = self.datetime - self.initial.datetime
+
+        # FIXME: daylight saving bug: delta misses an hour when diffusion and
+        #        rerun are not on the same daylight-saving timezone
         diffusions += [
             Diffusion(
                 program=self.program,
                 type=Diffusion.Type.unconfirmed,
-                initial=Diffusion.objects.filter(start=date - delta).first()
+                initial=Diffusion.objects.program(self.program).filter(start=date-delta).first()
                 if self.initial else None,
                 start=date,
                 end=date + duration,
@@ -685,7 +681,10 @@ class DiffusionQuerySet(models.QuerySet):
     def program(self, program):
         return self.filter(program=program)
 
-    def at(self, date=None, next=False, **kwargs):
+    def on_air(self):
+        return self.filter(type=Diffusion.Type.normal)
+
+    def at(self, date=None):
         """
         Return diffusions occuring at the given date, ordered by +start
 
@@ -694,12 +693,9 @@ class DiffusionQuerySet(models.QuerySet):
         it as a date, and get diffusions that occurs this day.
 
         When date is None, uses tz.now().
-
-        When next is true, include diffusions that also occur after
-        the given moment.
         """
         # note: we work with localtime
-        date = utils.date_or_default(date, keep_type=True)
+        date = utils.date_or_default(date)
 
         qs = self
         filters = None
@@ -708,43 +704,39 @@ class DiffusionQuerySet(models.QuerySet):
             # use datetime: we want diffusion that occurs around this
             # range
             filters = {'start__lte': date, 'end__gte': date}
-
-            if next:
-                qs = qs.filter(
-                    models.Q(start__gte=date) | models.Q(**filters)
-                )
-            else:
-                qs = qs.filter(**filters)
+            qs = qs.filter(**filters)
         else:
             # use date: we want diffusions that occurs this day
-            start, end = utils.date_range(date)
-            filters = models.Q(start__gte=start, start__lte=end) | \
-                models.Q(end__gt=start, end__lt=end)
-
-            if next:
-                # include also diffusions of the next day
-                filters |= models.Q(start__gte=start)
-            qs = qs.filter(filters, **kwargs)
-
+            qs = qs.filter(Q(start__date=date) | Q(end__date=date))
         return qs.order_by('start').distinct()
 
-    def after(self, date=None, **kwargs):
+    def after(self, date=None):
         """
         Return a queryset of diffusions that happen after the given
-        date.
-        """
-        date = utils.date_or_default(date, keep_type=True)
-
-        return self.filter(start__gte=date, **kwargs).order_by('start')
-
-    def before(self, date=None, **kwargs):
-        """
-        Return a queryset of diffusions that finish before the given
-        date.
+        date (default: today).
         """
         date = utils.date_or_default(date)
+        if isinstance(date, tz.datetime):
+            qs = self.filter(start__gte=date)
+        else:
+            qs = self.filter(start__date__gte=date)
+        return qs.order_by('start')
 
-        return self.filter(end__lte=date, **kwargs).order_by('start')
+    def before(self, date=None):
+        """
+        Return a queryset of diffusions that finish before the given
+        date (default: today).
+        """
+        date = utils.date_or_default(date)
+        if isinstance(date, tz.datetime):
+            qs = self.filter(start__lt=date)
+        else:
+            qs = self.filter(start__date__lt=date)
+        return qs.order_by('start')
+
+    def range(self, start, end):
+        # FIXME can return dates that are out of range...
+        return self.after(start).before(end)
 
 
 class Diffusion(models.Model):
@@ -813,21 +805,19 @@ class Diffusion(models.Model):
 
     @property
     def date(self):
-        """
-        Alias to self.start
-        """
+        """ Return diffusion start as a date. """
 
-        return self.start
+        return utils.cast_date(self.start)
 
     @cached_property
-    def local_date(self):
+    def local_start(self):
         """
         Return a version of self.date that is localized to self.timezone;
         This is needed since datetime are stored as UTC date and we want
         to get it as local time.
         """
 
-        return tz.localtime(self.date, tz.get_current_timezone())
+        return tz.localtime(self.start, tz.get_current_timezone())
 
     @property
     def local_end(self):
@@ -892,10 +882,8 @@ class Diffusion(models.Model):
         """
 
         return Diffusion.objects.filter(
-            models.Q(start__lt=self.start,
-                     end__gt=self.start) |
-            models.Q(start__gt=self.start,
-                     start__lt=self.end)
+            Q(start__lt=self.start, end__gt=self.start) |
+            Q(start__gt=self.start, start__lt=self.end)
         ).exclude(pk=self.pk).distinct()
 
     def check_conflicts(self):
@@ -929,7 +917,7 @@ class Diffusion(models.Model):
 
     def __str__(self):
         return '{self.program.name} {date} #{self.pk}'.format(
-            self=self, date=self.local_date.strftime('%Y/%m/%d %H:%M%z')
+            self=self, date=self.local_start.strftime('%Y/%m/%d %H:%M%z')
         )
 
     class Meta:
@@ -1298,11 +1286,8 @@ class LogQuerySet(models.QuerySet):
         return self.filter(station=station)
 
     def at(self, date=None):
-        start, end = utils.date_range(date)
-        # return qs.filter(models.Q(end__gte = start) |
-        #                 models.Q(date__lte = end))
-
-        return self.filter(date__gte=start, date__lte=end)
+        date = utils.date_or_default(date)
+        return self.filter(date__date=date)
 
     def on_air(self):
         return self.filter(type=Log.Type.on_air)
@@ -1506,6 +1491,13 @@ class Log(models.Model):
         Track, on_delete=models.SET_NULL,
         blank=True, null=True, db_index=True,
         verbose_name=_('Track'),
+    )
+
+    collision = models.ForeignKey(
+        Diffusion, on_delete=models.SET_NULL,
+        blank=True, null=True,
+        verbose_name=_('Collision'),
+        related_name='+',
     )
 
     objects = LogQuerySet.as_manager()

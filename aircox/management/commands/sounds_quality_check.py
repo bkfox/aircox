@@ -11,6 +11,7 @@ from django.core.management.base import BaseCommand, CommandError
 
 logger = logging.getLogger('aircox.tools')
 
+
 class Stats:
     attributes = [
         'DC offset', 'Min level', 'Max level',
@@ -18,7 +19,7 @@ class Stats:
         'RMS Tr dB', 'Flat factor', 'Length s',
     ]
 
-    def __init__ (self, path, **kwargs):
+    def __init__(self, path, **kwargs):
         """
         If path is given, call analyse with path and kwargs
         """
@@ -26,10 +27,10 @@ class Stats:
         if path:
             self.analyse(path, **kwargs)
 
-    def get (self, attr):
+    def get(self, attr):
         return self.values.get(attr)
 
-    def parse (self, output):
+    def parse(self, output):
         for attr in Stats.attributes:
             value = re.search(attr + r'\s+(?P<value>\S+)', output)
             value = value and value.groupdict()
@@ -41,14 +42,14 @@ class Stats:
                 self.values[attr] = value
         self.values['length'] = self.values['Length s']
 
-    def analyse (self, path, at = None, length = None):
+    def analyse(self, path, at=None, length=None):
         """
         If at and length are given use them as excerpt to analyse.
         """
         args = ['sox', path, '-n']
 
         if at is not None and length is not None:
-            args += ['trim', str(at), str(length) ]
+            args += ['trim', str(at), str(length)]
 
         args.append('stats')
 
@@ -66,17 +67,17 @@ class Sound:
     bad = None              # list of bad samples
     good = None             # list of good samples
 
-    def __init__ (self, path, sample_length = None):
+    def __init__(self, path, sample_length=None):
         self.path = path
         self.sample_length = sample_length if sample_length is not None \
-                                else self.sample_length
+            else self.sample_length
 
-    def get_file_stats (self):
+    def get_file_stats(self):
         return self.stats and self.stats[0]
 
-    def analyse (self):
+    def analyse(self):
         logger.info('complete file analysis')
-        self.stats = [ Stats(self.path) ]
+        self.stats = [Stats(self.path)]
         position = 0
         length = self.stats[0].get('length')
 
@@ -85,21 +86,22 @@ class Sound:
 
         logger.info('start samples analysis...')
         while position < length:
-            stats = Stats(self.path, at = position, length = self.sample_length)
+            stats = Stats(self.path, at=position, length=self.sample_length)
             self.stats.append(stats)
             position += self.sample_length
 
-    def check (self, name, min_val, max_val):
-        self.good = [ index for index, stats in enumerate(self.stats)
-                      if min_val <= stats.get(name) <= max_val ]
-        self.bad = [ index for index, stats in enumerate(self.stats)
-                      if index not in self.good ]
+    def check(self, name, min_val, max_val):
+        self.good = [index for index, stats in enumerate(self.stats)
+                     if min_val <= stats.get(name) <= max_val]
+        self.bad = [index for index, stats in enumerate(self.stats)
+                    if index not in self.good]
         self.resume()
 
-    def resume (self):
-        view = lambda array: [
+    def resume(self):
+        def view(array): return [
             'file' if index is 0 else
-            'sample {} (at {} seconds)'.format(index, (index-1) * self.sample_length)
+            'sample {} (at {} seconds)'.format(
+                index, (index-1) * self.sample_length)
             for index in array
         ]
 
@@ -110,12 +112,13 @@ class Sound:
             logger.info(self.path + ' -> bad: \033[91m%s\033[0m',
                         ', '.join(view(self.bad)))
 
+
 class Command (BaseCommand):
     help = __doc__
     sounds = None
 
-    def add_arguments (self, parser):
-        parser.formatter_class=RawTextHelpFormatter
+    def add_arguments(self, parser):
+        parser.formatter_class = RawTextHelpFormatter
 
         parser.add_argument(
             'files', metavar='FILE', type=str, nargs='+',
@@ -128,12 +131,12 @@ class Command (BaseCommand):
         )
         parser.add_argument(
             '-a', '--attribute', type=str,
-            help='attribute name to use to check, that can be:\n' + \
-                 ', '.join([ '"{}"'.format(attr) for attr in Stats.attributes ])
+            help='attribute name to use to check, that can be:\n' +
+                 ', '.join(['"{}"'.format(attr) for attr in Stats.attributes])
         )
         parser.add_argument(
             '-r', '--range', type=float, nargs=2,
-            help='range of minimal and maximal accepted value such as: ' \
+            help='range of minimal and maximal accepted value such as: '
                  '--range min max'
         )
         parser.add_argument(
@@ -141,7 +144,7 @@ class Command (BaseCommand):
             help='print a resume of good and bad files'
         )
 
-    def handle (self, *args, **options):
+    def handle(self, *args, **options):
         # parameters
         minmax = options.get('range')
         if not minmax:
@@ -152,8 +155,8 @@ class Command (BaseCommand):
             raise CommandError('no attribute specified')
 
         # sound analyse and checks
-        self.sounds = [ Sound(path, options.get('sample_length'))
-                        for path in options.get('files') ]
+        self.sounds = [Sound(path, options.get('sample_length'))
+                       for path in options.get('files')]
         self.bad = []
         self.good = []
         for sound in self.sounds:
@@ -171,4 +174,3 @@ class Command (BaseCommand):
                 logger.info('\033[92m+ %s\033[0m', sound.path)
             for sound in self.bad:
                 logger.info('\033[91m+ %s\033[0m', sound.path)
-

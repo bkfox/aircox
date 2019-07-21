@@ -1,0 +1,46 @@
+{% extends "aircox_web/page.html" %}
+{% load i18n aircox_web %}
+
+{% block main %}
+{{ block.super }}
+
+<section class="section">
+    {% for object in object_list %}
+    <div class="columns">
+        <div class="column is-one-fifth has-text-right">
+            <time datetime="{{ object.start|date:"c" }}" title="{{ object.start }}">
+                {{ object.start|date:"d M, H:i" }}
+            </time>
+        </div>
+        <div class="column">
+            {% include "aircox_web/diffusion_item.html" %}
+        </div>
+    </div>
+    {% endfor %}
+
+
+{% if is_paginated %}
+<nav class="pagination is-centered" role="pagination" aria-label="{% trans "pagination" %}">
+    {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}" class="pagination-previous">
+        {% trans "Previous" %}</a>
+    {% endif %}
+
+    {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}" class="pagination-next">
+        {% trans "Next" %}</a>
+    {% endif %}
+
+    <ul class="pagination-list">
+    {% for i in paginator.page_range %}
+        <li>
+            <a class="pagination-link {% if page_obj.number == i %}is-current{% endif %}"
+               href="?page={{ i }}">{{ i }}</a>
+        </li>
+    {% endfor %}
+    </ul>
+</nav>
+{% endif %}
+</section>
+{% endblock %}
+

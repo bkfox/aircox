@@ -1,0 +1,17 @@
+{% extends "aircox_web/page.html" %}
+
+
+{% block main %}
+<section class="is-inline-block">
+    <img class="cover" src="{{ page.cover.url }}"/>
+    {% block headline %}
+    {{ page.headline }}
+    {% endblock %}
+
+    {% block content %}
+    {{ regions.main }}
+    {% endblock %}
+</section>
+
+{% endblock %}
+

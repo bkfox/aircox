@@ -1,0 +1,51 @@
+{% extends "aircox_web/page.html" %}
+{% load i18n aircox_web %}
+
+
+{% block main %}
+{{ block.super }}
+
+<section class="section">
+    {% if dates %}
+    <nav class="tabs is-centered" aria-label="{% trans "Other days' logs" %}">
+        <ul>
+        {% for day in dates %}
+            <li {% if day == date %}class="is-active"{% endif %}>
+                <a href="{% url "logs" date=day %}">
+                    {{ day|date:"d b" }}
+                </a>
+            </li>
+
+        {% if forloop.last and day > min_date %}
+            <li>...</li>
+        {% endif %}
+        {% endfor %}
+        </ul>
+    </nav>
+    {% endif %}
+
+    {# <h4 class="subtitle size-4">{{ date }}</h4> #}
+    <table class="table is-striped is-hoverable is-fullwidth">
+        {% for object in object_list reversed %}
+        <tr>
+        {% if object|is_diffusion %}
+            <td>
+                <time datetime="{{ object.start }}" title="{{ object.start }}">
+                    {{ object.start|date:"H:i" }} - {{ object.end|date:"H:i" }}
+                </time>
+            </td>
+            <td>{% include "aircox_web/diffusion_item.html" %}</td>
+        {% else %}
+            <td>
+                <time datetime="{{ object.date }}" title="{{ object.date }}">
+                    {{ object.date|date:"H:i" }}
+                </time>
+            </td>
+            <td>{% include "aircox_web/log_item.html" %}</td>
+        {% endif %}
+        </tr>
+        {% endfor %}
+    </table>
+</section>
+{% endblock %}
+

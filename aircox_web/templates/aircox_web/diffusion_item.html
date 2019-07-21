@@ -1,0 +1,43 @@
+{% load i18n easy_thumbnails_tags aircox_web %}
+{% comment %}
+Context variables:
+- object: the actual diffusion
+- page: current parent page in which item is rendered
+{% endcomment %}
+
+{% with page as context_page %}
+{% with object.program as program %}
+{% diffusion_page object as page %}
+<article class="media">
+    <div class="media-left">
+      <figure class="image is-64x64">
+          <img src="{% thumbnail page.cover|default:site.logo 128x128 crop=scale %}">
+      </figure>
+    </div>
+    <div class="media-content">
+      <div class="content">
+        <p>
+          {% if page and context_page != page %}
+          <strong><a href="{{ page.path }}">{{ page.title }}</a></strong>
+          {% else %}
+          <strong>{{ page.title|default:program.name }}</strong>
+          {% endif %}
+          {% if object.page is page %}
+          &mdash; <a href="{{ program.page.path }}">{{ program.name }}</a></small>
+          {% endif %}
+          {% if object.initial %}
+          {% with object.initial.date as date %}
+          <span class="tag is-info" title="{% blocktrans %}Rerun of {{ date }}{% endblocktrans %}">
+              {% trans "rerun" %}
+          </span>
+          {% endwith %}
+          {% endif %}
+          <br>
+          {{ page.headline|default:program.page.headline }}
+        </p>
+      </div>
+    </div>
+</article>
+{% endwith %}
+{% endwith %}
+

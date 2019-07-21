@@ -3,7 +3,7 @@ const webpack = require('webpack');
 
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 // const { createLodashAliases } = require('lodash-loader');
-const { VueLoaderPlugin } = require('vue-loader');
+const VueLoaderPlugin = require('vue-loader/lib/plugin');
 
 
 module.exports = (env, argv) => Object({
@@ -29,6 +29,13 @@ module.exports = (env, argv) => Object({
 
                     test: /[\\/]node_modules[\\/]/,
                 },
+
+                /*noscript: {
+                    name: 'noscript',
+                    chunks: 'initial',
+                    enforce: true,
+                    test: /noscript/,
+                }*/
             }
         }
     },
@@ -43,6 +50,7 @@ module.exports = (env, argv) => Object({
 
     module: {
         rules: [
+            { test: /\.vue$/, loader: 'vue-loader' },
             {
                 test: /\/node_modules\//,
                 sideEffects: false
@@ -64,7 +72,6 @@ module.exports = (env, argv) => Object({
                     }
                 }],
             },
-            { test: /\.vue$/, use: 'vue-loader' },
         ],
     },
 
