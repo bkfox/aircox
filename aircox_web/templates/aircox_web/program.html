@@ -1,27 +1,8 @@
-{% extends "aircox_web/article.html" %}
-{% load i18n %}
+{% extends "aircox_web/page.html" %}
 
-{% block headline %}
-<section class="is-size-5">
-    {% for schedule in program.schedule_set.all %}
-    <p>
-        <strong>{{ schedule.datetime|date:"l H:i" }}</strong>
-        <small>
-            {{ schedule.get_frequency_display }}
-            {% if schedule.initial %}
-            {% with schedule.initial.date as date %}
-            <span title="{% blocktrans %}Rerun of {{ date }}{% endblocktrans %}">
-                / {% trans "rerun" %}
-            </span>
-            {% endwith %}
-            {% endif %}
-        </small>
-    </p>
-    {% endfor %}
-</section>
-
+{% block header %}
 {{ block.super }}
-
+{% include "aircox_web/program_header.html" %}
 {% endblock %}
 
 

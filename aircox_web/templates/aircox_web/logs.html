@@ -25,6 +25,7 @@
     {% endif %}
 
     {# <h4 class="subtitle size-4">{{ date }}</h4> #}
+    {% with True as hide_schedule %}
     <table class="table is-striped is-hoverable is-fullwidth">
         {% for object in object_list reversed %}
         <tr>
@@ -46,6 +47,7 @@
         </tr>
         {% endfor %}
     </table>
+    {% endwith %}
 </section>
 {% endblock %}
 

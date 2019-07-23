@@ -8,18 +8,21 @@ from aircox_web.models import Page
 random.seed()
 register = template.Library()
 
+
 @register.simple_tag(name='diffusion_page')
 def do_diffusion_page(diffusion):
     """ Return page for diffusion. """
     for obj in (diffusion, diffusion.program):
         page = getattr(obj, 'page', None)
-        if page is not None and page.status is not Page.STATUS.draft:
+        if page is not None and page.status == Page.STATUS.published:
             return page
+
 
 @register.simple_tag(name='unique_id')
 def do_unique_id(prefix=''):
     value = str(random.random()).replace('.', '')
     return prefix + '_' + value if prefix else value
+
 
 @register.filter(name='is_diffusion')
 def do_is_diffusion(obj):

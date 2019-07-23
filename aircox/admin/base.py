@@ -18,13 +18,6 @@ class StreamInline(admin.TabularInline):
     model = Stream
     extra = 1
 
-class NameableAdmin(admin.ModelAdmin):
-    fields = [ 'name' ]
-
-    list_display = ['id', 'name']
-    list_filter = []
-    search_fields = ['name',]
-
 
 @admin.register(Stream)
 class StreamAdmin(admin.ModelAdmin):
@@ -32,15 +25,19 @@ class StreamAdmin(admin.ModelAdmin):
 
 
 @admin.register(Program)
-class ProgramAdmin(NameableAdmin):
+class ProgramAdmin(admin.ModelAdmin):
     def schedule(self, obj):
-        return Schedule.objects.filter(program = obj).count() > 0
+        return Schedule.objects.filter(program=obj).count() > 0
+
     schedule.boolean = True
     schedule.short_description = _("Schedule")
 
-    list_display = ('id', 'name', 'active', 'schedule', 'sync', 'station')
-    fields = NameableAdmin.fields + [ 'active', 'station','sync' ]
-    inlines = [ ScheduleInline, StreamInline ]
+    list_display = ('name', 'id', 'active', 'schedule', 'sync', 'station')
+    fields = ['name', 'slug', 'active', 'station', 'sync']
+    prepopulated_fields = {'slug': ('name',)}
+    search_fields = ['name']
+
+    inlines = [ScheduleInline, StreamInline]
 
 
 @admin.register(Schedule)
@@ -64,7 +61,6 @@ class ScheduleAdmin(admin.ModelAdmin):
                     'time', 'duration', 'timezone', 'rerun']
     list_editable = ['time', 'timezone', 'duration']
 
-
     def get_readonly_fields(self, request, obj=None):
         if obj:
             return ['program', 'date', 'frequency']
@@ -79,6 +75,7 @@ class PortInline(admin.StackedInline):
 
 @admin.register(Station)
 class StationAdmin(admin.ModelAdmin):
+    prepopulated_fields = {'slug': ('name',)}
     inlines = [PortInline]
 
 

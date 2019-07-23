@@ -27,18 +27,26 @@ $body-background-color: $light;
 
 
 /** page **/
-img.cover {
-    border: 0.2em black solid;
+.page {
+    .header {
+        margin-bottom: 1.5em;
+    }
+
+    .headline {
+        font-size: 1.4em;
+        padding: 0.2em 0em;
+    }
+
+    .cover {
+        float: right;
+        max-width: 40%;
+        margin: 1em;
+        border: 0.2em black solid;
+    }
+
+    p {
+        padding: 0.4em 0em;
+    }
 }
 
-
-.headline {
-    font-size: 1.2em;
-    padding: 0.2em 0em;
-}
-
-img.cover {
-    float: right;
-    max-width: 40%;
-}
 

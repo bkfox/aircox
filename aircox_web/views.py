@@ -1,16 +1,17 @@
 from collections import OrderedDict, deque
 import datetime
 
+from django.db.models import Q
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404
 from django.utils.translation import ugettext_lazy as _
-from django.views.generic import TemplateView, ListView
+from django.views.generic import TemplateView, DetailView, ListView
 from django.views.generic.base import TemplateResponseMixin, ContextMixin
 
 from content_editor.contents import contents_for_item
 
 from aircox import models as aircox
-from .models import Site, Page
+from .models import Site, Page, DiffusionPage, ProgramPage
 from .renderer import site_renderer, page_renderer
 
 
@@ -35,6 +36,7 @@ def route_page(request, path=None, *args, model=None, site=None, **kwargs):
 
 class BaseView(TemplateResponseMixin, ContextMixin):
     title = None
+    cover = None
     site = None
 
     def dispatch(self, request, *args, site=None, **kwargs):
@@ -48,64 +50,85 @@ class BaseView(TemplateResponseMixin, ContextMixin):
             kwargs['site_regions'] = contents.render_regions(site_renderer)
 
         kwargs.setdefault('site', self.site)
-        if self.title is not None:
-            kwargs.setdefault('title', self.title)
+        kwargs.setdefault('cover', self.cover)
         return super().get_context_data(**kwargs)
 
 
-class ArticleView(BaseView, TemplateView):
+class PageView(BaseView):
     """ Base view class for pages. """
-    template_name = 'aircox_web/article.html'
+    template_name = 'aircox_web/page.html'
+    context_object_name = 'page'
     page = None
 
-    def get_context_data(self, **kwargs):
-        # article content
-        page = kwargs.setdefault('page', self.page or self.kwargs.get('page'))
-        if kwargs.get('regions') is None:
-            contents = contents_for_item(page, page_renderer._renderers.keys())
-            kwargs['regions'] = contents.render_regions(page_renderer)
+    def get_queryset(self):
+        return super().get_queryset().live()
 
-        kwargs.setdefault('title', page.title)
+    def get_context_data(self, **kwargs):
+        page = getattr(self, 'object', None)
+        if page is not None:
+            if kwargs.get('regions') is None:
+                contents = contents_for_item(
+                    page, page_renderer._renderers.keys())
+                kwargs['regions'] = contents.render_regions(page_renderer)
+
+            kwargs.setdefault('title', page.title)
+            kwargs.setdefault('cover', page.cover)
+            kwargs.setdefault('page', page)
         return super().get_context_data(**kwargs)
 
 
-class ProgramView(ArticleView):
+class ProgramPageView(PageView, DetailView):
     """ Base view class for pages. """
     template_name = 'aircox_web/program.html'
-    next_diffs_count = 5
+    model = ProgramPage
+
+    def get_queryset(self):
+        return super().get_queryset().select_related('program')
 
     def get_context_data(self, program=None, **kwargs):
-        # TODO: pagination
-        program = program or self.page.program
-        #next_diffs = program.diffusion_set.on_air().after().order_by('start')
-        return super().get_context_data(
-            program=program,
-            # next_diffs=next_diffs[:self.next_diffs_count],
-            **kwargs,
+        kwargs.setdefault('program', self.object.program)
+        kwargs['diffusions'] = DiffusionPage.objects.filter(
+            diffusion__program=kwargs['program']
         )
+        return super().get_context_data(**kwargs)
 
 
-class DiffusionView(ArticleView):
+class DiffusionView(PageView):
     template_name = 'aircox_web/diffusion.html'
 
 
+# TODO: pagination: in template, only a limited number of pages displayed
+
+# DiffusionsView use diffusion instead of diffusion page for different reasons:
+# more straightforward, it handles reruns
 class DiffusionsView(BaseView, ListView):
     template_name = 'aircox_web/diffusions.html'
-    model = aircox.Diffusion
-    paginate_by = 10
-    title = _('Diffusions')
+    model = DiffusionPage
+    paginate_by = 30
     program = None
 
-    # TODO: get program object + display program title when filtered by program
-    # TODO: pagination: in template, only a limited number of pages displayed
+    def get(self, request, *args, **kwargs):
+        program_slug = kwargs.get('program_slug')
+        if program_slug:
+            self.program = get_object_or_404(
+                aircox.Program, slug=kwargs.get('program_slug'))
+        return super().get(request, *args, **kwargs)
 
     def get_queryset(self):
-        qs = super().get_queryset().station(self.site.station).on_air() \
-                    .filter(initial__isnull=True) #TODO, page__isnull=False)
-        program = self.kwargs.get('program')
-        if program:
-            qs = qs.filter(program__page__slug=program)
-        return qs.order_by('-start')
+        qs = super().get_queryset().live() \
+                    .select_related('diffusion')
+        if self.program:
+            qs = qs.filter(diffusion__program=self.program)
+        else:
+            qs = qs.select_related('diffusion__program')
+        return qs.order_by('-diffusion__start')
+
+    def get_context_data(self, **kwargs):
+        program = kwargs.setdefault('program', self.program)
+        if program is not None and hasattr(program, 'page'):
+            kwargs.setdefault('cover', program.page.cover)
+            kwargs.setdefault('page', program.page)
+        return super().get_context_data(**kwargs)
 
 
 class TimetableView(BaseView, ListView):
@@ -120,9 +143,9 @@ class TimetableView(BaseView, ListView):
     end = None
 
     def get_queryset(self):
-        self.date = self.kwargs.get('date', datetime.date.today())
+        self.date = self.kwargs.get('date') or datetime.date.today()
         self.start = self.date - datetime.timedelta(days=self.date.weekday())
-        self.end = self.date + datetime.timedelta(days=7-self.date.weekday())
+        self.end = self.start + datetime.timedelta(days=7)
         return super().get_queryset().station(self.site.station) \
                                      .range(self.start, self.end) \
                                      .order_by('start')

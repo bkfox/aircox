@@ -1,35 +1,53 @@
 {% extends "aircox_web/page.html" %}
 {% load i18n aircox_web %}
 
-{% block main %}
-{{ block.super }}
+{% block title %}
+{% if program %}
+    {% with program.name as program %}
+    {% blocktrans %}Diffusions of {{ program }}{% endblocktrans %}
+    {% endwith %}
+{% else %}
+    {% trans "All diffusions" %}
+    {% endif %}
+{% endblock %}
 
+
+{% block header %}
+{{ block.super }}
+{% if program %}
+<h4 class="subtitle is-size-3">
+    <a href="{% url "page" path=program.page.path %}">&#10092; {{ program.name }}</a></li>
+</h4>
+{% include "aircox_web/program_header.html" %}
+{% endif %}
+{% endblock %}
+
+
+{% block content %}
 <section class="section">
     {% for object in object_list %}
-    <div class="columns">
-        <div class="column is-one-fifth has-text-right">
-            <time datetime="{{ object.start|date:"c" }}" title="{{ object.start }}">
-                {{ object.start|date:"d M, H:i" }}
-            </time>
-        </div>
-        <div class="column">
-            {% include "aircox_web/diffusion_item.html" %}
-        </div>
-    </div>
+    {% with object.diffusion as object %}
+    {% include "aircox_web/diffusion_item.html" %}
+    {% endwith %}
     {% endfor %}
+</section>
 
 
 {% if is_paginated %}
 <nav class="pagination is-centered" role="pagination" aria-label="{% trans "pagination" %}">
     {% if page_obj.has_previous %}
     <a href="?page={{ page_obj.previous_page_number }}" class="pagination-previous">
-        {% trans "Previous" %}</a>
+    {% else %}
+    <a class="pagination-previous" disabled>
     {% endif %}
+        {% trans "Previous" %}</a>
 
     {% if page_obj.has_next %}
     <a href="?page={{ page_obj.next_page_number }}" class="pagination-next">
-        {% trans "Next" %}</a>
+    {% else %}
+    <a class="pagination-next" disabled>
     {% endif %}
+        {% trans "Next" %}</a>
 
     <ul class="pagination-list">
     {% for i in paginator.page_range %}

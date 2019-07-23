@@ -1,59 +1,36 @@
+{% extends "aircox_web/base.html" %}
 {% load static i18n thumbnail %}
-<html>
-    <head>
-        <meta charset="utf-8">
-        <meta name="application-name" content="aircox">
-        <meta name="description" content="{{ site.description }}">
-        <meta name="keywords" content="{{ site.tags }}">
-        <link rel="icon" href="{% thumbnail site.favicon 32x32 crop %}" />
+{% comment %}
+Context:
+- cover: cover image
+- title: title
+- page: page
+{% endcomment %}
 
-        {% block assets %}
-        <link rel="stylesheet" type="text/css" href="{% static "aircox_web/assets/main.css" %}"/>
-        <script src="{% static "aircox_web/assets/main.js" %}"></script>
-        <script src="{% static "aircox_web/assets/vendor.js" %}"></script>
-        {% endblock %}
+{% block head_title %}
+    {% block title %}{{ title }}{% endblock %}
+    {% if title %} &mdash; {% endif %}
+    {{ site.title }}
+{% endblock %}
 
-        <title>{% block title %}{% if title %}{{ title }} -- {% endif %}{{ site.title }}{% endblock %}</title>
 
-        {% block extra_head %}{% endblock %}
-    </head>
-    <body>
-        <div id="app">
-            <nav class="navbar has-shadow" role="navigation" aria-label="main navigation">
-                <div class="container">
-                    <div class="navbar-brand">
-                        <a href="/" title="{% trans "Home" %}" class="navbar-item">
-                            <img src="{{ site.logo.url }}" class="logo"/>
-                        </a>
-                    </div>
-                    <div class="navbar-menu">
-                        <div class="navbar-start">
-                            {{ site_regions.topnav }}
-                        </div>
-                    </div>
-                </div>
-            </nav>
+{% block main %}
+{% block headline %}
+{% if page and page.headline %}
+<p class="headline">{{ page.headline }}</p>
+{% endif %}
+{% endblock %}
 
-            <div class="container">
-                <div class="columns">
-                    <aside class="column is-one-quarter">
-                        {% block left-sidebar %}
-                        {{ site_regions.sidenav }}
-                        {% endblock %}
-                    </aside>
-                    <main class="column page">
-                        <header class="header">
-                            {% block header %}
-                            <h1 class="title is-1">{{ title }}</h1>
-                            {% endblock %}
-                        </header>
+{% block content %}
+{{ regions.content }}
+{% endblock %}
+{% endblock %}
 
-                        {% block main %}{% endblock main %}
-                    </main>
-                </div>
-            </div>
-        </div>
-    </body>
-</html>
+
+{% block side_nav %}
+{% if cover is not None %}
+<img class="cover" src="{{ cover.url }}" class="cover"/>
+{% endif %}
+{% endblock %}
 
 

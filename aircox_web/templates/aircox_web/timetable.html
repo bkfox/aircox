@@ -1,6 +1,10 @@
 {% extends "aircox_web/page.html" %}
 {% load i18n aircox_web %}
 
+{% block title %}
+{% trans "Timetable" %}
+{% endblock %}
+
 {% block main %}
 {{ block.super }}
 
@@ -27,6 +31,7 @@
             </li>
         </template>
 
+        {% with True as hide_schedule %}
         <template v-slot:default="{value}">
             {% for day, diffusions in by_date.items %}
             <noscript><h4 class="subtitle is-4">{{ day|date:"l d F Y" }}</h4></noscript>
@@ -46,6 +51,7 @@
             </div>
             {% endfor %}
         </template>
+        {% endwith %}
     </a-tabs>
 </section>
 {% endblock %}

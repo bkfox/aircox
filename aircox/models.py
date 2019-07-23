@@ -11,9 +11,9 @@ from django.contrib.contenttypes.fields import (GenericForeignKey,
                                                 GenericRelation)
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
-from django.db.models import Q
+from django.db.models import F, Q
+from django.db.models.functions import Concat, Substr
 from django.db.transaction import atomic
-from django.template.defaultfilters import slugify
 from django.utils import timezone as tz
 from django.utils.functional import cached_property
 from django.utils.html import strip_tags
@@ -24,28 +24,6 @@ import aircox.utils as utils
 from taggit.managers import TaggableManager
 
 logger = logging.getLogger('aircox.core')
-
-
-class Nameable(models.Model):
-    name = models.CharField(
-        _('name'),
-        max_length=128,
-    )
-
-    class Meta:
-        abstract = True
-
-    @property
-    def slug(self):
-        """
-        Slug based on the name. We replace '-' by '_'
-        """
-        return slugify(self.name).replace('-', '_')
-
-    def __str__(self):
-        # if self.pk:
-        #    return '#{} {}'.format(self.pk, self.name)
-        return '{}'.format(self.name)
 
 
 #
@@ -67,7 +45,7 @@ def default_station():
     return Station.objects.default()
 
 
-class Station(Nameable):
+class Station(models.Model):
     """
     Represents a radio station, to which multiple programs are attached
     and that is used as the top object for everything.
@@ -76,6 +54,8 @@ class Station(Nameable):
     Theses are set up when needed (at the first access to these elements)
     then cached.
     """
+    name = models.CharField(_('name'), max_length=64)
+    slug = models.SlugField(_('slug'), max_length=64, unique=True)
     path = models.CharField(
         _('path'),
         help_text=_('path to the working directory'),
@@ -199,6 +179,9 @@ class Station(Nameable):
             logs = logs[:count]
         return logs
 
+    def __str__(self):
+        return self.name
+
     def save(self, make_sources=True, *args, **kwargs):
         if not self.path:
             self.path = os.path.join(
@@ -223,7 +206,7 @@ class ProgramManager(models.Manager):
         return qs.filter(station=station, **kwargs)
 
 
-class Program(Nameable):
+class Program(models.Model):
     """
     A Program can either be a Streamed or a Scheduled program.
 
@@ -241,6 +224,8 @@ class Program(Nameable):
         verbose_name=_('station'),
         on_delete=models.CASCADE,
     )
+    name = models.CharField(_('name'), max_length=64)
+    slug = models.SlugField(_('slug'), max_length=64, unique=True)
     active = models.BooleanField(
         _('active'),
         default=True,
@@ -254,14 +239,10 @@ class Program(Nameable):
 
     objects = ProgramManager()
 
-    # TODO: use unique slug
     @property
     def path(self):
-        """
-        Return the path to the programs directory
-        """
-        return os.path.join(settings.AIRCOX_PROGRAMS_DIR,
-                            self.slug + '_' + str(self.id))
+        """ Return program's directory path """
+        return os.path.join(settings.AIRCOX_PROGRAMS_DIR, self.slug)
 
     def ensure_dir(self, subdir=None):
         """
@@ -299,26 +280,8 @@ class Program(Nameable):
     def __init__(self, *kargs, **kwargs):
         super().__init__(*kargs, **kwargs)
 
-        if self.name:
-            self.__original_path = self.path
-
-    def save(self, *kargs, **kwargs):
-        super().save(*kargs, **kwargs)
-
-        if hasattr(self, '__original_path') and \
-                self.__original_path != self.path and \
-                os.path.exists(self.__original_path) and \
-                not os.path.exists(self.path):
-            logger.info('program #%s\'s name changed to %s. Change dir name',
-                        self.id, self.name)
-            shutil.move(self.__original_path, self.path)
-
-            sounds = Sound.objects.filter(
-                path__startswith=self.__original_path)
-
-            for sound in sounds:
-                sound.path.replace(self.__original_path, self.path)
-                sound.save()
+        if self.slug:
+            self.__initial_path = self.path
 
     @classmethod
     def get_from_path(cl, path):
@@ -345,6 +308,23 @@ class Program(Nameable):
 
     def is_show(self):
         return self.schedule_set.count() != 0
+
+    def __str__(self):
+        return self.name
+
+    def save(self, *kargs, **kwargs):
+        super().save(*kargs, **kwargs)
+
+        path_ = getattr(self, '__initial_path', None)
+        if path_ is not None and path_ != self.path and \
+                os.path.exists(path_) and not os.path.exists(self.path):
+            logger.info('program #%s\'s dir changed to %s - update it.',
+                        self.id, self.name)
+
+            shutil.move(path_, self.path)
+            Sound.objects.filter(path__startswith=path_) \
+                 .update(path=Concat('path', Substr(F('path'), len(path_))))
+
 
 
 class Stream(models.Model):
@@ -427,15 +407,15 @@ class Schedule(models.Model):
         _('frequency'),
         choices=[(int(y), {
             'ponctual': _('ponctual'),
-            'first': _('first week of the month'),
-            'second': _('second week of the month'),
-            'third': _('third week of the month'),
-            'fourth': _('fourth week of the month'),
-            'last': _('last week of the month'),
-            'first_and_third': _('first and third weeks of the month'),
-            'second_and_fourth': _('second and fourth weeks of the month'),
-            'every': _('every week'),
-            'one_on_two': _('one week on two'),
+            'first': _('1st {day} of the month'),
+            'second': _('2nd {day} of the month'),
+            'third': _('3rd {day} of the month'),
+            'fourth': _('4th {day} of the month'),
+            'last': _('last {day} of the month'),
+            'first_and_third': _('1st and 3rd {day}s of the month'),
+            'second_and_fourth': _('2nd and 4th {day}s of the month'),
+            'every': _('{day}'),
+            'one_on_two': _('one {day} on two'),
         }[x]) for x, y in Frequency.__members__.items()],
     )
     initial = models.ForeignKey(
@@ -454,11 +434,22 @@ class Schedule(models.Model):
 
         return pytz.timezone(self.timezone)
 
-    @property
-    def datetime(self):
-        """ Datetime for this schedule (timezone unaware) """
-        import datetime
-        return datetime.datetime.combine(self.date, self.time)
+    @cached_property
+    def start(self):
+        """ Datetime of the start (timezone unaware) """
+        return tz.datetime.combine(self.date, self.time)
+
+    @cached_property
+    def end(self):
+        """ Datetime of the end """
+        return self.start + utils.to_timedelta(self.duration)
+
+    def get_frequency_verbose(self):
+        """ Return frequency formated for display """
+        from django.template.defaultfilters import date
+        return self.get_frequency_display().format(
+            day=date(self.date, 'l')
+        )
 
     # initial cached data
     __initial = None
@@ -630,7 +621,7 @@ class Schedule(models.Model):
 
         delta = None
         if self.initial:
-            delta = self.datetime - self.initial.datetime
+            delta = self.start - self.initial.start
 
         # FIXME: daylight saving bug: delta misses an hour when diffusion and
         #        rerun are not on the same daylight-saving timezone
@@ -916,9 +907,12 @@ class Diffusion(models.Model):
                 self.check_conflicts()
 
     def __str__(self):
-        return '{self.program.name} {date} #{self.pk}'.format(
-            self=self, date=self.local_start.strftime('%Y/%m/%d %H:%M%z')
+        str_ = '{self.program.name} {date}'.format(
+            self=self, date=self.local_start.strftime('%Y/%m/%d %H:%M%z'),
         )
+        if self.initial:
+            str_ += ' ({})'.format(_('rerun'))
+        return str_
 
     class Meta:
         verbose_name = _('Diffusion')
@@ -928,7 +922,7 @@ class Diffusion(models.Model):
         )
 
 
-class Sound(Nameable):
+class Sound(models.Model):
     """
     A Sound is the representation of a sound file that can be either an excerpt
     or a complete archive of the related diffusion.
@@ -939,6 +933,7 @@ class Sound(Nameable):
         excerpt = 0x02,
         removed = 0x03,
 
+    name = models.CharField(_('name'), max_length=64)
     program = models.ForeignKey(
         Program,
         verbose_name=_('program'),

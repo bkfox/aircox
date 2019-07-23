@@ -23,27 +23,26 @@ class PagePathConverter(StringConverter):
         return mark_safe(value)
 
 
-#class WeekConverter:
-#    """ Converter for date as YYYYY/WW """
-#    regex = r'[0-9]{4}/[0-9]{2}/?'
-#
-#    def to_python(self, value):
-#        value = value.split('/')
-#        return datetime.date(int(value[0]), int(value[1]), int(value[2]))
-#
-#    def to_url(self, value):
-#        return '{:04d}/{:02d}/'.format(*value.isocalendar())
+class WeekConverter:
+    """ Converter for date as YYYYY/WW """
+    regex = r'[0-9]{4}/[0-9]{2}'
+
+    def to_python(self, value):
+        return datetime.datetime.strptime(value + '/1', '%G/%V/%u').date()
+
+    def to_url(self, value):
+        return '{:04d}/{:02d}'.format(*value.isocalendar())
 
 
 class DateConverter:
     """ Converter for date as YYYY/MM/DD """
-    regex = r'[0-9]{4}/[0-9]{2}/[0-9]{2}/?'
+    regex = r'[0-9]{4}/[0-9]{2}/[0-9]{2}'
 
     def to_python(self, value):
         value = value.split('/')
         return datetime.date(int(value[0]), int(value[1]), int(value[2]))
 
     def to_url(self, value):
-        return '{:04d}/{:02d}/{:02d}/'.format(value.year, value.month,
-                                              value.day)
+        return '{:04d}/{:02d}/{:02d}'.format(value.year, value.month,
+                                             value.day)
 

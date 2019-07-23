@@ -4,8 +4,6 @@ from django.contrib import admin
 from django.utils.translation import ugettext_lazy as _
 
 from content_editor.admin import ContentEditor, ContentEditorInline
-from feincms3 import plugins
-from feincms3.admin import TreeAdmin
 
 from aircox import models as aircox
 from . import models
@@ -38,39 +36,21 @@ class PageDiffusionPlaylist(UnrelatedInlineMixin, TracksInline):
         view_obj.save()
 
 
-@admin.register(models.Page)
-class PageAdmin(admin.ModelAdmin):
-    list_display = ["title", "parent", "status"]
-    list_editable = ['status']
-    prepopulated_fields = {"slug": ("title",)}
-
-    fieldsets = (
-        (_('Main'), {
-            'fields': ['title', 'slug']
-        }),
-        (_('Settings'), {
-            'fields': ['status', 'static_path', 'path'],
-        }),
-    )
-
-
 @admin.register(models.Article)
-class ArticleAdmin(ContentEditor, PageAdmin):
+class ArticleAdmin(ContentEditor):
     fieldsets = (
         (_('Main'), {
-            'fields': ['title', 'slug', 'as_program', 'cover', 'headline'],
+            'fields': ['title', 'slug', 'cover', 'headline'],
             'classes': ('tabbed', 'uncollapse')
         }),
         (_('Settings'), {
-            'fields': ['featured', 'allow_comments',
-                       'status', 'static_path', 'path'],
+            'fields': ['featured', 'as_program', 'allow_comments', 'status'],
             'classes': ('tabbed',)
         }),
-        #(_('Infos'), {
-        #    'fields': ['diffusion'],
-        #    'classes': ('tabbed',)
-        #}),
     )
+    list_display = ["title", "parent", "status"]
+    list_editable = ['status']
+    prepopulated_fields = {"slug": ("title",)}
 
     inlines = [
         ContentEditorInline.create(models.ArticleRichText),
