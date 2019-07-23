@@ -36,8 +36,8 @@ class PageDiffusionPlaylist(UnrelatedInlineMixin, TracksInline):
         view_obj.save()
 
 
-@admin.register(models.Article)
-class ArticleAdmin(ContentEditor):
+@admin.register(models.Page)
+class PageAdmin(ContentEditor):
     fieldsets = (
         (_('Main'), {
             'fields': ['title', 'slug', 'cover', 'headline'],
@@ -48,19 +48,19 @@ class ArticleAdmin(ContentEditor):
             'classes': ('tabbed',)
         }),
     )
-    list_display = ["title", "parent", "status"]
+    list_display = ["title", "status", "slug"]
     list_editable = ['status']
     prepopulated_fields = {"slug": ("title",)}
 
     inlines = [
-        ContentEditorInline.create(models.ArticleRichText),
-        ContentEditorInline.create(models.ArticleImage),
+        ContentEditorInline.create(models.PageRichText),
+        ContentEditorInline.create(models.PageImage),
     ]
 
 
 @admin.register(models.DiffusionPage)
-class DiffusionPageAdmin(ArticleAdmin):
-    fieldsets = copy.deepcopy(ArticleAdmin.fieldsets)
+class DiffusionPageAdmin(PageAdmin):
+    fieldsets = copy.deepcopy(PageAdmin.fieldsets)
     fieldsets[1][1]['fields'].insert(0, 'diffusion')
 
     # TODO: permissions
@@ -72,8 +72,10 @@ class DiffusionPageAdmin(ArticleAdmin):
 
 
 @admin.register(models.ProgramPage)
-class ProgramPageAdmin(ArticleAdmin):
-    fieldsets = copy.deepcopy(ArticleAdmin.fieldsets)
+class ProgramPageAdmin(PageAdmin):
+    fieldsets = copy.deepcopy(PageAdmin.fieldsets)
     fieldsets[1][1]['fields'].insert(0, 'program')
+    prepopulated_fields = {}
+    readonly_fields = ['slug']
 
 

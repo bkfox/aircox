@@ -4,29 +4,36 @@ Context variables:
 - object: the actual diffusion
 - page: current parent page in which item is rendered
 - hide_schedule: if True, do not display start time
+- hide_headline: if True, do not display headline
 {% endcomment %}
 
-{% with page as context_page %}
-{% with object.program as program %}
-{% diffusion_page object as page %}
+{% with object.initial|default:object as initial %}
+{% with initial.program as program %}
+{% with initial.page as d_page %}
+{% with program.page as p_page %}
+{% with d_page|default:p_page as c_page %}
 <article class="media">
     <div class="media-left">
-        <img src="{% thumbnail page.cover|default:site.logo 128x128 crop=scale %}">
+        <img src="{% thumbnail c_page.cover|default:site.logo 128x128 crop=scale %}"
+            class="small-cover">
     </div>
     <div class="media-content">
         <div>
-            <h4 class="subtitle is-size-4 is-inline-block">
-            {% if page and context_page != page %}
-            <a href="{{ page.path }}">{{ page.title }}</a>
-            {% else %}
-            {{ page.title|default:program.name }}
-            {% endif %}
-            </h4>
+            <h5 class="subtitle is-size-5 is-inline-block">
+                {% if d_page %}
+                <a href="{{ d_page.path }}">{{ d_page.title }}</a>
+                {% endif %}
 
-            <span class="has-text-weight-normal">
-            {% if object.page is page and context_page != program.page %}
-            &mdash; <a href="{% url "program-page" slug=program.page.slug %}">{{ program.page.title }}</a>
-            {% endif %}
+                {% if not page or p_page != page %}
+                {% if d_page %} &mdash; {% endif %}
+                {% if p_page %}
+                <a href="{{ p_page.path }}" class="has-text-grey-dark">
+                    {{ p_page.title }}</a>
+                {% else %}
+                {{ program.name }}
+                {% endif %}
+                {% endif %}
+            </h5>
 
             {% if not hide_schedule %}
             <time datetime="{{ object.start|date:"c" }}" title="{{ object.start }}"
@@ -44,13 +51,16 @@ Context variables:
             {% endif %}
             </span>
         </div>
-
+        {% if not hide_headline %}
         <div class="content">
-          {{ page.headline|default:program.page.headline }}
-        </p>
-      </div>
+          {{ c_page.headline }}
+        </div>
+        {% endif %}
     </div>
 </article>
+{% endwith %}
+{% endwith %}
+{% endwith %}
 {% endwith %}
 {% endwith %}
 

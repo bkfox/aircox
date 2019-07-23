@@ -16,9 +16,8 @@
 {{ block.super }}
 {% if program %}
 <h4 class="subtitle is-size-3">
-    <a href="{% url "page" path=program.page.path %}">&#10092; {{ program.name }}</a></li>
+    <a href="{% url "program-page" slug=program.slug %}">&#10092; {{ program.name }}</a></li>
 </h4>
-{% include "aircox_web/program_header.html" %}
 {% endif %}
 {% endblock %}
 
@@ -26,9 +25,7 @@
 {% block content %}
 <section class="section">
     {% for object in object_list %}
-    {% with object.diffusion as object %}
     {% include "aircox_web/diffusion_item.html" %}
-    {% endwith %}
     {% endfor %}
 </section>
 

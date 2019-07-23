@@ -37,16 +37,34 @@ $body-background-color: $light;
         padding: 0.2em 0em;
     }
 
-    .cover {
-        float: right;
-        max-width: 40%;
-        margin: 1em;
-        border: 0.2em black solid;
-    }
-
     p {
         padding: 0.4em 0em;
     }
 }
+
+
+.cover {
+    margin: 1em 0em;
+    border: 0.2em black solid;
+}
+
+.small-cover {
+    width: 10em;
+}
+
+aside {
+    .small-cover {
+        width: 4em;
+    }
+
+    .media .subtitle {
+        font-size: 1em;
+    }
+
+    .media .content {
+        display: none;
+    }
+}
+
 
 

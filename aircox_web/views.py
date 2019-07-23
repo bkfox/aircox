@@ -11,7 +11,8 @@ from django.views.generic.base import TemplateResponseMixin, ContextMixin
 from content_editor.contents import contents_for_item
 
 from aircox import models as aircox
-from .models import Site, Page, DiffusionPage, ProgramPage
+from .models import Site, Page, DiffusionPage, ProgramPage, \
+        get_diffusions_with_page
 from .renderer import site_renderer, page_renderer
 
 
@@ -27,7 +28,7 @@ def route_page(request, path=None, *args, model=None, site=None, **kwargs):
 
     model = model if model is not None else Page
     page = get_object_or_404(
-        model.objects.select_subclasses().active(),
+        model.objects.select_subclasses().live(),
         path=path
     )
     kwargs['page'] = page
@@ -46,7 +47,8 @@ class BaseView(TemplateResponseMixin, ContextMixin):
 
     def get_context_data(self, **kwargs):
         if kwargs.get('site_regions') is None:
-            contents = contents_for_item(self.site, site_renderer._renderers.keys())
+            contents = contents_for_item(
+                self.site, site_renderer._renderers.keys())
             kwargs['site_regions'] = contents.render_regions(site_renderer)
 
         kwargs.setdefault('site', self.site)
@@ -54,7 +56,7 @@ class BaseView(TemplateResponseMixin, ContextMixin):
         return super().get_context_data(**kwargs)
 
 
-class PageView(BaseView):
+class PageView(BaseView, DetailView):
     """ Base view class for pages. """
     template_name = 'aircox_web/page.html'
     context_object_name = 'page'
@@ -77,33 +79,39 @@ class PageView(BaseView):
         return super().get_context_data(**kwargs)
 
 
-class ProgramPageView(PageView, DetailView):
+class ProgramPageView(PageView):
     """ Base view class for pages. """
-    template_name = 'aircox_web/program.html'
+    template_name = 'aircox_web/program_page.html'
     model = ProgramPage
+
+    list_count=10
 
     def get_queryset(self):
         return super().get_queryset().select_related('program')
 
-    def get_context_data(self, program=None, **kwargs):
-        kwargs.setdefault('program', self.object.program)
-        kwargs['diffusions'] = DiffusionPage.objects.filter(
-            diffusion__program=kwargs['program']
+    def get_context_data(self, program=None, diffusions=None, **kwargs):
+        program = program or self.object.program
+        diffusions = diffusions or \
+                     get_diffusions_with_page().filter(program=program)
+        return super().get_context_data(
+            program=program,
+            diffusions=diffusions.order_by('-start')[:self.list_count],
+            **kwargs
         )
-        return super().get_context_data(**kwargs)
 
 
-class DiffusionView(PageView):
-    template_name = 'aircox_web/diffusion.html'
+class DiffusionPageView(PageView):
+    # template_name = 'aircox_web/diffusion.html'
+    model = DiffusionPage
+
 
 
 # TODO: pagination: in template, only a limited number of pages displayed
-
 # DiffusionsView use diffusion instead of diffusion page for different reasons:
 # more straightforward, it handles reruns
 class DiffusionsView(BaseView, ListView):
     template_name = 'aircox_web/diffusions.html'
-    model = DiffusionPage
+    model = aircox.Diffusion
     paginate_by = 30
     program = None
 
@@ -115,13 +123,11 @@ class DiffusionsView(BaseView, ListView):
         return super().get(request, *args, **kwargs)
 
     def get_queryset(self):
-        qs = super().get_queryset().live() \
-                    .select_related('diffusion')
+        qs = get_diffusions_with_page(super().get_queryset()) \
+            .select_related('page', 'program')
         if self.program:
-            qs = qs.filter(diffusion__program=self.program)
-        else:
-            qs = qs.select_related('diffusion__program')
-        return qs.order_by('-diffusion__start')
+            qs = qs.filter(program=self.program)
+        return qs.order_by('-start')
 
     def get_context_data(self, **kwargs):
         program = kwargs.setdefault('program', self.program)

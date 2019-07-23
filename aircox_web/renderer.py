@@ -13,6 +13,6 @@ site_renderer.register(SiteLink, lambda plugin: plugin.render())
 
 page_renderer = PluginRenderer()
 page_renderer._renderers.clear()
-page_renderer.register(ArticleRichText, lambda plugin: mark_safe(plugin.text))
-page_renderer.register(ArticleImage, lambda plugin: plugin.render())
+page_renderer.register(PageRichText, lambda plugin: mark_safe(plugin.text))
+page_renderer.register(PageImage, lambda plugin: plugin.render())
 

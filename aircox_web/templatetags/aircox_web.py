@@ -12,7 +12,8 @@ register = template.Library()
 @register.simple_tag(name='diffusion_page')
 def do_diffusion_page(diffusion):
     """ Return page for diffusion. """
-    for obj in (diffusion, diffusion.program):
+    diff = diffusion.initial if diffusion.initial is not None else diffusion
+    for obj in (diff, diffusion.program):
         page = getattr(obj, 'page', None)
         if page is not None and page.status == Page.STATUS.published:
             return page

@@ -98,23 +98,43 @@ class Page(StatusModel):
     Page parenting is based on foreignkey to parent and page path.
     """
     STATUS = Choices('draft', 'published', 'trash')
+    regions = [
+        Region(key="content", title=_("Content")),
+    ]
 
-    parent = models.ForeignKey(
-        'self', models.CASCADE,
-        verbose_name=_('parent page'),
-        blank=True, null=True,
-    )
     title = models.CharField(max_length=128)
-    slug = models.SlugField(_('slug'))
+    slug = models.SlugField(_('slug'), blank=True, unique=True)
     headline = models.TextField(
         _('headline'), max_length=128, blank=True, null=True,
+    )
+
+    # content
+    as_program = models.ForeignKey(
+        aircox.Program, models.SET_NULL, blank=True, null=True,
+        related_name='+',
+        # SO#51948640
+        # limit_choices_to={'schedule__isnull': False},
+        verbose_name=_('Show program as author'),
+        help_text=_("Show program as author"),
+    )
+    cover = FilerImageField(
+        on_delete=models.SET_NULL, null=True, blank=True,
+        verbose_name=_('Cover'),
+    )
+
+    # options
+    featured = models.BooleanField(
+        _('featured'), default=False,
+    )
+    allow_comments = models.BooleanField(
+        _('allow comments'), default=True,
     )
 
     objects = PageQueryset.as_manager()
 
     @property
     def path(self):
-        return reverse('page', kwargs={'slug': self.slug})
+        return reverse(self.detail_url_name, kwargs={'slug': self.slug})
 
     def get_view_class(self):
         """ Page view class"""
@@ -130,39 +150,9 @@ class Page(StatusModel):
                                self.title or self.pk)
 
 
-class Article(Page):
-    """ User's pages """
-    regions = [
-        Region(key="content", title=_("Content")),
-    ]
+class DiffusionPage(Page):
+    detail_url_name = 'diffusion-page'
 
-    # metadata
-    as_program = models.ForeignKey(
-        aircox.Program, models.SET_NULL, blank=True, null=True,
-        related_name='+',
-        # SO#51948640
-        # limit_choices_to={'schedule__isnull': False},
-        verbose_name=_('Show program as author'),
-        help_text=_("Show program as author"),
-    )
-
-    # options
-    featured = models.BooleanField(
-        _('featured'), default=False,
-    )
-    allow_comments = models.BooleanField(
-        _('allow comments'), default=True,
-    )
-
-    # content
-    cover = FilerImageField(
-        on_delete=models.SET_NULL, null=True, blank=True,
-        verbose_name=_('Cover'),
-    )
-
-
-
-class DiffusionPage(Article):
     diffusion = models.OneToOneField(
         aircox.Diffusion, models.CASCADE,
         related_name='page',
@@ -173,8 +163,23 @@ class DiffusionPage(Article):
     def path(self):
         return reverse('diffusion-page', kwargs={'slug': self.slug})
 
+    def save(self, *args, **kwargs):
+        program = self.diffusion.program
+        self.as_program = self.diffusion.program
+        if not self.slug.startswith(program.slug + '-'):
+            self.slug = '{}-{}'.format(program.slug, self.slug)
+        return super().save(*args, **kwargs)
 
-class ProgramPage(Article):
+
+def get_diffusions_with_page(queryset=aircox.Diffusion.objects,
+                             status=Page.STATUS.published):
+    return queryset.filter(Q(page__isnull=True) |
+                           Q(initial__page__isnull=True),
+                           Q(page__status=status) |
+                           Q(initial__page__status=status))
+
+
+class ProgramPage(Page):
     detail_url_name = 'program-page'
 
     program = models.OneToOneField(
@@ -186,14 +191,18 @@ class ProgramPage(Article):
     def path(self):
         return reverse('program-page', kwargs={'slug': self.slug})
 
+    def save(self, *args, **kwargs):
+        self.slug = self.program.slug
+        return super().save(*args, **kwargs)
+
 
 #-----------------------------------------------------------------------
-ArticlePlugin = create_plugin_base(Article)
+PagePlugin = create_plugin_base(Page)
 
-class ArticleRichText(plugins.RichText, ArticlePlugin):
+class PageRichText(plugins.RichText, PagePlugin):
     pass
 
-class ArticleImage(plugins.Image, ArticlePlugin):
+class PageImage(plugins.Image, PagePlugin):
     pass
 
 
