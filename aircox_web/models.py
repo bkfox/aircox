@@ -133,6 +133,10 @@ class Page(StatusModel):
     objects = PageQueryset.as_manager()
 
     @property
+    def is_published(self):
+        return self.status == self.STATUS.published
+
+    @property
     def path(self):
         return reverse(self.detail_url_name, kwargs={'slug': self.slug})
 

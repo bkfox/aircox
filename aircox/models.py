@@ -326,7 +326,6 @@ class Program(models.Model):
                  .update(path=Concat('path', Substr(F('path'), len(path_))))
 
 
-
 class Stream(models.Model):
     """
     When there are no program scheduled, it is possible to play sounds
@@ -522,74 +521,54 @@ class Schedule(models.Model):
         Return a new datetime with schedule time. Timezone is handled
         using `schedule.timezone`.
         """
-        time = self.time or self.date
-        date = tz.datetime(date.year, date.month, date.day,
-                           time.hour, time.minute, 0, 0)
-        date = self.tz.localize(date)
-        date = self.tz.normalize(date)
+        date = tz.datetime.combine(date, self.time)
+        return self.tz.normalize(self.tz.localize(date))
 
-        return date
-
-    def dates_of_month(self, date=None):
+    def dates_of_month(self, date):
         """
         Return a list with all matching dates of date.month (=today)
         Ensure timezone awareness.
+
+        :param datetime.date date: month and year
         """
 
         if self.frequency == Schedule.Frequency.ponctual:
             return []
 
-        # first day of month
-        date = utils.date_or_default(date, datetime.date).replace(day=1)
-        freq = self.frequency
+        sched_wday, freq = self.date.weekday(), self.frequency
+        date = date.replace(day=1)
 
         # last of the month
-
         if freq == Schedule.Frequency.last:
             date = date.replace(
                 day=calendar.monthrange(date.year, date.month)[1])
+            date_wday = date.weekday()
 
             # end of month before the wanted weekday: move one week back
 
-            if date.weekday() < self.date.weekday():
+            if date_wday < sched_wday:
                 date -= tz.timedelta(days=7)
-
-            delta = self.date.weekday() - date.weekday()
-            date += tz.timedelta(days=delta)
+            date += tz.timedelta(days=sched_wday - date_wday)
 
             return [self.normalize(date)]
 
         # move to the first day of the month that matches the schedule's weekday
         # check on SO#3284452 for the formula
-        first_weekday = date.weekday()
-        sched_weekday = self.date.weekday()
-        date += tz.timedelta(days=(7 if first_weekday > sched_weekday else 0)
-                             - first_weekday + sched_weekday)
-        month = date.month
-
-        dates = []
+        date_wday, month = date.weekday(), date.month
+        date += tz.timedelta(days=(7 if date_wday > sched_wday else 0) -
+                                   date_wday + sched_wday)
 
         if freq == Schedule.Frequency.one_on_two:
-            # check date base on a diff of dates base on a 14 days delta
-            diff = utils.cast_date(date, datetime.date) - \
-                utils.cast_date(self.date, datetime.date)
-
-            if diff.days % 14:
+            # - adjust date with modulo 14 (= 2 weeks in days)
+            # - there are max 3 "weeks on two" per month
+            if (date - self.date).days % 14:
                 date += tz.timedelta(days=7)
-
-            while date.month == month:
-                dates.append(date)
-                date += tz.timedelta(days=14)
+            dates = (date + tz.timedelta(days=14*i) for i in range(0, 3))
         else:
-            week = 0
+            dates = (date + tz.timedelta(days=7*week) for week in range(0, 5)
+                     if freq & (0b1 << week))
 
-            while week < 5 and date.month == month:
-                if freq & (0b1 << week):
-                    dates.append(date)
-                date += tz.timedelta(days=7)
-                week += 1
-
-        return [self.normalize(date) for date in dates]
+        return [self.normalize(date) for date in dates if date.month == month]
 
     def diffusions_of_month(self, date=None, exclude_saved=False):
         """
@@ -625,6 +604,7 @@ class Schedule(models.Model):
 
         # FIXME: daylight saving bug: delta misses an hour when diffusion and
         #        rerun are not on the same daylight-saving timezone
+        #       -> solution: add rerun=True param, and gen reruns from initial for each
         diffusions += [
             Diffusion(
                 program=self.program,
@@ -922,6 +902,15 @@ class Diffusion(models.Model):
         )
 
 
+class SoundQuerySet(models.QuerySet):
+    def podcasts(self):
+        """ Return sound available as podcasts """
+        return self.filter(Q(embed__isnull=False) | Q(is_public=True))
+
+    def diffusion(self, diffusion):
+        return self.filter(diffusion=diffusion)
+
+
 class Sound(models.Model):
     """
     A Sound is the representation of a sound file that can be either an excerpt
@@ -942,10 +931,10 @@ class Sound(models.Model):
         help_text=_('program related to it'),
     )
     diffusion = models.ForeignKey(
-        'Diffusion',
+        Diffusion, models.SET_NULL,
         verbose_name=_('diffusion'),
         blank=True, null=True,
-        on_delete=models.SET_NULL,
+        limit_choices_to={'initial__isnull': True},
         help_text=_('initial diffusion related it')
     )
     type = models.SmallIntegerField(
@@ -980,16 +969,18 @@ class Sound(models.Model):
         blank=True, null=True,
         help_text=_('last modification date and time'),
     )
-    good_quality = models.NullBooleanField(
+    is_good_quality = models.BooleanField(
         _('good quality'),
-        help_text=_('sound\'s quality is okay'),
+        help_text=_('sound meets quality requirements for diffusion'),
         blank=True, null=True
     )
-    public = models.BooleanField(
+    is_public = models.BooleanField(
         _('public'),
         default=False,
         help_text=_('the sound is accessible to the public')
     )
+
+    objects = SoundQuerySet.as_manager()
 
     def get_mtime(self):
         """
@@ -1080,7 +1071,7 @@ class Sound(models.Model):
 
         if self.mtime != mtime:
             self.mtime = mtime
-            self.good_quality = None
+            self.is_good_quality = None
             logger.info('sound %s: m_time has changed. Reset quality info',
                         self.path)
 

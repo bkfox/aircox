@@ -1,0 +1,29 @@
+{% extends "aircox_web/page.html" %}
+{% load i18n %}
+
+{% block side_nav %}
+{{ block.super }}
+
+{% if diffusions %}
+<section>
+    <h4 class="subtitle is-size-4">{% trans "Last shows" %}</h4>
+
+    {% for object in diffusions %}
+    {% include "aircox_web/diffusion_item.html" %}
+    {% endfor %}
+
+    <br>
+    <nav class="pagination is-centered">
+        <ul class="pagination-list">
+            <li>
+                <a href="{% url "diffusion-list" program_slug=page.slug %}"
+                    class="pagination-link"
+                    aria-label="{% trans "Show all diffusions" %}">
+                    {% trans "All diffusions" %}
+                </a>
+            </li>
+        </ul>
+</section>
+{% endif %}
+{% endblock %}
+

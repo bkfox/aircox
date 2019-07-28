@@ -41,25 +41,35 @@ Context:
             </nav>
 
             <div class="container">
-                <div class="columns">
+                <div class="columns is-desktop">
                     <main class="column page">
                         <header class="header">
                             {% block header %}
                             <h1 class="title is-1">{% block title %}{% endblock %}</h1>
+
+                            {% if parent %}
+                            <h4 class="subtitle is-size-3">
+                                <a href="{{ parent.path }}">
+                                    &#10092; {{ parent.title }}</a></li>
+                            </h4>
+                            {% endif %}
                             {% endblock %}
                         </header>
 
                         {% block main %}{% endblock main %}
                     </main>
-                    <aside class="column is-one-third">
-                        {% block side_nav %}
+                    {% if nav_side %}
+                    <aside class="column is-one-third-desktop">
                         {% block cover %}
                         {% if cover is not None %}
                         <img class="cover" src="{{ cover.url }}" class="cover"/>
                         {% endif %}
                         {% endblock %}
+
+                        {% block side_nav %}
                         {% endblock %}
                     </aside>
+                    {% endif %}
                 </div>
             </div>
         </div>

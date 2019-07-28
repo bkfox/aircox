@@ -7165,7 +7165,11 @@ label.panel-block {
 }
 */
 /** page **/
-.page .header {
+.page > .cover {
+  float: right;
+  max-width: 45%; }
+
+.page > .header {
   margin-bottom: 1.5em; }
 
 .page .headline {

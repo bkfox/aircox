@@ -1,0 +1,14 @@
+{% extends "aircox_web/program_base.html" %}
+{% load i18n %}
+
+{% block main %}
+{{ block.super }}
+
+{% if podcasts %}
+{% for object in podcasts %}
+{% include "aircox_web/podcast_item.html" %}
+{% endfor %}
+{% endif %}
+
+{% endwith %}
+

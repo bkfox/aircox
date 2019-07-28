@@ -28,7 +28,12 @@ $body-background-color: $light;
 
 /** page **/
 .page {
-    .header {
+    & > .cover {
+        float: right;
+        max-width: 45%;
+    }
+
+    & > .header {
         margin-bottom: 1.5em;
     }
 

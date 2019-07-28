@@ -18,27 +18,27 @@ Context variables:
             class="small-cover">
     </div>
     <div class="media-content">
-        <div>
-            <h5 class="subtitle is-size-5 is-inline-block">
-                {% if d_page %}
-                <a href="{{ d_page.path }}">{{ d_page.title }}</a>
-                {% endif %}
+        <h5 class="subtitle is-size-5">
+            {% if d_page %}
+            <a href="{{ d_page.path }}">{{ d_page.title }}</a>
+            {% endif %}
+        </h5>
 
-                {% if not page or p_page != page %}
-                {% if d_page %} &mdash; {% endif %}
-                {% if p_page %}
-                <a href="{{ p_page.path }}" class="has-text-grey-dark">
-                    {{ p_page.title }}</a>
-                {% else %}
-                {{ program.name }}
-                {% endif %}
-                {% endif %}
-            </h5>
+        <div class="">
+            {% if not page or p_page != page %}
+            {% if p_page %}
+            <a href="{{ p_page.path }}" class="has-text-grey-dark">
+                {{ p_page.title }}</a>
+            {% else %}
+            {{ program.name }}
+            {% endif %}
+            {% if not hide_schedule %} &mdash; {% endif %}
+            {% endif %}
 
             {% if not hide_schedule %}
             <time datetime="{{ object.start|date:"c" }}" title="{{ object.start }}"
                   class="has-text-weight-light is-size-6">
-                  &mdash; {{ object.start|date:"d M, H:i" }}
+                  {{ object.start|date:"d M, H:i" }}
             </time>
             {% endif %}
 

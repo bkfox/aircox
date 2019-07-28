@@ -327,18 +327,17 @@ class Command(BaseCommand):
         """
         Check all files where quality has been set to bad
         """
-        import aircox.management.commands.sounds_quality_check \
-            as quality_check
+        import aircox.management.commands.sounds_quality_check as quality_check
 
         # get available sound files
-        sounds = Sound.objects.filter(good_quality=False) \
+        sounds = Sound.objects.filter(is_good_quality=False) \
                       .exclude(type=Sound.Type.removed)
         if check:
             self.check_sounds(sounds)
 
         files = [
             sound.path for sound in sounds
-            if os.path.exists(sound.path) and sound.good_quality is None
+            if os.path.exists(sound.path) and sound.is_good_quality is None
         ]
 
         # check quality
@@ -358,7 +357,7 @@ class Command(BaseCommand):
 
         for sound_info in cmd.good:
             sound = Sound.objects.get(path=sound_info.path)
-            sound.good_quality = True
+            sound.is_good_quality = True
             update_stats(sound_info, sound)
             sound.save(check=False)
 

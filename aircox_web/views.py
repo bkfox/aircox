@@ -1,11 +1,10 @@
 from collections import OrderedDict, deque
 import datetime
 
-from django.db.models import Q
-from django.core.paginator import Paginator
+from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.utils.translation import ugettext_lazy as _
-from django.views.generic import TemplateView, DetailView, ListView
+from django.views.generic import DetailView, ListView
 from django.views.generic.base import TemplateResponseMixin, ContextMixin
 
 from content_editor.contents import contents_for_item
@@ -36,9 +35,14 @@ def route_page(request, path=None, *args, model=None, site=None, **kwargs):
 
 
 class BaseView(TemplateResponseMixin, ContextMixin):
-    title = None
-    cover = None
     site = None
+    """ Current website """
+    nav_side = False
+    """ Show side navigation """
+    title = None
+    """ Page title """
+    cover = None
+    """ Page cover """
 
     def dispatch(self, request, *args, site=None, **kwargs):
         self.site = site if site is not None else \
@@ -53,6 +57,7 @@ class BaseView(TemplateResponseMixin, ContextMixin):
 
         kwargs.setdefault('site', self.site)
         kwargs.setdefault('cover', self.cover)
+        kwargs.setdefault('nav_side', self.nav_side)
         return super().get_context_data(**kwargs)
 
 
@@ -79,31 +84,52 @@ class PageView(BaseView, DetailView):
         return super().get_context_data(**kwargs)
 
 
-class ProgramPageView(PageView):
-    """ Base view class for pages. """
+class BaseProgramView(PageView):
+    """ Base view class for programs and their sub-pages. """
+    nav_side = True
+    list_count=5
+
+    def get_diffusions_queryset(self, program, queryset=None):
+        qs = get_diffusions_with_page() if queryset is None else queryset
+        return qs.before().filter(program=program).order_by('-start')
+
+    def get_context_data(self, program, **kwargs):
+        if not hasattr(program, 'page') or not program.page.is_published:
+            raise Http404
+
+        if 'diffusions' not in kwargs:
+            diffs = self.get_diffusions_queryset(program)[:self.list_count]
+            kwargs['diffusions'] = diffs
+        return super().get_context_data(program=program, **kwargs)
+
+
+class ProgramPageView(BaseProgramView):
     template_name = 'aircox_web/program_page.html'
     model = ProgramPage
-
-    list_count=10
 
     def get_queryset(self):
         return super().get_queryset().select_related('program')
 
-    def get_context_data(self, program=None, diffusions=None, **kwargs):
-        program = program or self.object.program
-        diffusions = diffusions or \
-                     get_diffusions_with_page().filter(program=program)
-        return super().get_context_data(
-            program=program,
-            diffusions=diffusions.order_by('-start')[:self.list_count],
-            **kwargs
-        )
+    def get_context_data(self, **kwargs):
+        kwargs.setdefault('program', self.object.program)
+        return super().get_context_data(**kwargs)
 
 
-class DiffusionPageView(PageView):
-    # template_name = 'aircox_web/diffusion.html'
+class DiffusionPageView(BaseProgramView):
+    template_name = 'aircox_web/program_base.html'
     model = DiffusionPage
 
+    def get_podcasts(self, diffusion):
+        return aircox.Sound.objects.diffusion(diffusion).podcasts()
+
+    def get_context_data(self, **kwargs):
+        diffusion = self.object.diffusion
+        kwargs.setdefault('program', diffusion.program)
+        kwargs.setdefault('parent', getattr(kwargs['program'], 'page', None))
+        if not 'podcasts' in kwargs:
+            kwargs['podcasts'] = self.get_podcasts(diffusion)
+            print('get prodcasts...', kwargs['podcasts'], diffusion)
+        return super().get_context_data(**kwargs)
 
 
 # TODO: pagination: in template, only a limited number of pages displayed
@@ -133,7 +159,7 @@ class DiffusionsView(BaseView, ListView):
         program = kwargs.setdefault('program', self.program)
         if program is not None and hasattr(program, 'page'):
             kwargs.setdefault('cover', program.page.cover)
-            kwargs.setdefault('page', program.page)
+            kwargs.setdefault('parent', program.page)
         return super().get_context_data(**kwargs)
 
 
