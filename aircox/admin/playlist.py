@@ -21,19 +21,19 @@ class TrackAdmin(admin.ModelAdmin):
     def tag_list(self, obj):
         return u", ".join(o.name for o in obj.tags.all())
 
-    list_display = ['pk', 'artist', 'title', 'tag_list', 'diffusion', 'sound', 'timestamp']
+    list_display = ['pk', 'artist', 'title', 'tag_list', 'episode', 'sound', 'timestamp']
     list_editable = ['artist', 'title']
-    list_filter = ['sound', 'diffusion', 'artist', 'title', 'tags']
+    list_filter = ['sound', 'episode', 'artist', 'title', 'tags']
     fieldsets = [
-        (_('Playlist'), {'fields': ['diffusion', 'sound', 'position', 'timestamp']}),
+        (_('Playlist'), {'fields': ['episode', 'sound', 'position', 'timestamp']}),
         (_('Info'), {'fields': ['artist', 'title', 'info', 'tags']}),
     ]
 
-    # TODO on edit: readonly_fields = ['diffusion', 'sound']
+    # TODO on edit: readonly_fields = ['episode', 'sound']
 
 #@admin.register(Playlist)
 #class PlaylistAdmin(admin.ModelAdmin):
-#    fields = ['diffusion', 'sound']
+#    fields = ['episode', 'sound']
 #    inlines = [TracksInline]
 #    # TODO: dynamic read only fields
 

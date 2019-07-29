@@ -33,6 +33,15 @@ ensure('AIRCOX_PROGRAMS_DIR',
 ensure('AIRCOX_DATA_DIR',
        os.path.join(settings.PROJECT_ROOT, 'data'))
 
+
+########################################################################
+# Programs & Episodes
+########################################################################
+# default title for episodes
+ensure('AIRCOX_EPISODE_TITLE', '{program.title} - {date}')
+# date format in episode title (python's strftime)
+ensure('AIRCOX_EPISODE_TITLE_DATE_FORMAT', '%-d %B %Y')
+
 ########################################################################
 # Logs & Archives
 ########################################################################

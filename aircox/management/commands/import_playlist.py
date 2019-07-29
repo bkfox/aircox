@@ -1,6 +1,6 @@
 """
-Import one or more playlist for the given sound. Attach it to the sound
-or to the related Diffusion if wanted.
+Import one or more playlist for the given sound. Attach it to the provided
+sound.
 
 Playlists are in CSV format, where columns are separated with a
 '{settings.AIRCOX_IMPORT_PLAYLIST_CSV_DELIMITER}'. Text quote is
@@ -18,14 +18,15 @@ from argparse import RawTextHelpFormatter
 from django.core.management.base import BaseCommand, CommandError
 from django.contrib.contenttypes.models import ContentType
 
+from aircox import settings
 from aircox.models import *
-import aircox.settings as settings
+
 __doc__ = __doc__.format(settings=settings)
 
 logger = logging.getLogger('aircox.tools')
 
 
-class Importer:
+class PlaylistImport:
     path = None
     data = None
     tracks = None
@@ -121,17 +122,12 @@ class Command (BaseCommand):
             help='generate a playlist for the sound of the given path. '
                  'If not given, try to match a sound with the same path.'
         )
-        parser.add_argument(
-            '--diffusion', '-d', action='store_true',
-            help='try to get the diffusion relative to the sound if it exists'
-        )
 
     def handle(self, path, *args, **options):
         # FIXME: absolute/relative path of sounds vs given path
         if options.get('sound'):
-            sound = Sound.objects.filter(
-                path__icontains=options.get('sound')
-            ).first()
+            sound = Sound.objects.filter(path__icontains=options.get('sound'))\
+                                 .first()
         else:
             path_, ext = os.path.splitext(path)
             sound = Sound.objects.filter(path__icontains=path_).first()
@@ -141,11 +137,10 @@ class Command (BaseCommand):
                          '{path}'.format(path=path))
             return
 
-        if options.get('diffusion') and sound.diffusion:
-            sound = sound.diffusion
-
-        importer = Importer(path, sound=sound).run()
+        # FIXME: auto get sound.episode if any
+        importer = PlaylistImport(path, sound=sound).run()
         for track in importer.tracks:
             logger.info('track #{pos} imported: {title}, by {artist}'.format(
                 pos=track.position, title=track.title, artist=track.artist
             ))
+

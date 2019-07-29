@@ -9,7 +9,7 @@ from .playlist import TracksInline
 class SoundInline(admin.TabularInline):
     model = Sound
     fk_name = 'diffusion'
-    fields = ['type', 'path', 'duration','public']
+    fields = ['type', 'path', 'duration', 'is_public']
     readonly_fields = ['type']
     extra = 0
 

@@ -23,6 +23,7 @@ parameters given by the setting AIRCOX_SOUND_QUALITY. This script requires
 Sox (and soxi).
 """
 from argparse import RawTextHelpFormatter
+import datetime
 import atexit
 import logging
 import os
@@ -37,11 +38,19 @@ from django.conf import settings as main_settings
 from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone as tz
 
-from aircox.models import *
-import aircox.settings as settings
-import aircox.utils as utils
+from aircox import settings, utils
+from aircox.models import Diffusion, Program, Sound
+from .import_playlist import PlaylistImport
 
 logger = logging.getLogger('aircox.tools')
+
+
+sound_path_re = re.compile(
+    '^(?P<year>[0-9]{4})(?P<month>[0-9]{2})(?P<day>[0-9]{2})'
+    '(_(?P<hour>[0-9]{2})h(?P<minute>[0-9]{2}))?'
+    '(_(?P<n>[0-9]+))?'
+    '_?(?P<name>.*)$'
+)
 
 
 class SoundInfo:
@@ -66,33 +75,19 @@ class SoundInfo:
         Parse file name to get info on the assumption it has the correct
         format (given in Command.help)
         """
-        file_name = os.path.basename(value)
-        file_name = os.path.splitext(file_name)[0]
-        r = re.search('^(?P<year>[0-9]{4})'
-                      '(?P<month>[0-9]{2})'
-                      '(?P<day>[0-9]{2})'
-                      '(_(?P<hour>[0-9]{2})h(?P<minute>[0-9]{2}))?'
-                      '(_(?P<n>[0-9]+))?'
-                      '_?(?P<name>.*)$',
-                      file_name)
-
-        if not (r and r.groupdict()):
-            r = {'name': file_name}
-            logger.info('file name can not be parsed -> %s', value)
-        else:
-            r = r.groupdict()
+        name = os.path.splitext(os.path.basename(value))[0]
+        match = sound_path_re.search(name)
+        match = match.groupdict() if match and match.groupdict() else \
+                {'name': name}
 
         self._path = value
-        self.name = r['name'].replace('_', ' ').capitalize()
+        self.name = match['name'].replace('_', ' ').capitalize()
 
         for key in ('year', 'month', 'day', 'hour', 'minute'):
-            value = r.get(key)
-            if value is not None:
-                value = int(value)
-            setattr(self, key, value)
+            value = match.get(key)
+            setattr(self, key, int(value) if value is not None else None)
 
-        self.n = r.get('n')
-        return r
+        self.n = match.get('n')
 
     def __init__(self, path='', sound=None):
         self.path = path
@@ -116,9 +111,8 @@ class SoundInfo:
         (if save is True, sync to DB), and check for a playlist file.
         """
         sound, created = Sound.objects.get_or_create(
-            path=self.path,
-            defaults=kwargs
-        )
+            path=self.path, defaults=kwargs)
+
         if created or sound.check_on_file():
             logger.info('sound is new or have been modified -> %s', self.path)
             sound.duration = self.get_duration()
@@ -139,22 +133,17 @@ class SoundInfo:
         if sound.track_set.count():
             return
 
-        import aircox.management.commands.import_playlist \
-            as import_playlist
-
-        # no playlist, try to retrieve metadata
+        # import playlist
         path = os.path.splitext(self.sound.path)[0] + '.csv'
-        if not os.path.exists(path):
-            if use_default:
-                track = sound.file_metadata()
-                if track:
-                    track.save()
-            return
+        if os.path.exists(path):
+            PlaylistImport(path, sound=sound).run()
+        # try metadata
+        elif use_default:
+            track = sound.file_metadata()
+            if track:
+                track.save()
 
-        # else, import
-        import_playlist.Importer(path, sound=sound).run()
-
-    def find_diffusion(self, program, save=True):
+    def find_episode(self, program, save=True):
         """
         For a given program, check if there is an initial diffusion
         to associate to, using the date info we have. Update self.sound
@@ -163,25 +152,22 @@ class SoundInfo:
         We only allow initial diffusion since there should be no
         rerun.
         """
-        if self.year == None or not self.sound or self.sound.diffusion:
+        if self.year is None or not self.sound or self.sound.episode:
             return
 
         if self.hour is None:
             date = datetime.date(self.year, self.month, self.day)
         else:
-            date = datetime.datetime(self.year, self.month, self.day,
-                                     self.hour or 0, self.minute or 0)
+            date = tz.datetime(self.year, self.month, self.day,
+                               self.hour or 0, self.minute or 0)
             date = tz.get_current_timezone().localize(date)
 
-        qs = Diffusion.objects.station(program.station).after(date) \
-                      .filter(program=program, initial__isnull=True)
-        diffusion = qs.first()
+        diffusion = program.diffusion_set.initial().at(date).first()
         if not diffusion:
             return
 
-        logger.info('diffusion %s mathes to sound -> %s', str(diffusion),
-                    self.sound.path)
-        self.sound.diffusion = diffusion
+        logger.info('%s <--> %s', self.sound.path, str(diffusion.episode))
+        self.sound.episode = diffusion.episode
         if save:
             self.sound.save()
         return diffusion
@@ -219,7 +205,7 @@ class MonitorHandler(PatternMatchingEventHandler):
         self.sound_kwargs['program'] = program
         si.get_sound(save=True, **self.sound_kwargs)
         if si.year is not None:
-            si.find_diffusion(program)
+            si.find_episode(program)
         si.sound.save(True)
 
     def on_deleted(self, event):
@@ -246,7 +232,7 @@ class MonitorHandler(PatternMatchingEventHandler):
             if program:
                 si = SoundInfo(sound.path, sound=sound)
                 if si.year is not None:
-                    si.find_diffusion(program)
+                    si.find_episode(program)
         sound.save()
 
 
@@ -270,7 +256,7 @@ class Command(BaseCommand):
 
         dirs = []
         for program in programs:
-            logger.info('#%d %s', program.id, program.name)
+            logger.info('#%d %s', program.id, program.title)
             self.scan_for_program(
                 program, settings.AIRCOX_SOUND_ARCHIVES_SUBDIR,
                 type=Sound.Type.archive,
@@ -304,7 +290,7 @@ class Command(BaseCommand):
             si = SoundInfo(path)
             sound_kwargs['program'] = program
             si.get_sound(save=True, **sound_kwargs)
-            si.find_diffusion(program, save=True)
+            si.find_episode(program, save=True)
             si.find_playlist(si.sound)
             sounds.append(si.sound.pk)
 

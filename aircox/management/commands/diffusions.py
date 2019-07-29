@@ -15,60 +15,57 @@ planified before the (given) month.
 - "check" will remove all diffusions that are unconfirmed and have been planified
 from the (given) month and later.
 """
-import time
+import datetime
 import logging
 from argparse import RawTextHelpFormatter
 
 from django.core.management.base import BaseCommand, CommandError
+from django.db import transaction
 from django.utils import timezone as tz
 
-from aircox.models import *
+from aircox.models import Schedule, Diffusion
 
 logger = logging.getLogger('aircox.tools')
 
 
 class Actions:
-    @classmethod
-    def update(cl, date, mode):
-        manual = (mode == 'manual')
+    date = None
 
-        count = [0, 0]
-        for schedule in Schedule.objects.filter(program__active=True) \
-                .order_by('initial'):
-            # in order to allow rerun links between diffusions, we save items
-            # by schedule;
-            items = schedule.diffusions_of_month(date, exclude_saved=True)
-            count[0] += len(items)
+    def __init__(self, date):
+        self.date = date or datetime.date.today()
 
-            # we can't bulk create because we need signal processing
-            for item in items:
-                conflicts = item.get_conflicts()
-                item.type = Diffusion.Type.unconfirmed \
-                    if manual or conflicts.count() else \
-                    Diffusion.Type.normal
-                item.save(no_check=True)
-                if conflicts.count():
-                    item.conflicts.set(conflicts.all())
+    def update(self):
+        episodes, diffusions = [], []
+        for schedule in Schedule.objects.filter(program__active=True,
+                                                initial__isnull=True):
+            eps, diffs = schedule.diffusions_of_month(self.date)
 
-            logger.info('[update] schedule %s: %d new diffusions',
-                        str(schedule), len(items),
-                        )
+            episodes += eps
+            diffusions += diffs
 
-        logger.info('[update] %d diffusions have been created, %s', count[0],
-                    'do not forget manual approval' if manual else
-                    '{} conflicts found'.format(count[1]))
+            logger.info('[update] %s: %d episodes, %d diffusions and reruns',
+                        str(schedule), len(eps), len(diffs))
 
-    @staticmethod
-    def clean(date):
+        with transaction.atomic():
+            logger.info('[update] save %d episodes and %d diffusions',
+                        len(episodes), len(diffusions))
+            for episode in episodes:
+                episode.save()
+            for diffusion in diffusions:
+                # force episode id's update
+                diffusion.episode = diffusion.episode
+                diffusion.save()
+
+    def clean(self):
         qs = Diffusion.objects.filter(type=Diffusion.Type.unconfirmed,
-                                      start__lt=date)
+                                      start__lt=self.date)
         logger.info('[clean] %d diffusions will be removed', qs.count())
         qs.delete()
 
-    @staticmethod
-    def check(date):
+    def check(self):
+        # TODO: redo
         qs = Diffusion.objects.filter(type=Diffusion.Type.unconfirmed,
-                                      start__gt=date)
+                                      start__gt=self.date)
         items = []
         for diffusion in qs:
             schedules = Schedule.objects.filter(program=diffusion.program)
@@ -88,21 +85,21 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.formatter_class = RawTextHelpFormatter
-        now = tz.datetime.today()
+        today = datetime.date.today()
 
         group = parser.add_argument_group('action')
         group.add_argument(
-            '--update', action='store_true',
+            '-u', '--update', action='store_true',
             help='generate (unconfirmed) diffusions for the given month. '
                  'These diffusions must be confirmed manually by changing '
                  'their type to "normal"'
         )
         group.add_argument(
-            '--clean', action='store_true',
+            '-l', '--clean', action='store_true',
             help='remove unconfirmed diffusions older than the given month'
         )
         group.add_argument(
-            '--check', action='store_true',
+            '-c', '--check', action='store_true',
             help='check unconfirmed later diffusions from the given '
                  'date agains\'t schedule. If no schedule is found, remove '
                  'it.'
@@ -110,10 +107,10 @@ class Command(BaseCommand):
 
         group = parser.add_argument_group('date')
         group.add_argument(
-            '--year', type=int, default=now.year,
+            '--year', type=int, default=today.year,
             help='used by update, default is today\'s year')
         group.add_argument(
-            '--month', type=int, default=now.month,
+            '--month', type=int, default=today.month,
             help='used by update, default is today\'s month')
         group.add_argument(
             '--next-month', action='store_true',
@@ -121,31 +118,20 @@ class Command(BaseCommand):
                  ' (if next month from today'
         )
 
-        group = parser.add_argument_group('options')
-        group.add_argument(
-            '--mode', type=str, choices=['manual', 'auto'],
-            default='auto',
-            help='manual means that all generated diffusions are unconfirmed, '
-                 'thus must be approved manually; auto confirmes all '
-                 'diffusions except those that conflicts with others'
-        )
-
     def handle(self, *args, **options):
-        date = tz.datetime(year=options.get('year'),
-                           month=options.get('month'),
-                           day=1)
-        date = tz.make_aware(date)
+        date = datetime.date(year=options['year'], month=options['month'],
+                             day=1)
         if options.get('next_month'):
             month = options.get('month')
             date += tz.timedelta(days=28)
             if date.month == month:
                 date += tz.timedelta(days=28)
-
             date = date.replace(day=1)
 
+        actions = Actions(date)
         if options.get('update'):
-            Actions.update(date, mode=options.get('mode'))
+            actions.update()
         if options.get('clean'):
-            Actions.clean(date)
+            actions.clean()
         if options.get('check'):
-            Actions.check(date)
+            actions.check()

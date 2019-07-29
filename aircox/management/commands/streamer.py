@@ -216,7 +216,7 @@ class Monitor:
             return
 
         qs = Diffusions.objects.station(self.station).at().filter(
-            type=Diffusion.Type.normal,
+            type=Diffusion.Type.on_air,
             sound__type=Sound.Type.archive,
         )
         logs = Log.objects.station(station).on_air().with_diff()

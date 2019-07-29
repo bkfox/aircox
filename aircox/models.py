@@ -153,12 +153,12 @@ class Station(models.Model):
         if date:
             logs = Log.objects.at(date)
             diffs = Diffusion.objects.station(self).at(date) \
-                .filter(start__lte=now, type=Diffusion.Type.normal) \
+                .filter(start__lte=now, type=Diffusion.Type.on_air) \
                 .order_by('-start')
         else:
             logs = Log.objects
             diffs = Diffusion.objects \
-                             .filter(type=Diffusion.Type.normal,
+                             .filter(type=Diffusion.Type.on_air,
                                      start__lte=now) \
                              .order_by('-start')[:count]
 
@@ -653,7 +653,7 @@ class DiffusionQuerySet(models.QuerySet):
         return self.filter(program=program)
 
     def on_air(self):
-        return self.filter(type=Diffusion.Type.normal)
+        return self.filter(type=Diffusion.Type.on_air)
 
     def at(self, date=None):
         """
@@ -811,7 +811,7 @@ class Diffusion(models.Model):
         True if Diffusion is live (False if there are sounds files)
         """
 
-        return self.type == self.Type.normal and \
+        return self.type == self.Type.on_air and \
             not self.get_sounds(archive=True).count()
 
     def get_playlist(self, **types):

@@ -120,6 +120,7 @@ class Page(StatusModel):
     cover = FilerImageField(
         on_delete=models.SET_NULL, null=True, blank=True,
         verbose_name=_('Cover'),
+        related_name='+',
     )
 
     # options

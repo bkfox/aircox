@@ -18,7 +18,7 @@ from django.urls import include, path, re_path
 from django.contrib import admin
 
 import aircox.urls
-import aircox_web.urls
+# import aircox_web.urls
 
 try:
     urlpatterns = [
@@ -35,7 +35,7 @@ try:
         )
 
     urlpatterns.append(path('filer/', include('filer.urls')))
-    urlpatterns += aircox_web.urls.urlpatterns
+    # urlpatterns += aircox_web.urls.urlpatterns
 
 except Exception as e:
     import traceback
