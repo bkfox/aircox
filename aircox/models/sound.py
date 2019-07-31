@@ -22,15 +22,32 @@ __all__ = ['Sound', 'SoundQuerySet', 'Track']
 
 
 class SoundQuerySet(models.QuerySet):
+    def episode(self, episode=None, id=None):
+        return self.filter(episode=episode) if id is None else \
+               self.filter(episode__id=id)
+
+    def diffusion(self, diffusion=None, id=None):
+        return self.filter(episode__diffusion=diffusion) if id is None else \
+               self.filter(episode__diffusion__id=id)
+
     def podcasts(self):
-        """ Return sound available as podcasts """
+        """ Return sounds available as podcasts """
         return self.filter(Q(embed__isnull=False) | Q(is_public=True))
 
-    def episode(self, episode):
-        return self.filter(episode=episode)
+    def archive(self):
+        """ Return sounds that are archives """
+        return self.filter(type=Sound.Type.archive)
 
-    def diffusion(self, diffusion):
-        return self.filter(episode__diffusion=diffusion)
+    def paths(self, archive=True, order_by=True):
+        """
+        Return paths as a flat list (exclude sound without path).
+        If `order_by` is True, order by path.
+        """
+        if archive:
+            self = self.archive()
+        if order_by:
+            self = self.order_by('path')
+        return self.filter(path__isnull=False).values_list('path', flat=True)
 
 
 class Sound(models.Model):
@@ -46,6 +63,7 @@ class Sound(models.Model):
 
     name = models.CharField(_('name'), max_length=64)
     program = models.ForeignKey(
+        # FIXME: not nullable?
         Program, models.SET_NULL, blank=True, null=True,
         verbose_name=_('program'),
         help_text=_('program related to it'),
@@ -94,6 +112,21 @@ class Sound(models.Model):
     )
 
     objects = SoundQuerySet.as_manager()
+
+    class Meta:
+        verbose_name = _('Sound')
+        verbose_name_plural = _('Sounds')
+
+    def __str__(self):
+        return '/'.join(self.path.split('/')[-3:])
+
+    def save(self, check=True, *args, **kwargs):
+        if self.episode is not None and self.program is None:
+            self.program = self.episode.program
+        if check:
+            self.check_on_file()
+        self.__check_name()
+        super().save(*args, **kwargs)
 
     def get_mtime(self):
         """
@@ -219,21 +252,6 @@ class Sound(models.Model):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.__check_name()
-
-    def save(self, check=True, *args, **kwargs):
-        if self.episode is not None and self.program is None:
-            self.program = self.episode.program
-        if check:
-            self.check_on_file()
-        self.__check_name()
-        super().save(*args, **kwargs)
-
-    def __str__(self):
-        return '/'.join(self.path.split('/')[-3:])
-
-    class Meta:
-        verbose_name = _('Sound')
-        verbose_name_plural = _('Sounds')
 
 
 class Track(models.Model):

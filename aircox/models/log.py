@@ -21,8 +21,9 @@ __all__ = ['Log', 'LogQuerySet']
 
 
 class LogQuerySet(models.QuerySet):
-    def station(self, station):
-        return self.filter(station=station)
+    def station(self, station=None, id=None):
+        return self.filter(station=station) if id is None else \
+               self.filter(station_id=id)
 
     def at(self, date=None):
         date = utils.date_or_default(date)
@@ -189,16 +190,20 @@ class Log(models.Model):
         Other log
         """
 
+    station = models.ForeignKey(
+        Station, models.CASCADE,
+        verbose_name=_('station'),
+        help_text=_('related station'),
+    )
     type = models.SmallIntegerField(
         choices=[(int(y), _(x.replace('_', ' ')))
                  for x, y in Type.__members__.items()],
         blank=True, null=True,
         verbose_name=_('type'),
     )
-    station = models.ForeignKey(
-        Station, models.CASCADE,
-        verbose_name=_('station'),
-        help_text=_('related station'),
+    date = models.DateTimeField(
+        default=tz.now, db_index=True,
+        verbose_name=_('date'),
     )
     source = models.CharField(
         # we use a CharField to avoid loosing logs information if the
@@ -206,10 +211,6 @@ class Log(models.Model):
         max_length=64, blank=True, null=True,
         verbose_name=_('source'),
         help_text=_('identifier of the source related to this log'),
-    )
-    date = models.DateTimeField(
-        default=tz.now, db_index=True,
-        verbose_name=_('date'),
     )
     comment = models.CharField(
         max_length=512, blank=True, null=True,

@@ -1,153 +1,139 @@
-import atexit, logging, os, re, signal, subprocess
+from collections import OrderedDict
+import atexit
+import logging
+import os
+import re
+import signal
+import subprocess
 
+import psutil
 import tzlocal
 
 from django.template.loader import render_to_string
 from django.utils import timezone as tz
 
-import aircox.models as models
-import aircox.settings as settings
-
-from aircox.connector import Connector
+from . import settings
+from .models import Port, Station, Sound
+from .connector import Connector
 
 
 local_tz = tzlocal.get_localzone()
-logger = logging.getLogger('aircox.tools')
+logger = logging.getLogger('aircox')
 
 
 class Streamer:
-    """
-    Audio controller of a Station.
-    """
-    station = None
-    """
-    Related station
-    """
-    template_name = 'aircox/config/liquidsoap.liq'
-    """
-    If set, use this template in order to generated the configuration
-    file in self.path file
-    """
-    path = None
-    """
-    Path of the configuration file.
-    """
-    source = None
-    """
-    Current source object that is responsible of self.sound
-    """
-    process = None
-    """
-    Application's process if ran from Streamer
-    """
-    socket_path = ''
-    """
-    Path to the connector's socket
-    """
     connector = None
-    """
-    Connector to Liquidsoap server
-    """
+    process = None
 
-    def __init__(self, station, **kwargs):
+    station = None
+    template_name = 'aircox/scripts/station.liq'
+    path = None
+    """ Config path """
+    sources = None
+    """ List of all monitored sources """
+    source = None
+    """ Current on air source """
+
+    def __init__(self, station):
         self.station = station
+        self.id = self.station.slug.replace('-', '_')
         self.path = os.path.join(station.path, 'station.liq')
-        self.socket_path = os.path.join(station.path, 'station.sock')
-        self.connector = Connector(self.socket_path)
-        self.__dict__.update(kwargs)
+        self.connector = Connector(os.path.join(station.path, 'station.sock'))
+        self.init_sources()
 
     @property
-    def id(self):
-        """
-        Streamer identifier common in both external app and here
-        """
-        return self.station.slug
+    def socket_path(self):
+        """ Path to Unix socket file """
+        return self.connector.address
 
-    #
-    # RPC
-    #
-    def _send(self, *args, **kwargs):
-        return self.connector.send(*args, **kwargs)
-
-    def fetch(self):
-        """
-        Fetch data of the children and so on
-
-        The base function just execute the function of all children
-        sources. The plugin must implement the other extra part
-        """
-        sources = self.station.sources
-        for source in sources:
-            source.fetch()
-
-        rid = self._send('request.on_air').split(' ')[0]
-        if ' ' in rid:
-            rid = rid[:rid.index(' ')]
-        if not rid:
-            return
-
-        data = self._send('request.metadata ', rid, parse = True)
-        if not data:
-            return
-
-        self.source = next(
-            iter(source for source in self.station.sources
-                if source.rid == rid),
-            self.source
+    @property
+    def inputs(self):
+        """ Return input ports of the station """
+        return self.station.port_set.filter(
+            direction=Port.Direction.input,
+            active=True
         )
 
-    def push(self, config = True):
-        """
-        Update configuration and children's info.
+    @property
+    def outputs(self):
+        """ Return output ports of the station """
+        return self.station.port_set.filter(
+            direction=Port.Direction.output,
+            active=True,
+        )
 
-        The base function just execute the function of all children
-        sources. The plugin must implement the other extra part
+    @property
+    def is_ready(self):
         """
-        sources = self.station.sources
-        for source in sources:
-            source.push()
-
-        if config and self.path and self.template_name:
-            data = render_to_string(self.template_name, {
-                'station': self.station,
-                'streamer': self,
-                'settings': settings,
-            })
-            data = re.sub('[\t ]+\n', '\n', data)
-            data = re.sub('\n{3,}', '\n\n', data)
-
-            os.makedirs(os.path.dirname(self.path), exist_ok = True)
-            with open(self.path, 'w+') as file:
-                file.write(data)
-
-    #
-    # Process management
-    #
-    def __get_process_args(self):
+        If external program is ready to use, returns True
         """
-        Get arguments for the executed application. Called by exec, to be
-        used as subprocess.Popen(__get_process_args()).
-        If no value is returned, abort the execution.
-        """
+        return self.send('list') != ''
+
+    # Sources and config ###############################################
+    def send(self, *args, **kwargs):
+        return self.connector.send(*args, **kwargs) or ''
+
+    def init_sources(self):
+        streams = self.station.program_set.filter(stream__isnull=False)
+        self.dealer = QueueSource(self, 'dealer')
+        self.sources = [self.dealer] + [
+            PlaylistSource(self, program=program) for program in streams
+        ]
+
+    def make_config(self):
+        """ Make configuration files and directory (and sync sources) """
+        data = render_to_string(self.template_name, {
+            'station': self.station,
+            'streamer': self,
+            'settings': settings,
+        })
+        data = re.sub('[\t ]+\n', '\n', data)
+        data = re.sub('\n{3,}', '\n\n', data)
+
+        os.makedirs(os.path.dirname(self.path), exist_ok=True)
+        with open(self.path, 'w+') as file:
+            file.write(data)
+
+        self.sync()
+
+    def sync(self):
+        """ Sync all sources. """
+        for source in self.sources:
+            source.sync()
+
+    def fetch(self):
+        """ Fetch data from liquidsoap """
+        for source in self.sources:
+            source.fetch()
+
+        rid = self.send('request.on_air').split(' ')
+        if rid:
+            rid = rid[-1]
+            # data = self._send('request.metadata ', rid, parse=True)
+            # if not data:
+            #     return
+            pred = lambda s: s.rid == rid
+        else:
+            pred = lambda s: s.is_playing
+
+        self.source = next((source for source in self.sources if pred(source)),
+                           self.source)
+
+    # Process ##########################################################
+    def get_process_args(self):
         return ['liquidsoap', '-v', self.path]
 
-    def __check_for_zombie(self):
-        """
-        Check if there is a process that has not been killed
-        """
+    def check_zombie_process(self):
         if not os.path.exists(self.socket_path):
             return
 
-        import psutil
-        conns = [
-            conn for conn in psutil.net_connections(kind='unix')
-            if conn.laddr == self.socket_path
-        ]
+        conns = [conn for conn in psutil.net_connections(kind='unix')
+                 if conn.laddr == self.socket_path]
         for conn in conns:
             if conn.pid is not None:
                 os.kill(conn.pid, signal.SIGKILL)
 
-    def process_run(self):
+    def run_process(self):
         """
         Execute the external application with corresponding informations.
 
@@ -156,26 +142,24 @@ class Streamer:
         if self.process:
             return
 
-        self.push()
-
-        args = self.__get_process_args()
+        args = self.get_process_args()
         if not args:
             return
 
-        self.__check_for_zombie()
+        self.check_zombie_process()
         self.process = subprocess.Popen(args, stderr=subprocess.STDOUT)
-        atexit.register(lambda: self.process_terminate())
+        atexit.register(lambda: self.kill_process())
 
-    def process_terminate(self):
+    def kill_process(self):
         if self.process:
             logger.info("kill process {pid}: {info}".format(
-                pid = self.process.pid,
-                info = ' '.join(self.__get_process_args())
+                pid=self.process.pid,
+                info=' '.join(self.get_process_args())
             ))
             self.process.kill()
             self.process = None
 
-    def process_wait(self):
+    def wait_process(self):
         """
         Wait for the process to terminate if there is a process
         """
@@ -183,193 +167,96 @@ class Streamer:
             self.process.wait()
             self.process = None
 
-    def ready(self):
-        """
-        If external program is ready to use, returns True
-        """
-        return self._send('var.list') != ''
-
 
 class Source:
-    """
-    Controller of a Source. Value are usually updated directly on the
-    external side.
-    """
-    station = None
-    connector = None
-    """ Connector to Liquidsoap server """
-    program = None
-    """ Related program """
-    name = ''
-    """ Name of the source """
-    path = ''
-    """ Path to the playlist file. """
-    on_air = None
+    controller = None
+    id = None
 
-
-    # retrieved from fetch
-    sound = ''
-    """ (fetched) current sound being played """
+    uri = ''
     rid = None
-    """ (fetched) current request id of the source in LiquidSoap """
     air_time = None
-    """ (fetched) datetime of last on_air """
+    status = None
 
     @property
-    def id(self):
-        return self.program.slug if self.program else 'dealer'
-
-    def __init__(self, station, **kwargs):
-        self.station = station
-        self.connector = self.station.streamer.connector
-        self.__dict__.update(kwargs)
-        self.__init_playlist()
-        if self.program:
-            self.name = self.program.name
-
-    #
-    # Playlist
-    #
-    __playlist = None
-
-    def __init_playlist(self):
-        self.__playlist = []
-        if not self.path:
-            self.path = os.path.join(self.station.path,
-                                     self.id + '.m3u')
-            self.from_file()
-
-        if not self.__playlist:
-            self.from_db()
+    def station(self):
+        return self.controller.station
 
     @property
-    def playlist(self):
-        """
-        Current playlist on the Source, list of paths to play
-        """
-        self.fetch()
-        return self.__playlist
+    def is_playing(self):
+        return self.status == 'playing'
 
-    @playlist.setter
-    def playlist(self, value):
-        value = sorted(value)
-        if value != self.__playlist:
-            self.__playlist = value
-            self.push()
+    def __init__(self, controller, id=None):
+        self.controller = controller
+        self.id = id
 
-    def from_db(self, diffusion = None, program = None):
-        """
-        Load a playlist to the controller from the database. If diffusion or
-        program is given use it, otherwise, try with self.program if exists, or
-        (if URI, self.url).
-
-        A playlist from a program uses all its available archives.
-        """
-        if diffusion:
-            self.playlist = diffusion.get_playlist(archive = True)
-            return
-
-        program = program or self.program
-        if program:
-            self.playlist = [ sound.path for sound in
-                models.Sound.objects.filter(
-                    type = models.Sound.Type.archive,
-                    program = program,
-                )
-            ]
-            return
-
-    def from_file(self, path = None):
-        """
-        Load a playlist from the given file (if not, use the
-        controller's one
-        """
-        path = path or self.path
-        if not os.path.exists(path):
-            return
-
-        with open(path, 'r') as file:
-            self.__playlist = file.read()
-            self.__playlist = self.__playlist.split('\n') \
-                                if self.__playlist else []
-
-    #
-    # RPC & States
-    #
-    def _send(self, *args, **kwargs):
-        return self.connector.send(*args, **kwargs)
-
-    @property
-    def is_stream(self):
-        return self.program and not self.program.show
-
-    @property
-    def is_dealer(self):
-        return not self.program
-
-    @property
-    def active(self):
-        return self._send('var.get ', self.id, '_active') == 'true'
-
-    @active.setter
-    def active(self, value):
-        self._send('var.set ', self.id, '_active', '=',
-                   'true' if value else 'false')
+    def sync(self):
+        """ Synchronize what should be synchronized """
+        pass
 
     def fetch(self):
-        """
-        Get the source information
-        """
-        data = self._send(self.id, '.get', parse = True)
-        if not data or type(data) != dict:
-            return
+        data = self.controller.send(self.id, '.get', parse=True)
+        self.on_metadata(data if data and isinstance(data, dict) else {})
 
+    def on_metadata(self, data):
+        """ Update source info from provided request metadata """
         self.rid = data.get('rid')
-        self.sound = data.get('initial_uri')
+        self.uri = data.get('initial_uri')
+        self.status = data.get('status')
 
-        # get air_time
         air_time = data.get('on_air')
-      #  try:
-        air_time = tz.datetime.strptime(air_time, '%Y/%m/%d %H:%M:%S')
-        self.air_time = local_tz.localize(air_time)
-      #  except:
-      #      pass
-
-    def push(self):
-        """
-        Update data relative to the source on the external program.
-        By default write the playlist.
-        """
-        os.makedirs(os.path.dirname(self.path), exist_ok = True)
-        with open(self.path, 'w') as file:
-            file.write('\n'.join(self.__playlist or []))
+        if air_time:
+            air_time = tz.datetime.strptime(air_time, '%Y/%m/%d %H:%M:%S')
+            self.air_time = local_tz.localize(air_time)
+        else:
+            self.air_time = None
 
     def skip(self):
-        """
-        Skip the current sound in the source
-        """
-        self._send(self.id, '.skip')
+        """ Skip the current source sound """
+        self.controller.send(self.id, '.skip')
 
     def restart(self):
-        """
-        Restart the current sound in the source. Since liquidsoap
-        does not give us current position in stream, it seeks back
-        max 10 hours in the current sound.
-        """
-        self.seek(-216000*10);
+        """ Restart current sound """
+        # seek 10 hours back since there is not possibility to get current pos
+        self.seek(-216000*10)
 
     def seek(self, n):
-        """
-        Seeks into the sound. Note that liquidsoap seems really slow for that.
-        """
-        self._send(self.id, '.seek ', str(n))
+        """ Seeks into the sound. """
+        self.controller.send(self.id, '.seek ', str(n))
+
+
+class PlaylistSource(Source):
+    """ Source handling playlists (program streams) """
+    path = None
+    """ Path to playlist """
+    program = None
+    """ Related program """
+    playlist = None
+    """ The playlist """
+
+    def __init__(self, controller, id=None, program=None, **kwargs):
+        id = program.slug.replace('-', '_') if id is None else id
+        self.program = program
+
+        super().__init__(controller, id=id, **kwargs)
+        self.path = os.path.join(self.station.path, self.id + '.m3u')
+
+    def get_sound_queryset(self):
+        """ Get playlist's sounds queryset """
+        return self.program.sound_set.archive()
+
+    def load_playlist(self):
+        """ Load playlist """
+        self.playlist = self.get_sound_queryset().paths()
+
+    def write_playlist(self):
+        """ Write playlist file. """
+        os.makedirs(os.path.dirname(self.path), exist_ok=True)
+        with open(self.path, 'w') as file:
+            file.write('\n'.join(self.playlist or []))
 
     def stream(self):
-        """
-        Return dict of info for the current Stream program running on
-        the source. If not, return None.
-        [ used in the templates ]
-        """
+        """ Return program's stream info if any (or None) as dict. """
+        # used in templates
         # TODO: multiple streams
         stream = self.program.stream_set.all().first()
         if not stream or (not stream.begin and not stream.delay):
@@ -383,4 +270,15 @@ class Source:
             'end': stream.end.strftime('%Hh%M') if stream.end else None,
             'delay': to_seconds(stream.delay) if stream.delay else 0
         }
+
+    def sync(self):
+        self.load_playlist()
+        self.write_playlist()
+
+
+class QueueSource(Source):
+    def queue(self, *paths):
+        """ Add the provided paths to source's play queue """
+        for path in paths:
+            print(self.controller.send(self.id, '_queue.push ', path))
 

@@ -66,7 +66,8 @@ class Program(Page):
     @property
     def path(self):
         """ Return program's directory path """
-        return os.path.join(settings.AIRCOX_PROGRAMS_DIR, self.slug)
+        return os.path.join(settings.AIRCOX_PROGRAMS_DIR,
+                            self.slug.replace('-', '_'))
 
     @property
     def archives_path(self):
@@ -80,7 +81,6 @@ class Program(Page):
 
     def __init__(self, *kargs, **kwargs):
         super().__init__(*kargs, **kwargs)
-
         if self.slug:
             self.__initial_path = self.path
 
@@ -137,7 +137,21 @@ class Program(Page):
                  .update(path=Concat('path', Substr(F('path'), len(path_))))
 
 
-class BaseRerunQuerySet(models.QuerySet):
+class InProgramQuerySet(models.QuerySet):
+    """
+    Queryset for model having a ForeignKey field "program" to `Program`.
+    """
+    def station(self, station=None, id=None):
+        return self.filter(program__station=station) if id is None else \
+               self.filter(program__station__id=id)
+
+    def program(self, program=None, id=None):
+        return self.filter(program=program) if id is None else \
+               self.filter(program__id=id)
+
+
+class BaseRerunQuerySet(InProgramQuerySet):
+    """ Queryset for BaseRerun (sub)classes. """
     def rerun(self):
         return self.filter(initial__isnull=False)
 
@@ -147,8 +161,8 @@ class BaseRerunQuerySet(models.QuerySet):
 
 class BaseRerun(models.Model):
     """
-    Abstract model offering rerun facilities.
-    `start` datetime field or property must be implemented by sub-classes
+    Abstract model offering rerun facilities. Assume `start` is a
+    datetime field or attribute implemented by subclass.
     """
     program = models.ForeignKey(
         Program, models.CASCADE,
@@ -157,9 +171,12 @@ class BaseRerun(models.Model):
     initial = models.ForeignKey(
         'self', models.SET_NULL, related_name='rerun_set',
         verbose_name=_('initial schedule'),
+        limit_choices_to={'initial__isnull': True},
         blank=True, null=True,
         help_text=_('mark as rerun of this %(model_name)'),
     )
+
+    objects = BaseRerunQuerySet.as_manager()
 
     class Meta:
         abstract = True

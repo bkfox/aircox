@@ -10,20 +10,12 @@ from django.utils.functional import cached_property
 
 
 from aircox import settings, utils
-from .program import Program, BaseRerun, BaseRerunQuerySet
+from .program import Program, InProgramQuerySet, \
+        BaseRerun, BaseRerunQuerySet
 from .page import Page, PageQuerySet
 
 
-__all__ = ['Episode', 'EpisodeQuerySet', 'Diffusion', 'DiffusionQuerySet']
-
-
-class EpisodeQuerySet(PageQuerySet):
-    def station(self, station):
-        return self.filter(program__station=station)
-
-    # FIXME: useful??? might use program.episode_set
-    def program(self, program):
-        return self.filter(program=program)
+__all__ = ['Episode', 'Diffusion', 'DiffusionQuerySet']
 
 
 class Episode(Page):
@@ -32,7 +24,7 @@ class Episode(Page):
         verbose_name=_('program'),
     )
 
-    objects = EpisodeQuerySet.as_manager()
+    objects = InProgramQuerySet.as_manager()
 
     class Meta:
         verbose_name = _('Episode')
@@ -52,40 +44,31 @@ class Episode(Page):
         return cls(program=program, title=title)
 
 class DiffusionQuerySet(BaseRerunQuerySet):
-    def station(self, station):
-        return self.filter(episode__program__station=station)
-
-    def program(self, program):
-        return self.filter(program=program)
+    def episode(self, episode=None, id=None):
+        """ Diffusions for this episode """
+        return self.filter(episode=episode) if id is None else \
+               self.filter(episode__id=id)
 
     def on_air(self):
+        """ On air diffusions """
         return self.filter(type=Diffusion.Type.on_air)
 
-    def at(self, date=None):
-        """
-        Return diffusions occuring at the given date, ordered by +start
+    def now(self, now=None, order=True):
+        """ Diffusions occuring now """
+        now = now or tz.now()
+        qs = self.filter(start__lte=now, end__gte=now).distinct()
+        return qs.order_by('start') if order else qs
 
-        If date is a datetime instance, get diffusions that occurs at
-        the given moment. If date is not a datetime object, it uses
-        it as a date, and get diffusions that occurs this day.
+    def today(self, today=None, order=True):
+        """ Diffusions occuring today. """
+        today = today or datetime.date.today()
+        qs = self.filter(Q(start__date=today) | Q(end__date=today))
+        return qs.order_by('start') if order else qs
 
-        When date is None, uses tz.now().
-        """
-        # note: we work with localtime
-        date = utils.date_or_default(date)
-
-        qs = self
-        filters = None
-
-        if isinstance(date, datetime.datetime):
-            # use datetime: we want diffusion that occurs around this
-            # range
-            filters = {'start__lte': date, 'end__gte': date}
-            qs = qs.filter(**filters)
-        else:
-            # use date: we want diffusions that occurs this day
-            qs = qs.filter(Q(start__date=date) | Q(end__date=date))
-        return qs.order_by('start').distinct()
+    def at(self, date, order=True):
+        """ Return diffusions at specified date or datetime """
+        return self.now(date, order) if isinstance(date, tz.datetime) else \
+            self.today(date, order)
 
     def after(self, date=None):
         """
@@ -183,10 +166,12 @@ class Diffusion(BaseRerun):
         #    self.check_conflicts()
 
     def save_rerun(self):
+        print('rerun save', self)
         self.episode = self.initial.episode
         self.program = self.episode.program
 
-    def save_original(self):
+    def save_initial(self):
+        print('initial save', self)
         self.program = self.episode.program
         if self.episode != self._initial['episode']:
             self.rerun_set.update(episode=self.episode, program=self.program)
@@ -221,20 +206,11 @@ class Diffusion(BaseRerun):
 
         return tz.localtime(self.end, tz.get_current_timezone())
 
-    @property
-    def original(self):
-        """ Return the original diffusion (self or initial) """
-
-        return self.initial.original if self.initial else self
-
     # TODO: property?
     def is_live(self):
-        """
-        True if Diffusion is live (False if there are sounds files)
-        """
-
+        """ True if Diffusion is live (False if there are sounds files). """
         return self.type == self.Type.on_air and \
-            not self.get_sounds(archive=True).count()
+            not self.episode.sound_set.archive().count()
 
     def get_playlist(self, **types):
         """

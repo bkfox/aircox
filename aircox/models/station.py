@@ -33,6 +33,7 @@ class Station(models.Model):
     """
     name = models.CharField(_('name'), max_length=64)
     slug = models.SlugField(_('slug'), max_length=64, unique=True)
+    # FIXME: remove - should be decided only by Streamer controller + settings
     path = models.CharField(
         _('path'),
         help_text=_('path to the working directory'),
@@ -47,70 +48,13 @@ class Station(models.Model):
 
     objects = StationQuerySet.as_manager()
 
-    #
-    # Controllers
-    #
-    __sources = None
-    __dealer = None
-    __streamer = None
-
-    def __prepare_controls(self):
-        import aircox.controllers as controllers
-        from .program import Program
-        if not self.__streamer:
-            self.__streamer = controllers.Streamer(station=self)
-            self.__dealer = controllers.Source(station=self)
-            self.__sources = [self.__dealer] + [
-                controllers.Source(station=self, program=program)
-
-                for program in Program.objects.filter(stream__isnull=False)
-            ]
-
-    @property
-    def inputs(self):
-        """
-        Return all active input ports of the station
-        """
-        return self.port_set.filter(
-            direction=Port.Direction.input,
-            active=True
-        )
-
-    @property
-    def outputs(self):
-        """ Return all active output ports of the station """
-        return self.port_set.filter(
-            direction=Port.Direction.output,
-            active=True,
-        )
-
-    @property
-    def sources(self):
-        """ Audio sources, dealer included """
-        self.__prepare_controls()
-        return self.__sources
-
-    @property
-    def dealer(self):
-        """ Get dealer control """
-        self.__prepare_controls()
-        return self.__dealer
-
-    @property
-    def streamer(self):
-        """ Audio controller for the station """
-        self.__prepare_controls()
-        return self.__streamer
-
     def __str__(self):
         return self.name
 
     def save(self, make_sources=True, *args, **kwargs):
         if not self.path:
-            self.path = os.path.join(
-                settings.AIRCOX_CONTROLLERS_WORKING_DIR,
-                self.slug
-            )
+            self.path = os.path.join(settings.AIRCOX_CONTROLLERS_WORKING_DIR,
+                                     self.slug.replace('-', '_'))
 
         if self.default:
             qs = Station.objects.filter(default=True)

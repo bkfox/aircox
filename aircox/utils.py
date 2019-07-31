@@ -29,8 +29,7 @@ def date_or_default(date, into=None):
     type if any.
     """
     date = date if date is not None else datetime.date.today() \
-        if into is not None and issubclass(into, datetime.date) else \
-        tz.datetime.now()
+        if into is not None and issubclass(into, datetime.date) else tz.now()
 
     if into is not None:
         date = cast_date(date, into)

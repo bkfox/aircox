@@ -1,90 +1,84 @@
-import os
 import socket
 import re
 import json
 
 
+response_re = re.compile(r'(.*)\s+END\s*$')
+key_val_re = re.compile(r'(?P<key>[^=]+)="?(?P<value>([^"]|\\")+)"?')
+
+
 class Connector:
     """
-    Simple connector class that retrieve/send data through a unix
-    domain socket file or a TCP/IP connection
-
-    It is able to parse list of `key=value`, and JSON data.
+    Connection to AF_UNIX or AF_INET, get and send data. Received
+    data can be parsed from list of `key=value` or JSON.
     """
-    __socket = None
-    __available = False
+    socket = None
+    """ The socket """
     address = None
     """
-    a string to the unix domain socket file, or a tuple (host, port) for
+    String to a Unix domain socket file, or a tuple (host, port) for
     TCP/IP connection
     """
 
     @property
-    def available(self):
-        return self.__available
+    def is_open(self):
+        return self.socket is not None
 
-    def __init__(self, address = None):
+    def __init__(self, address=None):
         if address:
             self.address = address
 
     def open(self):
-        if self.__available:
+        if self.is_open:
             return
 
+        family = socket.AF_UNIX if isinstance(self.address, str) else \
+                 socket.AF_INET
         try:
-            family = socket.AF_INET if type(self.address) in (tuple, list) else \
-                     socket.AF_UNIX
-            self.__socket = socket.socket(family, socket.SOCK_STREAM)
-            self.__socket.connect(self.address)
-            self.__available = True
+            self.socket = socket.socket(family, socket.SOCK_STREAM)
+            self.socket.connect(self.address)
         except:
-            self.__available = False
+            self.close()
             return -1
 
-    def send(self, *data, try_count = 1, parse = False, parse_json = False):
-        if self.open():
-            return ''
-        data = bytes(''.join([str(d) for d in data]) + '\n', encoding='utf-8')
+    def close(self):
+        self.socket.close()
+        self.socket = None
 
+    # FIXME: return None on failed
+    def send(self, *data, try_count=1, parse=False, parse_json=False):
+        if self.open():
+            return None
+
+        data = bytes(''.join([str(d) for d in data]) + '\n', encoding='utf-8')
         try:
-            reg = re.compile(r'(.*)\s+END\s*$')
-            self.__socket.sendall(data)
+            self.socket.sendall(data)
             data = ''
-            while not reg.search(data):
-                data += self.__socket.recv(1024).decode('utf-8')
+            while not response_re.search(data):
+                data += self.socket.recv(1024).decode('utf-8')
 
             if data:
-                data = reg.sub(r'\1', data)
-                data = data.strip()
-                if parse:
-                    data = self.parse(data)
-                elif parse_json:
-                    data = self.parse_json(data)
+                data = response_re.sub(r'\1', data).strip()
+                data = self.parse(data) if parse else \
+                    self.parse_json(data) if parse_json else data
             return data
         except:
-            self.__available = False
+            self.close()
             if try_count > 0:
                 return self.send(data, try_count - 1)
 
-    def parse(self, string):
-        string = string.split('\n')
-        data = {}
-        for line in string:
-            line = re.search(r'(?P<key>[^=]+)="?(?P<value>([^"]|\\")+)"?', line)
-            if not line:
-                continue
-            line = line.groupdict()
-            data[line['key']] = line['value']
-        return data
+    def parse(self, value):
+        return {
+            line.groupdict()['key']: line.groupdict()['value']
+            for line in (key_val_re.search(line) for line in value.split('\n'))
+            if line
+        }
 
-    def parse_json(self, string):
+    def parse_json(self, value):
         try:
-            if string[0] == '"' and string[-1] == '"':
-                string = string[1:-1]
-            return json.loads(string) if string else None
+            if value[0] == '"' and value[-1] == '"':
+                value = value[1:-1]
+            return json.loads(value) if value else None
         except:
             return None
-
-
-
 

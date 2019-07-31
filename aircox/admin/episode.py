@@ -36,21 +36,6 @@ class DiffusionAdmin(DiffusionBaseAdmin, admin.ModelAdmin):
 
     fields = ['type', 'start', 'end', 'initial', 'program']
 
-    def get_object(self, *args, **kwargs):
-        """
-        We want rerun to redirect to the given object.
-        """
-        obj = super().get_object(*args, **kwargs)
-        if obj and obj.initial:
-            obj = obj.initial
-        return obj
-
-    def get_queryset(self, request):
-        qs = super().get_queryset(request)
-        if request.GET and len(request.GET):
-            return qs
-        return qs.exclude(type=Diffusion.Type.unconfirmed)
-
 
 class DiffusionInline(DiffusionBaseAdmin, admin.TabularInline):
     model = Diffusion
