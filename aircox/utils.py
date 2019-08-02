@@ -2,16 +2,18 @@ import datetime
 import django.utils.timezone as tz
 
 
-def date_range(date):
+def date_range(date, delta=None, **delta_kwargs):
     """
+    Return a range of provided date such as `[date-delta, date+delta]`.
+    :param date: the reference date
+    :param delta: timedelta
+    :param \**delta_kwargs: timedelta init arguments
+
     Return a datetime range for a given day, as:
     ```(date, 0:0:0:0; date, 23:59:59:999)```.
     """
-    date = date_or_default(date, tz.datetime)
-    return (
-        date.replace(hour=0, minute=0, second=0),
-        date.replace(hour=23, minute=59, second=59, microsecond=999)
-    )
+    delta = tz.timedelta(**delta_kwargs) if delta is None else delta
+    return [date - delta, date + delta]
 
 
 def cast_date(date, into=datetime.date):

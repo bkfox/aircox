@@ -122,7 +122,7 @@ class Diffusion(BaseRerun):
     class Type(IntEnum):
         on_air = 0x00
         unconfirmed = 0x01
-        canceled = 0x02
+        cancel = 0x02
 
     episode = models.ForeignKey(
         Episode, models.CASCADE,

@@ -42,6 +42,11 @@ def interactive (id, s) =
                     description="Seek to a relative position",
                     usage="seek <duration>",
                     "seek", fun (x) ->  begin seek(s, x) end)
+    server.register(namespace=id,
+                    description="Get source's track remaining time",
+                    usage="remaining",
+                    "remaining", fun (_) ->  begin json_of(source.remaining(s)) end)
+
     s = store_metadata(id=id, size=1, s)
     add_skip_command(s)
     s

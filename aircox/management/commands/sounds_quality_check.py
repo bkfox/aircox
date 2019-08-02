@@ -9,7 +9,7 @@ from argparse import RawTextHelpFormatter
 
 from django.core.management.base import BaseCommand, CommandError
 
-logger = logging.getLogger('aircox.tools')
+logger = logging.getLogger('aircox.commands')
 
 
 class Stats:

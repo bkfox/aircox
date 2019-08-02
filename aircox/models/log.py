@@ -167,18 +167,14 @@ class Log(models.Model):
         """
         Source has been stopped, e.g. manually
         """
+        # Rule: \/ diffusion != null \/ sound != null
         start = 0x01
-        """
-        The diffusion or sound has been triggered by the streamer or
-        manually.
-        """
-        load = 0x02
-        """
-        A playlist has updated, and loading started. A related Diffusion
-        does not means that the playlist is only for it (e.g. after a
-        crash, it can reload previous remaining sound files + thoses of
-        the next diffusion)
-        """
+        """ Diffusion or sound has been request to be played. """
+        cancel = 0x02
+        """ Diffusion has been canceled. """
+        # Rule: \/ sound != null /\ track == null
+        #       \/ sound == null /\ track != null
+        #       \/ sound == null /\ track == null /\ comment = sound_path
         on_air = 0x03
         """
         The sound or diffusion has been detected occurring on air. Can
@@ -186,9 +182,7 @@ class Log(models.Model):
         them since they don't have an attached sound archive.
         """
         other = 0x04
-        """
-        Other log
-        """
+        """ Other log """
 
     station = models.ForeignKey(
         Station, models.CASCADE,
@@ -216,12 +210,6 @@ class Log(models.Model):
         max_length=512, blank=True, null=True,
         verbose_name=_('comment'),
     )
-
-    diffusion = models.ForeignKey(
-        Diffusion, models.SET_NULL,
-        blank=True, null=True, db_index=True,
-        verbose_name=_('Diffusion'),
-    )
     sound = models.ForeignKey(
         Sound, models.SET_NULL,
         blank=True, null=True, db_index=True,
@@ -231,6 +219,11 @@ class Log(models.Model):
         Track, models.SET_NULL,
         blank=True, null=True, db_index=True,
         verbose_name=_('Track'),
+    )
+    diffusion = models.ForeignKey(
+        Diffusion, models.SET_NULL,
+        blank=True, null=True, db_index=True,
+        verbose_name=_('Diffusion'),
     )
 
     objects = LogQuerySet.as_manager()

@@ -23,7 +23,7 @@ from aircox.models import *
 
 __doc__ = __doc__.format(settings=settings)
 
-logger = logging.getLogger('aircox.tools')
+logger = logging.getLogger('aircox.commands')
 
 
 class PlaylistImport:

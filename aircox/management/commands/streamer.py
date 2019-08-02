@@ -6,25 +6,29 @@ used to:
 - cancels Diffusions that have an archive but could not have been played;
 - run Liquidsoap
 """
+# TODO:
+# x controllers: remaining
+# x diffusion conflicts
+# x cancel
+# x when liquidsoap fails to start/exists: exit
+# - handle restart after failure
+# - file in queue without sound not logged?
+# - is stream restart after live ok?
 from argparse import RawTextHelpFormatter
 import time
 
 import pytz
-import tzlocal
+from django.db.models import Q
 from django.core.management.base import BaseCommand
 from django.utils import timezone as tz
 
-from aircox.models import Station, Episode, Diffusion, Track, Sound, Log
 from aircox.controllers import Streamer, PlaylistSource
+from aircox.models import Station, Episode, Diffusion, Track, Sound, Log
+from aircox.utils import date_range
+
 
 # force using UTC
 tz.activate(pytz.UTC)
-
-
-# FIXME liquidsoap does not manage timezones -- we have to convert
-#       'on_air' metadata we get from it into utc one in order to work
-#       correctly.
-local_tz = tzlocal.get_localzone()
 
 
 class Monitor:
@@ -42,6 +46,8 @@ class Monitor:
     """
     streamer = None
     """ Streamer controller """
+    delay = None
+    """ Timedelta: minimal delay between two call of monitor. """
     logs = None
     """ Queryset to station's logs (ordered by -pk) """
     cancel_timeout = 20
@@ -65,8 +71,11 @@ class Monitor:
         """ Log of last triggered item (sound or diffusion). """
         return self.logs.start().with_diff().first()
 
-    def __init__(self, streamer, **kwargs):
+    def __init__(self, streamer, delay, cancel_timeout, **kwargs):
         self.streamer = streamer
+        # adding time ensure all calculation have a margin
+        self.delay = delay + tz.timedelta(seconds=5)
+        self.cancel_timeout = cancel_timeout
         self.__dict__.update(kwargs)
         self.logs = self.get_logs_queryset()
 
@@ -81,6 +90,27 @@ class Monitor:
             return
 
         self.streamer.fetch()
+
+        # Skip tracing - analyzis:
+        # Reason: multiple database request every x seconds, reducing it.
+        # We could skip this part when remaining time is higher than a minimal
+        # value (which should be derived from Command's delay). Problems:
+        # - How to trace tracks? (+ Source can change: caching log might sucks)
+        # - if liquidsoap's source/request changes: remaining time goes higher,
+        #   thus avoiding fetch
+        #
+        # Approach: something like having a mean time, such as:
+        #
+        # ```
+        # source = stream.source
+        # mean_time = source.air_time
+        #           + min(next_track.timestamp, source.remaining)
+        #           - (command.delay + 1)
+        # trace_required = \/ source' != source
+        #                  \/ source.uri' != source.uri
+        #                  \/ now < mean_time
+        # ```
+        #
         source = self.streamer.source
         if source and source.uri:
             log = self.trace_sound(source)
@@ -102,21 +132,22 @@ class Monitor:
 
     def trace_sound(self, source):
         """ Return on air sound log (create if not present). """
-        sound_path, air_time = source.uri, source.air_time
+        air_uri, air_time = source.uri, source.air_time
 
         # check if there is yet a log for this sound on the source
-        delta = tz.timedelta(seconds=5)
-        air_times = (air_time - delta, air_time + delta)
-
-        log = self.logs.on_air().filter(source=source.id,
-                                        sound__path=sound_path,
-                                        date__range=air_times).first()
+        log = self.logs.on_air().filter(
+            Q(sound__path=air_uri) |
+            # sound can be null when arbitrary sound file is played
+            Q(sound__isnull=True, track__isnull=True, comment=air_uri),
+            source=source.id,
+            date__range=date_range(air_time, self.delay),
+        ).first()
         if log:
             return log
 
         # get sound
         diff = None
-        sound = Sound.objects.filter(path=sound_path).first()
+        sound = Sound.objects.filter(path=air_uri).first()
         if sound and sound.episode_id is not None:
             diff = Diffusion.objects.episode(id=sound.episode_id).on_air() \
                                     .now(air_time).first()
@@ -124,7 +155,7 @@ class Monitor:
         # log sound on air
         return self.log(type=Log.Type.on_air, date=source.air_time,
                         source=source.id, sound=sound, diffusion=diff,
-                        comment=sound_path)
+                        comment=air_uri)
 
     def trace_tracks(self, log):
         """
@@ -155,19 +186,56 @@ class Monitor:
         Handle scheduled diffusion, trigger if needed, preload playlists
         and so on.
         """
-        # TODO: restart
-        # TODO: handle conflict + cancel
-        diff = Diffusion.objects.station(self.station).on_air().now() \
+        # TODO: program restart
+
+        # Diffusion conflicts are handled by the way a diffusion is defined
+        # as candidate for the next dealer's start.
+        #
+        # ```
+        # logged_diff: /\ \A diff in diffs: \E log: /\ log.type = START
+        #                                           /\ log.diff = diff
+        #                                           /\ log.date = diff.start
+        # queue_empty: /\ dealer.queue is empty
+        #              /\ \/ ~dealer.on_air
+        #                 \/ dealer.remaining < delay
+        #
+        # start_allowed: /\ diff not in logged_diff
+        #                /\ queue_empty
+        #
+        # start_canceled: /\ diff not in logged diff
+        #                 /\ ~queue_empty
+        #                 /\ diff.start < now + cancel_timeout
+        # ```
+        #
+        now = tz.now()
+        diff = Diffusion.objects.station(self.station).on_air().now(now) \
                         .filter(episode__sound__type=Sound.Type.archive) \
                         .first()
-        log = self.logs.start().filter(diffusion=diff) if diff else None
+        # Can't use delay: diffusion may start later than its assigned start.
+        log = None if not diff else self.logs.start().filter(diffusion=diff)
         if not diff or log:
             return
 
-        playlist = Sound.objects.episode(id=diff.episode_id).paths()
         dealer = self.streamer.dealer
-        dealer.queue(*playlist)
-        self.log(type=Log.Type.start, source=dealer.id, diffusion=diff,
+        # start
+        if not dealer.queue and dealer.rid is None or \
+                dealer.remaining < self.delay.total_seconds():
+            self.start_diff(dealer, diff)
+
+        # cancel
+        if diff.start < now - self.cancel_timeout:
+            self.cancel_diff(dealer, diff)
+
+    def start_diff(self, source, diff):
+        playlist = Sound.objects.episode(id=diff.episode_id).paths()
+        source.append(*playlist)
+        self.log(type=Log.Type.start, source=source.id, diffusion=diff,
+                 comment=str(diff))
+
+    def cancel_diff(self, source, diff):
+        diff.type = Diffusion.Type.cancel
+        diff.save()
+        self.log(type=Log.Type.cancel, source=source.id, diffusion=diff,
                  comment=str(diff))
 
     def sync(self):
@@ -207,7 +275,8 @@ class Command (BaseCommand):
             '-d', '--delay', type=int,
             default=1000,
             help='time to sleep in MILLISECONDS between two updates when we '
-                 'monitor'
+                 'monitor. This influence the delay before a diffusion is '
+                 'launched.'
         )
         group.add_argument(
             '-s', '--station', type=str, action='append',
@@ -215,7 +284,7 @@ class Command (BaseCommand):
                  'all stations'
         )
         group.add_argument(
-            '-t', '--timeout', type=int,
+            '-t', '--timeout', type=float,
             default=Monitor.cancel_timeout,
             help='time to wait in MINUTES before canceling a diffusion that '
                  'should have ran but did not. '
@@ -226,7 +295,6 @@ class Command (BaseCommand):
                config=None, run=None, monitor=None,
                station=[], delay=1000, timeout=600,
                **options):
-
         stations = Station.objects.filter(name__in=station) if station else \
                    Station.objects.all()
         streamers = [Streamer(station) for station in stations]
@@ -238,14 +306,15 @@ class Command (BaseCommand):
                 streamer.run_process()
 
         if monitor:
-            monitors = [Monitor(streamer, cancel_timeout=timeout)
+            delay = tz.timedelta(milliseconds=delay)
+            timeout = tz.timedelta(minutes=timeout)
+            monitors = [Monitor(streamer, delay, timeout)
                         for streamer in streamers]
 
-            delay = delay / 1000
-            while True:
+            while not run or streamer.is_running:
                 for monitor in monitors:
                     monitor.monitor()
-                time.sleep(delay)
+                time.sleep(delay.total_seconds())
 
         if run:
             for streamer in streamers:

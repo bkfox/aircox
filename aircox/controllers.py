@@ -17,6 +17,10 @@ from .models import Port, Station, Sound
 from .connector import Connector
 
 
+# FIXME liquidsoap does not manage timezones -- we have to convert
+#       'on_air' metadata we get from it into utc one in order to work
+#       correctly.
+
 local_tz = tzlocal.get_localzone()
 logger = logging.getLogger('aircox')
 
@@ -32,7 +36,11 @@ class Streamer:
     sources = None
     """ List of all monitored sources """
     source = None
-    """ Current on air source """
+    """ Current source being played on air """
+    # note: we disable on_air rids since we don't have use of it for the
+    # moment
+    # on_air = None
+    # """ On-air request ids (rid) """
 
     def __init__(self, station):
         self.station = station
@@ -46,6 +54,27 @@ class Streamer:
         """ Path to Unix socket file """
         return self.connector.address
 
+    @property
+    def is_ready(self):
+        """
+        If external program is ready to use, returns True
+        """
+        return self.send('list') != ''
+
+    @property
+    def is_running(self):
+        if self.process is None:
+            return False
+
+        returncode = self.process.poll()
+        if returncode is None:
+            return True
+
+        self.process = None
+        logger.debug('process died with return code %s' % returncode)
+        return False
+
+    # FIXME: is it really needed as property?
     @property
     def inputs(self):
         """ Return input ports of the station """
@@ -61,13 +90,6 @@ class Streamer:
             direction=Port.Direction.output,
             active=True,
         )
-
-    @property
-    def is_ready(self):
-        """
-        If external program is ready to use, returns True
-        """
-        return self.send('list') != ''
 
     # Sources and config ###############################################
     def send(self, *args, **kwargs):
@@ -98,26 +120,27 @@ class Streamer:
 
     def sync(self):
         """ Sync all sources. """
+        if self.process is None:
+            return
+
         for source in self.sources:
             source.sync()
 
     def fetch(self):
         """ Fetch data from liquidsoap """
+        if self.process is None:
+            return
+
         for source in self.sources:
             source.fetch()
 
-        rid = self.send('request.on_air').split(' ')
-        if rid:
-            rid = rid[-1]
-            # data = self._send('request.metadata ', rid, parse=True)
-            # if not data:
-            #     return
-            pred = lambda s: s.rid == rid
-        else:
-            pred = lambda s: s.is_playing
+        # request.on_air is not ordered: we need to do it manually
+        if self.dealer.is_playing:
+            self.source = self.dealer
+            return
 
-        self.source = next((source for source in self.sources if pred(source)),
-                           self.source)
+        self.source = next((source for source in self.sources
+                           if source.is_playing), None)
 
     # Process ##########################################################
     def get_process_args(self):
@@ -152,10 +175,8 @@ class Streamer:
 
     def kill_process(self):
         if self.process:
-            logger.info("kill process {pid}: {info}".format(
-                pid=self.process.pid,
-                info=' '.join(self.get_process_args())
-            ))
+            logger.debug("kill process %s: %s", self.process.pid,
+                         ' '.join(self.get_process_args()))
             self.process.kill()
             self.process = None
 
@@ -170,12 +191,19 @@ class Streamer:
 
 class Source:
     controller = None
+    """ parent controller """
     id = None
-
+    """ source id """
     uri = ''
+    """ source uri """
     rid = None
+    """ request id """
     air_time = None
+    """ on air time """
     status = None
+    """ source status """
+    remaining = 0.0
+    """ remaining time """
 
     @property
     def station(self):
@@ -184,6 +212,10 @@ class Source:
     @property
     def is_playing(self):
         return self.status == 'playing'
+
+    #@property
+    #def is_on_air(self):
+    #    return self.rid is not None and self.rid in self.controller.on_air
 
     def __init__(self, controller, id=None):
         self.controller = controller
@@ -194,14 +226,17 @@ class Source:
         pass
 
     def fetch(self):
+        data = self.controller.send(self.id, '.remaining')
+        self.remaining = float(data)
+
         data = self.controller.send(self.id, '.get', parse=True)
         self.on_metadata(data if data and isinstance(data, dict) else {})
 
     def on_metadata(self, data):
         """ Update source info from provided request metadata """
-        self.rid = data.get('rid')
-        self.uri = data.get('initial_uri')
-        self.status = data.get('status')
+        self.rid = data.get('rid') or None
+        self.uri = data.get('initial_uri') or None
+        self.status = data.get('status') or None
 
         air_time = data.get('on_air')
         if air_time:
@@ -277,8 +312,17 @@ class PlaylistSource(Source):
 
 
 class QueueSource(Source):
-    def queue(self, *paths):
+    queue = None
+    """ Source's queue (excluded on_air request) """
+
+    def append(self, *paths):
         """ Add the provided paths to source's play queue """
         for path in paths:
-            print(self.controller.send(self.id, '_queue.push ', path))
+            self.controller.send(self.id, '_queue.push ', path)
+
+    def fetch(self):
+        super().fetch()
+        queue = self.controller.send(self.id, '_queue.queue').split(' ')
+        self.queue = queue
+
 

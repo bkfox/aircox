@@ -15,12 +15,12 @@ def to_array (path):
 
 setup(
     name='aircox',
-    version='0.1',
+    version='0.9',
     license='GPLv3',
     author='bkfox',
-    description='Aircox is a radio programs manager that includes tools and cms',
+    description='Aircox is a radio programs manager including tools and cms',
     long_description=to_rst('README.md'),
-    url='http://bkfox.net/',
+    url='https://github.com/bkfox/aircox',
     packages=find_packages(),
     include_package_data=True,
     install_requires=to_array('requirements.txt'),

@@ -12,7 +12,7 @@ from django.utils import timezone as tz
 import aircox.settings as settings
 from aircox.models import Log, Station
 
-logger = logging.getLogger('aircox.tools')
+logger = logging.getLogger('aircox.commands')
 
 
 class Command (BaseCommand):

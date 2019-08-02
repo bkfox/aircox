@@ -42,7 +42,7 @@ from aircox import settings, utils
 from aircox.models import Diffusion, Program, Sound
 from .import_playlist import PlaylistImport
 
-logger = logging.getLogger('aircox.tools')
+logger = logging.getLogger('aircox.commands')
 
 
 sound_path_re = re.compile(

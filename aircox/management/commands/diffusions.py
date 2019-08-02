@@ -25,7 +25,7 @@ from django.utils import timezone as tz
 
 from aircox.models import Schedule, Diffusion
 
-logger = logging.getLogger('aircox.tools')
+logger = logging.getLogger('aircox.commands')
 
 
 class Actions:
