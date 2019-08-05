@@ -1,0 +1,75 @@
+@charset "utf-8";
+@import "~bulma/sass/utilities/_all.sass";
+
+$body-background-color: $light;
+
+@import "~bulma/bulma";
+
+.navbar {
+    margin-bottom: 1em;
+}
+
+.navbar.has-shadow {
+    box-shadow: 0em 0.05em 0.5em rgba(0,0,0,0.1);
+}
+
+/*
+
+
+.navbar-brand img {
+    min-height: 6em;
+}
+
+.navbar-menu .navbar-item:not(:last-child) {
+    border-right: 1px $grey solid;
+}
+*/
+
+
+/** page **/
+.page {
+    & > .cover {
+        float: right;
+        max-width: 45%;
+    }
+
+    & > .header {
+        margin-bottom: 1.5em;
+    }
+
+    .headline {
+        font-size: 1.4em;
+        padding: 0.2em 0em;
+    }
+
+    p {
+        padding: 0.4em 0em;
+    }
+}
+
+
+.cover {
+    margin: 1em 0em;
+    border: 0.2em black solid;
+}
+
+.small-cover {
+    width: 10em;
+}
+
+aside {
+    .small-cover {
+        width: 4em;
+    }
+
+    .media .subtitle {
+        font-size: 1em;
+    }
+
+    .media .content {
+        display: none;
+    }
+}
+
+
+

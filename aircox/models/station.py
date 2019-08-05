@@ -5,7 +5,9 @@ from django.db import models
 from django.db.models import Q
 from django.utils.translation import ugettext_lazy as _
 
-import aircox.settings as settings
+from filer.fields.image import FilerImageField
+
+from .. import settings
 
 
 __all__ = ['Station', 'StationQuerySet', 'Port']
@@ -45,6 +47,14 @@ class Station(models.Model):
         default=True,
         help_text=_('if checked, this station is used as the main one')
     )
+    logo = FilerImageField(
+        on_delete=models.SET_NULL, null=True, blank=True,
+        verbose_name=_('Logo'),
+    )
+    hosts = models.TextField(
+        _("website's urls"), max_length=512, null=True, blank=True,
+        help_text=_('specify one url per line')
+    )
 
     objects = StationQuerySet.as_manager()
 
@@ -58,15 +68,14 @@ class Station(models.Model):
 
         if self.default:
             qs = Station.objects.filter(default=True)
-
-            if self.pk:
+            if self.pk is not None:
                 qs = qs.exclude(pk=self.pk)
             qs.update(default=False)
 
         super().save(*args, **kwargs)
 
 
-class Port (models.Model):
+class Port(models.Model):
     """
     Represent an audio input/output for the audio stream
     generation.
@@ -145,6 +154,5 @@ class Port (models.Model):
             type=self.get_type_display(),
             id=self.pk or ''
         )
-
 
 

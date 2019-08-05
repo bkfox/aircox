@@ -13,12 +13,13 @@ Including another URLconf
     1. Add an import:  from blog import urls as blog_urls
     2. Add a URL to urlpatterns:  url(r'^blog/', include(blog_urls))
 """
+# from django.conf.urls.i18n import i18n_patterns
 from django.conf import settings
 from django.urls import include, path, re_path
 from django.contrib import admin
 
 import aircox.urls
-# import aircox_web.urls
+
 
 try:
     urlpatterns = [
@@ -35,7 +36,6 @@ try:
         )
 
     urlpatterns.append(path('filer/', include('filer.urls')))
-    # urlpatterns += aircox_web.urls.urlpatterns
 
 except Exception as e:
     import traceback

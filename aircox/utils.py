@@ -2,6 +2,23 @@ import datetime
 import django.utils.timezone as tz
 
 
+__all__ = ['Redirect', 'redirect', 'date_range', 'cast_date',
+           'date_or_default', 'to_timedelta', 'seconds_to_time']
+
+
+class Redirect(Exception):
+    """ Redirect exception -- see `redirect()`. """
+    def __init__(self, url):
+        self.url = url
+
+
+def redirect(url):
+    """
+    Raise a Redirect exception in order to response a redirection to client.
+    AircoxMiddleware must be enabled. """
+    raise Redirect(url)
+
+
 def date_range(date, delta=None, **delta_kwargs):
     """
     Return a range of provided date such as `[date-delta, date+delta]`.
@@ -51,6 +68,11 @@ def to_timedelta(time):
         minutes=time.minute,
         seconds=time.second
     )
+
+
+def to_seconds(time):
+    """ Return total seconds for provided time """
+    return 3600 * time.hour + 60 * time.minute + time.second
 
 
 def seconds_to_time(seconds):

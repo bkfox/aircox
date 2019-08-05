@@ -2,6 +2,10 @@ from django.contrib import admin
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
 
+from adminsortable2.admin import SortableInlineAdminMixin
+
+from ..models import NavItem
+
 
 class PageAdmin(admin.ModelAdmin):
     list_display = ('cover_thumb', 'title', 'status')
@@ -24,5 +28,6 @@ class PageAdmin(admin.ModelAdmin):
             if obj.cover else ''
 
 
-
+class NavItemInline(SortableInlineAdminMixin, admin.TabularInline):
+    model = NavItem
 

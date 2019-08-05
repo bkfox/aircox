@@ -25,6 +25,7 @@ class Episode(Page):
     )
 
     objects = InProgramQuerySet.as_manager()
+    detail_url_name = 'episode-detail'
 
     class Meta:
         verbose_name = _('Episode')
@@ -36,12 +37,18 @@ class Episode(Page):
         super().save(*args, **kwargs)
 
     @classmethod
-    def from_date(cls, program, date):
-        title = settings.AIRCOX_EPISODE_TITLE.format(
+    def get_default_title(cls, program, date):
+        """ Get default Episode's title  """
+        return settings.AIRCOX_EPISODE_TITLE.format(
             program=program,
             date=date.strftime(settings.AIRCOX_EPISODE_TITLE_DATE_FORMAT),
         )
-        return cls(program=program, title=title)
+
+    @classmethod
+    def from_date(cls, program, date):
+        title = cls.get_default_title(program, date)
+        return cls(program=program, title=title, cover=program.cover)
+
 
 class DiffusionQuerySet(BaseRerunQuerySet):
     def episode(self, episode=None, id=None):

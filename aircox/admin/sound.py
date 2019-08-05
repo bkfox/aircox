@@ -5,6 +5,13 @@ from aircox.models import Sound
 from .playlist import TracksInline
 
 
+class SoundInline(admin.TabularInline):
+    model = Sound
+    fields = ['type', 'path', 'duration', 'is_public']
+    readonly_fields = ['type']
+    extra = 0
+
+
 @admin.register(Sound)
 class SoundAdmin(admin.ModelAdmin):
     def filename(self, obj):
@@ -22,5 +29,6 @@ class SoundAdmin(admin.ModelAdmin):
     ]
     readonly_fields = ('path', 'duration',)
     inlines = [TracksInline]
+
 
 

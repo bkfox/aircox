@@ -7,6 +7,7 @@ from aircox.models import Episode, Diffusion, Sound, Track
 
 from .page import PageAdmin
 from .playlist import TracksInline
+from .sound import SoundInline
 
 
 class DiffusionBaseAdmin:
@@ -44,14 +45,6 @@ class DiffusionInline(DiffusionBaseAdmin, admin.TabularInline):
 
     def has_add_permission(self, request):
         return request.user.has_perm('aircox_program.scheduling')
-
-
-class SoundInline(admin.TabularInline):
-    model = Sound
-    fk_name = 'episode'
-    fields = ['type', 'path', 'duration', 'is_public']
-    readonly_fields = ['type']
-    extra = 0
 
 
 @admin.register(Episode)

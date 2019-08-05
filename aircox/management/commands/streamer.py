@@ -12,7 +12,6 @@ used to:
 # x cancel
 # x when liquidsoap fails to start/exists: exit
 # - handle restart after failure
-# - file in queue without sound not logged?
 # - is stream restart after live ok?
 from argparse import RawTextHelpFormatter
 import time

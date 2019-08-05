@@ -15,6 +15,7 @@ from django.utils import timezone as tz
 from . import settings
 from .models import Port, Station, Sound
 from .connector import Connector
+from .utils import to_seconds
 
 
 # FIXME liquidsoap does not manage timezones -- we have to convert
@@ -296,9 +297,6 @@ class PlaylistSource(Source):
         stream = self.program.stream_set.all().first()
         if not stream or (not stream.begin and not stream.delay):
             return
-
-        def to_seconds(time):
-            return 3600 * time.hour + 60 * time.minute + time.second
 
         return {
             'begin': stream.begin.strftime('%Hh%M') if stream.begin else None,

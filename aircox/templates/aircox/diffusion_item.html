@@ -1,0 +1,59 @@
+{% load i18n easy_thumbnails_tags aircox %}
+{% comment %}
+Context variables:
+- object: the actual diffusion
+- page: current parent page in which item is rendered
+- hide_schedule: if True, do not display start time
+- hide_headline: if True, do not display headline
+{% endcomment %}
+
+{% with object.episode as episode %}
+{% with episode.program as program %}
+<article class="media">
+    <div class="media-left">
+        <img src="{% thumbnail episode.cover 128x128 crop=scale %}"
+            class="small-cover">
+    </div>
+    <div class="media-content">
+        <h5 class="subtitle is-size-5">
+            {% if episode.is_published %}
+            <a href="{{ episode.get_absolute_url }}">{{ episode.title }}</a>
+            {% endif %}
+        </h5>
+
+        <div class="">
+            {% if not page or program != page %}
+            {% if program.is_published %}
+            <a href="{{ program.get_absolute_url }}" class="has-text-grey-dark">
+                {{ program.title }}</a>
+            {% else %}{{ program.title }}
+            {% endif %}
+            {% if not hide_schedule %} &mdash; {% endif %}
+            {% endif %}
+
+            {% if not hide_schedule %}
+            <time datetime="{{ object.start|date:"c" }}" title="{{ object.start }}"
+                  class="has-text-weight-light is-size-6">
+                  {{ object.start|date:"d M, H:i" }}
+            </time>
+            {% endif %}
+
+            {% if object.initial %}
+            {% with object.initial.date as date %}
+            <span class="tag is-info" title="{% blocktrans %}Rerun of {{ date }}{% endblocktrans %}">
+                {% trans "rerun" %}
+            </span>
+            {% endwith %}
+            {% endif %}
+            </span>
+        </div>
+        {% if not hide_headline %}
+        <div class="content">
+          {{ episode.headline }}
+        </div>
+        {% endif %}
+    </div>
+</article>
+{% endwith %}
+{% endwith %}
+

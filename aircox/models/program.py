@@ -62,6 +62,7 @@ class Program(Page):
     )
 
     objects = ProgramQuerySet.as_manager()
+    detail_url_name = 'program-detail'
 
     @property
     def path(self):
