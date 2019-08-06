@@ -1,0 +1,39 @@
+{% extends "aircox/page_item.html" %}
+{% load i18n easy_thumbnails_tags aircox %}
+
+{% comment %}
+Context variables:
+- object: episode
+- diffusion: episode's diffusion
+- hide_schedule: if True, do not display start time
+{% endcomment %}
+
+{% block title %}
+{% if not object.is_published and object.program.is_published %}
+<a href="{{ object.program.get_absolute_url }}">{{ object.title }}</a>
+{% else %}
+{{ block.super }}
+{% endif %}
+{% endblock %}
+
+{% block subtitle %}
+{{ block.super }}
+
+{% if diffusion %}
+    {% if not hide_schedule %}
+    {% if object.category %}&mdash;{% endif %}
+    <time datetime="{{ diffusion.start|date:"c" }}" title="{{ diffusion.start }}">
+          {{ diffusion.start|date:"d M, H:i" }}
+    </time>
+    {% endif %}
+
+    {% if diffusion.initial %}
+    {% with diffusion.initial.date as date %}
+    <span title="{% blocktrans %}Rerun of {{ date }}{% endblocktrans %}">
+        {% trans "(rerun)" %}
+    </span>
+    {% endwith %}
+    {% endif %}
+{% endif %}
+{% endblock %}
+

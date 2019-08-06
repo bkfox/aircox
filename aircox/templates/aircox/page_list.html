@@ -1,0 +1,103 @@
+{% extends "aircox/page.html" %}
+{% load i18n aircox %}
+
+{% with view.model|verbose_name:True as model_name_plural %}
+
+{% block title %}
+{{ model_name_plural }}
+{% endblock %}
+
+{% block side_nav %}
+{{ block.super }}
+
+<section class="toolbar">
+    <h4 class="subtitle is-5">{% trans "Filters" %}</h4>
+    <form method="GET" action="">
+        {% block list_filters %}
+        <div class="field is-horizontal">
+            <div class="field-label">
+                <label class="label">{% trans "Categories" %}</label>
+            </div>
+            <div class="field-body">
+                <div class="field is-grouped is-narrow">
+                    <div class="control">
+                        {% for category in filter_categories %}
+                        <label class="checkbox">
+                            <input type="checkbox" class="checkbox" name="categories"
+                                   value="{{ category.slug }}"
+                                   {% if category.slug in categories %}checked{% endif %} />
+                            {{ category.title }}
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endblock %}
+        <div class="field is-horizontal">
+            <div class="field-label">
+                <label class="label"></label>
+            </div>
+            <div class="field-body">
+                <div class="field is-grouped is-grouped-right">
+                    <div class="control">
+                        <button class="button is-primary"/>{% trans "Apply" %}</button>
+                    </div>
+                    <div class="control">
+                        <a href="?" class="button is-secondary">{% trans "Reset" %}</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        </div>
+    </form>
+</section>
+{% endblock %}
+
+
+{% block main %}
+<section>
+{% for object in object_list %}
+{% block list_object %}
+{% include item_template_name %}
+{% endblock %}
+{% endfor %}
+</section>
+
+{% if is_paginated %}
+<hr>
+
+{% update_query request.GET.copy page=None as GET %}
+{% with GET.urlencode as GET %}
+<nav class="pagination is-centered" role="pagination" aria-label="{% trans "pagination" %}">
+    {% if page_obj.has_previous %}
+    <a href="?{{ GET }}&page={{ page_obj.previous_page_number }}" class="pagination-previous">
+    {% else %}
+    <a class="pagination-previous" disabled>
+    {% endif %}
+        {% trans "Previous" %}</a>
+
+    {% if page_obj.has_next %}
+    <a href="?{{ GET }}&page={{ page_obj.next_page_number }}" class="pagination-next">
+    {% else %}
+    <a class="pagination-next" disabled>
+    {% endif %}
+        {% trans "Next" %}</a>
+
+    <ul class="pagination-list">
+    {% for i in paginator.page_range %}
+        <li>
+            <a class="pagination-link {% if page_obj.number == i %}is-current{% endif %}"
+               href="?{{ GET }}&page={{ i }}">{{ i }}</a>
+        </li>
+    {% endfor %}
+    </ul>
+</nav>
+{% endwith %}
+{% endif %}
+
+{% endblock %}
+
+{% endwith %}
+

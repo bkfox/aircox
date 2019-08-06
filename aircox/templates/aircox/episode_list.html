@@ -1,0 +1,14 @@
+{% extends "aircox/page_list.html" %}
+{% load i18n aircox %}
+
+{% block title %}
+{% if program %}
+    {% with program.title as program %}
+    {% blocktrans %}Episodes of {{ program }}{% endblocktrans %}
+    {% endwith %}
+{% else %}
+    {% trans "Episodes" %}
+    {% endif %}
+{% endblock %}
+
+
