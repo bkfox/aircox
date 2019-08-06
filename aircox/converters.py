@@ -45,4 +45,3 @@ class DateConverter:
     def to_url(self, value):
         return '{:04d}/{:02d}/{:02d}'.format(value.year, value.month,
                                              value.day)
-

@@ -4,22 +4,22 @@
 {% block side_nav %}
 {{ block.super }}
 
-{% if diffusions %}
+{% if episodes %}
 <section>
     <h4 class="subtitle is-size-4">{% trans "Last shows" %}</h4>
 
-    {% for object in diffusions %}
-    {% include "aircox/diffusion_item.html" %}
+    {% for object in episodes %}
+    {% include "aircox/episode_item.html" %}
     {% endfor %}
 
     <br>
     <nav class="pagination is-centered">
         <ul class="pagination-list">
             <li>
-                <a href="{% url "diffusion-list" program_slug=page.slug %}"
+                <a href="{% url "diffusion-list" program_slug=program.slug %}"
                     class="pagination-link"
                     aria-label="{% trans "Show all diffusions" %}">
-                    {% trans "All diffusions" %}
+                    {% trans "All shows" %}
                 </a>
             </li>
         </ul>

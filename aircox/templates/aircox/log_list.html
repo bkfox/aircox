@@ -39,7 +39,11 @@
                     {{ object.start|date:"H:i" }} - {{ object.end|date:"H:i" }}
                 </time>
             </td>
-            <td>{% include "aircox/diffusion_item.html" %}</td>
+            {% with object as diffusion %}
+            {% with diffusion.episode as object %}
+            <td>{% include "aircox/episode_item.html" %}</td>
+            {% endwith %}
+            {% endwith %}
         {% else %}
             <td>
                 <time datetime="{{ object.date }}" title="{{ object.date }}">

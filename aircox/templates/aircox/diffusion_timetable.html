@@ -34,15 +34,17 @@
             {% for day, diffusions in by_date.items %}
             <noscript><h4 class="subtitle is-4">{{ day|date:"l d F Y" }}</h4></noscript>
             <div id="{{timetable_id}}-{{ day|date:"Y-m-d" }}" v-if="value == '{{ day }}'">
-                {% for object in diffusions %}
+                {% for diffusion in diffusions %}
                 <div class="columns">
                     <div class="column is-one-fifth has-text-right">
-                        <time datetime="{{ object.start|date:"c" }}">
-                            {{ object.start|date:"H:i" }} - {{ object.end|date:"H:i" }}
+                        <time datetime="{{ diffusion.start|date:"c" }}">
+                        {{ diffusion.start|date:"H:i" }} - {{ diffusion.end|date:"H:i" }}
                         </time>
                     </div>
                     <div class="column">
-                        {% include "aircox/diffusion_item.html" %}
+                        {% with diffusion.episode as object %}
+                        {% include "aircox/episode_item.html" %}
+                        {% endwith %}
                     </div>
                 </div>
                 {% endfor %}

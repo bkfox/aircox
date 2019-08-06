@@ -6,5 +6,4 @@ class AircoxConfig(AppConfig):
     verbose_name = 'Aircox'
 
     def ready(self):
-        import aircox.signals
-
+        pass

@@ -7169,7 +7169,7 @@ label.panel-block {
   float: right;
   max-width: 45%; }
 
-.page > .header {
+.page .header {
   margin-bottom: 1.5em; }
 
 .page .headline {
@@ -7178,6 +7178,11 @@ label.panel-block {
 
 .page p {
   padding: 0.4em 0em; }
+
+section > .toolbar {
+  background-color: rgba(0, 0, 0, 0.05);
+  padding: 1em;
+  margin-bottom: 1.5em; }
 
 .cover {
   margin: 1em 0em;

@@ -2,17 +2,15 @@ import os
 import json
 import datetime
 
-from django.db.models import Count
 from django.views.generic.base import View, TemplateResponseMixin
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import HttpResponse, Http404
 from django.shortcuts import render
-from django.utils.translation import ugettext as _, ugettext_lazy
+from django.utils.translation import ugettext as _
 from django.utils import timezone as tz
-from django.views.decorators.cache import never_cache, cache_page
+from django.views.decorators.cache import cache_page
 
 import aircox.models as models
-import aircox.settings as settings
 
 
 # FIXME usefull?
@@ -28,6 +26,7 @@ class Stations:
         self.fetch_timeout = tz.now() + tz.timedelta(seconds=5)
         for station in self.stations:
             station.streamer.fetch()
+
 
 stations = Stations()
 
@@ -102,7 +101,7 @@ class Monitor(View, TemplateResponseMixin, LoginRequiredMixin):
             return HttpResponse('')
 
         POST = request.POST
-        controller = POST.get('controller')
+        POST.get('controller')
         action = POST.get('action')
 
         station = stations.stations.filter(name=POST.get('station')) \
@@ -256,5 +255,3 @@ class StatisticsView(View, TemplateResponseMixin, LoginRequiredMixin):
         self.request = request
         context = self.get_context_data(**kwargs)
         return render(request, self.template_name, context)
-
-

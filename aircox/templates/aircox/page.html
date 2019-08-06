@@ -7,10 +7,17 @@ Context:
 - page: page
 {% endcomment %}
 
+{% block subtitle %}
+{{ block.super }}
+{% if page.category %}
+<span class="column has-text-right">{{ page.category.title }}</span>
+{% endif %}
+{% endblock %}
+
 {% block head_title %}
     {% block title %}{{ title }}{% endblock %}
-    {% if title %} &mdash; {% endif %}
-    {{ site.title }}
+    {% if title %} &dash; {% endif %}
+    {{ station.name }}
 {% endblock %}
 
 

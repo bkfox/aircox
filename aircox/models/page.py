@@ -1,13 +1,13 @@
 from enum import IntEnum
+import re
 
 from django.db import models
 from django.urls import reverse
+from django.utils import timezone as tz
 from django.utils.text import slugify
 from django.utils.html import format_html
 from django.utils.translation import ugettext_lazy as _
-
-from django.contrib.contenttypes.fields import GenericForeignKey
-from django.contrib.contenttypes.models import ContentType
+from django.utils.functional import cached_property
 
 from ckeditor.fields import RichTextField
 from filer.fields.image import FilerImageField
@@ -16,12 +16,35 @@ from model_utils.managers import InheritanceQuerySet
 from .station import Station
 
 
-__all__ = ['PageQuerySet', 'Page', 'NavItem']
+__all__ = ['Category', 'PageQuerySet', 'Page', 'NavItem']
+
+
+headline_re = re.compile(r'(<p>)?'
+                         r'(?P<headline>[^\n]{1,140}(\n|[^\.]*?\.))'
+                         r'(</p>)?')
+
+
+class Category(models.Model):
+    title = models.CharField(_('title'), max_length=64)
+    slug = models.SlugField(_('slug'), max_length=64, db_index=True)
+
+    class Meta:
+        verbose_name = _('Category')
+        verbose_name_plural = _('Categories')
+
+    def __str__(self):
+        return self.title
 
 
 class PageQuerySet(InheritanceQuerySet):
+    def draft(self):
+        return self.filter(status=Page.STATUS.draft)
+
     def published(self):
         return self.filter(status=Page.STATUS.published)
+
+    def trash(self):
+        return self.filter(status=Page.STATUS.trash)
 
 
 class Page(models.Model):
@@ -38,13 +61,18 @@ class Page(models.Model):
         default=STATUS.draft,
         choices=[(int(y), _(x)) for x, y in STATUS.__members__.items()],
     )
+    category = models.ForeignKey(
+        Category, models.SET_NULL,
+        verbose_name=_('category'), blank=True, null=True, db_index=True
+    )
     cover = FilerImageField(
-        on_delete=models.SET_NULL, null=True, blank=True,
-        verbose_name=_('Cover'),
+        on_delete=models.SET_NULL,
+        verbose_name=_('Cover'), null=True, blank=True,
     )
     content = RichTextField(
         _('content'), blank=True, null=True,
     )
+    date = models.DateTimeField(default=tz.now)
     featured = models.BooleanField(
         _('featured'), default=False,
     )
@@ -85,6 +113,23 @@ class Page(models.Model):
     @property
     def is_trash(self):
         return self.status == self.STATUS.trash
+
+    @cached_property
+    def headline(self):
+        if not self.content:
+            return ''
+        headline = headline_re.search(self.content)
+        return headline.groupdict()['headline'] if headline else ''
+
+    @classmethod
+    def get_init_kwargs_from(cls, page, **kwargs):
+        kwargs.setdefault('cover', page.cover)
+        kwargs.setdefault('category', page.category)
+        return kwargs
+
+    @classmethod
+    def from_page(cls, page, **kwargs):
+        return cls(**cls.get_init_kwargs_from(page, **kwargs))
 
 
 class NavItem(models.Model):

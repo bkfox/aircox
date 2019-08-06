@@ -470,7 +470,8 @@ class Schedule(BaseRerun):
                 continue
 
             if initial is None:
-                episode = Episode.from_date(self.program, date)
+                episode = Episode.from_page(self.program, date=date)
+                episode.date = date
                 episodes[date] = episode
             else:
                 episode = episodes[initial]
@@ -488,10 +489,6 @@ class Schedule(BaseRerun):
         # TODO/FIXME: use validators?
         if self.initial is not None and self.date > self.date:
             raise ValueError('initial must be later')
-
-        # initial only if it has been yet saved
-        if self.pk:
-            self.__initial = self.__dict__.copy()
 
 
 class Stream(models.Model):

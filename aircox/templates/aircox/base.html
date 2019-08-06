@@ -5,10 +5,11 @@ Context:
 {% endcomment %}
 <html>
     <head>
-        <meta charset="utf-8">
-        <meta name="application-name" content="aircox">
-        <meta name="description" content="{{ site.description }}">
-        <meta name="keywords" content="{{ site.tags }}">
+        <meta charset="utf-8" />
+        <meta name="application-name" content="aircox" />
+        <meta name="description" content="{{ site.description }}" />
+        <meta name="keywords" content="{{ site.tags }}" />
+        <meta name="generator" content="Aircox" />
         <link rel="icon" href="{% thumbnail site.favicon 32x32 crop %}" />
 
         {% block assets %}
@@ -18,7 +19,7 @@ Context:
         {% endblock %}
 
         <title>
-            {% block head_title %}{{ site.title }}{% endblock %}
+            {% block head_title %}{{ station.name }}{% endblock %}
         </title>
 
         {% block head_extra %}{% endblock %}
@@ -52,12 +53,14 @@ Context:
                             {% block header %}
                             <h1 class="title is-1">{% block title %}{% endblock %}</h1>
 
-                            {% if parent %}
-                            <h4 class="subtitle is-size-3">
-                                <a href="{{ parent.get_absolute_url }}">
+                            <h4 class="subtitle is-size-3 columns">
+                                {% block subtitle %}
+                                {% if parent %}
+                                <a href="{{ parent.get_absolute_url }}" class="column">
                                     &#10092; {{ parent.title }}</a></li>
+                                {% endif %}
+                                {% endblock %}
                             </h4>
-                            {% endif %}
                             {% endblock %}
                         </header>
 

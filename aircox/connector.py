@@ -33,7 +33,7 @@ class Connector:
             return
 
         family = socket.AF_UNIX if isinstance(self.address, str) else \
-                 socket.AF_INET
+            socket.AF_INET
         try:
             self.socket = socket.socket(family, socket.SOCK_STREAM)
             self.socket.connect(self.address)
@@ -81,4 +81,3 @@ class Connector:
             return json.loads(value) if value else None
         except:
             return None
-

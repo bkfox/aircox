@@ -18,13 +18,17 @@ from .page import Page, PageQuerySet
 __all__ = ['Episode', 'Diffusion', 'DiffusionQuerySet']
 
 
+class EpisodeQuerySet(PageQuerySet, InProgramQuerySet):
+    pass
+
+
 class Episode(Page):
     program = models.ForeignKey(
         Program, models.CASCADE,
         verbose_name=_('program'),
     )
 
-    objects = InProgramQuerySet.as_manager()
+    objects = EpisodeQuerySet.as_manager()
     detail_url_name = 'episode-detail'
 
     class Meta:
@@ -37,17 +41,14 @@ class Episode(Page):
         super().save(*args, **kwargs)
 
     @classmethod
-    def get_default_title(cls, program, date):
+    def get_init_kwargs_from(cls, page, date, title=None, **kwargs):
         """ Get default Episode's title  """
-        return settings.AIRCOX_EPISODE_TITLE.format(
-            program=program,
+        title = settings.AIRCOX_EPISODE_TITLE.format(
+            program=page,
             date=date.strftime(settings.AIRCOX_EPISODE_TITLE_DATE_FORMAT),
-        )
-
-    @classmethod
-    def from_date(cls, program, date):
-        title = cls.get_default_title(program, date)
-        return cls(program=program, title=title, cover=program.cover)
+        ) if title is None else title
+        return super().get_init_kwargs_from(page, title=title, program=page,
+                                            **kwargs)
 
 
 class DiffusionQuerySet(BaseRerunQuerySet):

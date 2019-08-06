@@ -1,6 +1,33 @@
 {% extends "aircox/program_base.html" %}
 {% load i18n %}
 
+{% block header %}
+{{ block.super }}
+
+<section class="is-size-5 has-text-weight-bold">
+    {% for diffusion in object.diffusion_set.all %}
+        {% with diffusion.start as start %}
+        {% with diffusion.end as end %}
+        <time datetime="{{ start }}">{{ start|date:"D. d F Y, H:i" }}</time>
+        &mdash;
+        <time datetime="{{ end }}">{{ end|date:"H:i" }}</time>
+        {% endwith %}
+        {% endwith %}
+
+        <small>
+            {% if diffusion.initial %}
+            {% with diffusion.initial.date as date %}
+            <span title="{% blocktrans %}Rerun of {{ date }}{% endblocktrans %}">
+                ({% trans "rerun" %})
+            </span>
+            {% endwith %}
+            {% endif %}
+        </small>
+        <br>
+    {% endfor %}
+</section>
+{% endblock %}
+
 {% block main %}
 {{ block.super }}
 

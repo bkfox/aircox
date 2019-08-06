@@ -1,6 +1,6 @@
 <div class="podcast">
     {% if object.embed %}
-    {{ object.embed }}
+    {{ object.embed|safe }}
     {% else %}
     <audio src="{{ object.url }}" controls>
     {% endif %}

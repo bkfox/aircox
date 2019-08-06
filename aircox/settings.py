@@ -3,8 +3,10 @@ import stat
 
 from django.conf import settings
 
-def ensure (key, default):
+
+def ensure(key, default):
     globals()[key] = getattr(settings, key, default)
+
 
 ########################################################################
 # Global & misc
@@ -48,7 +50,7 @@ ensure('AIRCOX_EPISODE_TITLE_DATE_FORMAT', '%-d %B %Y')
 # Directory where to save logs' archives
 ensure('AIRCOX_LOGS_ARCHIVES_DIR',
        os.path.join(AIRCOX_DATA_DIR, 'archives')
-)
+       )
 # In days, minimal age of a log before it is archived
 ensure('AIRCOX_LOGS_ARCHIVES_MIN_AGE', 60)
 
@@ -70,21 +72,21 @@ ensure('AIRCOX_SOUND_AUTO_CHMOD', True)
 # and stat.*
 ensure(
     'AIRCOX_SOUND_CHMOD_FLAGS',
-    (stat.S_IRWXU, stat.S_IRWXU | stat.S_IRWXG | stat.S_IROTH )
+    (stat.S_IRWXU, stat.S_IRWXU | stat.S_IRWXG | stat.S_IROTH)
 )
 
 # Quality attributes passed to sound_quality_check from sounds_monitor
 ensure('AIRCOX_SOUND_QUALITY', {
-        'attribute': 'RMS lev dB',
-        'range': (-18.0, -8.0),
-        'sample_length': 120,
-    }
+    'attribute': 'RMS lev dB',
+    'range': (-18.0, -8.0),
+    'sample_length': 120,
+}
 )
 
 # Extension of sound files
 ensure(
     'AIRCOX_SOUND_FILE_EXT',
-    ('.ogg','.flac','.wav','.mp3','.opus')
+    ('.ogg', '.flac', '.wav', '.mp3', '.opus')
 )
 
 
@@ -107,6 +109,3 @@ ensure(
 ensure('AIRCOX_IMPORT_PLAYLIST_CSV_DELIMITER', ';')
 # Text delimiter of csv text files
 ensure('AIRCOX_IMPORT_PLAYLIST_CSV_TEXT_QUOTE', '"')
-
-
-

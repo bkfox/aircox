@@ -33,7 +33,7 @@ $body-background-color: $light;
         max-width: 45%;
     }
 
-    & > .header {
+    .header {
         margin-bottom: 1.5em;
     }
 
@@ -45,6 +45,12 @@ $body-background-color: $light;
     p {
         padding: 0.4em 0em;
     }
+}
+
+section > .toolbar {
+    background-color: rgba(0,0,0,0.05);
+    padding: 1em;
+    margin-bottom: 1.5em;
 }
 
 

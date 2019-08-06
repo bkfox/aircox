@@ -1,4 +1,3 @@
-from collections import OrderedDict
 import atexit
 import logging
 import os
@@ -121,9 +120,6 @@ class Streamer:
 
     def sync(self):
         """ Sync all sources. """
-        if self.process is None:
-            return
-
         for source in self.sources:
             source.sync()
 
@@ -141,7 +137,7 @@ class Streamer:
             return
 
         self.source = next((source for source in self.sources
-                           if source.is_playing), None)
+                            if source.is_playing), None)
 
     # Process ##########################################################
     def get_process_args(self):
@@ -214,8 +210,8 @@ class Source:
     def is_playing(self):
         return self.status == 'playing'
 
-    #@property
-    #def is_on_air(self):
+    # @property
+    # def is_on_air(self):
     #    return self.rid is not None and self.rid in self.controller.on_air
 
     def __init__(self, controller, id=None):
@@ -224,7 +220,6 @@ class Source:
 
     def sync(self):
         """ Synchronize what should be synchronized """
-        pass
 
     def fetch(self):
         data = self.controller.send(self.id, '.remaining')
@@ -322,5 +317,3 @@ class QueueSource(Source):
         super().fetch()
         queue = self.controller.send(self.id, '_queue.queue').split(' ')
         self.queue = queue
-
-

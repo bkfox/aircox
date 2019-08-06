@@ -6,8 +6,7 @@ from django.utils.translation import ugettext as _, ugettext_lazy
 from aircox.models import Episode, Diffusion, Sound, Track
 
 from .page import PageAdmin
-from .playlist import TracksInline
-from .sound import SoundInline
+from .sound import SoundInline, TracksInline
 
 
 class DiffusionBaseAdmin:

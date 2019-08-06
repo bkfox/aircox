@@ -4,18 +4,30 @@ from django.utils.translation import ugettext_lazy as _
 
 from adminsortable2.admin import SortableInlineAdminMixin
 
-from ..models import NavItem
+from ..models import Category, Article, NavItem
 
 
+__all__ = ['CategoryAdmin', 'PageAdmin', 'NavItemInline']
+
+
+@admin.register(Category)
+class CategoryAdmin(admin.ModelAdmin):
+    list_display = ['pk', 'title', 'slug']
+    list_editable = ['title', 'slug']
+    fields = ['title', 'slug']
+    prepopulated_fields = {"slug": ("title",)}
+
+
+# limit category choice
 class PageAdmin(admin.ModelAdmin):
-    list_display = ('cover_thumb', 'title', 'status')
+    list_display = ('cover_thumb', 'title', 'status', 'category')
     list_display_links = ('cover_thumb', 'title')
-    list_editable = ('status',)
+    list_editable = ('status', 'category')
     prepopulated_fields = {"slug": ("title",)}
 
     fieldsets = [
         ('', {
-            'fields': ['title', 'slug', 'cover', 'content'],
+            'fields': ['title', 'slug', 'category', 'cover', 'content'],
         }),
         (_('Publication Settings'), {
             'fields': ['featured', 'allow_comments', 'status'],
@@ -30,4 +42,6 @@ class PageAdmin(admin.ModelAdmin):
 
 class NavItemInline(SortableInlineAdminMixin, admin.TabularInline):
     model = NavItem
+
+
 

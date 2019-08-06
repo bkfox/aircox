@@ -8,6 +8,7 @@ __all__ = ['Redirect', 'redirect', 'date_range', 'cast_date',
 
 class Redirect(Exception):
     """ Redirect exception -- see `redirect()`. """
+
     def __init__(self, url):
         self.url = url
 
@@ -82,4 +83,3 @@ def seconds_to_time(seconds):
     minutes, seconds = divmod(seconds, 60)
     hours, minutes = divmod(minutes, 60)
     return datetime.time(hour=hours, minute=minutes, second=seconds)
-
