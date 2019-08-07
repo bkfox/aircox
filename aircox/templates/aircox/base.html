@@ -53,14 +53,14 @@ Context:
                             {% block header %}
                             <h1 class="title is-1">{% block title %}{% endblock %}</h1>
 
-                            <h4 class="subtitle is-size-3 columns">
+                            <h3 class="subtitle is-3 columns">
                                 {% block subtitle %}
                                 {% if parent %}
                                 <a href="{{ parent.get_absolute_url }}" class="column">
                                     &#10092; {{ parent.title }}</a></li>
                                 {% endif %}
                                 {% endblock %}
-                            </h4>
+                            </h3>
                             {% endblock %}
                         </header>
 

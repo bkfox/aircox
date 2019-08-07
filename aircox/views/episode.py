@@ -23,6 +23,8 @@ class EpisodeDetailView(ProgramPageDetailView):
     def get_context_data(self, **kwargs):
         kwargs.setdefault('program', self.object.program)
         kwargs.setdefault('parent', kwargs['program'])
+        if not 'tracks' in kwargs:
+            kwargs['tracks'] = self.object.track_set.order_by('position')
         if not 'podcasts' in kwargs:
             kwargs['podcasts'] = self.object.sound_set.podcasts()
         return super().get_context_data(**kwargs)

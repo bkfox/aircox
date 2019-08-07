@@ -31,11 +31,32 @@
 {% block main %}
 {{ block.super }}
 
-{% if podcasts %}
-{% for object in podcasts %}
-{% include "aircox/podcast_item.html" %}
-{% endfor %}
-{% endif %}
-
+{% if podcasts or tracks %}
+<section class="columns is-desktop">
+    {% if tracks %}
+    <div class="column">
+        <h4 class="title is-4">{% trans "Playlist" %}</h4>
+        <ol>
+            {% for track in tracks %}
+            <li><span>{{ track.title }}</span>
+                <span class="has-text-grey-dark has-text-weight-light">
+                &mdash; {{ track.artist }}
+                {% if track.info %}(<i>{{ track.info }}</i>){% endif %}
+                </span>
+            </li>
+            {% endfor %}
+        </ol>
+    </div>
+    {% endif %}
+    {% if podcasts %}
+    <div class="column">
+        <h4 class="title is-4">{% trans "Podcasts" %}</h4>
+        {% for object in podcasts %}
+        {% include "aircox/podcast_item.html" %}
+        {% endfor %}
+        {% endif %}
+    </div>
+    {% endif %}
+</section>
 {% endblock %}
 

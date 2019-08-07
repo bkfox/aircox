@@ -22,12 +22,6 @@ Context:
 
 
 {% block main %}
-{% block headline %}
-{% if page and page.headline %}
-<p class="headline">{{ page.headline }}</p>
-{% endif %}
-{% endblock %}
-
 {% block content %}
 {{ page.content|default_if_none:''|safe }}
 {% endblock %}

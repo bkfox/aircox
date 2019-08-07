@@ -19,8 +19,8 @@ class TracksInline(SortableInlineAdminMixin, admin.TabularInline):
 
 class SoundInline(admin.TabularInline):
     model = Sound
-    fields = ['type', 'path', 'duration', 'is_public']
-    readonly_fields = ['type']
+    fields = ['type', 'path', 'embed', 'duration', 'is_public']
+    readonly_fields = ['type', 'path', 'duration']
     extra = 0
 
 
