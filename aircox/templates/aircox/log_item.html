@@ -1,11 +1,24 @@
-{% load i18n %}
+{% load i18n aircox %}
+{% comment %}
+Context objects:
+- object: object to render
+- hide_schedule: if true, hide the schedule
+{% endcomment %}
 
-{% with object.track as track %}
-<span class="has-text-info is-size-5">&#9836;</span>
-<span>{{ track.title }}</span>
-<span class="has-text-grey-dark has-text-weight-light">
-&mdash; {{ track.artist }}
-{% if track.info %}(<i>{{ track.info }}</i>){% endif %}
-</span>
-{% endwith %}
+{% if object|is_diffusion %}
+    {% with object as diffusion %}
+    {% with diffusion.episode as object %}
+    {% include "aircox/episode_item.html" %}
+    {% endwith %}
+    {% endwith %}
+{% else %}
+    {% with object.track as track %}
+    <span class="has-text-info is-size-5">&#9836;</span>
+    <span>{{ track.title }}</span>
+    <span class="has-text-grey-dark has-text-weight-light">
+    &mdash; {{ track.artist }}
+    {% if track.info %}(<i>{{ track.info }}</i>){% endif %}
+    </span>
+    {% endwith %}
+{% endif %}
 

@@ -33,25 +33,18 @@
     <table class="table is-striped is-hoverable is-fullwidth">
         {% for object in object_list reversed %}
         <tr>
-        {% if object|is_diffusion %}
             <td>
+                {% if object|is_diffusion %}
                 <time datetime="{{ object.start }}" title="{{ object.start }}">
                     {{ object.start|date:"H:i" }} - {{ object.end|date:"H:i" }}
                 </time>
-            </td>
-            {% with object as diffusion %}
-            {% with diffusion.episode as object %}
-            <td>{% include "aircox/episode_item.html" %}</td>
-            {% endwith %}
-            {% endwith %}
-        {% else %}
-            <td>
+                {% else %}
                 <time datetime="{{ object.date }}" title="{{ object.date }}">
                     {{ object.date|date:"H:i" }}
                 </time>
+                {% endif %}
             </td>
             <td>{% include "aircox/log_item.html" %}</td>
-        {% endif %}
         </tr>
         {% endfor %}
     </table>

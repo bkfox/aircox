@@ -14,6 +14,7 @@ Context:
 
         {% block assets %}
         <link rel="stylesheet" type="text/css" href="{% static "aircox/main.css" %}"/>
+        <link rel="stylesheet" type="text/css" href="{% static "aircox/vendor.css" %}"/>
         <script src="{% static "aircox/main.js" %}"></script>
         <script src="{% static "aircox/vendor.js" %}"></script>
         {% endblock %}
@@ -80,6 +81,9 @@ Context:
                     {% endif %}
                 </div>
             </div>
+
+            <hr>
+            {% include "aircox/player.html" %}
         </div>
     </body>
 </html>

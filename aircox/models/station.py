@@ -55,6 +55,11 @@ class Station(models.Model):
         _("website's urls"), max_length=512, null=True, blank=True,
         help_text=_('specify one url per line')
     )
+    audio_streams = models.TextField(
+        _("audio streams"), max_length=2048, null=True, blank=True,
+        help_text=_("Audio streams urls used by station's player. One url "
+                    "a line.")
+    )
 
     objects = StationQuerySet.as_manager()
 

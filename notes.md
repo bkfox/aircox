@@ -1,5 +1,16 @@
 This file is used as a reminder, can be used as crappy documentation too.
 
+- player
+- monitor interface
+- statistics interface
+- traduction
+- hot reload
+
+Améliorations:
+- calendar dashboard
+- accessibilité
+- player: playlist
+
 
 # for the 1.0
 - logs:

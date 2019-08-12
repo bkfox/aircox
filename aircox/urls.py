@@ -1,4 +1,4 @@
-from django.urls import path, register_converter
+from django.urls import include, path, register_converter
 from django.utils.translation import ugettext_lazy as _
 
 from . import views, models
@@ -17,7 +17,13 @@ register_converter(WeekConverter, 'week')
 # ]
 
 
+api = [
+    path('on-air/', views.api.OnAirAPIView.as_view(), name='on-air'),
+]
+
+
 urls = [
+    path('api/', include(api)),
     # path('', views.PageDetailView.as_view(model=models.Article),
     #     name='home'),
     path(_('articles/'),

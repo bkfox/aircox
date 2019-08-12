@@ -1,3 +1,4 @@
+from collections import deque
 import datetime
 from enum import IntEnum
 import logging
@@ -25,9 +26,13 @@ class LogQuerySet(models.QuerySet):
         return self.filter(station=station) if id is None else \
                self.filter(station_id=id)
 
-    def at(self, date=None):
-        date = utils.date_or_default(date)
+    def today(self, date):
         return self.filter(date__date=date)
+
+    def after(self, date):
+        return self.filter(date__gte=date) \
+            if isinstance(date, tz.datetime) else \
+            self.filter(date__date__gte=date)
 
     def on_air(self):
         return self.filter(type=Log.Type.on_air)
@@ -100,12 +105,8 @@ class LogQuerySet(models.QuerySet):
             }
 
             def rel_obj(log, attr):
-                attr_id = attr + '_id'
                 rel_id = log.get(attr + '_id')
-
                 return rels[attr][rel_id] if rel_id else None
-
-            # make logs
 
             return [
                 Log(diffusion=rel_obj(log, 'diffusion'),
@@ -134,7 +135,7 @@ class LogQuerySet(models.QuerySet):
         if os.path.exists(path) and not force:
             return -1
 
-        qs = self.station(station).at(date)
+        qs = self.station(station).today(date)
 
         if not qs.exists():
             return 0
@@ -241,6 +242,56 @@ class Log(models.Model):
         """
         return tz.localtime(self.date, tz.get_current_timezone())
 
+    def __str__(self):
+        return '#{} ({}, {}, {})'.format(
+            self.pk, self.get_type_display(),
+            self.source, self.local_date.strftime('%Y/%m/%d %H:%M%z'))
+
+    @classmethod
+    def __list_append(cls, object_list, items):
+        object_list += [cls(obj) for obj in items]
+
+    @classmethod
+    def merge_diffusions(cls, logs, diffs):
+        diffs = deque(diffs.order_by('start'))
+        logs = list(logs.order_by('date'))
+        object_list = []
+
+        # +++ +++ ++ ++
+        #  ----    ----- ----
+        while True:
+            if not len(diffs):
+                object_list += logs
+                break
+
+            if not len(logs):
+                object_list += diffs
+                break
+
+            diff = diffs.popleft()
+
+            # - takes all logs before diff happens
+            index = next((i for i, v in enumerate(logs)
+                          if v.date >= diff.start), len(logs))
+            if index is not None and index > 0:
+                object_list += logs[:index]
+                logs = logs[index:]
+
+            # - add diff
+            object_list.append(diff)
+
+            # - last log while diff is running
+            # Using of greater allow last_log to log that starts with date
+            # equals to diff.end
+            index = next((i for i, v in enumerate(logs) if v.date > diff.end),
+                         None)
+            if index is not None and index > 0:
+                object_list.append(logs[index-1])
+                logs = logs[index:]
+
+        return object_list
+
+
     def print(self):
         r = []
         if self.diffusion:
@@ -252,7 +303,3 @@ class Log(models.Model):
         logger.info('log %s: %s%s', str(self), self.comment or '',
                     ' (' + ', '.join(r) + ')' if r else '')
 
-    def __str__(self):
-        return '#{} ({}, {}, {})'.format(
-            self.pk, self.get_type_display(),
-            self.source, self.local_date.strftime('%Y/%m/%d %H:%M%z'))

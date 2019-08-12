@@ -5,17 +5,25 @@ $body-background-color: $light;
 
 @import "~bulma/bulma";
 
-.navbar {
-    margin-bottom: 1em;
+.is-fullwidth { width: 100%; }
+.is-fixed-bottom {
+    position: fixed;
+    bottom: 0;
+    margin-bottom: 0px;
+    border-radius: 0;
+}
+.is-borderless { border: none; }
+
+
+.navbar + .container {
+    margin-top: 1em;
 }
 
-.navbar.has-shadow {
-    box-shadow: 0em 0.05em 0.5em rgba(0,0,0,0.1);
+.navbar.has-shadow, .navbar.is-fixed-bottom.has-shadow {
+    box-shadow: 0em 0em 1em rgba(0,0,0,0.1);
 }
 
 /*
-
-
 .navbar-brand img {
     min-height: 6em;
 }

@@ -1,5 +1,27 @@
 (window["webpackJsonp"] = window["webpackJsonp"] || []).push([["vendor"],{
 
+/***/ "./node_modules/@fortawesome/fontawesome-free/css/all.min.css":
+/*!********************************************************************!*\
+  !*** ./node_modules/@fortawesome/fontawesome-free/css/all.min.css ***!
+  \********************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+eval("// extracted by mini-css-extract-plugin\n\n//# sourceURL=webpack:///./node_modules/@fortawesome/fontawesome-free/css/all.min.css?");
+
+/***/ }),
+
+/***/ "./node_modules/@fortawesome/fontawesome-free/css/fontawesome.min.css":
+/*!****************************************************************************!*\
+  !*** ./node_modules/@fortawesome/fontawesome-free/css/fontawesome.min.css ***!
+  \****************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+eval("// extracted by mini-css-extract-plugin\n\n//# sourceURL=webpack:///./node_modules/@fortawesome/fontawesome-free/css/fontawesome.min.css?");
+
+/***/ }),
+
 /***/ "./node_modules/buefy/dist/buefy.js":
 /*!******************************************!*\
   !*** ./node_modules/buefy/dist/buefy.js ***!

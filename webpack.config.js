@@ -56,13 +56,12 @@ module.exports = (env, argv) => Object({
                 sideEffects: false
             },
             {
-                test: /\.scss$/,
+                test: /\.s?css$/,
                 use: [ { loader: MiniCssExtractPlugin.loader },
                        { loader: 'css-loader' },
                        { loader: 'sass-loader' , options: { sourceMap: true }} ],
             },
             {
-                // TODO: remove ttf eot svg
                 test: /\.(ttf|eot|svg|woff2?)$/,
                 use: [{
                     loader: 'file-loader',

@@ -44,7 +44,7 @@ def program_post_save(sender, instance, created, *args, **kwargs):
     Clean-up later diffusions when a program becomes inactive
     """
     if not instance.active:
-        Diffusion.objects.program(instance).after().delete()
+        Diffusion.objects.program(instance).after(tz.now()).delete()
         Episode.object.program(instance).filter(diffusion__isnull=True) \
                .delete()
 
@@ -70,7 +70,7 @@ def schedule_post_save(sender, instance, created, *args, **kwargs):
     today = tz.datetime.today()
     delta = instance.normalize(today) - initial.normalize(today)
 
-    qs = Diffusion.objects.program(instance.program).after()
+    qs = Diffusion.objects.program(instance.program).after(tz.now())
     pks = [d.pk for d in qs if initial.match(d.date)]
     qs.filter(pk__in=pks).update(
         start=F('start') + delta,
@@ -86,7 +86,7 @@ def schedule_pre_delete(sender, instance, *args, **kwargs):
     if not instance.program.sync:
         return
 
-    qs = Diffusion.objects.program(instance.program).after()
+    qs = Diffusion.objects.program(instance.program).after(tz.now())
     pks = [d.pk for d in qs if instance.match(d.date)]
     qs.filter(pk__in=pks).delete()
 

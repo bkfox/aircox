@@ -28,5 +28,10 @@ class BaseView(TemplateResponseMixin, ContextMixin):
         kwargs.setdefault('station', self.station)
         kwargs.setdefault('cover', self.cover)
         kwargs.setdefault('show_side_nav', self.show_side_nav)
+
+        if not 'audio_streams' in kwargs:
+            streams = self.station.audio_streams
+            streams = streams and streams.split('\n')
+            kwargs['audio_streams'] = streams
         return super().get_context_data(**kwargs)
 
