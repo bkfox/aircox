@@ -7194,11 +7194,11 @@ section > .toolbar {
   padding: 1em;
   margin-bottom: 1.5em; }
 
-.cover {
+main .cover {
   margin: 1em 0em;
   border: 0.2em black solid; }
 
-.small-cover {
+main .small-cover {
   width: 10em; }
 
 aside .small-cover {
@@ -7209,4 +7209,22 @@ aside .media .subtitle {
 
 aside .media .content {
   display: none; }
+
+.player {
+  box-shadow: 0em 1.5em 2.5em rgba(0, 0, 0, 0.6); }
+  .player .media-left:not(:last-child) {
+    margin-right: 0em; }
+  .player .media-cover {
+    border-left: 1px black solid; }
+  .player .cover {
+    font-size: 1.5rem !important;
+    height: 2.5em !important; }
+  .player .media-content {
+    padding: 0.2em; }
+  .player .button {
+    font-size: 1.5rem !important;
+    height: 2.5em;
+    min-width: 2.5em; }
+  .player .title {
+    margin: 0em; }
 

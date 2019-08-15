@@ -1,0 +1,48 @@
+{% load i18n %}
+
+{% if audio_streams %}
+<br>
+
+<div class="box is-fullwidth is-fixed-bottom is-paddingless player"
+        aria-role="{% trans "player" %}"
+        aria-description="{% trans "audio player used to listen to streams and podcasts" %}"
+    >
+    <noscript>
+        <audio src="{{ audio_streams.0 }}" controls>
+            {% for stream in audio_streams %}
+            <source src="{{ stream }}" />
+            {% endfor %}
+        </audio>
+        {# TODO: live infos #}
+    </noscript>
+
+    <a-player ref="player" src="{{ audio_streams.0 }}"
+            live-info-url="{% url "api-live" %}" live-info-timeout="15"
+            button-title="{% trans "Play/pause audio" %}">
+        <template v-slot:sources>
+            {% for stream in audio_streams %}
+            <source src="{{ stream }}" />
+            {% endfor %}
+        </template>
+
+        <template v-slot:track="{ onAir }">
+            <h4 class="title is-4">
+                <span class="has-text-info is-size-3">&#9836;</span>
+                <span>[[ onAir.title ]]</span>
+                <span class="has-text-grey-dark has-text-weight-light">
+                &mdash; [[ onAir.artist ]]
+                <i v-if="onAir.info">([[ onAir.info ]])</i>
+                </span>
+            </h4>
+        </template>
+
+        <template v-slot:diffusion="{ onAir }">
+            <h4 class="title is-4">
+                <a :href="onAir.url">[[ onAir.title ]]</a>
+            </h4>
+            <div class="">[[ onAir.info ]]</div>
+        </template>
+    </a-player>
+</div>
+{% endif %}
+

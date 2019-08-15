@@ -35,6 +35,11 @@ class Episode(Page):
         verbose_name = _('Episode')
         verbose_name_plural = _('Episodes')
 
+    def get_absolute_url(self):
+        if not self.is_published:
+            return self.program.get_absolute_url()
+        return super().get_absolute_url()
+
     def save(self, *args, **kwargs):
         if self.cover is None:
             self.cover = self.program.cover

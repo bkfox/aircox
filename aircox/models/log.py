@@ -252,13 +252,12 @@ class Log(models.Model):
         object_list += [cls(obj) for obj in items]
 
     @classmethod
-    def merge_diffusions(cls, logs, diffs):
-        diffs = deque(diffs.order_by('start'))
-        logs = list(logs.order_by('date'))
+    def merge_diffusions(cls, logs, diffs, count=None):
+        # TODO: limit count
+        logs = list(logs.order_by('-date'))
+        diffs = deque(diffs.on_air().before().order_by('-start'))
         object_list = []
 
-        # +++ +++ ++ ++
-        #  ----    ----- ----
         while True:
             if not len(diffs):
                 object_list += logs
@@ -270,24 +269,25 @@ class Log(models.Model):
 
             diff = diffs.popleft()
 
-            # - takes all logs before diff happens
+            # - takes all logs after diff
             index = next((i for i, v in enumerate(logs)
-                          if v.date >= diff.start), len(logs))
+                          if v.date <= diff.end), len(logs))
             if index is not None and index > 0:
                 object_list += logs[:index]
                 logs = logs[index:]
 
+            # - last log while diff is running
+            if logs[0].date > diff.start:
+                object_list.append(logs[0])
+
+            # - skips logs while diff is running
+            index = next((i for i, v in enumerate(logs)
+                         if v.date < diff.start), len(logs))
+            if index is not None and index > 0:
+                logs = logs[index:]
+
             # - add diff
             object_list.append(diff)
-
-            # - last log while diff is running
-            # Using of greater allow last_log to log that starts with date
-            # equals to diff.end
-            index = next((i for i, v in enumerate(logs) if v.date > diff.end),
-                         None)
-            if index is not None and index > 0:
-                object_list.append(logs[index-1])
-                logs = logs[index:]
 
         return object_list
 

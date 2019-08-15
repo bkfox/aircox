@@ -1,7 +1,8 @@
 <template>
     <div class="media">
         <div class="media-left">
-            <div class="button is-size-4" @click="toggle()">
+            <div class="button" @click="toggle()"
+                    :title="buttonTitle" :aria-label="buttonTitle">
                 <span class="fas fa-pause" v-if="playing"></span>
                 <span class="fas fa-play" v-else></span>
             </div>
@@ -9,13 +10,24 @@
                 <slot name="sources"></slot>
             </audio>
         </div>
-        <div class="media-content">
+        <div class="media-left media-cover" v-if="onAir && onAir.cover">
+            <img :src="onAir.cover" class="cover" />
+        </div>
+        <div class="media-content" v-if="onAir && onAir.type == 'track'">
+            <slot name="track" :onAir="onAir" :liveInfo="liveInfo"></slot>
+        </div>
+        <div class="media-content" v-else-if="onAir && onAir.type == 'diffusion'">
+            <slot name="diffusion" :onAir="onAir" :liveInfo="liveInfo"></slot>
+        </div>
+        <div v-else><slot name="empty"></slot></div>
         </div>
     </div>
 </template>
 
 
 <script>
+import LiveInfo from 'js/liveInfo';
+
 export const State = {
     paused: 0,
     playing: 1,
@@ -26,11 +38,14 @@ export default {
     data() {
         return {
             state: State.paused,
+            liveInfo: new LiveInfo(this.liveInfoUrl, this.liveInfoTimeout),
         }
     },
 
     props: {
-        onAir: String,
+        buttonTitle: String,
+        liveInfoUrl: String,
+        liveInfoTimeout: { type: Number, default: 5},
         src: String,
     },
 
@@ -38,6 +53,16 @@ export default {
         paused() { return this.state == State.paused; },
         playing() { return this.state == State.playing; },
         loading() { return this.state == State.loading; },
+
+        onAir() {
+            return this.liveInfo.items && this.liveInfo.items[0];
+        },
+
+        buttonStyle() {
+            if(!this.onAir)
+                return;
+            return { backgroundImage: `url(${this.onAir.cover})` }
+        }
     },
 
     methods: {
@@ -71,8 +96,12 @@ export default {
     },
 
     mounted() {
-        this.load(this.src);
-    }
+        this.liveInfo.refresh()
+    },
+
+    destroyed() {
+        this.liveInfo.drop()
+    },
 }
 
 </script>

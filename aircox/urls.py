@@ -18,7 +18,7 @@ register_converter(WeekConverter, 'week')
 
 
 api = [
-    path('on-air/', views.api.OnAirAPIView.as_view(), name='on-air'),
+    path('live/', views.api.LiveAPIView.as_view(), name='api-live'),
 ]
 
 
