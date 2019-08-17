@@ -19,7 +19,7 @@
         <div class="media-content" v-else-if="onAir && onAir.type == 'diffusion'">
             <slot name="diffusion" :onAir="onAir" :liveInfo="liveInfo"></slot>
         </div>
-        <div v-else><slot name="empty"></slot></div>
+        <div class="media-content" v-else><slot name="empty"></slot></div>
         </div>
     </div>
 </template>

@@ -1,4 +1,5 @@
 
+from django.core.exceptions import FieldDoesNotExist
 from django.http import Http404
 from django.views.generic import DetailView, ListView
 
@@ -45,10 +46,11 @@ class PageDetailView(BaseView, DetailView):
         return super().get_context_data(**kwargs)
 
 
+# TODO: pagination: in template, only a limited number of pages displayed
 class PageListView(BaseView, ListView):
     template_name = 'aircox/page_list.html'
     item_template_name = 'aircox/page_item.html'
-    paginate_by = 10
+    paginate_by = 20
     show_headline = True
     show_side_nav = True
     categories = None
@@ -80,5 +82,6 @@ class PageListView(BaseView, ListView):
         kwargs.setdefault('categories', self.categories)
         kwargs.setdefault('show_headline', self.show_headline)
         return super().get_context_data(**kwargs)
+
 
 

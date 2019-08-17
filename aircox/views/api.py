@@ -25,7 +25,7 @@ class LiveAPIView(BaseLogListView, BaseAPIView, ListAPIView):
     queryset = Log.objects.all()
 
     def get(self, *args, **kwargs):
-        self.min_date = tz.now() - tz.timedelta(minutes=5)
+        self.min_date = tz.now() - tz.timedelta(minutes=20)
         return super().get(*args, **kwargs)
 
     def get_serializer(self, queryset, *args, **kwargs):

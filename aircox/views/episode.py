@@ -7,8 +7,7 @@ from django.views.generic import ListView
 
 from ..models import Diffusion, Episode, Page, Program, Sound
 from .base import BaseView
-from .page import PageListView
-from .program import ProgramPageDetailView
+from .program import ProgramPageDetailView, ProgramPageListView
 
 
 __all__ = ['EpisodeDetailView', 'DiffusionListView', 'TimetableView']
@@ -30,32 +29,11 @@ class EpisodeDetailView(ProgramPageDetailView):
         return super().get_context_data(**kwargs)
 
 
-# TODO: pagination: in template, only a limited number of pages displayed
-class EpisodeListView(PageListView):
+class EpisodeListView(ProgramPageListView):
     model = Episode
+    template_name = 'aircox/diffusion_list.html'
     item_template_name = 'aircox/episode_item.html'
     show_headline = True
-    template_name = 'aircox/diffusion_list.html'
-    program = None
-
-    def get(self, request, *args, **kwargs):
-        program_slug = kwargs.get('program_slug')
-        if program_slug:
-            self.program = get_object_or_404(Program, slug=program_slug)
-        return super().get(request, *args, **kwargs)
-
-    def get_queryset(self):
-        qs = super().get_queryset()
-        if self.program:
-            qs = qs.filter(program=self.program)
-        return qs
-
-    def get_context_data(self, **kwargs):
-        program = kwargs.setdefault('program', self.program)
-        if program is not None:
-            kwargs.setdefault('cover', program.cover)
-            kwargs.setdefault('parent', program)
-        return super().get_context_data(**kwargs)
 
 
 class TimetableView(BaseView, ListView):

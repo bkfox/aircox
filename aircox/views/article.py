@@ -1,12 +1,14 @@
 from ..models import Article
-from .page import PageListView
+from .program import ProgramPageListView
 
 
 __all__ = ['ArticleListView']
 
 
-class ArticleListView(PageListView):
+class ArticleListView(ProgramPageListView):
     model = Article
+    template_name = 'aircox/article_list.html'
+    show_headline = True
     is_static = False
 
     def get_queryset(self):

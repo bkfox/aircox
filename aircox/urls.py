@@ -39,6 +39,8 @@ urls = [
          views.ProgramDetailView.as_view(), name='program-detail'),
     path(_('programs/<slug:program_slug>/episodes/'),
          views.EpisodeListView.as_view(), name='diffusion-list'),
+    path(_('programs/<slug:program_slug>/articles/'),
+         views.ArticleListView.as_view(), name='article-list'),
 
     path(_('episodes/'),
          views.EpisodeListView.as_view(), name='diffusion-list'),
