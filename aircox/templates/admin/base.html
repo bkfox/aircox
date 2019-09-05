@@ -30,19 +30,44 @@
 
     {% if not is_popup %}
     <!-- Header -->
-    <nav class="navbar">
+    <nav class="navbar is-dark">
         <div class="navbar-brand">
         {% block branding %}{% endblock %}
         </div>
         <div class="navbar-menu">
             {% block usertools %}
             <div class="navbar-start">
-                <a class="navbar-item" href="{% url "admin:aircox_article_changelist" %}">{% trans "Articles" %}</a>
-                <a class="navbar-item" href="{% url "admin:aircox_episode_changelist" %}">{% trans "Episodes" %}</a>
                 <a class="navbar-item" href="{% url "admin:aircox_program_changelist" %}">{% trans "Programs" %}</a>
+
+                <div class="navbar-item has-dropdown is-hoverable">
+                    <a class="navbar-link" href="{% url "admin:aircox_article_changelist" %}">{% trans "Articles" %}</a>
+                    <div class="navbar-dropdown is-boxed is-right">
+                        {% for program in programs %}
+                        <a class="navbar-item" href="{% url "admin:aircox_article_changelist" %}?program={{ program.pk }}">
+                            {{ program.title }}</a>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="navbar-item has-dropdown is-hoverable">
+                    <a class="navbar-link" href="{% url "admin:aircox_episode_changelist" %}">{% trans "Episodes" %}</a>
+                    <div class="navbar-dropdown is-boxed is-right">
+                        {% for program in programs %}
+                        <a class="navbar-item" href="{% url "admin:aircox_episode_changelist" %}?program={{ program.pk }}">
+                            {{ program.title }}</a>
+                        {% endfor %}
+                    </div>
+                </div>
+
+
+                <div class="navbar-item has-dropdown is-hoverable">
+                    <a href="#" class="navbar-link">{% trans "Tools" %}</a>
+                    <div class="navbar-dropdown is-boxed is-right">
+                        <a href="{% url 'admin:tools-stats' %}" class="navbar-item">{% trans "Statistics" %}</a>
+                    </div>
+                </div>
             </div>
 
-            {% if has_permission %}
             <div class="navbar-end">
                 <div class="navbar-item has-dropdown is-hoverable">
                     <a href="{% url "admin:auth_user_change" user.pk %}" class="navbar-link">
@@ -62,14 +87,14 @@
                             {% if user.has_usable_password %}
                             <a href="{% url 'admin:password_change' %}" class="navbar-item">{% trans 'Change password' %}</a>
                             {% endif %}
+                            <hr class="navbar-divider" />
                             <a href="{% url 'admin:logout' %}" class="navbar-item">{% trans 'Log out' %}</a>
                         {% endblock %}
 
                     </div>
                 </div>
             </div>
-            {% endif %}
-        {% endblock %}
+            {% endblock %}
         </div>
         {% block nav-global %}{% endblock %}
     </nav>
@@ -94,7 +119,7 @@
     <!-- Content -->
     <div id="content" class="{% block coltype %}colM{% endblock %}">
         {% block pretitle %}{% endblock %}
-        {% block content_title %}{% if title %}<h1>{{ title }}</h1>{% endif %}{% endblock %}
+        {% block content_title %}{% if title %}<h1 class="subtitle is-3">{{ title }}</h1>{% endif %}{% endblock %}
         {% block content %}
         {% block object-tools %}{% endblock %}
         {{ content }}

@@ -1,0 +1,82 @@
+{% extends "aircox/page.html" %}
+{% load static i18n humanize honeypot %}
+{% comment %}
+Context:
+- title: title
+- page: page
+{% endcomment %}
+
+{% block subtitle %}
+{{ block.super }}
+{% if page.category %}
+<span class="column has-text-right">{{ object.category.title }}</span>
+{% endif %}
+{% endblock %}
+
+
+{% block main %}
+{% block content %}
+{{ object.content|default_if_none:''|safe }}
+{% endblock %}
+
+{% block comments %}
+{% if comments or comment_form %}
+<hr>
+<section>
+    <h4 class="title is-4">{% trans "Comments" %}</h4>
+
+    {% for comment in comments %}
+    <div class="media box">
+        <div class="media-content">
+            <p>
+                <strong>{{ comment.nickname }}</strong>
+                <time datetime="{{ comment.date }}" title="{{ comment.date }}">
+                    <small>{{ comment.date|naturaltime }}</small>
+                </time>
+                <br>
+                {{ comment.content }}
+            </p>
+        </div>
+    </div>
+    {% endfor %}
+
+    {% if comments and comment_form %}<hr>{% endif %}
+
+    {% if comment_form %}
+    <form method="POST">
+        <h5 class="title is-5">{% trans "Post a comment" %}</h5>
+        {% csrf_token %}
+        {% render_honeypot_field "website" %}
+
+        {% for field in comment_form %}
+        <div class="field is-horizontal">
+            <div class="field-label is-normal">
+                <label class="label">{{ field.label_tag }}</label>
+            </div>
+            <div class="field-body">
+                <div class="field">
+                    <p class="control is-expanded">{{ field }}</p>
+                    {% if field.errors %}
+                    <p class="help is-danger">{{ field.errors }}</p>
+                    {% endif %}
+                    {% if field.help_text %}
+                    <p class="help">{{ field.help_text|safe }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        <div class="has-text-right">
+            <button type="reset" class="button is-danger">{% trans "Reset" %}</button>
+            <button type="submit" class="button is-success">{% trans "Comment" %}</button>
+        </div>
+    </form>
+    {% endif %}
+</section>
+{% endif %}
+
+{% endblock %}
+{% endblock %}
+
+
+

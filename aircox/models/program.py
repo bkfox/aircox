@@ -31,6 +31,9 @@ class ProgramQuerySet(PageQuerySet):
         # FIXME: reverse-lookup
         return self.filter(station=station)
 
+    def active(self):
+        return self.filter(active=True)
+
 
 class Program(Page):
     """

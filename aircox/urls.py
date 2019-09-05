@@ -1,3 +1,4 @@
+from django.contrib import admin
 from django.urls import include, path, register_converter
 from django.utils.translation import ugettext_lazy as _
 
@@ -24,6 +25,7 @@ api = [
 
 urls = [
     path('api/', include(api)),
+
     # path('', views.PageDetailView.as_view(model=models.Article),
     #     name='home'),
     path(_('articles/'),

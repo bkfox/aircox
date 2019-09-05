@@ -3,7 +3,7 @@ from django.utils.translation import ugettext as _, ugettext_lazy
 
 from adminsortable2.admin import SortableInlineAdminMixin
 
-from aircox.models import Sound, Track
+from ..models import Sound, Track
 
 
 class TracksInline(SortableInlineAdminMixin, admin.TabularInline):

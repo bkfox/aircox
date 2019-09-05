@@ -19,7 +19,6 @@ class BaseAPIView:
 
 
 class LiveAPIView(BaseLogListView, BaseAPIView, ListAPIView):
-    model = Log
     serializer_class = LogInfoSerializer
     min_date = None
     queryset = Log.objects.all()

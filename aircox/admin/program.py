@@ -3,7 +3,7 @@ from copy import deepcopy
 from django.contrib import admin
 from django.utils.translation import ugettext_lazy as _
 
-from aircox.models import Program, Schedule, Stream
+from ..models import Program, Schedule, Stream
 from .page import PageAdmin
 
 
@@ -26,7 +26,8 @@ class ProgramAdmin(PageAdmin):
     schedule.boolean = True
     schedule.short_description = _("Schedule")
 
-    list_display = PageAdmin.list_display + ('schedule', 'station')
+    list_display = PageAdmin.list_display + ('schedule', 'station', 'active')
+    list_filter = PageAdmin.list_filter + ('station', 'active')
     fieldsets = deepcopy(PageAdmin.fieldsets) + [
         (_('Program Settings'), {
             'fields': ['active', 'station', 'sync'],

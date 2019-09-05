@@ -11,6 +11,7 @@ __all__ = ['BaseLogListView', 'LogListView']
 
 
 class BaseLogListView:
+    model = Log
     date = None
 
     def get_queryset(self):
@@ -23,8 +24,6 @@ class BaseLogListView:
 
 
 class LogListView(BaseView, BaseLogListView, ListView):
-    model = Log
-
     date = None
     max_age = 10
     min_date = None
@@ -37,8 +36,6 @@ class LogListView(BaseView, BaseLogListView, ListView):
         return super().get(request, *args, **kwargs)
 
     def get_queryset(self):
-        # only get logs for tracks: log for diffusion will be retrieved
-        # by the diffusions' queryset.
         return super().get_queryset().today(self.date)
 
     def get_diffusions_queryset(self):

@@ -1,4 +1,4 @@
-from . import api
+from . import api, admin
 
 from .article import ArticleDetailView, ArticleListView
 from .base import BaseView
