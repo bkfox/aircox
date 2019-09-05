@@ -10,29 +10,19 @@ This project is distributed under GPL version 3. More information in the LICENSE
 * **diffusions**: generate diffusions time slot for programs that have schedule informations. Check for conflicts and rerun.
 * **liquidsoap**: create a configuration to use liquidsoap as a stream generator. Also provides interface and control to it;
 * **sounds**: each programs have a folder where sounds can be put, that will be detected by the system. Quality can be check and reported for later use. Later, we plan to have uploaders to external plateforms. Sounds can be defined as excerpts or as archives.
-* **cms**: application that can be used as basis for website (we use Wagtail; if you don't want it this application is not required to make everything run);
+* **cms**: application that can be used as basis for website;
 * **log**: keep a trace of every played/loaded sounds on the stream generator.
 
 
-## Architecture
-Aircox is a complete Django project, that includes multiple Django's applications (if you don't know what it is, it is just like modules). There are somes scripts that can be used for deployment.
-
-**For the moment it is assumed that the application is installed in `/srv/apps/aircox`**, and that you have installed all the dependencies for aircox (external applications and python modules)
-
-### Applications
-* **aircox**: managing stations, programs, schedules and diffusions + interfaces with the stream generator (for the moment only support [Liquidsoap](http://liquidsoap.fm/)). This is the core application, that handle most of the work: diffusions generation, conflicts checks, creates configuration files for the controllers, monitors scheduled diffusions, etc, etc.
-* **aircox_cms**: defines models and templates to generate a website connected to Aircox;
-
-### Scripts
-There are script/config file for various programs. You can copy and paste them,
-or even link them in their correct directory. For the moment there are scripts
-for:
+## Scripts
+Are included various configuration scripts that can be used to ease setup. They
+assume that the project is present in `/srv/apps/aircox`:
 
 * cron: daily cron configuration for the generation of the diffusions
 * supervisorctl: audio stream generation, website, sounds monitoring
 * nginx: sample config file (must be adapted)
 
-The scripts are written with  a combination of `cron`, `supervisord`, `nginx`
+The scripts are written with a combination of `cron`, `supervisord`, `nginx`
 and `gunicorn` in mind.
 
 
@@ -40,16 +30,9 @@ and `gunicorn` in mind.
 Later we plan to have an installation script to reduce the number of above steps.
 
 ### Dependencies
-Python modules:
-* `django-taggits`: `aircox.programs`, `aircox.cms`
-* `watchdog`: `aircox.programs` (used for files monitoring)
-* `wagtail`: `aircox.cms`
-* `django-extends`: `aircox.cms`
-* `django-honeypot`: `aircox.cms`
-* `bleach`: 'aircox.cms` (comments sanitization)
-* `dateutils`: `aircox.programs` (used for tests)
-* `Pillow`: `aircox.cms` (needed by `wagtail`)
-* Django's required database modules (remember to install `mysqlclient` if you plan to use a MySql database server)
+For python dependencies take a peek at the `requirements.txt` file, plus
+dependencies specific to Django (e.g. for database: `mysqlclient` for MySql
+database server).
 
 External applications & modules:
 * `liquidsoap`: `aircox` (generation of the audio streams)
@@ -59,6 +42,9 @@ External applications & modules:
 * note there might be external dependencies for python's Pillow too
 * sqlite, mysql or any database library that you need to run a database, that is supported by Django (+ eventual python deps)
 * gzip: archive logs
+
+Development dependencies:
+* `npm`, `webpack`: thoses are used for assets managements and development.
 
 ### Setup environment
 All scripts and files assumes that:
@@ -137,5 +123,5 @@ If you use supervisord and our script with it, you can use the services defined
 in it instead of running commands manually.
 
 ## More informations
-There are extra informations in `aircox/README.md` and `aircox_cms/README.md` files.
+There are extra informations in `aircox/README.md`.
 
