@@ -1,10 +1,13 @@
 
-from django.core.exceptions import FieldDoesNotExist
-from django.http import Http404
+from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404
+from django.utils.translation import ugettext_lazy as _
 from django.views.generic import DetailView, ListView
 
-from ..models import Category
+from honeypot.decorators import check_honeypot
+
+from ..forms import CommentForm
+from ..models import Category, Comment
 from ..utils import Redirect
 from .base import BaseView
 
@@ -108,6 +111,9 @@ class PageDetailView(BaseView, DetailView):
         return None
 
     def get_object(self):
+        if getattr(self, 'object', None):
+            return self.object
+
         obj = super().get_object()
         if not obj.is_published:
             redirect_url = self.not_published_redirect(obj)
@@ -120,7 +126,32 @@ class PageDetailView(BaseView, DetailView):
         page = kwargs.setdefault('page', self.object)
         kwargs.setdefault('title', page.title)
         kwargs.setdefault('cover', page.cover)
+
+        if self.object.allow_comments and not 'comment_form' in kwargs:
+            kwargs['comment_form'] = CommentForm()
+
+        kwargs['comments'] = Comment.objects.filter(page=self.object) \
+                                            .order_by('-date')
         return super().get_context_data(**kwargs)
+
+    @classmethod
+    def as_view(cls, *args, **kwargs):
+        view = super(PageDetailView, cls).as_view(*args, **kwargs)
+        return check_honeypot(view, field_name='website')
+
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        if not self.object.allow_comments:
+            return HttpResponse(_('comments are not allowed'), status=503)
+
+        form = CommentForm(request.POST)
+        comment = form.save(commit=False)
+        comment.page = self.object
+        comment.save()
+
+        return self.get(request, *args, **kwargs)
+
+
 
 
 

@@ -1,8 +1,7 @@
 {% extends "aircox/program_base.html" %}
 {% load i18n %}
 
-{% block header %}
-{{ block.super }}
+{% block header %}{{ block.super }}
 
 <section class="is-size-5 has-text-weight-bold">
     {% for diffusion in object.diffusion_set.all %}
@@ -28,8 +27,7 @@
 </section>
 {% endblock %}
 
-{% block main %}
-{{ block.super }}
+{% block content %}{{ block.super }}
 
 {% if podcasts or tracks %}
 <div class="columns is-desktop">

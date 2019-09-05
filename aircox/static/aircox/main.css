@@ -7171,6 +7171,9 @@ label.panel-block {
 a.navbar-item.is-active {
   border-bottom: 1px grey solid; }
 
+.navbar .navbar-dropdown {
+  z-index: 2000; }
+
 /*
 .navbar-brand img {
     min-height: 6em;

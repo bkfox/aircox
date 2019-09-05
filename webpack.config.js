@@ -29,6 +29,12 @@ module.exports = (env, argv) => Object({
 
                     test: /[\\/]node_modules[\\/]/,
                 },
+                admin: {
+                    name: 'admin',
+                    chunks: 'initial',
+                    enforce: true,
+                    test: /assets[\\/]admin[\\/]/,
+                },
 
                 /*noscript: {
                     name: 'noscript',
@@ -81,12 +87,11 @@ module.exports = (env, argv) => Object({
             // buefy: 'buefy/dist/buefy.js',
         },
         modules: [
-            'assets/css',
             'assets/js',
             'assets/vue',
             './node_modules',
         ],
-        extensions: ['.js', '.vue', '.css', '.styl', '.ttf']
+        extensions: ['.js', '.vue', '.css', '.scss', '.styl', '.ttf']
     },
 })
 

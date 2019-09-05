@@ -13,10 +13,7 @@
 </div>
 {% endblock %}
 
-{% block main %}
-{{ block.super }}
-
-
+{% block main %}{{ block.super }}
 {% with True as hide_schedule %}
 <section>
     {% unique_id "timetable" as timetable_id %}

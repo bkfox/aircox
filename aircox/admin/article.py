@@ -13,6 +13,7 @@ __all__ = ['ArticleAdmin']
 class ArticleAdmin(PageAdmin):
     list_display = PageAdmin.list_display + ('program',)
     list_filter = ('program',)
+    search_fields = PageAdmin.search_fields + ['program__title']
     # TODO: readonly field
 
     fieldsets = copy.deepcopy(PageAdmin.fieldsets)

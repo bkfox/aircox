@@ -134,6 +134,7 @@ INSTALLED_APPS = (
     # django
     'django.contrib.contenttypes',
     'django.contrib.auth',
+    'django.contrib.humanize',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',

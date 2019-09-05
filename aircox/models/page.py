@@ -16,7 +16,7 @@ from model_utils.managers import InheritanceQuerySet
 from .station import Station
 
 
-__all__ = ['Category', 'PageQuerySet', 'Page', 'NavItem']
+__all__ = ['Category', 'PageQuerySet', 'Page', 'Comment', 'NavItem']
 
 
 headline_re = re.compile(r'(<p>)?'

@@ -7,25 +7,10 @@ Context:
 - page: page
 {% endcomment %}
 
-{% block subtitle %}
-{{ block.super }}
-{% if page.category %}
-<span class="column has-text-right">{{ page.category.title }}</span>
-{% endif %}
-{% endblock %}
-
 {% block head_title %}
     {% block title %}{{ title }}{% endblock %}
     &mdash;
     {{ station.name }}
 {% endblock %}
-
-
-{% block main %}
-{% block content %}
-{{ page.content|default_if_none:''|safe }}
-{% endblock %}
-{% endblock %}
-
 
 

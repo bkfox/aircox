@@ -14,6 +14,7 @@ __all__ = ['CategoryAdmin', 'PageAdmin', 'NavItemInline']
 class CategoryAdmin(admin.ModelAdmin):
     list_display = ['pk', 'title', 'slug']
     list_editable = ['title', 'slug']
+    search_fields = ['title']
     fields = ['title', 'slug']
     prepopulated_fields = {"slug": ("title",)}
 
@@ -27,6 +28,7 @@ class PageAdmin(admin.ModelAdmin):
 
     change_form_template = 'admin/aircox/page_change_form.html'
 
+    search_fields = ['title', 'category__title']
     fieldsets = [
         ('', {
             'fields': ['title', 'slug', 'category', 'cover', 'content'],

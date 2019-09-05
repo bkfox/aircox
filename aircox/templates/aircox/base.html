@@ -1,6 +1,7 @@
 {% load static i18n thumbnail aircox %}
 {% comment %}
 Context:
+- cover: image cover
 - site: current website
 {% endcomment %}
 <html>
@@ -70,6 +71,7 @@ Context:
 
                     {% if show_side_nav %}
                     <aside class="column is-one-third-desktop">
+                        {# FIXME: block cover into side_nav one #}
                         {% block cover %}
                         {% if cover is not None %}
                         <img class="cover" src="{{ cover.url }}" class="cover"/>

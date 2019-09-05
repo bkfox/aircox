@@ -34,6 +34,8 @@ class SoundAdmin(admin.ModelAdmin):
     list_display = ['id', 'name', 'program', 'type', 'duration',
                     'is_public', 'is_good_quality', 'episode', 'filename']
     list_filter = ('program', 'type', 'is_good_quality', 'is_public')
+
+    search_fields = ['name', 'program']
     fieldsets = [
         (None, {'fields': ['name', 'path', 'type', 'program', 'episode']}),
         (None, {'fields': ['embed', 'duration', 'is_public', 'mtime']}),
@@ -50,7 +52,9 @@ class TrackAdmin(admin.ModelAdmin):
 
     list_display = ['pk', 'artist', 'title', 'tag_list', 'episode', 'sound', 'timestamp']
     list_editable = ['artist', 'title']
-    list_filter = ['sound', 'episode', 'artist', 'title', 'tags']
+    list_filter = ['artist', 'title', 'tags']
+
+    search_fields = ['artist', 'title']
     fieldsets = [
         (_('Playlist'), {'fields': ['episode', 'sound', 'position', 'timestamp']}),
         (_('Info'), {'fields': ['artist', 'title', 'info', 'tags']}),

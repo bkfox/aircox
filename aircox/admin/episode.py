@@ -50,6 +50,7 @@ class DiffusionInline(DiffusionBaseAdmin, admin.TabularInline):
 class EpisodeAdmin(PageAdmin):
     list_display = PageAdmin.list_display + ('program',)
     list_filter = ('program',)
+    search_fields = PageAdmin.search_fields + ['program__title']
     readonly_fields = ('program',)
 
     fieldsets = copy.deepcopy(PageAdmin.fieldsets)

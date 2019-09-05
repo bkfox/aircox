@@ -1,0 +1,10 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block branding %}
+<a href="{% url 'admin:index' %}">
+    <img src="{% static "aircox/logo.png" %}"/>
+</a>
+{% endblock %}
+
+
