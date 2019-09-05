@@ -1,4 +1,3 @@
-from enum import IntEnum
 import os
 
 from django.db import models
@@ -91,36 +90,32 @@ class Port(models.Model):
     Some port types may be not available depending on the
     direction of the port.
     """
-    class Direction(IntEnum):
-        input = 0x00
-        output = 0x01
+    DIRECTION_INPUT = 0x00
+    DIRECTION_OUTPUT = 0x01
+    DIRECTION_CHOICES = ((DIRECTION_INPUT, _('input')),
+                         (DIRECTION_OUTPUT, _('output')))
 
-    class Type(IntEnum):
-        jack = 0x00
-        alsa = 0x01
-        pulseaudio = 0x02
-        icecast = 0x03
-        http = 0x04
-        https = 0x05
-        file = 0x06
+    TYPE_JACK = 0x00
+    TYPE_ALSA = 0x01
+    TYPE_PULSEAUDIO = 0x02
+    TYPE_ICECAST = 0x03
+    TYPE_HTTP = 0x04
+    TYPE_HTTPS = 0x05
+    TYPE_FILE = 0x06
+    TYPE_CHOICES = (
+        (TYPE_JACK, 'jack'), (TYPE_ALSA, 'alsa'),
+        (TYPE_PULSEAUDIO, 'pulseaudio'), (TYPE_ICECAST, 'icecast'),
+        (TYPE_HTTP, 'http'), (TYPE_HTTPS, 'https'),
+        (TYPE_FILE, _('file'))
+    )
 
     station = models.ForeignKey(
-        Station,
-        verbose_name=_('station'),
-        on_delete=models.CASCADE,
-    )
+        Station, models.CASCADE, verbose_name=_('station'))
     direction = models.SmallIntegerField(
-        _('direction'),
-        choices=[(int(y), _(x)) for x, y in Direction.__members__.items()],
-    )
-    type = models.SmallIntegerField(
-        _('type'),
-        # we don't translate the names since it is project names.
-        choices=[(int(y), x) for x, y in Type.__members__.items()],
-    )
+        _('direction'), choices=DIRECTION_CHOICES)
+    type = models.SmallIntegerField(_('type'), choices=TYPE_CHOICES)
     active = models.BooleanField(
-        _('active'),
-        default=True,
+        _('active'), default=True,
         help_text=_('this port is active')
     )
     settings = models.TextField(
@@ -136,13 +131,13 @@ class Port(models.Model):
         Return True if the type is available for the given direction.
         """
 
-        if self.direction == self.Direction.input:
+        if self.direction == self.DIRECTION_INPUT:
             return self.type not in (
-                self.Type.icecast, self.Type.file
+                self.TYPE_ICECAST, self.TYPE_FILE
             )
 
         return self.type not in (
-            self.Type.http, self.Type.https
+            self.TYPE_HTTP, self.TYPE_HTTPS
         )
 
     def save(self, *args, **kwargs):

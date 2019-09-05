@@ -6,20 +6,19 @@
 
 {% if side_items %}
 <section>
-    <h4 class="title is-4">{% trans "Last shows" %}</h4>
+    <h4 class="title is-4">{% trans "Latest news" %}</h4>
 
     {% for object in side_items %}
-    {% include "aircox/episode_item.html" %}
+    {% include "aircox/page_item.html" %}
     {% endfor %}
 
     <br>
     <nav class="pagination is-centered">
         <ul class="pagination-list">
             <li>
-                <a href="{% url "diffusion-list" parent_slug=program.slug %}"
-                    class="pagination-link"
-                    aria-label="{% trans "Show all program's diffusions" %}">
-                    {% trans "More shows" %}
+                <a href="{% url "article-list" %}" class="pagination-link"
+                    aria-label="{% trans "Show all news" %}">
+                    {% trans "More news" %}
                 </a>
             </li>
         </ul>

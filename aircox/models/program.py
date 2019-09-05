@@ -45,6 +45,11 @@ class Program(Page):
     Renaming a Program rename the corresponding directory to matches the new
     name if it does not exists.
     """
+    # explicit foreign key in order to avoid related name clashes
+    page = models.OneToOneField(
+        Page, models.CASCADE,
+        parent_link=True, related_name='program_page'
+    )
     station = models.ForeignKey(
         Station,
         verbose_name=_('station'),
@@ -478,7 +483,7 @@ class Schedule(BaseRerun):
                 initial = diffusions[initial]
 
             diffusions[date] = Diffusion(
-                episode=episode, type=Diffusion.Type.on_air,
+                episode=episode, type=Diffusion.TYPE_ON_AIR,
                 initial=initial, start=date, end=date+duration
             )
         return episodes.values(), diffusions.values()

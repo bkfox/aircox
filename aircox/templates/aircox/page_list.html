@@ -1,15 +1,14 @@
 {% extends "aircox/page.html" %}
 {% load i18n aircox %}
 
-{% with view.model|verbose_name:True as model_name_plural %}
-
 {% block title %}
-{{ model_name_plural }}
+{{ view.model|verbose_name:True|title }}
 {% endblock %}
 
 {% block side_nav %}
 {{ block.super }}
 
+{% if filter_categories|length != 1 %}
 <section class="toolbar">
     <h4 class="subtitle is-5">{% trans "Filters" %}</h4>
     <form method="GET" action="">
@@ -51,6 +50,7 @@
         </div>
     </form>
 </section>
+{% endif %}
 {% endblock %}
 
 
@@ -96,6 +96,4 @@
 {% endif %}
 
 {% endblock %}
-
-{% endwith %}
 

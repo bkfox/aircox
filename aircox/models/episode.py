@@ -1,9 +1,7 @@
 import datetime
-from enum import IntEnum
 
 from django.db import models
-from django.db.models import F, Q
-from django.db.models.functions import Concat, Substr
+from django.db.models import Q
 from django.utils import timezone as tz
 from django.utils.translation import ugettext_lazy as _
 from django.utils.functional import cached_property
@@ -64,7 +62,7 @@ class DiffusionQuerySet(BaseRerunQuerySet):
 
     def on_air(self):
         """ On air diffusions """
-        return self.filter(type=Diffusion.Type.on_air)
+        return self.filter(type=Diffusion.TYPE_ON_AIR)
 
     def now(self, now=None, order=True):
         """ Diffusions occuring now """
@@ -132,20 +130,20 @@ class Diffusion(BaseRerun):
     """
     objects = DiffusionQuerySet.as_manager()
 
-    class Type(IntEnum):
-        on_air = 0x00
-        unconfirmed = 0x01
-        cancel = 0x02
+    TYPE_ON_AIR = 0x00
+    TYPE_UNCONFIRMED = 0x01
+    TYPE_CANCEL = 0x02
+    TYPE_CHOICES = (
+        (TYPE_ON_AIR, _('on air')),
+        (TYPE_UNCONFIRMED, _('not confirmed')),
+        (TYPE_CANCEL, _('cancelled')),
+    )
 
     episode = models.ForeignKey(
-        Episode, models.CASCADE,
-        verbose_name=_('episode'),
+        Episode, models.CASCADE, verbose_name=_('episode'),
     )
     type = models.SmallIntegerField(
-        verbose_name=_('type'),
-        default=Type.on_air,
-        choices=[(int(y), _(x.replace('_', ' ')))
-                 for x, y in Type.__members__.items()],
+        verbose_name=_('type'), default=TYPE_ON_AIR, choices=TYPE_CHOICES,
     )
     start = models.DateTimeField(_('start'))
     end = models.DateTimeField(_('end'))
@@ -222,7 +220,7 @@ class Diffusion(BaseRerun):
     # TODO: property?
     def is_live(self):
         """ True if Diffusion is live (False if there are sounds files). """
-        return self.type == self.Type.on_air and \
+        return self.type == self.TYPE_ON_AIR and \
             not self.episode.sound_set.archive().count()
 
     def get_playlist(self, **types):
@@ -232,7 +230,7 @@ class Diffusion(BaseRerun):
         """
         from .sound import Sound
         return list(self.get_sounds(**types)
-                        .filter(path__isnull=False, type=Sound.Type.archive)
+                        .filter(path__isnull=False, type=Sound.TYPE_ARCHIVE)
                         .values_list('path', flat=True))
 
     def get_sounds(self, **types):

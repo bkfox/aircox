@@ -32,9 +32,9 @@
 {{ block.super }}
 
 {% if podcasts or tracks %}
-<section class="columns is-desktop">
+<div class="columns is-desktop">
     {% if tracks %}
-    <div class="column">
+    <section class="column">
         <h4 class="title is-4">{% trans "Playlist" %}</h4>
         <ol>
             {% for track in tracks %}
@@ -46,17 +46,17 @@
             </li>
             {% endfor %}
         </ol>
-    </div>
+    </section>
     {% endif %}
     {% if podcasts %}
-    <div class="column">
+    <section class="column">
         <h4 class="title is-4">{% trans "Podcasts" %}</h4>
         {% for object in podcasts %}
         {% include "aircox/podcast_item.html" %}
         {% endfor %}
-        {% endif %}
-    </div>
+    </section>
     {% endif %}
-</section>
+</div>
+{% endif %}
 {% endblock %}
 

@@ -38,28 +38,30 @@ class Category(models.Model):
 
 class PageQuerySet(InheritanceQuerySet):
     def draft(self):
-        return self.filter(status=Page.STATUS.draft)
+        return self.filter(status=Page.STATUS_DRAFT)
 
     def published(self):
-        return self.filter(status=Page.STATUS.published)
+        return self.filter(status=Page.STATUS_PUBLISHED)
 
     def trash(self):
-        return self.filter(status=Page.STATUS.trash)
+        return self.filter(status=Page.STATUS_TRASH)
 
 
 class Page(models.Model):
     """ Base class for publishable content """
-    class STATUS(IntEnum):
-        draft = 0x00
-        published = 0x10
-        trash = 0x20
+    STATUS_DRAFT = 0x00
+    STATUS_PUBLISHED = 0x10
+    STATUS_TRASH = 0x20
+    STATUS_CHOICES = (
+        (STATUS_DRAFT, _('draft')),
+        (STATUS_PUBLISHED, _('published')),
+        (STATUS_TRASH, _('trash')),
+    )
 
     title = models.CharField(max_length=128)
     slug = models.SlugField(_('slug'), blank=True, unique=True)
     status = models.PositiveSmallIntegerField(
-        _('status'),
-        default=STATUS.draft,
-        choices=[(int(y), _(x)) for x, y in STATUS.__members__.items()],
+        _('status'), default=STATUS_DRAFT, choices=STATUS_CHOICES,
     )
     category = models.ForeignKey(
         Category, models.SET_NULL,
@@ -84,8 +86,6 @@ class Page(models.Model):
 
     detail_url_name = None
 
-    class Meta:
-        abstract = True
 
     def __str__(self):
         return '{}: {}'.format(self._meta.verbose_name,
@@ -104,15 +104,15 @@ class Page(models.Model):
 
     @property
     def is_draft(self):
-        return self.status == self.STATUS.draft
+        return self.status == self.STATUS_DRAFT
 
     @property
     def is_published(self):
-        return self.status == self.STATUS.published
+        return self.status == self.STATUS_PUBLISHED
 
     @property
     def is_trash(self):
-        return self.status == self.STATUS.trash
+        return self.status == self.STATUS_TRASH
 
     @cached_property
     def headline(self):
@@ -130,6 +130,16 @@ class Page(models.Model):
     @classmethod
     def from_page(cls, page, **kwargs):
         return cls(**cls.get_init_kwargs_from(page, **kwargs))
+
+
+class Comment(models.Model):
+    page = models.ForeignKey(
+        Page, models.CASCADE, verbose_name=_('related page'),
+    )
+    nickname = models.CharField(_('nickname'), max_length=32)
+    email = models.EmailField(_('email'), max_length=32)
+    date = models.DateTimeField(auto_now_add=True)
+    content = models.TextField(_('content'), max_length=1024)
 
 
 class NavItem(models.Model):

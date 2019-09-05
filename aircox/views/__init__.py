@@ -1,6 +1,6 @@
 from . import api
 
-from .article import ArticleListView
+from .article import ArticleDetailView, ArticleListView
 from .base import BaseView
 from .episode import EpisodeDetailView, EpisodeListView, TimetableView
 from .log import LogListView

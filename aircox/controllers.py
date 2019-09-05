@@ -78,18 +78,14 @@ class Streamer:
     @property
     def inputs(self):
         """ Return input ports of the station """
-        return self.station.port_set.filter(
-            direction=Port.Direction.input,
-            active=True
-        )
+        return self.station.port_set.filter(direction=Port.DIRECTION_INPUT,
+                                            active=True)
 
     @property
     def outputs(self):
         """ Return output ports of the station """
-        return self.station.port_set.filter(
-            direction=Port.Direction.output,
-            active=True,
-        )
+        return self.station.port_set.filter(direction=Port.DIRECTION_OUTPUT,
+                                            active=True)
 
     # Sources and config ###############################################
     def send(self, *args, **kwargs):

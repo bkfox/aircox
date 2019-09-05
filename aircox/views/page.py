@@ -1,6 +1,7 @@
 
 from django.core.exceptions import FieldDoesNotExist
 from django.http import Http404
+from django.shortcuts import get_object_or_404
 from django.views.generic import DetailView, ListView
 
 from ..models import Category
@@ -8,41 +9,48 @@ from ..utils import Redirect
 from .base import BaseView
 
 
-__all__ = ['PageDetailView', 'PageListView']
+__all__ = ['ParentMixin', 'PageDetailView', 'PageListView']
 
 
-class PageDetailView(BaseView, DetailView):
-    """ Base view class for pages. """
-    context_object_name = 'page'
+class ParentMixin:
+    """
+    Optional parent page for a list view. Parent is fetched and passed to the
+    template context when `parent_model` is provided (queryset is filtered by
+    parent page in such case).
+    """
+    parent_model = None
+    """ Parent model """
+    parent_url_kwarg = 'parent_slug'
+    """ Url lookup argument """
+    parent_field = 'slug'
+    """ Parent field for url lookup """
+    fk_parent = 'page'
+    """ Page foreign key to the parent """
+    parent = None
+    """ Parent page object """
+
+    def get_parent(self, request, *args, **kwargs):
+        if self.parent_model is None or self.parent_url_kwarg not in kwargs:
+            return
+
+        lookup = {self.parent_field: kwargs[self.parent_url_kwarg]}
+        return get_object_or_404(
+            self.parent_model.objects.select_related('cover'), **lookup)
+
+    def get(self, request, *args, **kwargs):
+        self.parent = self.get_parent(request, *args, **kwargs)
+        return super().get(request, *args, **kwargs)
 
     def get_queryset(self):
-        return super().get_queryset().select_related('cover', 'category')
-
-    # This should not exists: it allows mapping not published pages
-    # or it should be only used for trashed pages.
-    def not_published_redirect(self, page):
-        """
-        When a page is not published, redirect to the returned url instead
-        of an HTTP 404 code. """
-        return None
-
-    def get_object(self):
-        obj = super().get_object()
-        if not obj.is_published:
-            redirect_url = self.not_published_redirect(obj)
-            if redirect_url:
-                raise Redirect(redirect_url)
-            raise Http404('%s not found' % self.model._meta.verbose_name)
-        return obj
+        if self.parent is not None:
+            lookup = {self.fk_parent: self.parent}
+            return super().get_queryset().filter(**lookup)
+        return super().get_queryset()
 
     def get_context_data(self, **kwargs):
-        #if kwargs.get('regions') is None:
-        #    contents = contents_for_item(
-        #        page, page_renderer._renderers.keys())
-        #    kwargs['regions'] = contents.render_regions(page_renderer)
-        page = kwargs.setdefault('page', self.object)
-        kwargs.setdefault('title', page.title)
-        kwargs.setdefault('cover', page.cover)
+        parent = kwargs.setdefault('parent', self.parent)
+        if parent is not None:
+            kwargs.setdefault('cover', parent.cover)
         return super().get_context_data(**kwargs)
 
 
@@ -81,6 +89,37 @@ class PageListView(BaseView, ListView):
         kwargs.setdefault('filter_categories', self.get_categories_queryset())
         kwargs.setdefault('categories', self.categories)
         kwargs.setdefault('show_headline', self.show_headline)
+        return super().get_context_data(**kwargs)
+
+
+class PageDetailView(BaseView, DetailView):
+    """ Base view class for pages. """
+    context_object_name = 'page'
+
+    def get_queryset(self):
+        return super().get_queryset().select_related('cover', 'category')
+
+    # This should not exists: it allows mapping not published pages
+    # or it should be only used for trashed pages.
+    def not_published_redirect(self, page):
+        """
+        When a page is not published, redirect to the returned url instead
+        of an HTTP 404 code. """
+        return None
+
+    def get_object(self):
+        obj = super().get_object()
+        if not obj.is_published:
+            redirect_url = self.not_published_redirect(obj)
+            if redirect_url:
+                raise Redirect(redirect_url)
+            raise Http404('%s not found' % self.model._meta.verbose_name)
+        return obj
+
+    def get_context_data(self, **kwargs):
+        page = kwargs.setdefault('page', self.object)
+        kwargs.setdefault('title', page.title)
+        kwargs.setdefault('cover', page.cover)
         return super().get_context_data(**kwargs)
 
 

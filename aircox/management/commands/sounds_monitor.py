@@ -184,9 +184,9 @@ class MonitorHandler(PatternMatchingEventHandler):
         """
         self.subdir = subdir
         if self.subdir == settings.AIRCOX_SOUND_ARCHIVES_SUBDIR:
-            self.sound_kwargs = {'type': Sound.Type.archive}
+            self.sound_kwargs = {'type': Sound.TYPE_ARCHIVE}
         else:
-            self.sound_kwargs = {'type': Sound.Type.excerpt}
+            self.sound_kwargs = {'type': Sound.TYPE_EXCERPT}
 
         patterns = ['*/{}/*{}'.format(self.subdir, ext)
                     for ext in settings.AIRCOX_SOUND_FILE_EXT]
@@ -213,7 +213,7 @@ class MonitorHandler(PatternMatchingEventHandler):
         sound = Sound.objects.filter(path=event.src_path)
         if sound:
             sound = sound[0]
-            sound.type = sound.Type.removed
+            sound.type = sound.TYPE_REMOVED
             sound.save()
 
     def on_moved(self, event):
@@ -259,11 +259,11 @@ class Command(BaseCommand):
             logger.info('#%d %s', program.id, program.title)
             self.scan_for_program(
                 program, settings.AIRCOX_SOUND_ARCHIVES_SUBDIR,
-                type=Sound.Type.archive,
+                type=Sound.TYPE_ARCHIVE,
             )
             self.scan_for_program(
                 program, settings.AIRCOX_SOUND_EXCERPTS_SUBDIR,
-                type=Sound.Type.excerpt,
+                type=Sound.TYPE_EXCERPT,
             )
             dirs.append(os.path.join(program.path))
 
@@ -317,7 +317,7 @@ class Command(BaseCommand):
 
         # get available sound files
         sounds = Sound.objects.filter(is_good_quality=False) \
-                      .exclude(type=Sound.Type.removed)
+                      .exclude(type=Sound.TYPE_REMOVED)
         if check:
             self.check_sounds(sounds)
 

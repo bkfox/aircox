@@ -1,6 +1,6 @@
 <template>
     <div>
-        <div class="tabs is-centered">
+        <div class="tabs is-centered is-medium">
             <ul><slot name="tabs" :value="value" /></ul>
         </div>
 

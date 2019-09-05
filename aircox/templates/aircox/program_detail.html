@@ -6,3 +6,39 @@
 {% include "aircox/program_header.html" %}
 {% endblock %}
 
+
+{% block main %}
+{{ block.super }}
+
+<br>
+
+{% with show_headline=False %}
+<div class="columns is-desktop">
+    {% if articles %}
+    <section class="column">
+        <h4 class="title is-4">{% trans "Articles" %}</h4>
+
+        {% for object in articles %}
+        {% include "aircox/page_item.html" %}
+        {% endfor %}
+
+        <br>
+        <nav class="pagination is-centered">
+            <ul class="pagination-list">
+                <li>
+                    <a href="{% url "article-list" parent_slug=program.slug %}"
+                        class="pagination-link"
+                        aria-label="{% trans "Show all program's articles" %}">
+                        {% trans "More articles" %}
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </section>
+    {% endif %}
+</div>
+{% endwith %}
+
+{% endblock %}
+
+

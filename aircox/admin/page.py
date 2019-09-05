@@ -25,6 +25,8 @@ class PageAdmin(admin.ModelAdmin):
     list_editable = ('status', 'category')
     prepopulated_fields = {"slug": ("title",)}
 
+    change_form_template = 'admin/aircox/page_change_form.html'
+
     fieldsets = [
         ('', {
             'fields': ['title', 'slug', 'category', 'cover', 'content'],

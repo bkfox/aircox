@@ -57,14 +57,14 @@ class Actions:
                 diffusion.save()
 
     def clean(self):
-        qs = Diffusion.objects.filter(type=Diffusion.Type.unconfirmed,
+        qs = Diffusion.objects.filter(type=Diffusion.TYPE_UNCONFIRMED,
                                       start__lt=self.date)
         logger.info('[clean] %d diffusions will be removed', qs.count())
         qs.delete()
 
     def check(self):
         # TODO: redo
-        qs = Diffusion.objects.filter(type=Diffusion.Type.unconfirmed,
+        qs = Diffusion.objects.filter(type=Diffusion.TYPE_UNCONFIRMED,
                                       start__gt=self.date)
         items = []
         for diffusion in qs:

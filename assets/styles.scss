@@ -14,6 +14,9 @@ $body-background-color: $light;
 }
 .is-borderless { border: none; }
 
+.has-background-transparent {
+    background-color: transparent;
+}
 
 .navbar + .container {
     margin-top: 1em;
@@ -21,6 +24,10 @@ $body-background-color: $light;
 
 .navbar.has-shadow, .navbar.is-fixed-bottom.has-shadow {
     box-shadow: 0em 0em 1em rgba(0,0,0,0.1);
+}
+
+a.navbar-item.is-active {
+    border-bottom: 1px grey solid;
 }
 
 /*

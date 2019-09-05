@@ -36,7 +36,7 @@ class SoundQuerySet(models.QuerySet):
 
     def archive(self):
         """ Return sounds that are archives """
-        return self.filter(type=Sound.Type.archive)
+        return self.filter(type=Sound.TYPE_ARCHIVE)
 
     def paths(self, archive=True, order_by=True):
         """
@@ -55,11 +55,14 @@ class Sound(models.Model):
     A Sound is the representation of a sound file that can be either an excerpt
     or a complete archive of the related diffusion.
     """
-    class Type(IntEnum):
-        other = 0x00,
-        archive = 0x01,
-        excerpt = 0x02,
-        removed = 0x03,
+    TYPE_OTHER = 0x00
+    TYPE_ARCHIVE = 0x01
+    TYPE_EXCERPT = 0x02
+    TYPE_REMOVED = 0x03
+    TYPE_CHOICES = (
+        (TYPE_OTHER, _('other')), (TYPE_ARCHIVE, _('archive')),
+        (TYPE_EXCERPT, _('excerpt')), (TYPE_REMOVED, _('removed'))
+    )
 
     name = models.CharField(_('name'), max_length=64)
     program = models.ForeignKey(
@@ -72,11 +75,7 @@ class Sound(models.Model):
         Episode, models.SET_NULL, blank=True, null=True,
         verbose_name=_('episode'),
     )
-    type = models.SmallIntegerField(
-        verbose_name=_('type'),
-        choices=[(int(y), _(x)) for x, y in Type.__members__.items()],
-        blank=True, null=True
-    )
+    type = models.SmallIntegerField(_('type'), choices=TYPE_CHOICES)
     # FIXME: url() does not use the same directory than here
     #        should we use FileField for more reliability?
     path = models.FilePathField(
@@ -196,21 +195,21 @@ class Sound(models.Model):
         """
 
         if not self.file_exists():
-            if self.type == self.Type.removed:
+            if self.type == self.TYPE_REMOVED:
                 return
             logger.info('sound %s: has been removed', self.path)
-            self.type = self.Type.removed
+            self.type = self.TYPE_REMOVED
 
             return True
 
         # not anymore removed
         changed = False
 
-        if self.type == self.Type.removed and self.program:
+        if self.type == self.TYPE_REMOVED and self.program:
             changed = True
-            self.type = self.Type.archive \
+            self.type = self.TYPE_ARCHIVE \
                 if self.path.startswith(self.program.archives_path) else \
-                self.Type.excerpt
+                self.TYPE_EXCERPT
 
         # check mtime -> reset quality if changed (assume file changed)
         mtime = self.get_mtime()

@@ -11,7 +11,7 @@
 
 <section class="section">
     {% if dates %}
-    <nav class="tabs is-centered" aria-label="{% trans "Other days' logs" %}">
+    <nav class="tabs is-medium is-centered" aria-label="{% trans "Other days' logs" %}">
         <ul>
         {% for day in dates %}
             <li {% if day == date %}class="is-active"{% endif %}>
@@ -30,7 +30,7 @@
 
     {# <h4 class="subtitle size-4">{{ date }}</h4> #}
     {% with True as hide_schedule %}
-    <table class="table is-striped is-hoverable is-fullwidth">
+    <table class="table is-striped is-hoverable is-fullwidth has-background-transparent">
         {% for object in object_list %}
         <tr>
             <td>

@@ -1,16 +1,16 @@
 from collections import OrderedDict
 import datetime
 
-from django.db.models import OuterRef, Subquery
-from django.shortcuts import get_object_or_404
 from django.views.generic import ListView
 
-from ..models import Diffusion, Episode, Page, Program, Sound
+from ..converters import WeekConverter
+from ..models import Diffusion, Episode, Program, Sound
 from .base import BaseView
-from .program import ProgramPageDetailView, ProgramPageListView
+from .program import ProgramPageDetailView
+from .page import ParentMixin, PageListView
 
 
-__all__ = ['EpisodeDetailView', 'DiffusionListView', 'TimetableView']
+__all__ = ['EpisodeDetailView', 'EpisodeListView', 'TimetableView']
 
 
 class EpisodeDetailView(ProgramPageDetailView):
@@ -20,8 +20,9 @@ class EpisodeDetailView(ProgramPageDetailView):
         return Sound.objects.diffusion(diffusion).podcasts()
 
     def get_context_data(self, **kwargs):
-        kwargs.setdefault('program', self.object.program)
-        kwargs.setdefault('parent', kwargs['program'])
+        self.program = kwargs.setdefault('program', self.object.program)
+
+        kwargs.setdefault('parent', self.program)
         if not 'tracks' in kwargs:
             kwargs['tracks'] = self.object.track_set.order_by('position')
         if not 'podcasts' in kwargs:
@@ -29,11 +30,14 @@ class EpisodeDetailView(ProgramPageDetailView):
         return super().get_context_data(**kwargs)
 
 
-class EpisodeListView(ProgramPageListView):
+class EpisodeListView(ParentMixin, PageListView):
     model = Episode
     template_name = 'aircox/diffusion_list.html'
     item_template_name = 'aircox/episode_item.html'
     show_headline = True
+
+    parent_model = Program
+    fk_parent = 'program'
 
 
 class TimetableView(BaseView, ListView):

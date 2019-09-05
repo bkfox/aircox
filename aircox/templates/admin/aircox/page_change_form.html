@@ -1,0 +1,32 @@
+{% extends  "admin/change_form.html" %}
+{% load i18n static %}
+
+{% block extrahead %}{{ block.super }}
+<link rel="stylesheet" type="text/css" href="{% static "aircox/vendor.css" %}"/>
+<link rel="stylesheet" type="text/css" href="{% static "aircox/main.css" %}"/>
+{% endblock %}
+
+{% block submit_buttons_bottom %}
+{% if has_change_permission %}
+<div class="columns is-size-5">
+    <div class="column has-text-left">
+        {% if original and not original.is_trash %}
+        <button type="submit" name="status" value="32" class="button is-danger is-size-6">{% trans "Move to trash" %}</button>
+        {% endif %}
+        {% if original and not original.is_draft %}
+        <button type="submit" name="status" value="0" class="button is-warning is-size-6">{% trans "Mark as draft" %}</button>
+        {% endif %}
+    </div>
+
+    <div class="column has-text-right">
+        <button type="submit" class="button is-secondary is-size-6">{% trans "Save" %}</button>
+        <button type="submit" name="_continue" class="button is-secondary is-size-6">{% trans "Save and continue" %}</button>
+        {% if not original.is_published %}
+        <button type="submit" name="status" value="16" class="button is-primary is-size-6">{% trans "Publish" %}</button>
+        {% endif %}
+    </div>
+
+{% endif %}
+</div>
+{% endblock %}
+

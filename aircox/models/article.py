@@ -1,11 +1,17 @@
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
-from .page import Page
+from .page import Page, PageQuerySet
 from .program import Program, InProgramQuerySet
 
 
+class ArticleQuerySet(InProgramQuerySet, PageQuerySet):
+    pass
+
+
 class Article(Page):
+    detail_url_name = 'article-detail'
+
     program = models.ForeignKey(
         Program, models.SET_NULL,
         verbose_name=_('program'), blank=True, null=True,
@@ -17,7 +23,7 @@ class Article(Page):
                     'instead of a blog article'),
     )
 
-    objects = InProgramQuerySet.as_manager()
+    objects = ArticleQuerySet.as_manager()
 
     class Meta:
         verbose_name = _('Article')

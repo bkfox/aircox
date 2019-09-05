@@ -1,20 +1,28 @@
 {% extends "aircox/page.html" %}
 {% load i18n aircox %}
 
-{% block title %}{% trans "Timetable" %}{% endblock %}
+{% block title %}
+{% with station.name as station %}
+{% blocktrans %}This week's shows... {% endblocktrans %}
+{% endwith %}
+{% endblock %}
+
+{% block subtitle %}
+<div class="column">
+{% blocktrans %}From <b>{{ start }}</b> to <b>{{ end }}</b>{% endblocktrans %}
+</div>
+{% endblock %}
 
 {% block main %}
 {{ block.super }}
 
-<section class="section">
-    <h3 class="subtitle size-3">
-        {% blocktrans %}From <b>{{ start }}</b> to <b>{{ end }}</b>{% endblocktrans %}
-    </h3>
 
+{% with True as hide_schedule %}
+<section>
     {% unique_id "timetable" as timetable_id %}
     <a-tabs default="{{ date }}">
         <template v-slot:tabs="scope" noscript="hidden">
-            <li><a href="{% url "timetable" date=prev_date %}">&lt;</a></li>
+            <li><a href="{% url "timetable" date=prev_date %}">&#10092; {% trans "Before" %}</a></li>
 
             {% for day in by_date.keys %}
             <a-tab value="{{ day }}">
@@ -25,11 +33,10 @@
             {% endfor %}
 
             <li>
-                <a href="{% url "timetable" date=next_date %}">&gt;</a>
+                <a href="{% url "timetable" date=next_date %}">{% trans "After" %} &#10093;</a>
             </li>
         </template>
 
-        {% with True as hide_schedule %}
         <template v-slot:default="{value}">
             {% for day, diffusions in by_date.items %}
             <noscript><h4 class="subtitle is-4">{{ day|date:"l d F Y" }}</h4></noscript>
@@ -51,8 +58,8 @@
             </div>
             {% endfor %}
         </template>
-        {% endwith %}
     </a-tabs>
 </section>
+{% endwith %}
 {% endblock %}
 

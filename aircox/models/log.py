@@ -1,6 +1,4 @@
 from collections import deque
-import datetime
-from enum import IntEnum
 import logging
 import os
 
@@ -9,7 +7,7 @@ from django.utils import timezone as tz
 from django.utils.translation import ugettext_lazy as _
 
 
-from aircox import settings, utils
+from aircox import settings
 from .episode import Diffusion
 from .sound import Sound, Track
 from .station import Station
@@ -35,10 +33,10 @@ class LogQuerySet(models.QuerySet):
             self.filter(date__date__gte=date)
 
     def on_air(self):
-        return self.filter(type=Log.Type.on_air)
+        return self.filter(type=Log.TYPE_ON_AIR)
 
     def start(self):
-        return self.filter(type=Log.Type.start)
+        return self.filter(type=Log.TYPE_START)
 
     def with_diff(self, with_it=True):
         return self.filter(diffusion__isnull=not with_it)
@@ -163,43 +161,33 @@ class Log(models.Model):
     This only remember what has been played on the outputs, not on each
     source; Source designate here which source is responsible of that.
     """
-    class Type(IntEnum):
-        stop = 0x00
-        """
-        Source has been stopped, e.g. manually
-        """
-        # Rule: \/ diffusion != null \/ sound != null
-        start = 0x01
-        """ Diffusion or sound has been request to be played. """
-        cancel = 0x02
-        """ Diffusion has been canceled. """
-        # Rule: \/ sound != null /\ track == null
-        #       \/ sound == null /\ track != null
-        #       \/ sound == null /\ track == null /\ comment = sound_path
-        on_air = 0x03
-        """
-        The sound or diffusion has been detected occurring on air. Can
-        also designate live diffusion, although Liquidsoap did not play
-        them since they don't have an attached sound archive.
-        """
-        other = 0x04
-        """ Other log """
+
+    TYPE_STOP = 0x00
+    """ Source has been stopped, e.g. manually """
+    # Rule: \/ diffusion != null \/ sound != null
+    TYPE_START = 0x01
+    """ Diffusion or sound has been request to be played. """
+    TYPE_CANCEL = 0x02
+    """ Diffusion has been canceled. """
+    # Rule: \/ sound != null /\ track == null
+    #       \/ sound == null /\ track != null
+    #       \/ sound == null /\ track == null /\ comment = sound_path
+    TYPE_ON_AIR = 0x03
+    """ Sound or diffusion occured on air """
+    TYPE_OTHER = 0x04
+    """ Other log """
+    TYPE_CHOICES = (
+        (TYPE_STOP, _('stop')), (TYPE_START, _('start')),
+        (TYPE_CANCEL, _('cancelled')), (TYPE_ON_AIR, _('on air')),
+        (TYPE_OTHER, _('other'))
+    )
 
     station = models.ForeignKey(
         Station, models.CASCADE,
-        verbose_name=_('station'),
-        help_text=_('related station'),
+        verbose_name=_('station'), help_text=_('related station'),
     )
-    type = models.SmallIntegerField(
-        choices=[(int(y), _(x.replace('_', ' ')))
-                 for x, y in Type.__members__.items()],
-        blank=True, null=True,
-        verbose_name=_('type'),
-    )
-    date = models.DateTimeField(
-        default=tz.now, db_index=True,
-        verbose_name=_('date'),
-    )
+    type = models.SmallIntegerField(_('type'), choices=TYPE_CHOICES)
+    date = models.DateTimeField(_('date'), default=tz.now, db_index=True)
     source = models.CharField(
         # we use a CharField to avoid loosing logs information if the
         # source is removed

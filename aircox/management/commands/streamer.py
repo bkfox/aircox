@@ -152,7 +152,7 @@ class Monitor:
                                     .now(air_time).first()
 
         # log sound on air
-        return self.log(type=Log.Type.on_air, date=source.air_time,
+        return self.log(type=Log.TYPE_ON_AIR, date=source.air_time,
                         source=source.id, sound=sound, diffusion=diff,
                         comment=air_uri)
 
@@ -177,7 +177,7 @@ class Monitor:
             if pos > now:
                 break
             # log track on air
-            self.log(type=Log.Type.on_air, date=pos, source=log.source,
+            self.log(type=Log.TYPE_ON_AIR, date=pos, source=log.source,
                      track=track, comment=track)
 
     def handle_diffusions(self):
@@ -208,7 +208,7 @@ class Monitor:
         #
         now = tz.now()
         diff = Diffusion.objects.station(self.station).on_air().now(now) \
-                        .filter(episode__sound__type=Sound.Type.archive) \
+                        .filter(episode__sound__type=Sound.TYPE_ARCHIVE) \
                         .first()
         # Can't use delay: diffusion may start later than its assigned start.
         log = None if not diff else self.logs.start().filter(diffusion=diff)
@@ -228,13 +228,13 @@ class Monitor:
     def start_diff(self, source, diff):
         playlist = Sound.objects.episode(id=diff.episode_id).paths()
         source.append(*playlist)
-        self.log(type=Log.Type.start, source=source.id, diffusion=diff,
+        self.log(type=Log.TYPE_START, source=source.id, diffusion=diff,
                  comment=str(diff))
 
     def cancel_diff(self, source, diff):
-        diff.type = Diffusion.Type.cancel
+        diff.type = Diffusion.TYPE_CANCEL
         diff.save()
-        self.log(type=Log.Type.cancel, source=source.id, diffusion=diff,
+        self.log(type=Log.TYPE_CANCEL, source=source.id, diffusion=diff,
                  comment=str(diff))
 
     def sync(self):

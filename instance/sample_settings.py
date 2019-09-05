@@ -47,12 +47,11 @@ MEDIA_ROOT = os.path.join(STATIC_ROOT, 'media')
 ########################################################################
 
 # set current language code. e.g. 'fr_BE'
-LANGUAGE_CODE = os.environ.get('LANG') or 'en_US'
+LANGUAGE_CODE = 'en_US'
+# locale
+LC_LOCALE = 'en_US.UTF-8'
 # set current timezone. e.g. 'Europe/Brussels'
 TIME_ZONE = os.environ.get('TZ') or 'UTC'
-
-# wagtail site name
-WAGTAIL_SITE_NAME = 'Aircox'
 
 # debug mode
 DEBUG = (os.environ['AIRCOX_DEBUG'].lower() in ('true', 1)) \
@@ -64,7 +63,7 @@ if DEBUG:
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+            'NAME': os.path.join(PROJECT_ROOT, 'db.sqlite3'),
             'TIMEZONE': TIME_ZONE,
         }
     }
@@ -79,6 +78,13 @@ else:
             'HOST': 'localhost',
             'TIMEZONE': TIME_ZONE,
         },
+    }
+    # caching uses memcache
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.memcached.MemcachedCache',
+            'LOCATION': '127.0.0.1:11211',
+        }
     }
 
 # allowed hosts
@@ -102,7 +108,7 @@ timezone.activate(pytz.timezone(TIME_ZONE))
 
 try:
     import locale
-    locale.setlocale(locale.LC_ALL, LANGUAGE_CODE)
+    locale.setlocale(locale.LC_ALL, LC_LOCALE)
 except:
     print(
         'Can not set locale {LC}. Is it available on you system? Hint: '
@@ -115,28 +121,17 @@ except:
 
 # Application definition
 INSTALLED_APPS = (
+    # aircox & dependencies
     'aircox',
-    'aircox_cms',
-
-    'jet',
-    'wagtail.contrib.forms',
-    'wagtail.contrib.redirects',
-    'wagtail.embeds',
-    'wagtail.sites',
-    'wagtail.users',
-    'wagtail.snippets',
-    'wagtail.documents',
-    'wagtail.images',
-    'wagtail.search',
-    'wagtail.admin',
-    'wagtail.core',
-    'wagtail.contrib.settings',
-    'wagtail.contrib.modeladmin',
-
-    'modelcluster',
+    'rest_framework',
+    "ckeditor",
+    'easy_thumbnails',
+    'filer',
     'taggit',
+    'adminsortable2',
     'honeypot',
 
+    # django
     'django.contrib.contenttypes',
     'django.contrib.auth',
     'django.contrib.sessions',
@@ -147,7 +142,6 @@ INSTALLED_APPS = (
 
 MIDDLEWARE = (
     'django.middleware.gzip.GZipMiddleware',
-    'htmlmin.middleware.HtmlMinifyMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -155,9 +149,6 @@ MIDDLEWARE = (
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.security.SecurityMiddleware',
-
-    'wagtail.core.middleware.SiteMiddleware',
-    'wagtail.contrib.redirects.middleware.RedirectMiddleware',
 
     'aircox.middleware.AircoxMiddleware'
 )
@@ -180,12 +171,7 @@ TEMPLATES = [
                 "django.template.context_processors.static",
                 "django.template.context_processors.tz",
                 "django.contrib.messages.context_processors.messages",
-
-                'wagtail.contrib.settings.context_processors.settings',
             ),
-            'builtins': [
-                'overextends.templatetags.overextends_tags'
-            ],
             'loaders': (
                 'django.template.loaders.filesystem.Loader',
                 'django.template.loaders.app_directories.Loader',
@@ -197,6 +183,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'instance.wsgi.application'
 
+# FIXME: what about dev & prod modules?
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -206,15 +193,15 @@ LOGGING = {
         },
     },
     'loggers': {
-        'aircox.core': {
+        'aircox': {
+            'handlers': ['console'],
+            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
+        },
+        'aircox.commands': {
             'handlers': ['console'],
             'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
         },
         'aircox.test': {
-            'handlers': ['console'],
-            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
-        },
-        'aircox.tools': {
             'handlers': ['console'],
             'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
         },
