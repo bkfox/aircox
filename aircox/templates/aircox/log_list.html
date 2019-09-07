@@ -1,31 +1,20 @@
 {% extends "aircox/page.html" %}
-{% load i18n aircox %}
+{% load i18n humanize aircox %}
 
 {% block title %}
-{% trans "Logs" %}
+{% with station.name as station %}
+{% blocktrans %}That happened on {{ station }}{% endblocktrans %}
+{% endwith %}
 {% endblock %}
 
 
+{% block subtitle %}{{ date|date:"l d F Y" }}{% endblock %}
+
+
 {% block main %}
-<section class="section">
-    {% if dates %}
-    <nav class="tabs is-medium is-centered" aria-label="{% trans "Other days' logs" %}">
-        <ul>
-        {% for day in dates %}
-            <li {% if day == date %}class="is-active"{% endif %}>
-                <a href="{% url "logs" date=day %}">
-                    {{ day|date:"d b" }}
-                </a>
-            </li>
+<div class="columns">
 
-        {% if forloop.last and day > min_date %}
-            <li>...</li>
-        {% endif %}
-        {% endfor %}
-        </ul>
-    </nav>
-    {% endif %}
-
+<section class="section column">
     {# <h4 class="subtitle size-4">{{ date }}</h4> #}
     {% with True as hide_schedule %}
     <table class="table is-striped is-hoverable is-fullwidth has-background-transparent">
@@ -48,5 +37,13 @@
     </table>
     {% endwith %}
 </section>
+
+<nav class="column menu is-one-third-desktop" role="menu">
+    {% with "logs" as url_name %}
+    {% include "aircox/widgets/dates_menu.html" %}
+    {% endwith %}
+</nav>
+
+</div>
 {% endblock %}
 

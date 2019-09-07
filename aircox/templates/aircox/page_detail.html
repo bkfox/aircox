@@ -6,12 +6,11 @@ Context:
 - page: page
 {% endcomment %}
 
-{% block subtitle %}
-{{ block.super }}
 {% if page.category %}
+{% block header_meta %}{{ block.super }}
 <span class="column has-text-right">{{ object.category.title }}</span>
-{% endif %}
 {% endblock %}
+{% endif %}
 
 
 {% block main %}
@@ -51,7 +50,9 @@ Context:
         {% for field in comment_form %}
         <div class="field is-horizontal">
             <div class="field-label is-normal">
-                <label class="label">{{ field.label_tag }}</label>
+                <label class="label">
+                    {{ field.label_tag }}
+                </label>
             </div>
             <div class="field-body">
                 <div class="field">

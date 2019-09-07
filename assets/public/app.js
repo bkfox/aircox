@@ -1,9 +1,8 @@
 import Vue from 'vue';
-import Buefy from 'buefy';
 
-Vue.use(Buefy);
 
 export var app = null;
+export default app;
 
 function loadApp() {
     app = new Vue({
@@ -12,7 +11,7 @@ function loadApp() {
     })
 }
 
-
 window.addEventListener('load', loadApp);
+
 
 

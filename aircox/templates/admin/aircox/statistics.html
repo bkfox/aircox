@@ -1,12 +1,67 @@
 {% extends "admin/base_site.html" %}
-{% load i18n %}
+{% load i18n aircox %}
 
 
 {% block content %}{{ block.super }}
-<table class="table">
+{# TODO: date subtitle #}
+<a-statistics>
+<template v-slot:default="{counts}">
+    <table class="table is-hoverable is-fullwidth">
+        <thead>
+            <tr>
+                <th>{% trans "time" %}</th>
+                <th>{% trans "episode" %}</th>
+                <th>{% trans "track" %}</th>
+                <th>{% trans "tags" %}</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for object in object_list %}
+        {% with object|get_tracks as tracks %}
+        {% for track in tracks %}
+        <tr>
+            {% if forloop.first %}
+            <td rowspan="{{ tracks|length }}">{{ object.start|time:"H:i" }}</td>
+            <td rowspan="{{ tracks|length }}">{{ object.episode|default:"" }}</td>
+            {% endif %}
 
-
-</table>
+            {% if not object|is_diffusion %}
+            {% with track as object %}
+            <td>{% include "aircox/track_item.html" %}</td>
+            {% endwith %}
+            {% with track.tags.all|join:', ' as tags %}
+            <td>
+                {% if tags %}
+                <label class="checkbox">
+                    <input type="checkbox" checked value="{{ tags|escape }}" name="data">
+                    {{ tags }}
+                </label>
+                {% endif %}
+            </td>
+            {% endwith %}
+        {% else %}
+        {% endif %}
+        {% endfor %}
+        <tr>
+        {% endwith %}
+        {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr>
+                <td class="is-size-6">{% trans "Totals" %}</td>
+                <td colspan="100">
+                    <div class="columns is-size-6">
+                        <span v-for="(count, tag) in counts" class="column">
+                            <b>[[ tag ]]</b>
+                            [[ count ]]
+                        </span>
+                    </div>
+                </td>
+            </tr>
+        </tfoot>
+    </table>
+</template>
+</a-statistics>
 
 {% endblock %}
 

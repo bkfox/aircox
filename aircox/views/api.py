@@ -4,9 +4,10 @@ from django.utils import timezone as tz
 
 from rest_framework.generics import ListAPIView
 
+from ..utils import str_to_date
 from ..models import Log
 from ..serializers import LogInfo, LogInfoSerializer
-from .log import BaseLogListView
+from .log import LogListMixin
 
 
 class BaseAPIView:
@@ -18,28 +19,30 @@ class BaseAPIView:
         return super().get_queryset().station(self.station)
 
 
-class LiveAPIView(BaseLogListView, BaseAPIView, ListAPIView):
+class LogListAPIView(LogListMixin, BaseAPIView, ListAPIView):
+    """
+    Return logs list, including diffusions. By default return logs of
+    the last 30 minutes.
+
+    Available GET parameters:
+    - "date": return logs for a specified date (
+    - "full": (staff user only) don't merge diffusion and logs
+    """
     serializer_class = LogInfoSerializer
-    min_date = None
     queryset = Log.objects.all()
 
     def get(self, *args, **kwargs):
-        self.min_date = tz.now() - tz.timedelta(minutes=20)
+        self.date = self.get_date()
+        if self.date is None:
+            self.min_date = tz.now() - tz.timedelta(minutes=30)
         return super().get(*args, **kwargs)
 
+    def get_object_list(self, logs, full):
+        return [LogInfo(obj) for obj in super().get_object_list(logs, full)]
+
     def get_serializer(self, queryset, *args, **kwargs):
-        queryset = Log.merge_diffusions(self.get_queryset(),
-                                        self.get_diffusions_queryset())
-        queryset = [LogInfo(obj) for obj in queryset]
-        return super().get_serializer(queryset, *args, **kwargs)
-
-    def get_queryset(self):
-        return super().get_queryset().after(self.min_date)
-
-    def get_diffusions_queryset(self):
-        return super().get_diffusions_queryset().after(self.min_date)
-
-
-# Monitoring
+        full = bool(self.request.GET.get('full'))
+        return super().get_serializer(self.get_object_list(queryset, full),
+                                      *args, **kwargs)
 
 

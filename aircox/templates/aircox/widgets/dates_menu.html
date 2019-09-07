@@ -1,0 +1,48 @@
+{% comment %}
+Render a navigation menu for dates
+
+Context:
+- url_name: url name
+- date: current date
+- input_type: date input type
+- dates: dates to display as a list of `(date|None, title|None)`.
+
+An empty date results to a title or a separator
+{% endcomment %}
+{% load i18n humanize %}
+
+<nav class="menu is-one-third-desktop " role="menu"
+        aria-label="{% trans "pick a date" %}">
+    <p class="menu-label">{% trans "Pick a date" %}</p>
+    <form action="{% url url_name %}" method="GET"
+            aria-label="{% trans "Jump to date" %}">
+        <div class="field has-addons">
+            <div class="control has-icons-left">
+                <span class="icon is-small is-left"><span class="far fa-calendar"></span></span>
+                <input type="{{ date_input|default:"date" }}" class="input date"
+                       name="date" value="{{ date|date:"Y-m-d" }}">
+            </div>
+            <div class="control">
+                <button class="button is-primary">{% trans "Go" %}</button>
+            </div>
+        </div>
+    </form>
+
+    <ul class="menu-list">
+        {% for day, title in dates %}
+        {% if not day %}
+            {% if title %}
+            </ul>
+            <p class="menu-label">{{ title }}</p>
+            <ul class="menu-list">
+            {% else %}<hr class="dropdown-divider">{% endif %}
+        {% else %}
+        <li><a href="{% url url_name date=day %}" {% if day == date %}class="is-active"{% endif %}>
+            {% if title %}{{ title }}{% else %}{{ day|naturalday:"l d" }}{% endif %}
+            </a></li>
+        {% endif %}
+        {% endfor %}
+    </ul>
+</nav>
+
+

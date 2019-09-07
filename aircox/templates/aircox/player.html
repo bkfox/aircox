@@ -4,9 +4,8 @@
 <br>
 
 <div class="box is-fullwidth is-fixed-bottom is-paddingless player"
-        aria-role="{% trans "player" %}"
-        aria-description="{% trans "audio player used to listen to streams and podcasts" %}"
-    >
+    role="{% trans "player" %}"
+    aria-description="{% trans "audio player used to listen to the radio" %}">
     <noscript>
         <audio src="{{ audio_streams.0 }}" controls>
             {% for stream in audio_streams %}
@@ -18,7 +17,7 @@
 
     <a-player ref="player" src="{{ audio_streams.0 }}"
             live-info-url="{% url "api-live" %}" :live-info-timeout="15"
-            button-title="{% trans "Play/pause audio" %}">
+            button-title="{% trans "Play or pause audio" %}">
         <template v-slot:sources>
             {% for stream in audio_streams %}
             <source src="{{ stream }}" />

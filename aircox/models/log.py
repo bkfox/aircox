@@ -221,6 +221,7 @@ class Log(models.Model):
     def related(self):
         return self.diffusion or self.sound or self.track
 
+    # FIXME: required????
     @property
     def local_date(self):
         """
@@ -229,6 +230,12 @@ class Log(models.Model):
         to get it as local time.
         """
         return tz.localtime(self.date, tz.get_current_timezone())
+
+    # prepare for the future on crash + ease the use in merged lists with
+    # diffusions
+    @property
+    def start(self):
+        return self.date
 
     def __str__(self):
         return '#{} ({}, {}, {})'.format(

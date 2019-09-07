@@ -1,5 +1,6 @@
 from ..models import Article, Program
-from .page import ParentMixin, PageDetailView, PageListView
+from .mixins import ParentMixin
+from .page import PageDetailView, PageListView
 
 
 __all__ = ['ArticleDetailView', 'ArticleListView']

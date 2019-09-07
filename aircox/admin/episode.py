@@ -49,7 +49,7 @@ class DiffusionInline(DiffusionBaseAdmin, admin.TabularInline):
 @admin.register(Episode)
 class EpisodeAdmin(PageAdmin):
     list_display = PageAdmin.list_display + ('program',)
-    list_filter = ('program',)
+    list_filter = PageAdmin.list_filter + ('program',)
     search_fields = PageAdmin.search_fields + ['program__title']
     readonly_fields = ('program',)
 

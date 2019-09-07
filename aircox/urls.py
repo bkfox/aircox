@@ -19,7 +19,7 @@ register_converter(WeekConverter, 'week')
 
 
 api = [
-    path('live/', views.api.LiveAPIView.as_view(), name='api-live'),
+    path('logs/', views.api.LogListAPIView.as_view(), name='api-live'),
 ]
 
 
@@ -40,18 +40,18 @@ urls = [
     path(_('programs/<slug:slug>/'),
          views.ProgramDetailView.as_view(), name='program-detail'),
     path(_('programs/<slug:parent_slug>/episodes/'),
-         views.EpisodeListView.as_view(), name='diffusion-list'),
+         views.EpisodeListView.as_view(), name='episode-list'),
     path(_('programs/<slug:parent_slug>/articles/'),
          views.ArticleListView.as_view(), name='article-list'),
 
     path(_('episodes/'),
-         views.EpisodeListView.as_view(), name='diffusion-list'),
+         views.EpisodeListView.as_view(), name='episode-list'),
     path(_('episodes/<slug:slug>/'),
          views.EpisodeDetailView.as_view(), name='episode-detail'),
     path(_('week/'),
-         views.TimetableView.as_view(), name='timetable'),
-    path(_('week/<week:date>/'),
-         views.TimetableView.as_view(), name='timetable'),
+         views.DiffusionListView.as_view(), name='diffusion-list'),
+    path(_('week/<date:date>/'),
+         views.DiffusionListView.as_view(), name='diffusion-list'),
 
     path(_('logs/'), views.LogListView.as_view(), name='logs'),
     path(_('logs/<date:date>/'), views.LogListView.as_view(), name='logs'),

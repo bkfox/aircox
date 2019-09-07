@@ -8,7 +8,10 @@ const VueLoaderPlugin = require('vue-loader/lib/plugin');
 
 module.exports = (env, argv) => Object({
     context: __dirname,
-    entry: './assets/index',
+    entry: {
+        main: './assets/public/index',
+        admin: './assets/admin/index',
+    },
 
     output: {
         path: path.resolve('aircox/static/aircox'),
@@ -17,8 +20,8 @@ module.exports = (env, argv) => Object({
     },
 
     optimization: {
-        usedExports: true,
-        concatenateModules: argv.mode == 'production' ? true : false,
+        //usedExports: true,
+        // concatenateModules: argv.mode == 'production' ? true : false,
 
         splitChunks: {
             cacheGroups: {
@@ -29,12 +32,12 @@ module.exports = (env, argv) => Object({
 
                     test: /[\\/]node_modules[\\/]/,
                 },
-                admin: {
+                /*admin: {
                     name: 'admin',
                     chunks: 'initial',
-                    enforce: true,
+                    enforce: false,
                     test: /assets[\\/]admin[\\/]/,
-                },
+                },*/
 
                 /*noscript: {
                     name: 'noscript',
@@ -82,13 +85,10 @@ module.exports = (env, argv) => Object({
 
     resolve: {
         alias: {
-            js: path.resolve(__dirname, 'assets/js'),
             vue: 'vue/dist/vue.esm.browser.js',
-            // buefy: 'buefy/dist/buefy.js',
         },
         modules: [
-            'assets/js',
-            'assets/vue',
+            './assets',
             './node_modules',
         ],
         extensions: ['.js', '.vue', '.css', '.scss', '.styl', '.ttf']

@@ -26,7 +26,7 @@
 
 
 <script>
-import LiveInfo from 'js/liveInfo';
+import LiveInfo from './liveInfo';
 
 export const State = {
     paused: 0,

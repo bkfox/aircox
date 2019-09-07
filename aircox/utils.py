@@ -20,6 +20,19 @@ def redirect(url):
     raise Redirect(url)
 
 
+def str_to_date(value, sep='/'):
+    """
+    Return a date from the provided `value` string, formated as "yyyy/mm/dd"
+    (or "dd/mm/yyyy" if `reverse` is True).
+
+    Raises ValueError for incorrect value format.
+    """
+    value = value.split(sep)[:3]
+    if len(value) < 3:
+        return ValueError('incorrect date format')
+    return datetime.date(int(value[0]), int(value[1]), int(value[2]))
+
+
 def date_range(date, delta=None, **delta_kwargs):
     """
     Return a range of provided date such as `[date-delta, date+delta]`.

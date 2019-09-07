@@ -14,10 +14,10 @@ Context:
         <link rel="icon" href="{% thumbnail site.favicon 32x32 crop %}" />
 
         {% block assets %}
-        <link rel="stylesheet" type="text/css" href="{% static "aircox/main.css" %}"/>
         <link rel="stylesheet" type="text/css" href="{% static "aircox/vendor.css" %}"/>
-        <script src="{% static "aircox/main.js" %}"></script>
+        <link rel="stylesheet" type="text/css" href="{% static "aircox/main.css" %}"/>
         <script src="{% static "aircox/vendor.js" %}"></script>
+        <script src="{% static "aircox/main.js" %}"></script>
         {% endblock %}
 
         <title>
@@ -55,14 +55,19 @@ Context:
                             {% block header %}
                             <h1 class="title is-1">{% block title %}{% endblock %}</h1>
 
-                            <h3 class="subtitle is-3 columns">
-                                {% block subtitle %}
-                                {% if parent %}
-                                <a href="{{ parent.get_absolute_url }}" class="column">
-                                    &#10092; {{ parent.title }}</a></li>
-                                {% endif %}
-                                {% endblock %}
+                            <h3 class="subtitle is-3">
+                                {% block subtitle %}{% endblock %}
                             </h3>
+
+                            <div class="columns is-size-4">
+                            {% block header_meta %}
+                            {% if parent %}
+                            <a href="{{ parent.get_absolute_url }}" class="column">
+                                &#10092; {{ parent.title }}</a></li>
+                            {% endif %}
+                            {% endblock %}
+                            </div>
+
                             {% endblock %}
                         </header>
 

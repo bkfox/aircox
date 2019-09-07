@@ -1,0 +1,12 @@
+{% comment %}
+Context:
+- object: track to render
+{% endcomment %}
+
+<span class="has-text-info is-size-5">&#9836;</span>
+<span>{{ track.title }}</span>
+<span class="has-text-grey-dark has-text-weight-light">
+&mdash; {{ track.artist }}
+{% if track.info %}(<i>{{ track.info }}</i>){% endif %}
+</span>
+

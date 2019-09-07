@@ -1,0 +1,44 @@
+{% extends "aircox/page.html" %}
+{% load i18n aircox %}
+
+{% block title %}
+{% with station.name as station %}
+{% blocktrans %}Today on {{ station }}{% endblocktrans %}
+{% endwith %}
+{% endblock %}
+
+{% block subtitle %}{{ date|date:"l d F Y" }}{% endblock %}
+
+{% block main %}{{ block.super }}
+<div class="columns">
+
+{% with True as hide_schedule %}
+<section class="column">
+    <div id="timetable-{{ date|date:"Y-m-d" }}">
+        {% for diffusion in object_list %}
+        <div class="columns">
+            <div class="column is-one-fifth has-text-right">
+                <time datetime="{{ diffusion.start|date:"c" }}">
+                {{ diffusion.start|date:"H:i" }} - {{ diffusion.end|date:"H:i" }}
+                </time>
+            </div>
+            <div class="column">
+                {% with diffusion.episode as object %}
+                {% include "aircox/episode_item.html" %}
+                {% endwith %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endwith %}
+
+<nav class="column menu is-one-third-desktop" role="menu">
+    {% with "diffusion-list" as url_name %}
+    {% include "aircox/widgets/dates_menu.html" %}
+    {% endwith %}
+</nav>
+
+</div>
+{% endblock %}
+

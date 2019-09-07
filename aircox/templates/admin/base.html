@@ -8,6 +8,9 @@
 <link rel="stylesheet" type="text/css" href="{% static "aircox/main.css" %}">
 <link rel="stylesheet" type="text/css" href="{% static "aircox/admin.css" %}">
 
+<script src="{% static "aircox/vendor.js" %}"></script>
+<script src="{% static "aircox/admin.js" %}"></script>
+
 {% block extrastyle %}{% endblock %}
 
 {% if LANGUAGE_BIDI %}<link rel="stylesheet" type="text/css" href="{% block stylesheet_rtl %}{% static "admin/css/rtl.css" %}{% endblock %}">{% endif %}
@@ -26,7 +29,7 @@
   data-admin-utc-offset="{% now "Z" %}">
 
 <!-- Container -->
-<div id="container">
+<div id="app">
 
     {% if not is_popup %}
     <!-- Header -->
@@ -59,16 +62,16 @@
                     </div>
                 </div>
 
+            </div>
 
+            <div class="navbar-end">
                 <div class="navbar-item has-dropdown is-hoverable">
                     <a href="#" class="navbar-link">{% trans "Tools" %}</a>
                     <div class="navbar-dropdown is-boxed is-right">
                         <a href="{% url 'admin:tools-stats' %}" class="navbar-item">{% trans "Statistics" %}</a>
                     </div>
                 </div>
-            </div>
 
-            <div class="navbar-end">
                 <div class="navbar-item has-dropdown is-hoverable">
                     <a href="{% url "admin:auth_user_change" user.pk %}" class="navbar-link">
                         {% firstof user.get_short_name user.get_username %}

@@ -10,7 +10,7 @@ from django.utils.translation import ugettext_lazy as _
 from django.views.generic import ListView
 
 from ..models import Program
-from .log import BaseLogListView
+from .log import LogListView
 
 
 class BaseAdminView(LoginRequiredMixin, UserPassesTestMixin):
@@ -25,20 +25,13 @@ class BaseAdminView(LoginRequiredMixin, UserPassesTestMixin):
         return super().get_context_data(**kwargs)
 
 
-class StatisticsView(BaseAdminView, BaseLogListView, ListView):
+class StatisticsView(BaseAdminView, LogListView, ListView):
     template_name = 'admin/aircox/statistics.html'
     title = _('Statistics')
     date = None
 
-    def get_queryset(self):
-        return super().get_queryset().today(self.date)
-
-    def get_diffusions_queryset(self):
-        return super().get_diffusions_queryset().today(self.date)
-
-    def get(self, request, *args, date=None, **kwargs):
-        self.date = datetime.date.today() if date is None else date
-        return super().get(request, *args, date=date, **kwargs)
+    def get_object_list(self, logs, *_):
+        return super().get_object_list(logs, True)
 
 
 class AdminSite(admin.AdminSite):

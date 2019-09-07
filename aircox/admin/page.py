@@ -24,9 +24,8 @@ class PageAdmin(admin.ModelAdmin):
     list_display = ('cover_thumb', 'title', 'status', 'category')
     list_display_links = ('cover_thumb', 'title')
     list_editable = ('status', 'category')
+    list_filter = ('status', 'category')
     prepopulated_fields = {"slug": ("title",)}
-
-    change_form_template = 'admin/aircox/page_change_form.html'
 
     search_fields = ['title', 'category__title']
     fieldsets = [
@@ -38,6 +37,8 @@ class PageAdmin(admin.ModelAdmin):
             'classes': ('collapse',),
         }),
     ]
+
+    change_form_template = 'admin/aircox/page_change_form.html'
 
     def cover_thumb(self, obj):
         return mark_safe('<img src="{}"/>'.format(obj.cover.icons['64'])) \

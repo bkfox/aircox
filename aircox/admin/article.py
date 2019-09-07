@@ -12,7 +12,7 @@ __all__ = ['ArticleAdmin']
 @admin.register(Article)
 class ArticleAdmin(PageAdmin):
     list_display = PageAdmin.list_display + ('program',)
-    list_filter = ('program',)
+    list_filter = PageAdmin.list_filter + ('program',)
     search_fields = PageAdmin.search_fields + ['program__title']
     # TODO: readonly field
 
