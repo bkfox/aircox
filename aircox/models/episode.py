@@ -8,7 +8,7 @@ from django.utils.functional import cached_property
 
 
 from aircox import settings, utils
-from .program import Program, InProgramQuerySet, \
+from .program import Program, ProgramChildQuerySet, \
         BaseRerun, BaseRerunQuerySet
 from .page import Page, PageQuerySet
 
@@ -16,18 +16,18 @@ from .page import Page, PageQuerySet
 __all__ = ['Episode', 'Diffusion', 'DiffusionQuerySet']
 
 
-class EpisodeQuerySet(PageQuerySet, InProgramQuerySet):
-    pass
-
-
 class Episode(Page):
-    program = models.ForeignKey(
-        Program, models.CASCADE,
-        verbose_name=_('program'),
-    )
-
-    objects = EpisodeQuerySet.as_manager()
+    objects = ProgramChildQuerySet.as_manager()
     detail_url_name = 'episode-detail'
+    item_template_name = 'aircox/episode_item.html'
+
+    @property
+    def program(self):
+        return getattr(self.parent, 'program', None)
+
+    @program.setter
+    def program(self, value):
+        self.parent = value
 
     class Meta:
         verbose_name = _('Episode')
@@ -41,6 +41,8 @@ class Episode(Page):
     def save(self, *args, **kwargs):
         if self.cover is None:
             self.cover = self.program.cover
+        if self.parent is None:
+            raise ValueError('missing parent program')
         super().save(*args, **kwargs)
 
     @classmethod
@@ -154,6 +156,8 @@ class Diffusion(BaseRerun):
     #    on_delete=models.SET_NULL,
     #    help_text = _('use this input port'),
     # )
+
+    item_template_name = 'aircox/diffusion_item.html'
 
     class Meta:
         verbose_name = _('Diffusion')

@@ -48,6 +48,9 @@ class LogListView(BaseView, LogListMixin, ListView):
     Return list of logs for the provided date (from `kwargs` or
     `request.GET`, defaults to today).
     """
+    redirect_date_url = 'log-list'
+    has_filters = True
+
     def get_date(self):
         date, today = super().get_date(), datetime.date.today()
         return today if date is None else min(date, today)
@@ -56,8 +59,7 @@ class LogListView(BaseView, LogListMixin, ListView):
         today = datetime.date.today()
         kwargs.update({
             'date': self.date,
-            'dates': ((today - datetime.timedelta(days=i), None)
-                      for i in range(0, 7)),
+            'dates': (today - datetime.timedelta(days=i) for i in range(0, 7)),
             'object_list': self.get_object_list(self.object_list),
         })
         return super().get_context_data(**kwargs)

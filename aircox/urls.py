@@ -24,6 +24,8 @@ api = [
 
 
 urls = [
+    path(_(''),
+         views.DiffusionListView.as_view(), name='home'),
     path('api/', include(api)),
 
     # path('', views.PageDetailView.as_view(model=models.Article),
@@ -35,15 +37,6 @@ urls = [
          views.ArticleDetailView.as_view(),
          name='article-detail'),
 
-    path(_('programs/'), views.PageListView.as_view(model=models.Program),
-         name='program-list'),
-    path(_('programs/<slug:slug>/'),
-         views.ProgramDetailView.as_view(), name='program-detail'),
-    path(_('programs/<slug:parent_slug>/episodes/'),
-         views.EpisodeListView.as_view(), name='episode-list'),
-    path(_('programs/<slug:parent_slug>/articles/'),
-         views.ArticleListView.as_view(), name='article-list'),
-
     path(_('episodes/'),
          views.EpisodeListView.as_view(), name='episode-list'),
     path(_('episodes/<slug:slug>/'),
@@ -53,7 +46,23 @@ urls = [
     path(_('week/<date:date>/'),
          views.DiffusionListView.as_view(), name='diffusion-list'),
 
-    path(_('logs/'), views.LogListView.as_view(), name='logs'),
-    path(_('logs/<date:date>/'), views.LogListView.as_view(), name='logs'),
+    path(_('logs/'), views.LogListView.as_view(), name='log-list'),
+    path(_('logs/<date:date>/'), views.LogListView.as_view(), name='log-list'),
     # path('<page_path:path>', views.route_page, name='page'),
+
+    path(_('publications/'),
+         views.ProgramPageListView.as_view(), name='page-list'),
+
+    path(_('programs/'), views.PageListView.as_view(model=models.Program),
+         name='program-list'),
+    path(_('programs/<slug:slug>/'),
+         views.ProgramDetailView.as_view(), name='program-detail'),
+    path(_('programs/<slug:parent_slug>/episodes/'),
+         views.EpisodeListView.as_view(), name='episode-list'),
+    path(_('programs/<slug:parent_slug>/articles/'),
+         views.ArticleListView.as_view(), name='article-list'),
+    path(_('programs/<slug:parent_slug>/publications/'),
+         views.ProgramPageListView.as_view(), name='page-list'),
+
+
 ]

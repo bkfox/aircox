@@ -3,6 +3,7 @@
 Context:
 - cover: image cover
 - site: current website
+- has_filters: display filter bar (using block "filters")
 {% endcomment %}
 <html>
     <head>
@@ -71,19 +72,50 @@ Context:
                             {% endblock %}
                         </header>
 
+                        {% if has_filters %}
+                        <nav class="navbar filters"
+                            aria-label="{% trans "list filters" %}">
+                        {% block filters %}{% endblock %}
+                        </nav>
+                        {% endif %}
+
                         {% block main %}{% endblock main %}
                     </main>
 
-                    {% if show_side_nav %}
+                    {% if has_sidebar %}
                     <aside class="column is-one-third-desktop">
-                        {# FIXME: block cover into side_nav one #}
+                        {# FIXME: block cover into sidebar one #}
                         {% block cover %}
                         {% if cover is not None %}
                         <img class="cover" src="{{ cover.url }}" class="cover"/>
                         {% endif %}
                         {% endblock %}
 
-                        {% block side_nav %}
+                        {% block sidebar %}
+                        {% if sidebar_items %} 
+                        <section>
+                            <h4 class="title is-4">
+                                {% block sidebar_title %}{% trans "Recently" %}{% endblock %}
+                            </h4>
+
+                        {% for object in sidebar_items %}
+                        {% include "aircox/episode_item.html" %}
+                        {% endfor %}
+
+                        <br>
+                        <nav class="pagination is-centered">
+                            <ul class="pagination-list">
+                                <li>
+                                    <a {% if parent %}href="{% url "page-list" parent_slug=parent.slug %}"{% else %}href="{% url "page-list" %}"{% endif %}
+                                        class="pagination-link"
+                                        aria-label="{% trans "Show all program's diffusions" %}">
+                                        {% trans "Show more" %}
+                                    </a>
+                                </li>
+                            </ul>
+                        </nav>
+                        {% endif %}
+                        </section>
                         {% endblock %}
                     </aside>
                     {% endif %}

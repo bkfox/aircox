@@ -46,6 +46,11 @@ class PageQuerySet(InheritanceQuerySet):
     def trash(self):
         return self.filter(status=Page.STATUS_TRASH)
 
+    def parent(self, parent=None, id=None):
+        """ Return pages having this parent. """
+        return self.filter(parent=parent) if id is None else \
+               self.filter(parent__id=id)
+
 
 class Page(models.Model):
     """ Base class for publishable content """
@@ -58,6 +63,8 @@ class Page(models.Model):
         (STATUS_TRASH, _('trash')),
     )
 
+    parent = models.ForeignKey('self', models.CASCADE, blank=True, null=True,
+                               related_name='child_set')
     title = models.CharField(max_length=128)
     slug = models.SlugField(_('slug'), blank=True, unique=True)
     status = models.PositiveSmallIntegerField(
@@ -74,7 +81,7 @@ class Page(models.Model):
     content = RichTextField(
         _('content'), blank=True, null=True,
     )
-    date = models.DateTimeField(default=tz.now)
+    pub_date = models.DateTimeField(blank=True, null=True)
     featured = models.BooleanField(
         _('featured'), default=False,
     )
@@ -85,17 +92,19 @@ class Page(models.Model):
     objects = PageQuerySet.as_manager()
 
     detail_url_name = None
-
+    item_template_name = 'aircox/page_item.html'
 
     def __str__(self):
-        return '{}: {}'.format(self._meta.verbose_name,
-                               self.title or self.pk)
+        return '{}'.format(self.title or self.pk)
 
     def save(self, *args, **kwargs):
         # TODO: ensure unique slug
         if not self.slug:
             self.slug = slugify(self.title)
-        print(self.title, '--', self.slug)
+        if self.is_published and self.pub_date is None:
+            self.pub_date = tz.datetime.now()
+        elif not self.is_published:
+            self.pub_date = None
         super().save(*args, **kwargs)
 
     def get_absolute_url(self):

@@ -35,18 +35,14 @@ class EpisodeListView(ParentMixin, PageListView):
     model = Episode
     item_template_name = 'aircox/episode_item.html'
     show_headline = True
-
     parent_model = Program
-    fk_parent = 'program'
 
 
 class DiffusionListView(GetDateMixin, BaseView, ListView):
     """ View for timetables """
     model = Diffusion
-
-    date = None
-    start = None
-    end = None
+    has_filters = True
+    redirect_date_url = 'diffusion-list'
 
     def get_date(self):
         date = super().get_date()
@@ -56,19 +52,7 @@ class DiffusionListView(GetDateMixin, BaseView, ListView):
         return super().get_queryset().today(self.date).order_by('start')
 
     def get_context_data(self, **kwargs):
-        today = datetime.date.today()
         start = self.date - datetime.timedelta(days=self.date.weekday())
-        dates = [
-            (today, None),
-            (today - datetime.timedelta(days=1), None),
-            (today + datetime.timedelta(days=1), None),
-            (today - datetime.timedelta(days=7), _('next week')),
-            (today + datetime.timedelta(days=7), _('last week')),
-            (None, None)
-        ] + [
-            (date, date.strftime('%A %d'))
-            for date in (start + datetime.timedelta(days=i)
-                         for i in range(0, 7)) if date != today
-        ]
+        dates = [start + datetime.timedelta(days=i) for i in range(0, 7)]
         return super().get_context_data(date=self.date, dates=dates, **kwargs)
 

@@ -33,7 +33,8 @@ class WeekConverter:
         return datetime.datetime.strptime(value + '/1', '%G/%V/%u').date()
 
     def to_url(self, value):
-        return '{:04d}/{:02d}'.format(*value.isocalendar())
+        return value if isinstance(value, str) else \
+            '{:04d}/{:02d}'.format(*value.isocalendar())
 
 
 class DateConverter:
@@ -41,8 +42,9 @@ class DateConverter:
     regex = r'[0-9]{4}/[0-9]{2}/[0-9]{2}'
 
     def to_python(self, value):
-        return str_to_date(value)
+        value = value.split('/')[:3]
+        return datetime.date(int(value[0]), int(value[1]), int(value[2]))
 
     def to_url(self, value):
-        return '{:04d}/{:02d}/{:02d}'.format(value.year, value.month,
-                                             value.day)
+        return value if isinstance(value, str) else \
+            '{:04d}/{:02d}/{:02d}'.format(value.year, value.month, value.day)

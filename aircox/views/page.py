@@ -1,6 +1,5 @@
 
 from django.http import Http404, HttpResponse
-from django.shortcuts import get_object_or_404
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic import DetailView, ListView
 
@@ -19,9 +18,11 @@ __all__ = ['PageDetailView', 'PageListView']
 class PageListView(BaseView, ListView):
     template_name = 'aircox/page_list.html'
     item_template_name = 'aircox/page_item.html'
+    has_sidebar = True
+    has_filters = True
+
     paginate_by = 20
     show_headline = True
-    show_side_nav = True
     categories = None
 
     def get(self, *args, **kwargs):
@@ -36,7 +37,7 @@ class PageListView(BaseView, ListView):
         # (by id)
         if self.categories:
             qs = qs.filter(category__slug__in=self.categories)
-        return qs.order_by('-date')
+        return qs.order_by('-pub_date')
 
     def get_categories_queryset(self):
         # TODO: use generic reverse field lookup
@@ -56,6 +57,7 @@ class PageListView(BaseView, ListView):
 class PageDetailView(BaseView, DetailView):
     """ Base view class for pages. """
     context_object_name = 'page'
+    has_filters = False
 
     def get_queryset(self):
         return super().get_queryset().select_related('cover', 'category')

@@ -2,63 +2,65 @@
 {% load i18n aircox %}
 
 {% block title %}
-{{ view.model|verbose_name:True|title }}
+{% if not parent %}{{ view.model|verbose_name:True|title }}
+{% else %}
+{% with parent.title as title %}
+{% blocktrans %}Publications of {{ title }}{% endblocktrans %}
+{% endwith %}
+{% endif %}
 {% endblock %}
 
-{% block side_nav %}
-{{ block.super }}
-
-{% if filter_categories|length != 1 %}
-<section class="toolbar">
-    <h4 class="subtitle is-5">{% trans "Filters" %}</h4>
-    <form method="GET" action="">
-        {% block list_filters %}
-        <div class="field is-horizontal">
-            <div class="field-label">
-                <label class="label">{% trans "Categories" %}</label>
-            </div>
-            <div class="field-body">
-                <div class="field is-grouped is-narrow">
-                    <div class="control">
-                        {% for category in filter_categories %}
-                        <label class="checkbox">
-                            <input type="checkbox" class="checkbox" name="categories"
-                                   value="{{ category.slug }}"
-                                   {% if category.slug in categories %}checked{% endif %} />
-                            {{ category.title }}
-                        </label>
-                        {% endfor %}
+{% block filters %}
+<div class="navbar-branding">
+    <h4 class="navbar-item title">{% trans "Filters" %}</h4>
+</div>
+<form method="GET" action="" class="navbar-menu">
+    <div class="navbar-start">
+        <div class="navbar-item">
+            {% block list_filters %}
+            <div class="field is-horizontal">
+                <div class="field-label">
+                    <label class="label">{% trans "Categories" %}</label>
+                </div>
+                <div class="field-body">
+                    <div class="field is-grouped is-narrow">
+                        <div class="control">
+                            {% for category in filter_categories %}
+                            <label class="checkbox">
+                                <input type="checkbox" class="checkbox" name="categories"
+                                       value="{{ category.slug }}"
+                                       {% if category.slug in categories %}checked{% endif %} />
+                                {{ category.title }}
+                            </label>
+                            {% endfor %}
+                        </div>
                     </div>
                 </div>
             </div>
+            {% endblock %}
         </div>
-        {% endblock %}
-        <div class="field is-horizontal">
-            <div class="field-label">
-                <label class="label"></label>
-            </div>
-            <div class="field-body">
-                <div class="field is-grouped is-grouped-right">
-                    <div class="control">
-                        <button class="button is-primary"/>{% trans "Apply" %}</button>
-                    </div>
-                    <div class="control">
-                        <a href="?" class="button is-secondary">{% trans "Reset" %}</a>
-                    </div>
+    </div>
+    <div class="navbar-end">
+        <div class="navbar-item">
+            <div class="field is-grouped is-grouped-right">
+                <div class="control">
+                    <button class="button is-primary"/>{% trans "Apply" %}</button>
+                </div>
+                <div class="control">
+                    <a href="?" class="button is-secondary">{% trans "Reset" %}</a>
                 </div>
             </div>
         </div>
-    </form>
-</section>
-{% endif %}
+    </div>
+</form>
 {% endblock %}
 
 
 {% block main %}
-<section>
+<section role="list">
 {% for object in object_list %}
 {% block list_object %}
-{% include item_template_name %}
+{% include object.item_template_name|default:item_template_name %}
 {% endblock %}
 {% endfor %}
 </section>

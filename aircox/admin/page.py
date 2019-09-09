@@ -21,7 +21,7 @@ class CategoryAdmin(admin.ModelAdmin):
 
 # limit category choice
 class PageAdmin(admin.ModelAdmin):
-    list_display = ('cover_thumb', 'title', 'status', 'category')
+    list_display = ('cover_thumb', 'title', 'status', 'category', 'parent')
     list_display_links = ('cover_thumb', 'title')
     list_editable = ('status', 'category')
     list_filter = ('status', 'category')
@@ -33,7 +33,7 @@ class PageAdmin(admin.ModelAdmin):
             'fields': ['title', 'slug', 'category', 'cover', 'content'],
         }),
         (_('Publication Settings'), {
-            'fields': ['featured', 'allow_comments', 'status'],
+            'fields': ['featured', 'allow_comments', 'status', 'parent'],
             'classes': ('collapse',),
         }),
     ]

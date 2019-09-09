@@ -11,9 +11,7 @@ for design review.
 
 {% if object|is_diffusion %}
     {% with object as diffusion %}
-    {% with diffusion.episode as object %}
-    {% include "aircox/episode_item.html" %}
-    {% endwith %}
+    {% include "aircox/diffusion_item.html" %}
     {% endwith %}
 {% else %}
     {% with object.track as object %}

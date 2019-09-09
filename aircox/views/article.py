@@ -7,10 +7,10 @@ __all__ = ['ArticleDetailView', 'ArticleListView']
 
 
 class ArticleDetailView(PageDetailView):
-    show_side_nav = True
+    has_sidebar = True
     model = Article
 
-    def get_side_queryset(self):
+    def get_sidebar_queryset(self):
         qs = Article.objects.select_related('cover') \
                     .filter(is_static=False) \
                     .order_by('-date')
@@ -27,9 +27,7 @@ class ArticleListView(ParentMixin, PageListView):
     template_name = 'aircox/article_list.html'
     show_headline = True
     is_static = False
-
     parent_model = Program
-    fk_parent = 'program'
 
     def get_queryset(self):
         return super().get_queryset().filter(is_static=self.is_static)

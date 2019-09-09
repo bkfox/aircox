@@ -48,13 +48,11 @@ class DiffusionInline(DiffusionBaseAdmin, admin.TabularInline):
 
 @admin.register(Episode)
 class EpisodeAdmin(PageAdmin):
-    list_display = PageAdmin.list_display + ('program',)
-    list_filter = PageAdmin.list_filter + ('program',)
-    search_fields = PageAdmin.search_fields + ['program__title']
-    readonly_fields = ('program',)
+    list_display = PageAdmin.list_display
+    list_filter = PageAdmin.list_filter
+    search_fields = PageAdmin.search_fields + ['parent__title']
+    # readonly_fields = ('parent',)
 
-    fieldsets = copy.deepcopy(PageAdmin.fieldsets)
-    fieldsets[1][1]['fields'].insert(0, 'program')
     inlines = [TracksInline, SoundInline, DiffusionInline]
 
 

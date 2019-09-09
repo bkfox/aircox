@@ -23,7 +23,8 @@ from .station import Station
 logger = logging.getLogger('aircox')
 
 
-__all__ = ['Program', 'ProgramQuerySet', 'Stream', 'Schedule']
+__all__ = ['Program', 'ProgramQuerySet', 'Stream', 'Schedule',
+           'ProgramChildQuerySet', 'BaseRerun', 'BaseRerunQuerySet']
 
 
 class ProgramQuerySet(PageQuerySet):
@@ -49,15 +50,8 @@ class Program(Page):
     name if it does not exists.
     """
     # explicit foreign key in order to avoid related name clashes
-    page = models.OneToOneField(
-        Page, models.CASCADE,
-        parent_link=True, related_name='program_page'
-    )
-    station = models.ForeignKey(
-        Station,
-        verbose_name=_('station'),
-        on_delete=models.CASCADE,
-    )
+    station = models.ForeignKey(Station, models.CASCADE,
+                                verbose_name=_('station'))
     active = models.BooleanField(
         _('active'),
         default=True,
@@ -146,10 +140,17 @@ class Program(Page):
                  .update(path=Concat('path', Substr(F('path'), len(path_))))
 
 
-class InProgramQuerySet(models.QuerySet):
-    """
-    Queryset for model having a ForeignKey field "program" to `Program`.
-    """
+class ProgramChildQuerySet(PageQuerySet):
+    def station(self, station=None, id=None):
+        return self.filter(parent__program__station=station) if id is None else \
+               self.filter(parent__program__station__id=id)
+
+    def program(self, program=None, id=None):
+        return self.parent(program, id)
+
+
+class BaseRerunQuerySet(models.QuerySet):
+    """ Queryset for BaseRerun (sub)classes. """
     def station(self, station=None, id=None):
         return self.filter(program__station=station) if id is None else \
                self.filter(program__station__id=id)
@@ -158,9 +159,6 @@ class InProgramQuerySet(models.QuerySet):
         return self.filter(program=program) if id is None else \
                self.filter(program__id=id)
 
-
-class BaseRerunQuerySet(InProgramQuerySet):
-    """ Queryset for BaseRerun (sub)classes. """
     def rerun(self):
         return self.filter(initial__isnull=False)
 

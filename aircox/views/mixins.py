@@ -1,4 +1,6 @@
-from django.shortcuts import get_object_or_404
+import dateutil
+from django.shortcuts import get_object_or_404, redirect
+from django.urls import reverse
 
 from ..utils import str_to_date
 
@@ -12,13 +14,18 @@ class GetDateMixin:
     `kwargs['date']`
     """
     date = None
+    redirect_date_url = None
 
     def get_date(self):
-        if 'date' in self.request.GET:
-            return str_to_date(self.request.GET['date'], '-')
-        return self.kwargs['date'] if 'date' in self.kwargs else None
+        date = self.request.GET.get('date')
+        return str_to_date(date, '-') if date is not None else \
+            self.kwargs['date'] if 'date' in self.kwargs else None
 
     def get(self, *args, **kwargs):
+        if self.redirect_date_url and self.request.GET.get('date'):
+            return redirect(self.redirect_date_url,
+                            date=self.request.GET['date'].replace('-', '/'))
+
         self.date = self.get_date()
         return super().get(*args, **kwargs)
 
@@ -35,8 +42,6 @@ class ParentMixin:
     """ Url lookup argument """
     parent_field = 'slug'
     """ Parent field for url lookup """
-    fk_parent = 'page'
-    """ Page foreign key to the parent """
     parent = None
     """ Parent page object """
 
@@ -54,8 +59,7 @@ class ParentMixin:
 
     def get_queryset(self):
         if self.parent is not None:
-            lookup = {self.fk_parent: self.parent}
-            return super().get_queryset().filter(**lookup)
+            return super().get_queryset().filter(parent=self.parent)
         return super().get_queryset()
 
     def get_context_data(self, **kwargs):

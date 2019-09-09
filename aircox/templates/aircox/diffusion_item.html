@@ -1,0 +1,11 @@
+{% comment %}
+Context:
+- object: diffusion
+- "episode_item"'s context (except object and diffusion)
+{% endcomment %}
+{% with object as diffusion %}
+{% with object.episode as object %}
+{% include "aircox/episode_item.html" %}
+{% endwith %}
+{% endwith %}
+

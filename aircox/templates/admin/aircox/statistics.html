@@ -4,7 +4,9 @@
 
 {% block content %}{{ block.super }}
 {# TODO: date subtitle #}
-<a-statistics>
+<div class="columns">
+
+<a-statistics class="column">
 <template v-slot:default="{counts}">
     <table class="table is-hoverable is-fullwidth">
         <thead>
@@ -63,6 +65,15 @@
 </template>
 </a-statistics>
 
+
+<nav class="column menu is-one-fifth-desktop" role="menu">
+    {% with "admin:tools-stats" as url_name %}
+    {% include "aircox/widgets/dates_menu.html" %}
+    {% endwith %}
+</nav>
+
+
+</div>
 {% endblock %}
 
 

@@ -1,5 +1,5 @@
 {% extends "aircox/page.html" %}
-{% load i18n aircox %}
+{% load i18n aircox humanize %}
 
 {% block title %}
 {% with station.name as station %}
@@ -9,17 +9,22 @@
 
 {% block subtitle %}{{ date|date:"l d F Y" }}{% endblock %}
 
-{% block main %}{{ block.super }}
-<div class="columns">
+{% block filters %}
+{% with "diffusion-list" as url_name %}
+{% include "aircox/widgets/dates_menu.html" %}
+{% endwith %}
+{% endblock %}
 
+{% block main %}{{ block.super }}
 {% with True as hide_schedule %}
-<section class="column">
+<section role="list">
     <div id="timetable-{{ date|date:"Y-m-d" }}">
         {% for diffusion in object_list %}
-        <div class="columns">
+        {# FIXME: opacity should work -- maybe hidden tz #}
+        <div class="columns {% if diffusion.start.date != date and diffusion.start.end <= date %}is-opacity-light{% endif %}">
             <div class="column is-one-fifth has-text-right">
                 <time datetime="{{ diffusion.start|date:"c" }}">
-                {{ diffusion.start|date:"H:i" }} - {{ diffusion.end|date:"H:i" }}
+                {{ diffusion.start|date:"d H:i" }} - {{ diffusion.end|date:"d H:i" }}
                 </time>
             </div>
             <div class="column">
@@ -33,12 +38,10 @@
 </section>
 {% endwith %}
 
+{% comment %}
 <nav class="column menu is-one-third-desktop" role="menu">
-    {% with "diffusion-list" as url_name %}
-    {% include "aircox/widgets/dates_menu.html" %}
-    {% endwith %}
 </nav>
+{% endcomment %}
 
-</div>
 {% endblock %}
 

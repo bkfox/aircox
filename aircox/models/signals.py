@@ -93,7 +93,7 @@ def schedule_pre_delete(sender, instance, *args, **kwargs):
 
 @receiver(signals.post_delete, sender=Diffusion)
 def diffusion_post_delete(sender, instance, *args, **kwargs):
-    Episode.objects.filter(diffusion__isnull=True, content_isnull=True,
+    Episode.objects.filter(diffusion__isnull=True, content__isnull=True,
                            sound__isnull=True) \
                    .delete()
 

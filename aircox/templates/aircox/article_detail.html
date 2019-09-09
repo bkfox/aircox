@@ -1,14 +1,14 @@
 {% extends "aircox/page_detail.html" %}
 {% load i18n %}
 
-{% block side_nav %}
+{% block sidebar %}
 {{ block.super }}
 
-{% if side_items %}
+{% if sidebar_items %}
 <section>
     <h4 class="title is-4">{% trans "Latest news" %}</h4>
 
-    {% for object in side_items %}
+    {% for object in sidebar_items %}
     {% include "aircox/page_item.html" %}
     {% endfor %}
 

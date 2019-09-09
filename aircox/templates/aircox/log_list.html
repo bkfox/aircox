@@ -10,14 +10,17 @@
 
 {% block subtitle %}{{ date|date:"l d F Y" }}{% endblock %}
 
+{% block filters %}
+{% with "log-list" as url_name %}
+{% include "aircox/widgets/dates_menu.html" %}
+{% endwith %}
+{% endblock %}
 
 {% block main %}
-<div class="columns">
-
-<section class="section column">
+<section>
     {# <h4 class="subtitle size-4">{{ date }}</h4> #}
     {% with True as hide_schedule %}
-    <table class="table is-striped is-hoverable is-fullwidth has-background-transparent">
+    <table class="table is-striped is-hoverable is-fullwidth">
         {% for object in object_list %}
         <tr>
             <td>
@@ -37,13 +40,5 @@
     </table>
     {% endwith %}
 </section>
-
-<nav class="column menu is-one-third-desktop" role="menu">
-    {% with "logs" as url_name %}
-    {% include "aircox/widgets/dates_menu.html" %}
-    {% endwith %}
-</nav>
-
-</div>
 {% endblock %}
 

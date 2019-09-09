@@ -49,6 +49,9 @@ class AdminSite(admin.AdminSite):
             path('tools/statistics/',
                  self.admin_view(StatisticsView.as_view()),
                  name='tools-stats'),
+            path('tools/statistics/<date:date>/',
+                 self.admin_view(StatisticsView.as_view()),
+                 name='tools-stats'),
         ]
         return urls
 

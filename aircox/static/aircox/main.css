@@ -7162,6 +7162,11 @@ label.panel-block {
 .has-background-transparent {
   background-color: transparent; }
 
+.is-opacity-light {
+  opacity: 0.7; }
+  .is-opacity-light:hover {
+    opacity: 1; }
+
 .navbar + .container {
   margin-top: 1em; }
 
@@ -7173,6 +7178,29 @@ a.navbar-item.is-active {
 
 .navbar .navbar-dropdown {
   z-index: 2000; }
+
+.navbar .navbar-split {
+  margin: 0.2em 0em;
+  margin-right: 1em;
+  padding-right: 1em;
+  border-right: 1px #b5b5b5 solid;
+  display: inline-block; }
+
+.navbar form {
+  margin: 0em;
+  padding: 0em; }
+
+.filters {
+  margin: 1em 0em;
+  background-color: transparent;
+  margin-bottom: 1em; }
+  .filters .title {
+    padding-right: 2em;
+    margin-right: 1em;
+    border-right: 1px #b5b5b5 solid;
+    font-size: 1.25rem;
+    color: #7a7a7a;
+    font-weight: 300; }
 
 /*
 .navbar-brand img {

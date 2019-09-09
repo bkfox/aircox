@@ -46,7 +46,7 @@
                     <a class="navbar-link" href="{% url "admin:aircox_article_changelist" %}">{% trans "Articles" %}</a>
                     <div class="navbar-dropdown is-boxed is-right">
                         {% for program in programs %}
-                        <a class="navbar-item" href="{% url "admin:aircox_article_changelist" %}?program={{ program.pk }}">
+                        <a class="navbar-item" href="{% url "admin:aircox_article_changelist" %}?parent={{ program.pk }}">
                             {{ program.title }}</a>
                         {% endfor %}
                     </div>
@@ -56,7 +56,7 @@
                     <a class="navbar-link" href="{% url "admin:aircox_episode_changelist" %}">{% trans "Episodes" %}</a>
                     <div class="navbar-dropdown is-boxed is-right">
                         {% for program in programs %}
-                        <a class="navbar-item" href="{% url "admin:aircox_episode_changelist" %}?program={{ program.pk }}">
+                        <a class="navbar-item" href="{% url "admin:aircox_episode_changelist" %}?parent={{ program.pk }}">
                             {{ program.title }}</a>
                         {% endfor %}
                     </div>
