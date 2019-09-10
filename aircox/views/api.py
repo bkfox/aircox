@@ -4,7 +4,6 @@ from django.utils import timezone as tz
 
 from rest_framework.generics import ListAPIView
 
-from ..utils import str_to_date
 from ..models import Log
 from ..serializers import LogInfo, LogInfoSerializer
 from .log import LogListMixin

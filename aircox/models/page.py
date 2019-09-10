@@ -92,7 +92,7 @@ class Page(models.Model):
     objects = PageQuerySet.as_manager()
 
     detail_url_name = None
-    item_template_name = 'aircox/page_item.html'
+    item_template_name = 'aircox/widgets/page_item.html'
 
     def __str__(self):
         return '{}'.format(self.title or self.pk)

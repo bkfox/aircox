@@ -2,6 +2,7 @@ from collections import deque
 import datetime
 
 from django.views.generic import ListView
+from django.utils import timezone as tz
 
 from ..models import Diffusion, Log
 from .base import BaseView
@@ -23,12 +24,14 @@ class LogListMixin(GetDateMixin):
     def get_queryset(self):
         # only get logs for tracks: log for diffusion will be retrieved
         # by the diffusions' queryset.
-        qs = super().get_queryset().on_air().filter(track__isnull=False)
+        qs = super().get_queryset().on_air().filter(track__isnull=False) \
+                                   .filter(date__lte=tz.now())
         return qs.today(self.date) if self.date is not None else \
             qs.after(self.min_date) if self.min_date is not None else qs
 
     def get_diffusions_queryset(self):
-        qs = Diffusion.objects.station(self.station).on_air()
+        qs = Diffusion.objects.station(self.station).on_air() \
+                      .filter(start__lte=tz.now())
         return qs.today(self.date) if self.date is not None else \
             qs.after(self.min_date) if self.min_date is not None else qs
 

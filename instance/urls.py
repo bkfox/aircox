@@ -22,9 +22,8 @@ import aircox.urls
 
 
 try:
-    urlpatterns = [
+    urlpatterns = aircox.urls.urls + [
         path('admin/', admin.site.urls),
-        path('aircox/', include(aircox.urls.urls)),
     ]
 
     if settings.DEBUG:

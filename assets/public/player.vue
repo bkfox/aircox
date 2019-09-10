@@ -83,6 +83,7 @@ export default {
         },
 
         toggle() {
+            console.log('tooogle', this.paused, '-', this.$refs.audio.src)
             if(this.paused)
                 this.play()
             else

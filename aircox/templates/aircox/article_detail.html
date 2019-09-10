@@ -4,12 +4,12 @@
 {% block sidebar %}
 {{ block.super }}
 
-{% if sidebar_items %}
+{% if sidebar_object_list %}
 <section>
     <h4 class="title is-4">{% trans "Latest news" %}</h4>
 
-    {% for object in sidebar_items %}
-    {% include "aircox/page_item.html" %}
+    {% for object in sidebar_object_list %}
+    {% include "aircox/widgets/page_item.html" %}
     {% endfor %}
 
     <br>

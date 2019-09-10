@@ -3,13 +3,7 @@
 
 {% block sidebar_title %}
 {% with program.title as program %}
-{% blocktrans %} Recently on {{ program }}{% endblocktrans %}
-{% endwith %}
-{% endblock %}
-
-{% block sidebar %}
-{% with program as parent %}
-{{ block.super }}
+{% blocktrans %}Recently on {{ program }}{% endblocktrans %}
 {% endwith %}
 {% endblock %}
 

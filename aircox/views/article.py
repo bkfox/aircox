@@ -25,7 +25,7 @@ class ArticleDetailView(PageDetailView):
 class ArticleListView(ParentMixin, PageListView):
     model = Article
     template_name = 'aircox/article_list.html'
-    show_headline = True
+    has_headline = True
     is_static = False
     parent_model = Program
 

@@ -2,6 +2,7 @@
 from django.http import Http404
 from django.views.generic import DetailView, ListView
 from django.views.generic.base import TemplateResponseMixin, ContextMixin
+from django.urls import reverse
 
 from ..models import Page
 from ..utils import Redirect
@@ -35,21 +36,25 @@ class BaseView(TemplateResponseMixin, ContextMixin):
         return Page.objects.select_subclasses().published() \
                            .order_by('-pub_date')
 
-    def get_context_data(self, sidebar_items=None, **kwargs):
+    def get_sidebar_url(self):
+        return reverse('page-list')
+
+    def get_context_data(self, **kwargs):
         kwargs.setdefault('station', self.station)
         kwargs.setdefault('cover', self.cover)
         kwargs.setdefault('has_filters', self.has_filters)
 
         has_sidebar = kwargs.setdefault('has_sidebar', self.has_sidebar)
-        if has_sidebar and sidebar_items is None:
-            sidebar_items = self.get_sidebar_queryset()
-            sidebar_items = None if sidebar_items is None else \
-                sidebar_items[:self.list_count]
+        if has_sidebar and 'sidebar_object_list' not in kwargs:
+            sidebar_object_list = self.get_sidebar_queryset()
+            if sidebar_object_list is not None:
+                kwargs['sidebar_object_list'] = sidebar_object_list[:self.list_count]
+                kwargs['sidebar_list_url'] = self.get_sidebar_url()
 
         if not 'audio_streams' in kwargs:
             streams = self.station.audio_streams
             streams = streams and streams.split('\n')
             kwargs['audio_streams'] = streams
 
-        return super().get_context_data(sidebar_items=sidebar_items, **kwargs)
+        return super().get_context_data(**kwargs)
 

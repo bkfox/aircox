@@ -24,8 +24,7 @@ api = [
 
 
 urls = [
-    path(_(''),
-         views.DiffusionListView.as_view(), name='home'),
+    path('', views.HomeView.as_view(), name='home'),
     path('api/', include(api)),
 
     # path('', views.PageDetailView.as_view(model=models.Article),
@@ -51,9 +50,9 @@ urls = [
     # path('<page_path:path>', views.route_page, name='page'),
 
     path(_('publications/'),
-         views.ProgramPageListView.as_view(), name='page-list'),
+         views.PageListView.as_view(model=models.Page), name='page-list'),
 
-    path(_('programs/'), views.PageListView.as_view(model=models.Program),
+    path(_('programs/'), views.ProgramListView.as_view(model=models.Program),
          name='program-list'),
     path(_('programs/<slug:slug>/'),
          views.ProgramDetailView.as_view(), name='program-detail'),
@@ -62,7 +61,7 @@ urls = [
     path(_('programs/<slug:parent_slug>/articles/'),
          views.ArticleListView.as_view(), name='article-list'),
     path(_('programs/<slug:parent_slug>/publications/'),
-         views.ProgramPageListView.as_view(), name='page-list'),
+         views.ProgramPageListView.as_view(), name='program-page-list'),
 
 
 ]

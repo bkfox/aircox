@@ -56,21 +56,23 @@
 {% endblock %}
 
 
-{% block main %}
+{% block main %}{{ block.super }}
 <section role="list">
+{% with has_headline=True %}
 {% for object in object_list %}
 {% block list_object %}
 {% include object.item_template_name|default:item_template_name %}
 {% endblock %}
 {% endfor %}
+{% endwith %}
 </section>
 
 {% if is_paginated %}
 <hr>
-
 {% update_query request.GET.copy page=None as GET %}
 {% with GET.urlencode as GET %}
 <nav class="pagination is-centered" role="pagination" aria-label="{% trans "pagination" %}">
+    {% block pagination %}
     {% if page_obj.has_previous %}
     <a href="?{{ GET }}&page={{ page_obj.previous_page_number }}" class="pagination-previous">
     {% else %}
@@ -93,6 +95,7 @@
         </li>
     {% endfor %}
     </ul>
+    {% endblock %}
 </nav>
 {% endwith %}
 {% endif %}

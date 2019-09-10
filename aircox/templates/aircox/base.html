@@ -1,10 +1,29 @@
-{% load static i18n thumbnail aircox %}
 {% comment %}
 Context:
 - cover: image cover
 - site: current website
 - has_filters: display filter bar (using block "filters")
+- sidebar_object_list: item to display in sidebar
+- sidebar_url_name: url name sidebar item complete list
+- sidebar_url_parent: parent page for sidebar items complete list
+
+Blocks:
+- assets
+- head_title
+- head_extra
+- top_nav
+- header:
+    - title
+    - subtitle
+    - header_meta
+- main:
+    - filters
+- cover
+- sidebar:
+    - sidebar_title
 {% endcomment %}
+{% load static i18n thumbnail aircox %}
+
 <html>
     <head>
         <meta charset="utf-8" />
@@ -72,14 +91,14 @@ Context:
                             {% endblock %}
                         </header>
 
-                        {% if has_filters %}
-                        <nav class="navbar filters"
-                            aria-label="{% trans "list filters" %}">
-                        {% block filters %}{% endblock %}
-                        </nav>
-                        {% endif %}
-
-                        {% block main %}{% endblock main %}
+                        {% block main %}
+                            {% if has_filters %}
+                            <nav class="navbar filters"
+                                aria-label="{% trans "list filters" %}">
+                            {% block filters %}{% endblock %}
+                            </nav>
+                            {% endif %}
+                        {% endblock main %}
                     </main>
 
                     {% if has_sidebar %}
@@ -92,28 +111,18 @@ Context:
                         {% endblock %}
 
                         {% block sidebar %}
-                        {% if sidebar_items %} 
+                        {% if sidebar_object_list %}
+                        {% with object_list=sidebar_object_list %}
+                        {% with list_url=sidebar_list_url %}
+                        {% with has_headline=False %}
                         <section>
                             <h4 class="title is-4">
                                 {% block sidebar_title %}{% trans "Recently" %}{% endblock %}
                             </h4>
-
-                        {% for object in sidebar_items %}
-                        {% include "aircox/episode_item.html" %}
-                        {% endfor %}
-
-                        <br>
-                        <nav class="pagination is-centered">
-                            <ul class="pagination-list">
-                                <li>
-                                    <a {% if parent %}href="{% url "page-list" parent_slug=parent.slug %}"{% else %}href="{% url "page-list" %}"{% endif %}
-                                        class="pagination-link"
-                                        aria-label="{% trans "Show all program's diffusions" %}">
-                                        {% trans "Show more" %}
-                                    </a>
-                                </li>
-                            </ul>
-                        </nav>
+                            {% include "aircox/widgets/page_list.html" %}
+                        {% endwith %}
+                        {% endwith %}
+                        {% endwith %}
                         {% endif %}
                         </section>
                         {% endblock %}

@@ -1,6 +1,3 @@
-.navbar {
-  box-shadow: 0em 0em 0.6em rgba(0, 0, 0, 0.4); }
-
 .navbar .navbar-brand {
   padding-right: 1em; }
 
@@ -7211,6 +7208,28 @@ a.navbar-item.is-active {
   margin: 0em;
   padding: 0em; }
 
+.card .title {
+  padding: 0.2em;
+  font-size: 1.25rem;
+  font-weight: 500; }
+  .card .title a {
+    color: #363636; }
+
+.card.is-primary {
+  box-shadow: 0em 0em 0.5em #0a0a0a; }
+
+.card-super-title {
+  position: absolute;
+  z-index: 1000;
+  font-size: 1.2em;
+  font-weight: 700;
+  padding: 0.2em;
+  top: 1em;
+  background-color: white; }
+  .card-super-title .fas {
+    padding: 0.1em;
+    font-size: 0.8em; }
+
 .filters {
   margin: 1em 0em;
   background-color: transparent;
@@ -7223,16 +7242,6 @@ a.navbar-item.is-active {
     color: #7a7a7a;
     font-weight: 300; }
 
-/*
-.navbar-brand img {
-    min-height: 6em;
-}
-
-.navbar-menu .navbar-item:not(:last-child) {
-    border-right: 1px $grey solid;
-}
-*/
-/** page **/
 .page > .cover {
   float: right;
   max-width: 45%; }
@@ -7247,26 +7256,23 @@ a.navbar-item.is-active {
 .page p {
   padding: 0.4em 0em; }
 
-section > .toolbar {
-  background-color: rgba(0, 0, 0, 0.05);
-  padding: 1em;
-  margin-bottom: 1.5em; }
-
-main .cover {
-  margin: 1em 0em;
-  border: 0.2em black solid; }
-
-main .small-cover {
-  width: 10em; }
-
-aside .small-cover {
-  width: 4em; }
-
-aside .media .subtitle {
-  font-size: 1em; }
-
-aside .media .content {
-  display: none; }
+.media.item .headline {
+  line-height: 1.2em;
+  max-height: calc(1.2em * 3);
+  overflow: hidden; }
+  .media.item .headline + .headline-overflow {
+    position: relative;
+    width: 100%;
+    height: 2em;
+    margin-top: -2em; }
+  .media.item .headline + .headline-overflow:before {
+    content: '';
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    background: linear-gradient(transparent 1em, whitesmoke); }
 
 .player {
   box-shadow: 0em 1.5em 2.5em rgba(0, 0, 0, 0.6); }
@@ -7286,4 +7292,38 @@ aside .media .content {
     min-width: 2.5em; }
   .player .title {
     margin: 0em; }
+
+.media .subtitle {
+  margin-bottom: 0.4em; }
+
+.media .media-content .headline {
+  font-size: 1em;
+  font-weight: 400; }
+
+body {
+  background-color: whitesmoke; }
+
+section > .toolbar {
+  background-color: rgba(0, 0, 0, 0.05);
+  padding: 1em;
+  margin-bottom: 1.5em; }
+
+main .cover {
+  margin: 1em 0em;
+  border: 0.2em black solid; }
+
+main .small-cover {
+  width: 10em; }
+
+aside > section {
+  margin-bottom: 2em; }
+
+aside .cover {
+  margin-bottom: 2em; }
+
+aside .small-cover {
+  width: 4em; }
+
+aside .media .subtitle {
+  font-size: 1em; }
 

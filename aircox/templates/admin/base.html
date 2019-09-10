@@ -29,11 +29,10 @@
   data-admin-utc-offset="{% now "Z" %}">
 
 <!-- Container -->
-<div id="app">
-
+<div>
     {% if not is_popup %}
     <!-- Header -->
-    <nav class="navbar is-dark">
+    <nav class="navbar is-dark has-shadow">
         <div class="navbar-brand">
         {% block branding %}{% endblock %}
         </div>

@@ -10,15 +10,14 @@
 {% block content %}{{ block.super }}
 
 <br>
-
-{% with show_headline=False %}
+{% with has_headline=False %}
 <div class="columns is-desktop">
     {% if articles %}
     <section class="column">
         <h4 class="title is-4">{% trans "Articles" %}</h4>
 
         {% for object in articles %}
-        {% include "aircox/page_item.html" %}
+        {% include "aircox/widgets/page_item.html" %}
         {% endfor %}
 
         <br>

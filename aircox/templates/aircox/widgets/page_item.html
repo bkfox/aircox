@@ -1,15 +1,36 @@
 {% load i18n easy_thumbnails_tags aircox %}
 {% comment %}
 Context variables:
-- object: the actual diffusion
-- show_headline: if True, display headline
+- object: the object to render
+- render_card: render as card
+- is-primary: render as primary
+- has_headline (=False): if True, display headline
+- has_cover (=True): hide page cover
 {% endcomment %}
 
-<article class="media">
+{% if render_card %}
+<article class="card {% if is_primary %}is-primary{% endif %}">
+    <header class="card-image">
+        <figure class="image is-4by3">
+            <img src="{% thumbnail object.cover 480x480 %}">
+        </figure>
+    </header>
+    <div class="card-header">
+        <h4 class="title">
+            <a href="{{ object.get_absolute_url }}">{{ object.title }}</a>
+        </h4>
+    </div>
+</article>
+
+
+{% else %}
+<article class="media item {% if is_primary %}is-primary{% endif %}">
+    {% if has_cover|default_if_none:True %}
     <div class="media-left">
         <img src="{% thumbnail object.cover 128x128 crop=scale %}"
             class="small-cover">
     </div>
+    {% endif %}
     <div class="media-content">
         <h5 class="title is-5 has-text-weight-normal">
             {% block title %}
@@ -26,8 +47,8 @@ Context variables:
             {% endblock %}
         </div>
 
-        {% if show_headline %}
-        <div class="">
+        {% if has_headline|default_if_none:True %}
+        <div class="headline">
         {% block headline %}
         {{ object.headline|safe }}
         {% endblock %}
@@ -35,4 +56,5 @@ Context variables:
         {% endif %}
     </div>
 </article>
+{% endif %}
 

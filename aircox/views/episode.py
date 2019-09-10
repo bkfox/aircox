@@ -21,9 +21,6 @@ class EpisodeDetailView(ProgramPageDetailView):
         return Sound.objects.diffusion(diffusion).podcasts()
 
     def get_context_data(self, **kwargs):
-        self.program = kwargs.setdefault('program', self.object.program)
-
-        kwargs.setdefault('parent', self.program)
         if not 'tracks' in kwargs:
             kwargs['tracks'] = self.object.track_set.order_by('position')
         if not 'podcasts' in kwargs:
@@ -33,8 +30,8 @@ class EpisodeDetailView(ProgramPageDetailView):
 
 class EpisodeListView(ParentMixin, PageListView):
     model = Episode
-    item_template_name = 'aircox/episode_item.html'
-    show_headline = True
+    item_template_name = 'aircox/widgets/episode_item.html'
+    has_headline = True
     parent_model = Program
 
 

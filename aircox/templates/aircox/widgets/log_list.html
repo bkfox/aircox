@@ -1,0 +1,29 @@
+{% comment %}
+Render list of logs (as widget).
+
+Context:
+- object_list: list of logs to display
+{% endcomment %}
+{% load aircox %}
+
+{% with True as hide_schedule %}
+<table class="table is-striped is-hoverable is-fullwidth" role="list">
+    {% for object in object_list %}
+    <tr>
+        <td>
+            {% if object|is_diffusion %}
+            <time datetime="{{ object.start }}" title="{{ object.start }}">
+                {{ object.start|date:"H:i" }} - {{ object.end|date:"H:i" }}
+            </time>
+            {% else %}
+            <time datetime="{{ object.date }}" title="{{ object.date }}">
+                {{ object.date|date:"H:i" }}
+            </time>
+            {% endif %}
+        </td>
+        <td>{% include "aircox/widgets/log_item.html" %}</td>
+    </tr>
+    {% endfor %}
+</table>
+{% endwith %}
+

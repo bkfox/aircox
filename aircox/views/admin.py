@@ -44,8 +44,7 @@ class AdminSite(admin.AdminSite):
 
     def get_urls(self):
         from django.urls import path, include
-        urls = super().get_urls()
-        urls += [
+        urls = super().get_urls() + [
             path('tools/statistics/',
                  self.admin_view(StatisticsView.as_view()),
                  name='tools-stats'),

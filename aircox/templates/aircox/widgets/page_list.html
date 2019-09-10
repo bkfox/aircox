@@ -1,0 +1,28 @@
+{% comment %}
+Display list of items as small list
+
+Context:
+- object_list: object list
+- list_url: url to complete list page
+{% endcomment %}
+{% load i18n %}
+
+{% for object in object_list %}
+{% include object.item_template_name %}
+{% endfor %}
+
+{% if list_url %}
+<br>
+<nav class="pagination is-centered">
+    <ul class="pagination-list">
+        <li>
+            <a href="{{ list_url }}" class="pagination-link"
+                aria-label="{% trans "Show all publications" %}">
+                {% trans "Show more" %}
+            </a>
+        </li>
+    </ul>
+</nav>
+{% endif %}
+
+

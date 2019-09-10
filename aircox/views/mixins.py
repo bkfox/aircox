@@ -63,9 +63,9 @@ class ParentMixin:
         return super().get_queryset()
 
     def get_context_data(self, **kwargs):
-        parent = kwargs.setdefault('parent', self.parent)
-        if parent is not None:
-            kwargs.setdefault('cover', parent.cover)
+        self.parent = kwargs.setdefault('parent', self.parent)
+        if self.parent is not None:
+            kwargs.setdefault('cover', self.parent.cover)
         return super().get_context_data(**kwargs)
 
 

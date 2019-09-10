@@ -11,11 +11,11 @@ for design review.
 
 {% if object|is_diffusion %}
     {% with object as diffusion %}
-    {% include "aircox/diffusion_item.html" %}
+    {% include "aircox/widgets/diffusion_item.html" %}
     {% endwith %}
 {% else %}
     {% with object.track as object %}
-    {% include "aircox/track_item.html" %}
+    {% include "aircox/widgets/track_item.html" %}
     {% endwith %}
 {% endif %}
 

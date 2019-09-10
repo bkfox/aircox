@@ -271,21 +271,22 @@ class Log(models.Model):
                 object_list += logs[:index]
                 logs = logs[index:]
 
-            # - last log while diff is running
-            if logs[0].date > diff.start:
-                object_list.append(logs[0])
+            if len(logs):
+                # FIXME
+                # - last log while diff is running
+                #if logs[0].date > diff.start:
+                #    object_list.append(logs[0])
 
-            # - skips logs while diff is running
-            index = next((i for i, v in enumerate(logs)
-                         if v.date < diff.start), len(logs))
-            if index is not None and index > 0:
-                logs = logs[index:]
+                # - skips logs while diff is running
+                index = next((i for i, v in enumerate(logs)
+                             if v.date < diff.start), len(logs))
+                if index is not None and index > 0:
+                    logs = logs[index:]
 
             # - add diff
             object_list.append(diff)
 
-        return object_list
-
+        return object_list if count is None else object_list[:count]
 
     def print(self):
         r = []

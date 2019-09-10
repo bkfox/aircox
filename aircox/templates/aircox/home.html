@@ -1,0 +1,83 @@
+{% extends "aircox/page_list.html" %}
+{% comment %}
+Context:
+- 
+- 
+
+TODO:
+- sidebar:
+    - logs
+    - diffusions
+- main:
+    - focused
+    - nav to 'publications' view
+    - 
+
+{% endcomment %}
+{% load i18n %}
+
+{% block head_title %}{% block title %}{{ station.name }}{% endblock %}{% endblock %}
+
+{% block main %}
+<div class="columns">
+    {% with render_card=True %}
+    {% for object in top_diffs %}
+    {% with is_primary=object.is_now %}
+    <div class="column is-relative">
+        <h4 class="card-super-title">
+            {% if is_primary %}
+            <span class="fas fa-play"></span>
+            {% trans "Currently" %}
+            {% else %}{{ object.start|date:"H:i" }}{% endif %}
+        </h4>
+        {% include object.item_template_name %}
+    </div>
+    {% endwith %}
+    {% endfor %}
+    {% endwith %}
+</div>
+
+<hr>
+<h4 class="title is-4">{% trans "Last publications" %}</h4>
+{{ block.super }}
+{% endblock %}
+
+
+{% block pagination %}
+<ul class="pagination-list">
+    <li>
+        <a href="{% url "page-list" %}" class="pagination-link"
+            aria-label="{% trans "Show all publication" %}">
+            {% trans "More publications..." %}
+        </a>
+    </li>
+</ul>
+{% endblock %}
+
+
+{% block sidebar %}
+<section>
+    <h4 class="title is-4">{% trans "Previously on air" %}</h4>
+    {% with logs as object_list %}
+    {% include "aircox/widgets/log_list.html" %}
+    {% endwith %}
+</section>
+
+<section>
+    <h4 class="title is-4">{% trans "Today" %}</h4>
+    {% with hide_schedule=True %}
+    {% with has_headline=False %}
+    <table class="table is-fullwidth has-background-transparent">
+    {% for object in sidebar_object_list %}
+    <tr>
+        <td>{{ object.start|date:"H:i" }}</td>
+        <td>{% include "aircox/widgets/diffusion_item.html" %}</td>
+    </tr>
+    {% endfor %}
+    </table>
+    {% endwith %}
+    {% endwith %}
+</section>
+{% endblock %}
+
+

@@ -6,7 +6,7 @@ from django.views.generic import DetailView, ListView
 from honeypot.decorators import check_honeypot
 
 from ..forms import CommentForm
-from ..models import Category, Comment
+from ..models import Category, Comment, Page
 from ..utils import Redirect
 from .base import BaseView
 
@@ -17,12 +17,12 @@ __all__ = ['PageDetailView', 'PageListView']
 # TODO: pagination: in template, only a limited number of pages displayed
 class PageListView(BaseView, ListView):
     template_name = 'aircox/page_list.html'
-    item_template_name = 'aircox/page_item.html'
+    item_template_name = 'aircox/widgets/page_item.html'
     has_sidebar = True
     has_filters = True
 
     paginate_by = 20
-    show_headline = True
+    has_headline = True
     categories = None
 
     def get(self, *args, **kwargs):
@@ -30,7 +30,7 @@ class PageListView(BaseView, ListView):
         return super().get(*args, **kwargs)
 
     def get_queryset(self):
-        qs = super().get_queryset().published() \
+        qs = super().get_queryset().select_subclasses().published() \
                     .select_related('cover', 'category')
 
         # category can be filtered based on request.GET['categories']
@@ -50,7 +50,7 @@ class PageListView(BaseView, ListView):
         kwargs.setdefault('item_template_name', self.item_template_name)
         kwargs.setdefault('filter_categories', self.get_categories_queryset())
         kwargs.setdefault('categories', self.categories)
-        kwargs.setdefault('show_headline', self.show_headline)
+        kwargs.setdefault('has_headline', self.has_headline)
         return super().get_context_data(**kwargs)
 
 

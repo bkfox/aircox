@@ -3,7 +3,7 @@
 
 $body-background-color: $light;
 
-@import "~bulma/bulma";
+@import "~bulma";
 
 //-- helpers/modifiers
 .is-fullwidth { width: 100%; }
@@ -58,6 +58,38 @@ a.navbar-item.is-active {
     }
 }
 
+//-- cards
+.card {
+    .title {
+        a {
+            color: $dark;
+        }
+
+        padding: 0.2em;
+        font-size: $size-5;
+        font-weight: $weight-medium;
+    }
+
+    &.is-primary {
+        box-shadow: 0em 0em 0.5em $black
+    }
+}
+
+.card-super-title {
+    position: absolute;
+    z-index: 1000;
+    font-size: 1.2em;
+    font-weight: $weight-bold;
+    padding: 0.2em;
+    top: 1em;
+    background-color: $white;
+
+    .fas {
+        padding: 0.1em;
+        font-size: 0.8em;
+    }
+}
+
 
 //-- filters
 .filters {
@@ -77,18 +109,7 @@ a.navbar-item.is-active {
 }
 
 
-/*
-.navbar-brand img {
-    min-height: 6em;
-}
-
-.navbar-menu .navbar-item:not(:last-child) {
-    border-right: 1px $grey solid;
-}
-*/
-
-
-/** page **/
+//-- page
 .page {
     & > .cover {
         float: right;
@@ -109,39 +130,33 @@ a.navbar-item.is-active {
     }
 }
 
-section > .toolbar {
-    background-color: rgba(0,0,0,0.05);
-    padding: 1em;
-    margin-bottom: 1.5em;
-}
 
+.media.item .headline {
+    line-height: 1.2em;
+    max-height: calc(1.2em * 3);
+    overflow: hidden;
 
-main {
-    .cover {
-        margin: 1em 0em;
-        border: 0.2em black solid;
+    & + .headline-overflow {
+        position: relative;
+        width: 100%;
+        height: 2em;
+        margin-top: -2em;
     }
 
-    .small-cover {
-        width: 10em;
-    }
-}
-
-aside {
-    .small-cover {
-        width: 4em;
-    }
-
-    .media .subtitle {
-        font-size: 1em;
-    }
-
-    .media .content {
-        display: none;
+    & + .headline-overflow:before {
+        content:'';
+        width:100%;
+        height:100%;
+        position:absolute;
+        left:0;
+        bottom:0;
+        background:linear-gradient(transparent 1em, $body-background-color);
     }
 }
 
 
+
+//-- player
 .player {
     box-shadow: 0em 1.5em 2.5em rgba(0, 0, 0, 0.6);
 
@@ -174,5 +189,58 @@ aside {
     }
 
 }
+
+//-- media
+.media {
+    .subtitle {
+        margin-bottom: 0.4em;
+    }
+    .media-content .headline {
+        font-size: 1em;
+        font-weight: 400;
+    }
+}
+
+//-- general
+body {
+    background-color: $body-background-color;
+}
+
+section > .toolbar {
+    background-color: rgba(0,0,0,0.05);
+    padding: 1em;
+    margin-bottom: 1.5em;
+}
+
+
+main {
+    .cover {
+        margin: 1em 0em;
+        border: 0.2em black solid;
+    }
+
+    .small-cover {
+        width: 10em;
+    }
+}
+
+aside {
+    & > section {
+        margin-bottom: 2em;
+    }
+
+    .cover {
+        margin-bottom: 2em;
+    }
+
+    .small-cover {
+        width: 4em;
+    }
+
+    .media .subtitle {
+        font-size: 1em;
+    }
+}
+
 
 

@@ -3,8 +3,14 @@
 
 
 {% block content %}{{ block.super }}
+<div id="app">
+
 {# TODO: date subtitle #}
-<div class="columns">
+<nav class="navbar" role="menu">
+    {% with "admin:tools-stats" as url_name %}
+    {% include "aircox/widgets/dates_menu.html" %}
+    {% endwith %}
+</nav>
 
 <a-statistics class="column">
 <template v-slot:default="{counts}">
@@ -23,13 +29,12 @@
         {% for track in tracks %}
         <tr>
             {% if forloop.first %}
-            <td rowspan="{{ tracks|length }}">{{ object.start|time:"H:i" }}</td>
+            <td rowspan="{{ tracks|length }}">{{ object.start|time:"H:i" }} {% if object|is_diffusion %} - {{ object.end|time:"H:i" }}{% endif %}</td>
             <td rowspan="{{ tracks|length }}">{{ object.episode|default:"" }}</td>
             {% endif %}
 
-            {% if not object|is_diffusion %}
             {% with track as object %}
-            <td>{% include "aircox/track_item.html" %}</td>
+            <td>{% include "aircox/widgets/track_item.html" %}</td>
             {% endwith %}
             {% with track.tags.all|join:', ' as tags %}
             <td>
@@ -41,10 +46,17 @@
                 {% endif %}
             </td>
             {% endwith %}
-        {% else %}
+        </tr>
+        {% empty %}
+        {% if object|is_diffusion %}
+        <tr>
+            <td>{{ object.start|time:"H:i" }} - {{ object.end|time:"H:i" }}</td>
+            <td>{{ object.episode|default:"" }}</td>
+            <td></td>
+            <td></td>
+        </tr>
         {% endif %}
         {% endfor %}
-        <tr>
         {% endwith %}
         {% endfor %}
         </tbody>
@@ -64,14 +76,6 @@
     </table>
 </template>
 </a-statistics>
-
-
-<nav class="column menu is-one-fifth-desktop" role="menu">
-    {% with "admin:tools-stats" as url_name %}
-    {% include "aircox/widgets/dates_menu.html" %}
-    {% endwith %}
-</nav>
-
 
 </div>
 {% endblock %}

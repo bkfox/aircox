@@ -26,6 +26,10 @@ export default {
                     for(var tag of item.value.split(splitReg))
                         counts[tag.trim()] = (counts[tag.trim()] || 0) + 1;
             this.counts = counts;
+        },
+
+        onclick(event) {
+            // TODO: row click => check checkbox
         }
     },
 

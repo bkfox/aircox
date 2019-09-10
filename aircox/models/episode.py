@@ -19,7 +19,7 @@ __all__ = ['Episode', 'Diffusion', 'DiffusionQuerySet']
 class Episode(Page):
     objects = ProgramChildQuerySet.as_manager()
     detail_url_name = 'episode-detail'
-    item_template_name = 'aircox/episode_item.html'
+    item_template_name = 'aircox/widgets/episode_item.html'
 
     @property
     def program(self):
@@ -75,7 +75,9 @@ class DiffusionQuerySet(BaseRerunQuerySet):
     def today(self, today=None, order=True):
         """ Diffusions occuring today. """
         today = today or datetime.date.today()
-        qs = self.filter(Q(start__date=today) | Q(end__date=today))
+        start = tz.datetime.combine(today, datetime.time())
+        end = tz.datetime.combine(today, datetime.time(23, 59, 59, 999))
+        qs = self.filter(start__range = (start, end))
         return qs.order_by('start') if order else qs
 
     def at(self, date, order=True):
@@ -90,9 +92,9 @@ class DiffusionQuerySet(BaseRerunQuerySet):
         """
         date = utils.date_or_default(date)
         if isinstance(date, tz.datetime):
-            qs = self.filter(start__gte=date)
+            qs = self.filter(Q(start__gte=date) | Q(end__gte=date))
         else:
-            qs = self.filter(start__date__gte=date)
+            qs = self.filter(Q(start__date__gte=date) | Q(end__date__gte=date))
         return qs.order_by('start')
 
     def before(self, date=None):
@@ -157,7 +159,7 @@ class Diffusion(BaseRerun):
     #    help_text = _('use this input port'),
     # )
 
-    item_template_name = 'aircox/diffusion_item.html'
+    item_template_name = 'aircox/widgets/diffusion_item.html'
 
     class Meta:
         verbose_name = _('Diffusion')
@@ -181,12 +183,10 @@ class Diffusion(BaseRerun):
         #    self.check_conflicts()
 
     def save_rerun(self):
-        print('rerun save', self)
         self.episode = self.initial.episode
         self.program = self.episode.program
 
     def save_initial(self):
-        print('initial save', self)
         self.program = self.episode.program
         if self.episode != self._initial['episode']:
             self.rerun_set.update(episode=self.episode, program=self.program)
@@ -220,6 +220,13 @@ class Diffusion(BaseRerun):
         """
 
         return tz.localtime(self.end, tz.get_current_timezone())
+
+    @property
+    def is_now(self):
+        """ True if diffusion is currently running """
+        now = tz.now()
+        return self.type == self.TYPE_ON_AIR and \
+            self.start <= now and self.end >= now
 
     # TODO: property?
     def is_live(self):
