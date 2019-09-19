@@ -7221,7 +7221,7 @@ a.navbar-item.is-active {
 .card-super-title {
   position: absolute;
   z-index: 1000;
-  font-size: 1.2em;
+  font-size: 1rem;
   font-weight: 700;
   padding: 0.2em;
   top: 1em;

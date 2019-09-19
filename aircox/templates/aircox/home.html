@@ -2,16 +2,9 @@
 {% comment %}
 Context:
 - 
-- 
-
-TODO:
-- sidebar:
-    - logs
-    - diffusions
 - main:
     - focused
     - nav to 'publications' view
-    - 
 
 {% endcomment %}
 {% load i18n %}
@@ -24,11 +17,17 @@ TODO:
     {% for object in top_diffs %}
     {% with is_primary=object.is_now %}
     <div class="column is-relative">
-        <h4 class="card-super-title">
+        <h4 class="card-super-title" title="{{ object.start }}">
             {% if is_primary %}
             <span class="fas fa-play"></span>
-            {% trans "Currently" %}
-            {% else %}{{ object.start|date:"H:i" }}{% endif %}
+            <time datetime="{{ object.start }}">
+                {% trans "Currently" %}
+                {% else %}{{ object.start|date:"H:i" }}{% endif %}
+            </time>
+
+            {% if object.episode.category %}
+            // {{ object.episode.category.title }}
+            {% endif %}
         </h4>
         {% include object.item_template_name %}
     </div>

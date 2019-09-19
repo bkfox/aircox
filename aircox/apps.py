@@ -8,7 +8,6 @@ class AircoxConfig(AppConfig):
 
 
 class AircoxAdminConfig(AdminConfig):
-    default_site = 'aircox.views.admin.AdminSite'
-
+    default_site = 'aircox.admin_site.AdminSite'
 
 

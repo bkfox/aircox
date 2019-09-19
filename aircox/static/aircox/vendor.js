@@ -22,17 +22,6 @@ eval("// extracted by mini-css-extract-plugin\n\n//# sourceURL=webpack:///./node
 
 /***/ }),
 
-/***/ "./node_modules/buefy/dist/buefy.css":
-/*!*******************************************!*\
-  !*** ./node_modules/buefy/dist/buefy.css ***!
-  \*******************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-eval("// extracted by mini-css-extract-plugin\n\n//# sourceURL=webpack:///./node_modules/buefy/dist/buefy.css?");
-
-/***/ }),
-
 /***/ "./node_modules/process/browser.js":
 /*!*****************************************!*\
   !*** ./node_modules/process/browser.js ***!

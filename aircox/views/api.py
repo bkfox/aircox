@@ -3,6 +3,8 @@ import datetime
 from django.utils import timezone as tz
 
 from rest_framework.generics import ListAPIView
+from rest_framework import viewsets
+from rest_framework.decorators import action
 
 from ..models import Log
 from ..serializers import LogInfo, LogInfoSerializer
@@ -43,5 +45,4 @@ class LogListAPIView(LogListMixin, BaseAPIView, ListAPIView):
         full = bool(self.request.GET.get('full'))
         return super().get_serializer(self.get_object_list(queryset, full),
                                       *args, **kwargs)
-
 

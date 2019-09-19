@@ -44,8 +44,8 @@ def program_post_save(sender, instance, created, *args, **kwargs):
     Clean-up later diffusions when a program becomes inactive
     """
     if not instance.active:
-        Diffusion.objects.program(instance).after(tz.now()).delete()
-        Episode.object.program(instance).filter(diffusion__isnull=True) \
+        Diffusion.object.program(instance).after(tz.now()).delete()
+        Episode.object.parent(instance).filter(diffusion__isnull=True) \
                .delete()
 
 
@@ -94,7 +94,6 @@ def schedule_pre_delete(sender, instance, *args, **kwargs):
 @receiver(signals.post_delete, sender=Diffusion)
 def diffusion_post_delete(sender, instance, *args, **kwargs):
     Episode.objects.filter(diffusion__isnull=True, content__isnull=True,
-                           sound__isnull=True) \
-                   .delete()
+                           sound__isnull=True).delete()
 
 

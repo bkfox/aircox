@@ -21,9 +21,10 @@ from django.db.models import Q
 from django.core.management.base import BaseCommand
 from django.utils import timezone as tz
 
-from aircox.controllers import Streamer, PlaylistSource
 from aircox.models import Station, Episode, Diffusion, Track, Sound, Log
 from aircox.utils import date_range
+
+from aircox_streamer.liquidsoap import Streamer, PlaylistSource
 
 
 # force using UTC
@@ -227,7 +228,7 @@ class Monitor:
 
     def start_diff(self, source, diff):
         playlist = Sound.objects.episode(id=diff.episode_id).paths()
-        source.append(*playlist)
+        source.push(*playlist)
         self.log(type=Log.TYPE_START, source=source.id, diffusion=diff,
                  comment=str(diff))
 

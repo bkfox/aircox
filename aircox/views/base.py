@@ -51,10 +51,11 @@ class BaseView(TemplateResponseMixin, ContextMixin):
                 kwargs['sidebar_object_list'] = sidebar_object_list[:self.list_count]
                 kwargs['sidebar_list_url'] = self.get_sidebar_url()
 
-        if not 'audio_streams' in kwargs:
+        if 'audio_streams' not in kwargs:
             streams = self.station.audio_streams
             streams = streams and streams.split('\n')
             kwargs['audio_streams'] = streams
 
         return super().get_context_data(**kwargs)
+
 

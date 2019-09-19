@@ -7,7 +7,6 @@ import Vue from 'vue';
 
 import '@fortawesome/fontawesome-free/css/all.min.css';
 import '@fortawesome/fontawesome-free/css/fontawesome.min.css';
-import 'buefy/dist/buefy.css';
 
 
 //-- aircox

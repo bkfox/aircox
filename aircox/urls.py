@@ -1,4 +1,3 @@
-from django.contrib import admin
 from django.urls import include, path, register_converter
 from django.utils.translation import ugettext_lazy as _
 

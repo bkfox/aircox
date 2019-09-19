@@ -14,7 +14,6 @@ from .base import BaseView
 __all__ = ['PageDetailView', 'PageListView']
 
 
-# TODO: pagination: in template, only a limited number of pages displayed
 class PageListView(BaseView, ListView):
     template_name = 'aircox/page_list.html'
     item_template_name = 'aircox/widgets/page_item.html'
