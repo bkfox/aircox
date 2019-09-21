@@ -19,6 +19,7 @@ export function getCsrf() {
 
 
 // TODO: move in another module for reuse
+// TODO: prevent duplicate simple fetch
 export default class Model {
     constructor(data, {url=null}={}) {
         this.commit(data);
@@ -100,7 +101,7 @@ export default class Model {
         return index == -1 ? null : this.data[attr][index];
     }
 
-    static updateList(list=[], old=[]) {
+    static updateList(list=[], old=[], ...initArgs) {
          return list.reduce((items, data) => {
             const id = this.getId(data);
             let [index, obj] = [old.findIndex(o => o.id == id), null];
@@ -109,7 +110,7 @@ export default class Model {
                 items.push(old[index]);
             }
             else
-                items.push(new this(data))
+                items.push(new this(data, ...initArgs))
             return items;
         }, [])
     }

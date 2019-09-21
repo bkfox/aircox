@@ -13,8 +13,8 @@ export class Streamer extends Model {
         if(!this.data)
             this.data = { id: data.id, playlists: [], queues: [] }
 
-        data.playlists = Playlist.updateList(data.playlists, this.playlists)
-        data.queues = Queue.updateList(data.queues, this.queues)
+        data.playlists = Playlist.updateList(data.playlists, this.playlists, {streamer: this})
+        data.queues = Queue.updateList(data.queues, this.queues, {streamer: this})
         super.commit(data)
     }
 }
@@ -24,8 +24,9 @@ export class Request extends Model {
 }
 
 export class Source extends Model {
-    constructor(...args) {
-        super(...args);
+    constructor(data, {streamer=null, ...options}={}) {
+        super(data, options);
+        this.streamer = streamer;
         setInterval(() => this.tick(), 1000)
     }
 
@@ -43,7 +44,6 @@ export class Source extends Model {
         return String(minutes).padStart(2, '0') + ':' +
                String(seconds).padStart(2, '0');
     }
-
 
     sync() { return this.action('sync/', {method: 'POST'}, true); }
     skip() { return this.action('skip/', {method: 'POST'}, true); }
@@ -66,9 +66,10 @@ export class Source extends Model {
     commit(data) {
         if(data.air_time)
             data.air_time = new Date(data.air_time);
-        Vue.set(this, 'remaining', data.remaining)
+
         this.commitDate = Date.now()
         super.commit(data)
+        Vue.set(this, 'remaining', data.remaining)
     }
 }
 
