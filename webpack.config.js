@@ -11,6 +11,7 @@ module.exports = (env, argv) => Object({
     entry: {
         main: './assets/public/index',
         admin: './assets/admin/index',
+        streamer: './assets/streamer/index',
     },
 
     output: {

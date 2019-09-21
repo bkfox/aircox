@@ -93,7 +93,7 @@ Blocks:
 
                         {% block main %}
                             {% if has_filters %}
-                            <nav class="navbar filters"
+                            <nav class="navbar toolbar"
                                 aria-label="{% trans "list filters" %}">
                             {% block filters %}{% endblock %}
                             </nav>
@@ -132,8 +132,8 @@ Blocks:
             </div>
 
             <hr>
-            {% include "aircox/player.html" %}
         </div>
+        <div id="player">{% include "aircox/player.html" %}</div>
     </body>
 </html>
 

@@ -1,12 +1,16 @@
 from django.http import Http404
+from django.shortcuts import get_object_or_404
 from django.utils import timezone as tz
 
 from rest_framework import viewsets
 from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAdminUser
+from rest_framework.response import Response
 
-from aircox import controllers
-from aircox.models import Station
+from aircox.models import Sound, Station
+from aircox.serializers import SoundSerializer
+from . import controllers
 from .serializers import *
 
 
@@ -52,15 +56,16 @@ class Streamers:
         self.date = now + self.timeout
 
     def get(self, key, default=None):
-        self.fetch()
         return self.streamers.get(key, default)
 
     def values(self):
-        self.fetch()
         return self.streamers.values()
 
     def __getitem__(self, key):
         return self.streamers[key]
+
+    def __contains__(self, key):
+        return key in self.streamers
 
 
 streamers = Streamers()
@@ -70,22 +75,25 @@ class BaseControllerAPIView(viewsets.ViewSet):
     permission_classes = (IsAdminUser,)
     serializer = None
     streamer = None
+    object = None
 
-    def get_streamer(self, pk=None):
-        streamer = streamers.get(self.request.pk if pk is None else pk)
-        if not streamer:
+    def get_streamer(self, request, station_pk=None, **kwargs):
+        streamers.fetch()
+        id = int(request.station.pk if station_pk is None else station_pk)
+        if id not in streamers:
             raise Http404('station not found')
-        return streamer
+        return streamers[id]
 
-    def get_serializer(self, obj, **kwargs):
-        return self.serializer(obj, **kwargs)
+    def get_serializer(self, **kwargs):
+        return self.serializer(self.object, **kwargs)
 
     def serialize(self, obj, **kwargs):
-        serializer = self.get_serializer(obj, **kwargs)
+        self.object = obj
+        serializer = self.get_serializer(**kwargs)
         return serializer.data
 
-    def dispatch(self, request, *args, **kwargs):
-        self.streamer = self.get_streamer(request.station.pk)
+    def dispatch(self, request, *args, station_pk=None, **kwargs):
+        self.streamer = self.get_streamer(request, station_pk, **kwargs)
         return super().dispatch(request, *args, **kwargs)
 
 
@@ -97,10 +105,19 @@ class StreamerViewSet(BaseControllerAPIView):
     serializer = StreamerSerializer
 
     def retrieve(self, request, pk=None):
-        return self.serialize(self.streamer)
+        return Response(self.serialize(self.streamer))
 
-    def list(self, request):
-        return self.serialize(streamers.values(), many=True)
+    def list(self, request, pk=None):
+        return Response({
+            'results': self.serialize(streamers.values(), many=True)
+        })
+
+    def dispatch(self, request, *args, pk=None, **kwargs):
+        if pk is not None:
+            kwargs.setdefault('station_pk', pk)
+        self.streamer = self.get_streamer(request, **kwargs)
+        self.object = self.streamer
+        return super().dispatch(request, *args, **kwargs)
 
 
 class SourceViewSet(BaseControllerAPIView):
@@ -108,38 +125,46 @@ class SourceViewSet(BaseControllerAPIView):
     model = controllers.Source
 
     def get_sources(self):
-        return (s for s in self.streamer.souces if isinstance(s, self.model))
+        return (s for s in self.streamer.sources if isinstance(s, self.model))
 
     def get_source(self, pk):
         source = next((source for source in self.get_sources()
-                      if source.pk == pk), None)
+                      if source.id == pk), None)
         if source is None:
             raise Http404('source `%s` not found' % pk)
         return source
 
     def retrieve(self, request, pk=None):
-        source = self.get_source(pk)
-        return self.serialize(source)
+        self.object = self.get_source(pk)
+        return Response(self.serialize())
 
     def list(self, request):
-        return self.serialize(self.get_sources(), many=True)
+        return Response({
+            'results': self.serialize(self.get_sources(), many=True)
+        })
+
+    def _run(self, pk, action):
+        source = self.object = self.get_source(pk)
+        action(source)
+        source.fetch()
+        return Response(self.serialize(source))
 
     @action(detail=True, methods=['POST'])
     def sync(self, request, pk):
-        self.get_source(pk).sync()
+        return self._run(pk, lambda s: s.sync())
 
     @action(detail=True, methods=['POST'])
     def skip(self, request, pk):
-        self.get_source(pk).skip()
+        return self._run(pk, lambda s: s.skip())
 
     @action(detail=True, methods=['POST'])
     def restart(self, request, pk):
-        self.get_source(pk).restart()
+        return self._run(pk, lambda s: s.restart())
 
     @action(detail=True, methods=['POST'])
     def seek(self, request, pk):
         count = request.POST['seek']
-        self.get_source(pk).seek(count)
+        return self._run(pk, lambda s: s.seek(count))
 
 
 class PlaylistSourceViewSet(SourceViewSet):
@@ -151,8 +176,26 @@ class QueueSourceViewSet(SourceViewSet):
     serializer = QueueSourceSerializer
     model = controllers.QueueSource
 
+    def get_sound_queryset(self):
+        return Sound.objects.station(self.request.station).archive()
+
+    @action(detail=False, url_path='autocomplete/push',
+            url_name='autocomplete-push')
+    def autcomplete_push(self, request):
+        query = request.GET.get('q')
+        qs = self.get_sound_queryset().search(query)
+        serializer = SoundSerializer(qs, many=True, context={
+            'request': self.request
+        })
+        return Response({'results': serializer.data})
+
     @action(detail=True, methods=['POST'])
     def push(self, request, pk):
-        self.get_source(pk).push()
+        if not request.data.get('sound_id'):
+            raise ValidationError('missing "sound_id" POST data')
 
+        sound = get_object_or_404(self.get_sound_queryset(),
+                                  pk=request.data['sound_id'])
+        return self._run(
+            pk, lambda s: s.push(sound.path) if sound.path else None)
 

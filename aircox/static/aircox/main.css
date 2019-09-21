@@ -189,6 +189,97 @@
   fieldset[disabled] .pagination-ellipsis {
     cursor: not-allowed; }
 
+.dropdown {
+  display: inline-flex;
+  position: relative;
+  vertical-align: top; }
+  .dropdown.is-active .dropdown-menu, .dropdown.is-hoverable:hover .dropdown-menu {
+    display: block; }
+  .dropdown.is-right .dropdown-menu {
+    left: auto;
+    right: 0; }
+  .dropdown.is-up .dropdown-menu {
+    bottom: 100%;
+    padding-bottom: 4px;
+    padding-top: initial;
+    top: auto; }
+
+.dropdown-menu {
+  display: none;
+  left: 0;
+  min-width: 12rem;
+  padding-top: 4px;
+  position: absolute;
+  top: 100%;
+  z-index: 20; }
+
+.dropdown-content {
+  background-color: white;
+  border-radius: 4px;
+  box-shadow: 0 2px 3px rgba(10, 10, 10, 0.1), 0 0 0 1px rgba(10, 10, 10, 0.1);
+  padding-bottom: 0.5rem;
+  padding-top: 0.5rem; }
+
+.dropdown-item {
+  color: #4a4a4a;
+  display: block;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  padding: 0.375rem 1rem;
+  position: relative; }
+
+a.dropdown-item,
+button.dropdown-item {
+  padding-right: 3rem;
+  text-align: left;
+  white-space: nowrap;
+  width: 100%; }
+  a.dropdown-item:hover,
+  button.dropdown-item:hover {
+    background-color: whitesmoke;
+    color: #0a0a0a; }
+  a.dropdown-item.is-active,
+  button.dropdown-item.is-active {
+    background-color: #3273dc;
+    color: #fff; }
+
+.dropdown-divider {
+  background-color: #dbdbdb;
+  border: none;
+  display: block;
+  height: 1px;
+  margin: 0.5rem 0; }
+
+.autocomplete {
+  position: relative; }
+  .autocomplete .dropdown-menu {
+    display: block;
+    min-width: 100%;
+    max-width: 100%; }
+    .autocomplete .dropdown-menu.is-opened-top {
+      top: auto;
+      bottom: 100%; }
+  .autocomplete .dropdown-content {
+    overflow: auto;
+    max-height: 200px; }
+  .autocomplete .dropdown-item {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis; }
+    .autocomplete .dropdown-item.is-hovered {
+      background: whitesmoke;
+      color: #0a0a0a; }
+    .autocomplete .dropdown-item.is-disabled {
+      opacity: 0.5;
+      cursor: not-allowed; }
+  .autocomplete.is-small {
+    border-radius: 2px;
+    font-size: 0.75rem; }
+  .autocomplete.is-medium {
+    font-size: 1.25rem; }
+  .autocomplete.is-large {
+    font-size: 1.5rem; }
+
 /*! bulma.io v0.7.5 | MIT License | github.com/jgthms/bulma */
 @keyframes spinAround {
   from {
@@ -7159,6 +7250,9 @@ label.panel-block {
 .is-borderless {
   border: none; }
 
+.has-text-nowrap {
+  white-space: nowrap; }
+
 .has-background-transparent {
   background-color: transparent; }
 
@@ -7190,6 +7284,18 @@ a.navbar-item.is-active {
   margin: 0em;
   padding: 0em; }
 
+.navbar.toolbar {
+  margin: 1em 0em;
+  background-color: transparent;
+  margin-bottom: 1em; }
+  .navbar.toolbar .title {
+    padding-right: 2em;
+    margin-right: 1em;
+    border-right: 1px #b5b5b5 solid;
+    font-size: 1.25rem;
+    color: #7a7a7a;
+    font-weight: 300; }
+
 .card .title {
   padding: 0.2em;
   font-size: 1.25rem;
@@ -7211,18 +7317,6 @@ a.navbar-item.is-active {
   .card-super-title .fas {
     padding: 0.1em;
     font-size: 0.8em; }
-
-.filters {
-  margin: 1em 0em;
-  background-color: transparent;
-  margin-bottom: 1em; }
-  .filters .title {
-    padding-right: 2em;
-    margin-right: 1em;
-    border-right: 1px #b5b5b5 solid;
-    font-size: 1.25rem;
-    color: #7a7a7a;
-    font-weight: 300; }
 
 .page > .cover {
   float: right;

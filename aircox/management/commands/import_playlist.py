@@ -108,7 +108,7 @@ class PlaylistImport:
         return tracks
 
 
-class Command (BaseCommand):
+class Command(BaseCommand):
     help = __doc__
 
     def add_arguments(self, parser):

@@ -16,7 +16,7 @@
     </noscript>
 
     <a-player ref="player" src="{{ audio_streams.0 }}"
-            live-info-url="{% url "api-live" %}" :live-info-timeout="15"
+            live-info-url="{% url "api-live" %}" :live-info-timeout="20"
             button-title="{% trans "Play or pause audio" %}">
         <template v-slot:sources>
             {% for stream in audio_streams %}

@@ -24,7 +24,7 @@ from django.utils import timezone as tz
 from aircox.models import Station, Episode, Diffusion, Track, Sound, Log
 from aircox.utils import date_range
 
-from aircox_streamer.liquidsoap import Streamer, PlaylistSource
+from aircox_streamer.controllers import Streamer
 
 
 # force using UTC
@@ -246,9 +246,8 @@ class Monitor:
 
         self.sync_next = now + tz.timedelta(minutes=self.sync_timeout)
 
-        for source in self.streamer.sources:
-            if isinstance(source, PlaylistSource):
-                source.sync()
+        for source in self.streamer.playlists:
+            source.sync()
 
 
 class Command (BaseCommand):
@@ -291,10 +290,8 @@ class Command (BaseCommand):
         )
         # TODO: sync-timeout, cancel-timeout
 
-    def handle(self, *args,
-               config=None, run=None, monitor=None,
-               station=[], delay=1000, timeout=600,
-               **options):
+    def handle(self, *args, config=None, run=None, monitor=None, station=[],
+               delay=1000, timeout=600, **options):
         stations = Station.objects.filter(name__in=station) if station else \
                    Station.objects.all()
         streamers = [Streamer(station) for station in stations]

@@ -1,8 +1,10 @@
 @charset "utf-8";
 @import "~bulma/sass/utilities/_all.sass";
+@import "~bulma/sass/components/dropdown.sass";
 
 $body-background-color: $light;
 
+@import "~buefy/src/scss/components/_autocomplete.scss";
 @import "~bulma";
 
 //-- helpers/modifiers
@@ -14,6 +16,10 @@ $body-background-color: $light;
     border-radius: 0;
 }
 .is-borderless { border: none; }
+
+.has-text-nowrap {
+    white-space: nowrap;
+}
 
 .has-background-transparent {
     background-color: transparent;
@@ -56,6 +62,22 @@ a.navbar-item.is-active {
         margin: 0em;
         padding: 0em;
     }
+
+    &.toolbar {
+        margin: 1em 0em;
+        background-color: transparent;
+        margin-bottom: 1em;
+
+        .title {
+            padding-right: 2em;
+            margin-right: 1em;
+            border-right: 1px $grey-light solid;
+
+            font-size: $size-5;
+            color: $text-light;
+            font-weight: $weight-light;
+        }
+    }
 }
 
 //-- cards
@@ -87,24 +109,6 @@ a.navbar-item.is-active {
     .fas {
         padding: 0.1em;
         font-size: 0.8em;
-    }
-}
-
-
-//-- filters
-.filters {
-    margin: 1em 0em;
-    background-color: transparent;
-    margin-bottom: 1em;
-
-    .title {
-        padding-right: 2em;
-        margin-right: 1em;
-        border-right: 1px $grey-light solid;
-
-        font-size: $size-5;
-        color: $text-light;
-        font-weight: $weight-light;
     }
 }
 

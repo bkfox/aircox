@@ -19,6 +19,7 @@ from django.contrib import admin
 from django.urls import include, path, re_path
 
 import aircox.urls
+import aircox_streamer.urls
 
 
 try:

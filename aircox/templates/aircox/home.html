@@ -38,7 +38,9 @@ Context:
 
 <hr>
 <h4 class="title is-4">{% trans "Last publications" %}</h4>
+{% with has_headline=True %}
 {{ block.super }}
+{% endwith %}
 {% endblock %}
 
 

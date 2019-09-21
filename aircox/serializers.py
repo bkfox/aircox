@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Diffusion, Log
+from .models import Diffusion, Log, Sound
 
 
 __all__ = ['LogInfo', 'LogInfoSerializer']
@@ -52,4 +52,19 @@ class LogInfoSerializer(serializers.Serializer):
     url = serializers.URLField(required=False)
     cover = serializers.URLField(required=False)
 
+
+class SoundSerializer(serializers.ModelSerializer):
+    # serializers.HyperlinkedIdentityField(view_name='sound', format='html')
+
+    class Meta:
+        model = Sound
+        fields = ['pk', 'name', 'path', 'program', 'episode', 'embed', 'type',
+                  'duration', 'mtime', 'is_good_quality', 'is_public']
+
+    def get_field_names(self, *args):
+        names = super().get_field_names(*args)
+        if not self.context['request'].user.is_staff and self.instance \
+                and not self.instance.is_public:
+            names.remove('path')
+        return names
 

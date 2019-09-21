@@ -1,0 +1,121 @@
+{% load i18n %}
+
+<section class="box"><div class="columns is-desktop">
+    <div class="column">
+        <h5 class='title is-5' :class="{'has-text-danger': source.isPlaying, 'has-text-warning': source.isPaused}">
+            <span>
+                <span v-if="source.isPlaying" class="fas fa-play"></span>
+                <span v-else-if="source.isPaused" class="fas fa-pause"></span>
+            </span>
+            [[ source.id ]]
+
+            <small v-if="source.isPaused || source.isPlaying">(-[[ source.remainingString ]])</small>
+        </h5>
+
+        <div>
+            <button class="button" @click="source.sync()"
+                    title="{% trans "Synchronize source with Liquidsoap" %}">
+                <span class="icon is-small">
+                    <span class="fas fa-sync"></span>
+                </span>
+                <span>{% trans "Synchronise" %}</span>
+            </button>
+            <button class="button" @click="source.restart()"
+                    title="{% trans "Restart current track" %}">
+                <span class="icon is-small">
+                    <span class="fas fa-step-backward"></span>
+                </span>
+                <span>{% trans "Restart" %}</span>
+            </button>
+            <button class="button" @click="source.skip()"
+                    title="{% trans "Skip current file" %}">
+                <span>{% trans "Skip" %}</span>
+                <span class="icon is-small">
+                    <span class="fas fa-step-forward"></span>
+                </span>
+            </button>
+        </div>
+
+        <div v-if="source.isQueue">
+            <hr>
+            <h6 class="title is-6 is-marginless">{% trans "Add sound" %}</h6>
+            <form class="columns" @submit.prevent="source.push($event.target.elements['sound_id'].value)">
+                <div class="column field is-small">
+                    <a-autocomplete url="{% url "admin:api:streamer-queue-autocomplete-push" station_pk=station.pk %}?q=${query}"
+                        class="is-fullwidth"
+                        :model="Sound" field="name" value-field="sound_id" value-attr="id"
+                        {# FIXME dirty hack awaiting the vue component #}
+                        placeholder="{% trans "Select a sound" %}"></a-autocomplete>
+                    <p class="help">
+                    {% trans "Add a sound to the queue (queue may start playing)" %}
+                    </p>
+                    {# TODO: help text about how it works #}
+                </div>
+                <div class="column control is-one-fifth">
+                    <button type="submit" class="button is-primary">
+                        <span class="icon">
+                            <span class="fas fa-plus"></span>
+                        </span>
+                        <span>{% trans "Add" %}</span>
+                    </button>
+                </div>
+            </form>
+
+            <div v-if="source.queue.length">
+                <h6 class="title is-6 is-marginless">{% trans "Sounds in queue" %}</h6>
+                <table class="table is-fullwidth"><tbody>
+                    <tr v-for="[index, request] in source.queue.entries()">
+                        <td :class="{'has-text-weight-semibold': index==0 }">
+                            <span v-if="index==0" class="far fa-play-circle"></span>
+                            <span>[[ request.data.uri ]]</span>
+                        </td>
+                    </tr>
+                </tbody></table>
+            </div>
+        </div>
+    </div>
+
+    <div class="column is-two-fifths">
+        <h6 class="subtitle is-6 is-marginless">Metadata</h6>
+        <table class="table has-background-transparent">
+            <tbody>
+                <tr><th class="has-text-right has-text-nowrap">
+                    {% trans "Status" %}
+                    </th>
+                    <td :class="{'has-text-danger': source.isPlaying, 'has-text-warning': source.isPaused}">
+                        <span v-if="source.isPlaying" class="fas fa-play"></span>
+                        <span v-else-if="source.data.status" class="fas fa-pause"></span>
+                        [[ source.data.status || "&mdash;" ]]
+                    </td>
+                </tr>
+                <tr v-if="source.data.air_time">
+                    <th class="has-text-right has-text-nowrap">
+                        {% trans "Air time" %}
+                    </th><td>
+                        <span class="far fa-clock"></span>
+                        <time :datetime="source.date">
+                        [[ source.data.air_time.toLocaleDateString() ]],
+                        [[ source.data.air_time.toLocaleTimeString() ]]
+                        </time>
+                    </td>
+                <tr v-if="source.remaining">
+                    <th class="has-text-right has-text-nowrap">
+                        {% trans "Time left" %}
+                    </th><td>
+                        <span class="far fa-hourglass"></span>
+                        [[ source.remainingString ]]
+                    </td>
+                </tr>
+                <tr v-if="source.data.uri">
+                    <th class="has-text-right has-text-nowrap">
+                        {% trans "Data source" %}
+                    </th><td>
+                        <span class="far fa-play-circle"></span>
+                        <template v-if="source.data.uri.length > 64">...</template>[[ (source.data.uri && source.data.uri.slice(-64)) || '&mdash;' ]]
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div></section>
+

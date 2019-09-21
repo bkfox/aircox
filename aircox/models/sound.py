@@ -22,13 +22,17 @@ __all__ = ['Sound', 'SoundQuerySet', 'Track']
 
 
 class SoundQuerySet(models.QuerySet):
+    def station(self, station=None, id=None):
+        id = station.pk if id is None else id
+        return self.filter(program__station__id=id)
+
     def episode(self, episode=None, id=None):
-        return self.filter(episode=episode) if id is None else \
-               self.filter(episode__id=id)
+        id = episode.pk if id is None else id
+        return self.filter(episode__id=id)
 
     def diffusion(self, diffusion=None, id=None):
-        return self.filter(episode__diffusion=diffusion) if id is None else \
-               self.filter(episode__diffusion__id=id)
+        id = diffusion.pk if id is None else id
+        return self.filter(episode__diffusion__id=id)
 
     def podcasts(self):
         """ Return sounds available as podcasts """
@@ -48,6 +52,13 @@ class SoundQuerySet(models.QuerySet):
         if order_by:
             self = self.order_by('path')
         return self.filter(path__isnull=False).values_list('path', flat=True)
+
+    def search(self, query):
+        return self.filter(
+            Q(name__icontains=query) | Q(path__icontains=query) |
+            Q(program__title__icontains=query) |
+            Q(episode__title__icontains=query)
+        )
 
 
 class Sound(models.Model):

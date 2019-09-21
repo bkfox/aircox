@@ -1,0 +1,39 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block extrastyle %}{{ block.super }}
+<script src="{% static "aircox/streamer.js" %}"></script>
+{% endblock %}
+
+{% block content %}{{ block.super }}
+<div id="app" data-api-url="{% url "admin:api:streamer-list" %}">
+    <div class="navbar toolbar">
+        <div class="navbar-start">
+            <span class="navbar-item control">
+                <button class="button">
+                    <span class="icon is-small">
+                        <span class="fas fa-sync"></span>
+                    </span>
+                    <span>{% trans "Reload" %}</span>
+                </button>
+            </span>
+        </div>
+        <div class="navbar-end">
+            <div class="select navbar-item">
+                <select ref="selectStreamer" @change.native="selectStreamer" class="control"
+                        title="{% trans "Select a station" %}"
+                        aria-label="{% trans "Select a station" %}">
+                    <option v-for="streamer of streamers" :value="streamer.id">[[ streamer.data.name ]]</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div v-if="streamer">
+        <template v-for="source in sources">
+            {% include "aircox_streamer/source_item.html" %}
+        </template>
+    </div>
+</div>
+{% endblock %}
+

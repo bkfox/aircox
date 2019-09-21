@@ -12,12 +12,17 @@ __all__ = ['BaseAdminView', 'StatisticsView']
 class BaseAdminView(LoginRequiredMixin, UserPassesTestMixin):
     title = ''
 
+    @property
+    def station(self):
+        return self.request.station
+
     def test_func(self):
         return self.request.user.is_staff
 
     def get_context_data(self, **kwargs):
         kwargs.update(admin.site.each_context(self.request))
         kwargs.setdefault('title', self.title)
+        kwargs.setdefault('station', self.station)
         return super().get_context_data(**kwargs)
 
 

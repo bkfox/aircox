@@ -10,18 +10,37 @@ import '@fortawesome/fontawesome-free/css/fontawesome.min.css';
 
 
 //-- aircox
-import app from './app';
-import LiveInfo from './liveInfo';
+import {appConfig, loadApp} from './app';
 
 import './styles.scss';
 
 import Player from './player.vue';
+import Autocomplete from './autocomplete.vue';
 
 Vue.component('a-player', Player)
+Vue.component('a-autocomplete', Autocomplete)
 
 
 window.aircox = {
-    app: app,
-    LiveInfo: LiveInfo,
-}
+    // main application
+    app: null,
+
+    // main application config
+    appConfig: {},
+
+    // player application
+    playerApp: null,
+
+    // player component
+    get player() {
+        return this.playerApp && this.playerApp.$refs.player
+    }
+};
+
+
+loadApp({el: '#player'}).then(app => { window.aircox.playerApp = app },
+                              () => undefined)
+loadApp(() => window.aircox.appConfig ).then(app => { window.aircox.app = app },
+                                             () => undefined)
+
 

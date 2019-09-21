@@ -43,6 +43,8 @@ class BaseMetadata:
     """ Request uri """
     status = None
     """ Current playing status """
+    request_status = None
+    """ Requests' status """
     air_time = None
     """ Launch datetime """
 
@@ -58,9 +60,24 @@ class BaseMetadata:
         return self.status == 'playing'
 
     def fetch(self):
-        data = self.controller.set('request.metadata ', self.rid, parse=True)
+        data = self.controller.send('request.metadata ', self.rid, parse=True)
         if data:
             self.validate(data)
+
+    def validate_status(self, status):
+        on_air = self.controller.source
+        if on_air and status == 'playing' and (on_air == self or
+                on_air.rid == self.rid):
+            return 'playing'
+        elif status == 'playing':
+            return 'paused'
+        else:
+            return 'stopped'
+
+    def validate_air_time(self, air_time):
+        if air_time:
+            air_time = tz.datetime.strptime(air_time, '%Y/%m/%d %H:%M:%S')
+            return local_tz.localize(air_time)
 
     def validate(self, data):
         """
@@ -72,12 +89,9 @@ class BaseMetadata:
                 setattr(self, key, value)
         self.uri = data.get('initial_uri')
 
-        air_time = data.get('on_air')
-        if air_time:
-            air_time = tz.datetime.strptime(air_time, '%Y/%m/%d %H:%M:%S')
-            self.air_time = local_tz.localize(air_time)
-        else:
-            self.air_time = None
+        self.air_time = self.validate_air_time(data.get('on_air'))
+        self.status = self.validate_status(data.get('status'))
+        self.request_status = data.get('status')
 
 
 class Request(BaseMetadata):
@@ -142,6 +156,14 @@ class Streamer:
         logger.debug('process died with return code %s' % returncode)
         return False
 
+    @property
+    def playlists(self):
+        return (s for s in self.sources if isinstance(s, PlaylistSource))
+
+    @property
+    def queues(self):
+        return (s for s in self.sources if isinstance(s, QueueSource))
+
     # Sources and config ###############################################
     def send(self, *args, **kwargs):
         return self.connector.send(*args, **kwargs) or ''
@@ -180,12 +202,11 @@ class Streamer:
             source.fetch()
 
         # request.on_air is not ordered: we need to do it manually
-        if self.dealer.is_playing:
-            self.source = self.dealer
-            return
-
-        self.source = next((source for source in self.sources
-                            if source.is_playing), None)
+        self.source = next(iter(sorted(
+            (source for source in self.sources
+                if source.request_status == 'playing' and source.air_time),
+            key=lambda o: o.air_time, reverse=True
+        )), None)
 
     # Process ##########################################################
     def get_process_args(self):
@@ -241,14 +262,11 @@ class Source(BaseMetadata):
     """ source id """
     remaining = 0.0
     """ remaining time """
+    status = 'stopped'
 
     @property
     def station(self):
         return self.controller.station
-
-    # @property
-    # def is_on_air(self):
-    #    return self.rid is not None and self.rid in self.controller.on_air
 
     def __init__(self, controller=None, id=None, *args, **kwargs):
         super().__init__(controller, *args, **kwargs)
@@ -258,9 +276,12 @@ class Source(BaseMetadata):
         """ Synchronize what should be synchronized """
 
     def fetch(self):
-        data = self.controller.send(self.id, '.remaining')
-        if data:
-            self.remaining = float(data)
+        try:
+            data = self.controller.send(self.id, '.remaining')
+            if data:
+                self.remaining = float(data)
+        except ValueError:
+            self.remaining = None
 
         data = self.controller.send(self.id, '.get', parse=True)
         if data:
@@ -332,12 +353,9 @@ class PlaylistSource(Source):
 class QueueSource(Source):
     queue = None
     """ Source's queue (excluded on_air request) """
-    as_requests = False
-    """ If True, queue is a list of Request """
 
-    def __init__(self, *args, queue_metadata=False, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.queue_metadata = queue_metadata
 
     def push(self, *paths):
         """ Add the provided paths to source's play queue """
@@ -346,13 +364,19 @@ class QueueSource(Source):
 
     def fetch(self):
         super().fetch()
-        queue = self.controller.send(self.id, '_queue.queue').split(' ')
-        if not self.as_requests:
-            self.queue = queue
+        queue = self.controller.send(self.id, '_queue.queue').strip()
+        if not queue:
+            self.queue = []
             return
 
-        self.queue = [Request(self.controller, rid) for rid in queue]
-        for request in self.queue:
+        self.queue = queue.split(' ')
+
+    @property
+    def requests(self):
+        """ Queue as requests metadata """
+        requests = [Request(self.controller, rid) for rid in self.queue]
+        for request in requests:
             request.fetch()
+        return requests
 
 

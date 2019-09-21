@@ -121,9 +121,15 @@ except:
 
 # Application definition
 INSTALLED_APPS = (
-    # aircox & dependencies
     'aircox',
+    'aircox.apps.AircoxAdminConfig',
+    'aircox_streamer',
+
+    # aircox applications
     'rest_framework',
+
+    # aircox_web applications
+    "content_editor",
     "ckeditor",
     'easy_thumbnails',
     'filer',
