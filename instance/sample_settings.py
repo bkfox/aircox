@@ -118,6 +118,33 @@ except:
     pass
 
 
+#-- django-ckEditor
+CKEDITOR_CONFIGS = {
+    "default": {
+        "toolbar": "Custom",
+        "format_tags": "h1;h2;h3;p;pre",
+        "toolbar_Custom": [[
+            "Format", "RemoveFormat", "-",
+            "Bold", "Italic", "Subscript", "Superscript", "-",
+            "NumberedList", "BulletedList", "-",
+            "Anchor", "Link", "Unlink", "-",
+            "HorizontalRule", "SpecialChar", "-",
+            "Source",
+        ]],
+    },
+}
+CKEDITOR_CONFIGS["richtext-plugin"] = CKEDITOR_CONFIGS["default"]
+
+
+#-- easy_thumbnails
+THUMBNAIL_PROCESSORS = (
+    'easy_thumbnails.processors.colorspace',
+    'easy_thumbnails.processors.autocrop',
+    #'easy_thumbnails.processors.scale_and_crop',
+    'filer.thumbnail_processors.scale_and_crop_with_subject_location',
+    'easy_thumbnails.processors.filters',
+)
+
 
 # Application definition
 INSTALLED_APPS = (
@@ -127,6 +154,7 @@ INSTALLED_APPS = (
 
     # aircox applications
     'rest_framework',
+    'django_filters',
 
     # aircox_web applications
     "content_editor",
