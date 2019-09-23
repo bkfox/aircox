@@ -34,6 +34,9 @@ class SoundQuerySet(models.QuerySet):
         id = diffusion.pk if id is None else id
         return self.filter(episode__diffusion__id=id)
 
+    def available(self):
+        return self.exclude(type=Sound.TYPE_REMOVED)
+
     def podcasts(self):
         """ Return sounds available as podcasts """
         return self.filter(Q(embed__isnull=False) | Q(is_public=True))
@@ -87,6 +90,9 @@ class Sound(models.Model):
         verbose_name=_('episode'),
     )
     type = models.SmallIntegerField(_('type'), choices=TYPE_CHOICES)
+    position = models.PositiveSmallIntegerField(
+        _('order'), default=0, help_text=_('position in the playlist'),
+    )
     # FIXME: url() does not use the same directory than here
     #        should we use FileField for more reliability?
     path = models.FilePathField(
@@ -278,9 +284,7 @@ class Track(models.Model):
         verbose_name=_('sound'),
     )
     position = models.PositiveSmallIntegerField(
-        _('order'),
-        default=0,
-        help_text=_('position in the playlist'),
+        _('order'), default=0, help_text=_('position in the playlist'),
     )
     timestamp = models.PositiveSmallIntegerField(
         _('timestamp'),

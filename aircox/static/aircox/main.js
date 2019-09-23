@@ -223,7 +223,7 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var vue_
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-eval("__webpack_require__.r(__webpack_exports__);\n\n/* harmony default export */ __webpack_exports__[\"default\"] = (class {\n    constructor(url, timeout) {\n        this.url = url;\n        this.timeout = timeout;\n        this.promise = null;\n        this.items = [];\n    }\n\n    drop() {\n        this.promise = null;\n    }\n\n    fetch() {\n        const promise = fetch(this.url).then(response =>\n            response.ok ? response.json()\n                        : Promise.reject(response)\n        ).then(data => {\n            this.items = data;\n            return this.items\n        })\n\n        this.promise = promise;\n        return promise;\n    }\n\n    refresh() {\n        const promise = this.fetch();\n        promise.then(data => {\n            if(promise != this.promise)\n                return [];\n\n            window.setTimeout(() => this.refresh(), this.timeout*1000)\n        })\n        return promise\n    }\n});\n\n\n//# sourceURL=webpack:///./assets/public/liveInfo.js?");
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var public_utils__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! public/utils */ \"./assets/public/utils.js\");\n\n\n\n/* harmony default export */ __webpack_exports__[\"default\"] = (class {\n    constructor(url, timeout) {\n        this.url = url;\n        this.timeout = timeout;\n        this.promise = null;\n        this.items = [];\n    }\n\n    drop() {\n        this.promise = null;\n    }\n\n    fetch() {\n        const promise = fetch(this.url).then(response =>\n            response.ok ? response.json()\n                        : Promise.reject(response)\n        ).then(data => {\n            this.items = data;\n            return this.items\n        })\n\n        this.promise = promise;\n        return promise;\n    }\n\n    refresh() {\n        const promise = this.fetch();\n        promise.then(data => {\n            if(promise != this.promise)\n                return [];\n\n            Object(public_utils__WEBPACK_IMPORTED_MODULE_0__[\"setEcoTimeout\"])(() => this.refresh(), this.timeout*1000)\n        })\n        return promise\n    }\n});\n\n\n//# sourceURL=webpack:///./assets/public/liveInfo.js?");
 
 /***/ }),
 
@@ -271,6 +271,18 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _nod
 /***/ (function(module, exports, __webpack_require__) {
 
 eval("// extracted by mini-css-extract-plugin\n\n//# sourceURL=webpack:///./assets/public/styles.scss?");
+
+/***/ }),
+
+/***/ "./assets/public/utils.js":
+/*!********************************!*\
+  !*** ./assets/public/utils.js ***!
+  \********************************/
+/*! exports provided: setEcoTimeout, setEcoInterval */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"setEcoTimeout\", function() { return setEcoTimeout; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"setEcoInterval\", function() { return setEcoInterval; });\n\n\nfunction setEcoTimeout(func, ...args) {\n    return setTimeout((...args) => {\n        !document.hidden && func(...args)\n    }, ...args)\n}\n\n\nfunction setEcoInterval(func, ...args) {\n    return setInterval((...args) => {\n        !document.hidden && func(...args)\n    }, ...args)\n}\n\n\n\n//# sourceURL=webpack:///./assets/public/utils.js?");
 
 /***/ }),
 

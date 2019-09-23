@@ -1,8 +1,13 @@
 from django.urls import include, path, register_converter
 from django.utils.translation import ugettext_lazy as _
 
-from . import views, models
+from rest_framework.routers import DefaultRouter
+
+from . import models, views, viewsets
 from .converters import PagePathConverter, DateConverter, WeekConverter
+
+
+__all__ = ['api', 'urls']
 
 
 register_converter(PagePathConverter, 'page_path')
@@ -17,14 +22,18 @@ register_converter(WeekConverter, 'week')
 # ]
 
 
+router = DefaultRouter()
+router.register('sound', viewsets.SoundViewSet, basename='sound')
+
+
 api = [
-    path('logs/', views.api.LogListAPIView.as_view(), name='api-live'),
-]
+    path('logs/', views.LogListAPIView.as_view(), name='live'),
+] + router.urls
 
 
 urls = [
     path('', views.HomeView.as_view(), name='home'),
-    path('api/', include(api)),
+    path('api/', include((api, 'aircox'), namespace='api')),
 
     # path('', views.PageDetailView.as_view(model=models.Article),
     #     name='home'),
@@ -61,6 +70,5 @@ urls = [
          views.ArticleListView.as_view(), name='article-list'),
     path(_('programs/<slug:parent_slug>/publications/'),
          views.ProgramPageListView.as_view(), name='program-page-list'),
-
-
 ]
+

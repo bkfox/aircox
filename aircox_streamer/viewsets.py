@@ -73,7 +73,7 @@ streamers = Streamers()
 
 class BaseControllerAPIView(viewsets.ViewSet):
     permission_classes = (IsAdminUser,)
-    serializer = None
+    serializer_class = None
     streamer = None
     object = None
 
@@ -85,7 +85,7 @@ class BaseControllerAPIView(viewsets.ViewSet):
         return streamers[id]
 
     def get_serializer(self, **kwargs):
-        return self.serializer(self.object, **kwargs)
+        return self.serializer_class(self.object, **kwargs)
 
     def serialize(self, obj, **kwargs):
         self.object = obj
@@ -98,11 +98,11 @@ class BaseControllerAPIView(viewsets.ViewSet):
 
 
 class RequestViewSet(BaseControllerAPIView):
-    serializer = RequestSerializer
+    serializer_class = RequestSerializer
 
 
 class StreamerViewSet(BaseControllerAPIView):
-    serializer = StreamerSerializer
+    serializer_class = StreamerSerializer
 
     def retrieve(self, request, pk=None):
         return Response(self.serialize(self.streamer))
@@ -121,7 +121,7 @@ class StreamerViewSet(BaseControllerAPIView):
 
 
 class SourceViewSet(BaseControllerAPIView):
-    serializer = SourceSerializer
+    serializer_class = SourceSerializer
     model = controllers.Source
 
     def get_sources(self):
@@ -168,26 +168,16 @@ class SourceViewSet(BaseControllerAPIView):
 
 
 class PlaylistSourceViewSet(SourceViewSet):
-    serializer = PlaylistSerializer
+    serializer_class = PlaylistSerializer
     model = controllers.PlaylistSource
 
 
 class QueueSourceViewSet(SourceViewSet):
-    serializer = QueueSourceSerializer
+    serializer_class = QueueSourceSerializer
     model = controllers.QueueSource
 
     def get_sound_queryset(self):
         return Sound.objects.station(self.request.station).archive()
-
-    @action(detail=False, url_path='autocomplete/push',
-            url_name='autocomplete-push')
-    def autcomplete_push(self, request):
-        query = request.GET.get('q')
-        qs = self.get_sound_queryset().search(query)
-        serializer = SoundSerializer(qs, many=True, context={
-            'request': self.request
-        })
-        return Response({'results': serializer.data})
 
     @action(detail=True, methods=['POST'])
     def push(self, request, pk):

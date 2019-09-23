@@ -1,3 +1,5 @@
+import {setEcoTimeout} from 'public/utils';
+
 
 export default class {
     constructor(url, timeout) {
@@ -30,7 +32,7 @@ export default class {
             if(promise != this.promise)
                 return [];
 
-            window.setTimeout(() => this.refresh(), this.timeout*1000)
+            setEcoTimeout(() => this.refresh(), this.timeout*1000)
         })
         return promise
     }

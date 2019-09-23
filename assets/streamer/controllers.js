@@ -1,6 +1,7 @@
 import Vue from 'vue';
 
 import Model from 'public/model';
+import {setEcoInterval} from 'public/utils';
 
 
 export class Streamer extends Model {
@@ -27,7 +28,7 @@ export class Source extends Model {
     constructor(data, {streamer=null, ...options}={}) {
         super(data, options);
         this.streamer = streamer;
-        setInterval(() => this.tick(), 1000)
+        setEcoInterval(() => this.tick(), 1000)
     }
 
     get isQueue() { return false; }

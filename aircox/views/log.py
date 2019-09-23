@@ -4,8 +4,13 @@ import datetime
 from django.views.generic import ListView
 from django.utils import timezone as tz
 
+from rest_framework.generics import ListAPIView
+from rest_framework import viewsets
+from rest_framework.decorators import action
+
 from ..models import Diffusion, Log
-from .base import BaseView
+from ..serializers import LogInfo, LogInfoSerializer
+from .base import BaseView, BaseAPIView
 from .mixins import GetDateMixin
 
 
@@ -67,4 +72,31 @@ class LogListView(BaseView, LogListMixin, ListView):
         })
         return super().get_context_data(**kwargs)
 
+
+# Logs are accessible through API only with this list view
+class LogListAPIView(LogListMixin, BaseAPIView, ListAPIView):
+    """
+    Return logs list, including diffusions. By default return logs of
+    the last 30 minutes.
+
+    Available GET parameters:
+    - "date": return logs for a specified date (
+    - "full": (staff user only) don't merge diffusion and logs
+    """
+    serializer_class = LogInfoSerializer
+    queryset = Log.objects.all()
+
+    def get(self, *args, **kwargs):
+        self.date = self.get_date()
+        if self.date is None:
+            self.min_date = tz.now() - tz.timedelta(minutes=30)
+        return super().get(*args, **kwargs)
+
+    def get_object_list(self, logs, full):
+        return [LogInfo(obj) for obj in super().get_object_list(logs, full)]
+
+    def get_serializer(self, queryset, *args, **kwargs):
+        full = bool(self.request.GET.get('full'))
+        return super().get_serializer(self.get_object_list(queryset, full),
+                                      *args, **kwargs)
 

@@ -59,3 +59,12 @@ class BaseView(TemplateResponseMixin, ContextMixin):
         return super().get_context_data(**kwargs)
 
 
+class BaseAPIView:
+    @property
+    def station(self):
+        return self.request.station
+
+    def get_queryset(self):
+        return super().get_queryset().station(self.station)
+
+

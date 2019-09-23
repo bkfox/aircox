@@ -41,7 +41,8 @@
             <h6 class="title is-6 is-marginless">{% trans "Add sound" %}</h6>
             <form class="columns" @submit.prevent="source.push($event.target.elements['sound_id'].value)">
                 <div class="column field is-small">
-                    <a-autocomplete url="{% url "admin:api:streamer-queue-autocomplete-push" station_pk=station.pk %}?q=${query}"
+                    {# TODO: select station => change the shit #}
+                    <a-autocomplete url="{% url "aircox:sound-list" %}?station={{ station.pk }}&search=${query}"
                         class="is-fullwidth"
                         :model="Sound" field="name" value-field="sound_id" value-attr="id"
                         {# FIXME dirty hack awaiting the vue component #}
