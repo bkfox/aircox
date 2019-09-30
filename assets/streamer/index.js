@@ -6,6 +6,8 @@ Vue.use(Button)
 import {setAppConfig} from 'public/app';
 import Model from 'public/model';
 import Sound from 'public/sound';
+import {setEcoInterval} from 'public/utils';
+
 import {Streamer, Queue} from './controllers';
 
 window.aircox.appConfig = {
@@ -45,7 +47,7 @@ window.aircox.appConfig = {
 
     mounted() {
         this.fetchStreamers();
-        this.fetchInterval = setInterval(() => this.streamer && this.streamer.fetch(), 5000)
+        this.fetchInterval = setEcoInterval(() => this.streamer && this.streamer.fetch(), 5000)
     },
 
     destroyed() {

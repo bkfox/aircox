@@ -1,6 +1,6 @@
 import os
 
-LOCALE_PATHS = ['aircox/locale', 'aircox_cms/locale']
+LOCALE_PATHS = ['aircox/locale', 'aircox_streamer/locale']
 
 LOGGING = {
     'version': 1,
