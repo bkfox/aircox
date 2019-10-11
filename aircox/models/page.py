@@ -65,8 +65,8 @@ class Page(models.Model):
 
     parent = models.ForeignKey('self', models.CASCADE, blank=True, null=True,
                                related_name='child_set')
-    title = models.CharField(max_length=128)
-    slug = models.SlugField(_('slug'), blank=True, unique=True)
+    title = models.CharField(max_length=100)
+    slug = models.SlugField(_('slug'), max_length=120, blank=True, unique=True)
     status = models.PositiveSmallIntegerField(
         _('status'), default=STATUS_DRAFT, choices=STATUS_CHOICES,
     )
@@ -99,7 +99,7 @@ class Page(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = slugify(self.title)
+            self.slug = slugify(self.title)[:100]
             count = Page.objects.filter(slug__startswith=self.slug).count()
             if count:
                 self.slug += '-' + str(count)
