@@ -100,7 +100,7 @@ class Page(models.Model):
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = slugify(self.title)
-            count = Page.objects.all(slug__startswith=self.slug).count()
+            count = Page.objects.filter(slug__startswith=self.slug).count()
             if count:
                 self.slug += '-' + count
         if self.is_published and self.pub_date is None:
