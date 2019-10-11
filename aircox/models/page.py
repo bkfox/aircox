@@ -104,7 +104,7 @@ class Page(models.Model):
             if count:
                 self.slug += '-' + count
         if self.is_published and self.pub_date is None:
-            self.pub_date = tz.datetime.now()
+            self.pub_date = tz.now()
         elif not self.is_published:
             self.pub_date = None
         super().save(*args, **kwargs)
