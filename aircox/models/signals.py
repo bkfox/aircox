@@ -6,7 +6,7 @@ from django.dispatch import receiver
 from django.utils import timezone as tz
 
 from .. import settings, utils
-from . import Diffusion, Episode, Program, Schedule
+from . import Diffusion, Episode, Page, Program, Schedule
 
 
 # Add a default group to a user when it is created. It also assigns a list
@@ -23,11 +23,11 @@ def user_default_groups(sender, instance, created, *args, **kwargs):
     if not created or instance.is_superuser:
         return
 
-    for groupName, permissions in settings.AIRCOX_DEFAULT_USER_GROUPS.items():
-        if instance.groups.filter(name=groupName).count():
+    for group_name, permissions in settings.AIRCOX_DEFAULT_USER_GROUPS.items():
+        if instance.groups.filter(name=group_name).count():
             continue
 
-        group, created = Group.objects.get_or_create(name=groupName)
+        group, created = Group.objects.get_or_create(name=group_name)
         if created and permissions:
             for codename in permissions:
                 permission = Permission.objects.filter(
@@ -36,6 +36,13 @@ def user_default_groups(sender, instance, created, *args, **kwargs):
                     group.permissions.add(permission)
             group.save()
         instance.groups.add(group)
+
+
+@receiver(signals.post_save, sender=Page)
+def page_post_save(sender, instance, created, *args, **kwargs):
+    if not created and instance.cover:
+        Page.objects.filter(parent=instance, cover__isnull=True) \
+                    .update(cover=instance.cover)
 
 
 @receiver(signals.post_save, sender=Program)
