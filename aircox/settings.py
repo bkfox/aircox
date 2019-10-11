@@ -15,17 +15,13 @@ def ensure(key, default):
 # group to assign to users at their creation, along with the permissions
 # to add to each group.
 ensure('AIRCOX_DEFAULT_USER_GROUPS', {
-    'Radio Hosts': (
-        'change_program', 'change_diffusion',
+    'radio hosts': (
+        'change_program', 'change_episode', 'change_diffusion',
         'change_sound',
         'add_track', 'change_track', 'delete_track',
         'add_tag', 'change_tag', 'delete_tag',
         'add_comment', 'edit_comment', 'delete_comment',
     ),
-    # ensure user can log in using Wagtail
-    'Editors': None,
-    # ensure user can publish
-    'Moderators': None,
 })
 
 # Directory for the programs data
@@ -50,10 +46,10 @@ ensure('AIRCOX_EPISODE_TITLE_DATE_FORMAT', '%-d %B %Y')
 ########################################################################
 # Directory where to save logs' archives
 ensure('AIRCOX_LOGS_ARCHIVES_DIR',
-       os.path.join(AIRCOX_DATA_DIR, 'archives')
+       os.path.join(AIRCOX_DATA_DIR, 'episodes')
        )
 # In days, minimal age of a log before it is archived
-ensure('AIRCOX_LOGS_ARCHIVES_MIN_AGE', 60)
+ensure('AIRCOX_LOGS_ARCHIVES_AGE', 60)
 
 
 ########################################################################

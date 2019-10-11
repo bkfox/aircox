@@ -51,15 +51,10 @@ class ScheduleAdmin(admin.ModelAdmin):
         return obj.get_frequency_verbose()
     freq.short_description = _('Day')
 
-    def rerun(self, obj):
-        return obj.initial is not None
-    rerun.short_description = _('Rerun')
-    rerun.boolean = True
-
     list_filter = ['frequency', 'program']
     list_display = ['program_title', 'freq', 'time', 'timezone', 'duration',
-                    'rerun']
-    list_editable = ['time', 'duration']
+                    'initial']
+    list_editable = ['time', 'duration', 'initial']
 
     def get_readonly_fields(self, request, obj=None):
         if obj:

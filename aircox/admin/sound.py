@@ -16,12 +16,14 @@ class TracksInline(SortableInlineAdminMixin, admin.TabularInline):
     list_filter = ['artist', 'title', 'tags']
 
 
-
 class SoundInline(admin.TabularInline):
     model = Sound
     fields = ['type', 'path', 'embed', 'duration', 'is_public']
     readonly_fields = ['type', 'path', 'duration']
     extra = 0
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).available()
 
 
 @admin.register(Sound)

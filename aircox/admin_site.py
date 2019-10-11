@@ -26,7 +26,8 @@ class AdminSite(admin.AdminSite):
     def each_context(self, request):
         context = super().each_context(request)
         context.update({
-            'programs': Program.objects.all().active().values('pk', 'title'),
+            'programs': Program.objects.all().active().values('pk', 'title') \
+                                             .order_by('title'),
         })
         return context
 

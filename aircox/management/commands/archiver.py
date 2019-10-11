@@ -23,9 +23,9 @@ class Command (BaseCommand):
         group = parser.add_argument_group('actions')
         group.add_argument(
             '-a', '--age', type=int,
-            default=settings.AIRCOX_LOGS_ARCHIVES_MIN_AGE,
+            default=settings.AIRCOX_LOGS_ARCHIVES_AGE,
             help='minimal age in days of logs to archive. Default is '
-                 'settings.AIRCOX_LOGS_ARCHIVES_MIN_AGE'
+                 'settings.AIRCOX_LOGS_ARCHIVES_AGE'
         )
         group.add_argument(
             '-f', '--force', action='store_true',
