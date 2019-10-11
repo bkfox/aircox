@@ -98,9 +98,11 @@ class Page(models.Model):
         return '{}'.format(self.title or self.pk)
 
     def save(self, *args, **kwargs):
-        # TODO: ensure unique slug
         if not self.slug:
             self.slug = slugify(self.title)
+            count = Page.objects.all(slug__startswith=self.slug).count()
+            if count:
+                self.slug += '-' + count
         if self.is_published and self.pub_date is None:
             self.pub_date = tz.datetime.now()
         elif not self.is_published:
