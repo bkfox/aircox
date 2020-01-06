@@ -1,12 +1,3 @@
 {% extends "aircox/page_list.html" %}
-{% load i18n aircox %}
-
-{% block title %}
-{% if parent %}
-    {% with parent.title as parent %}
-    {% blocktrans %}Articles of {{ parent }}{% endblocktrans %}
-    {% endwith %}
-{% else %}{{ block.super }}{% endif %}
-{% endblock %}
-
+{% comment %}List of articles{% endcomment %}
 

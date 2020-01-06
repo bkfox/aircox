@@ -1,8 +1,12 @@
 {% comment %}
-Context:
+Base website template. It displays various elements depending on context
+variables.
+
+Usefull context:
 - cover: image cover
 - site: current website
 - has_filters: display filter bar (using block "filters")
+- model: view model or displayed `object`'s
 - sidebar_object_list: item to display in sidebar
 - sidebar_url_name: url name sidebar item complete list
 - sidebar_url_parent: parent page for sidebar items complete list
@@ -93,6 +97,7 @@ Blocks:
 
                         {% block main %}
                             {% if has_filters %}
+                            {% comment %}Translators: extra toolbar displayed on the top of page lists {% endcomment %}
                             <nav class="navbar toolbar"
                                 aria-label="{% trans "list filters" %}">
                             {% block filters %}{% endblock %}
@@ -102,6 +107,7 @@ Blocks:
                     </main>
 
                     {% if has_sidebar %}
+                    {% comment %}Translators: main sidebar {% endcomment %}
                     <aside class="column is-one-third-desktop">
                         {# FIXME: block cover into sidebar one #}
                         {% block cover %}

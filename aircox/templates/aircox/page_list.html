@@ -1,11 +1,15 @@
 {% extends "aircox/page.html" %}
+{% comment %}Display a list of pages{% endcomment %}
 {% load i18n aircox %}
 
 {% block title %}
 {% if not parent %}{{ view.model|verbose_name:True|title }}
 {% else %}
 {% with parent.title as title %}
-{% blocktrans %}Publications of {{ title }}{% endblocktrans %}
+{% with model|default:"Publications"|verbose_name:true|capfirst as model %}
+{% comment %}Translators: title when pages are filtered for a specific parent page, e.g.: Articles of My Incredible Show{% endcomment %}
+{% blocktrans %}{{ model }} of {{ title }}{% endblocktrans %}
+{% endwith %}
 {% endwith %}
 {% endif %}
 {% endblock %}
@@ -78,6 +82,7 @@
     {% else %}
     <a class="pagination-previous" disabled>
     {% endif %}
+        {% comment %}Translators: Bottom of the list, "previous page"{% endcomment %}
         {% trans "Previous" %}</a>
 
     {% if page_obj.has_next %}
@@ -85,6 +90,7 @@
     {% else %}
     <a class="pagination-next" disabled>
     {% endif %}
+        {% comment %}Translators: Bottom of the list, "Nextpage"{% endcomment %}
         {% trans "Next" %}</a>
 
     <ul class="pagination-list">

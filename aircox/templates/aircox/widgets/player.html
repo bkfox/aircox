@@ -1,11 +1,14 @@
 {% load i18n %}
+{% comment %}
+The audio player
+{% endcomment %}
 
 {% if audio_streams %}
 <br>
 
 <div class="box is-fullwidth is-fixed-bottom is-paddingless player"
     role="{% trans "player" %}"
-    aria-description="{% trans "audio player used to listen to the radio" %}">
+    aria-description="{% trans "Audio player used to listen to the radio and podcasts" %}">
     <noscript>
         <audio src="{{ audio_streams.0 }}" controls>
             {% for stream in audio_streams %}

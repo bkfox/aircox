@@ -1,4 +1,5 @@
 {% extends "aircox/page_detail.html" %}
+{% comment %}Detail page for regular articles{% endcomment %}
 {% load i18n %}
 
 {% block sidebar %}
@@ -6,6 +7,7 @@
 
 {% if sidebar_object_list %}
 <section>
+    {% comment %}Translators: in page detail sidebar{% endcomment %}
     <h4 class="title is-4">{% trans "Latest news" %}</h4>
 
     {% for object in sidebar_object_list %}

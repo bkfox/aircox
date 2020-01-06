@@ -1,3 +1,8 @@
+{% comment %}
+Header displaying informations of a program.
+
+FIXME: consider moving into the "widgets" directory.
+{% endcomment %}
 {% load i18n %}
 <section class="is-size-5 has-text-weight-bold">
     {% for schedule in program.schedule_set.all %}

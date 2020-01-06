@@ -56,6 +56,12 @@ class BaseView(TemplateResponseMixin, ContextMixin):
             streams = streams and streams.split('\n')
             kwargs['audio_streams'] = streams
 
+        if 'model' not in kwargs:
+            model = getattr(self, 'model', None) or hasattr(self, 'object') and \
+                        type(self.object)
+            kwargs['model'] = model
+
+
         return super().get_context_data(**kwargs)
 
 

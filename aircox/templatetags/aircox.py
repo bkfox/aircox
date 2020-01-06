@@ -10,8 +10,12 @@ register = template.Library()
 
 @register.filter(name='verbose_name')
 def do_verbose_name(obj, plural=False):
-    """ Return model's verbose name (singular or plural) """
-    return obj._meta.verbose_name_plural if plural else \
+    """
+    Return model's verbose name (singular or plural) or `obj` if it is a
+    string (can act for default values).
+    """
+    return obj if isinstance(obj, str) else \
+           obj._meta.verbose_name_plural if plural else \
            obj._meta.verbose_name
 
 @register.simple_tag(name='update_query')

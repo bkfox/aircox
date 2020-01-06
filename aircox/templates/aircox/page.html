@@ -1,6 +1,9 @@
 {% extends "aircox/base.html" %}
 {% load static i18n thumbnail %}
 {% comment %}
+Base template to display pages (list, detail, whatever). By default extend to
+this one instead of "base.html"
+
 Context:
 - cover: cover image
 - title: title
@@ -8,6 +11,7 @@ Context:
 {% endcomment %}
 
 {% block head_title %}
+    {% comment %}Hack to include the page title into the <title> tag.{% endcomment %}
     {% block title %}{{ title }}{% endblock %}
     &mdash;
     {{ station.name }}

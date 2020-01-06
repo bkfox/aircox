@@ -1,12 +1,14 @@
 {% extends "aircox/widgets/page_item.html" %}
-{% load i18n easy_thumbnails_tags aircox %}
-
 {% comment %}
+List item for an episode.
+
 Context variables:
 - object: episode
 - diffusion: episode's diffusion
 - hide_schedule: if True, do not display start time
 {% endcomment %}
+
+{% load i18n easy_thumbnails_tags aircox %}
 
 {% block title %}
 {% if not object.is_published and object.program.is_published %}
