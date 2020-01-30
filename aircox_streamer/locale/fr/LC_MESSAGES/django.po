@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-01-06 14:15+0100\n"
+"POT-Creation-Date: 2020-01-30 20:13+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -56,63 +56,67 @@ msgid ""
 "file as raw code; plugin related"
 msgstr ""
 
-#: templates/aircox_streamer/source_item.html:19
+#: templates/aircox_streamer/source_item.html:18
+msgid "Edit related program"
+msgstr ""
+
+#: templates/aircox_streamer/source_item.html:27
 msgid "Synchronize source with Liquidsoap"
 msgstr ""
 
-#: templates/aircox_streamer/source_item.html:23
+#: templates/aircox_streamer/source_item.html:31
 msgid "Synchronise"
 msgstr ""
 
-#: templates/aircox_streamer/source_item.html:26
+#: templates/aircox_streamer/source_item.html:34
 msgid "Restart current track"
 msgstr ""
 
-#: templates/aircox_streamer/source_item.html:30
+#: templates/aircox_streamer/source_item.html:38
 msgid "Restart"
 msgstr ""
 
-#: templates/aircox_streamer/source_item.html:33
+#: templates/aircox_streamer/source_item.html:41
 msgid "Skip current file"
 msgstr ""
 
-#: templates/aircox_streamer/source_item.html:34
+#: templates/aircox_streamer/source_item.html:42
 msgid "Skip"
 msgstr ""
 
-#: templates/aircox_streamer/source_item.html:43
+#: templates/aircox_streamer/source_item.html:51
 msgid "Add sound"
 msgstr ""
 
-#: templates/aircox_streamer/source_item.html:51
+#: templates/aircox_streamer/source_item.html:59
 msgid "Select a sound"
 msgstr ""
 
-#: templates/aircox_streamer/source_item.html:53
+#: templates/aircox_streamer/source_item.html:61
 msgid "Add a sound to the queue (queue may start playing)"
 msgstr ""
 
-#: templates/aircox_streamer/source_item.html:62
+#: templates/aircox_streamer/source_item.html:70
 msgid "Add"
 msgstr ""
 
-#: templates/aircox_streamer/source_item.html:68
+#: templates/aircox_streamer/source_item.html:76
 msgid "Sounds in queue"
 msgstr ""
 
-#: templates/aircox_streamer/source_item.html:86
+#: templates/aircox_streamer/source_item.html:94
 msgid "Status"
 msgstr ""
 
-#: templates/aircox_streamer/source_item.html:96
+#: templates/aircox_streamer/source_item.html:104
 msgid "Air time"
 msgstr ""
 
-#: templates/aircox_streamer/source_item.html:106
+#: templates/aircox_streamer/source_item.html:114
 msgid "Time left"
 msgstr ""
 
-#: templates/aircox_streamer/source_item.html:114
+#: templates/aircox_streamer/source_item.html:122
 msgid "Data source"
 msgstr ""
 

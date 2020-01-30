@@ -46,7 +46,7 @@ class SourceSerializer(BaseMetadataSerializer):
 
 
 class PlaylistSerializer(SourceSerializer):
-    program = serializers.CharField(source='program.title')
+    program = serializers.CharField(source='program.id')
 
     url_name = 'admin:api:streamer-playlist-detail'
 

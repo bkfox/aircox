@@ -11,6 +11,14 @@
             [[ source.id ]]
 
             <small v-if="source.isPaused || source.isPlaying">(-[[ source.remainingString ]])</small>
+
+            <a v-if="source.data.program !== undefined"
+               :href="'{% url 'admin:aircox_program_change' "$$" %}'.replace('$$', source.data.program)"
+               title="{% trans "Edit related program" %}">
+                <span class="icon">
+                    <span class="fas fa-edit"></span>
+                </span>
+            </a>
         </h5>
 
         <div>
