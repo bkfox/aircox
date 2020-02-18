@@ -51,9 +51,7 @@ Context variables:
 
         {% if has_headline|default_if_none:True %}
         <div class="headline">
-        {% block headline %}
-        {{ object.headline|safe }}
-        {% endblock %}
+        {% block headline %}{{ object.headline }}{% endblock %}
         </div>
         {% endif %}
     </div>

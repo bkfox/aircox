@@ -10,6 +10,7 @@ tzlocal>=1.4
 mutagen>=1.37
 pyyaml>=3.12
 
+bleach>=3.1.0
 django_filter>=2.2.0
 django-taggit>=1.1.0
 django-filer>=1.5.0

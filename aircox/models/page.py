@@ -9,6 +9,7 @@ from django.utils.html import format_html
 from django.utils.translation import ugettext_lazy as _
 from django.utils.functional import cached_property
 
+import bleach
 from ckeditor.fields import RichTextField
 from filer.fields.image import FilerImageField
 from model_utils.managers import InheritanceQuerySet
@@ -129,7 +130,8 @@ class Page(models.Model):
     def headline(self):
         if not self.content:
             return ''
-        headline = headline_re.search(self.content)
+        content = bleach.clean(self.content)
+        headline = headline_re.search(content)
         return headline.groupdict()['headline'] if headline else ''
 
     @classmethod

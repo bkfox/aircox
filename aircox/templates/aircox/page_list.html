@@ -72,7 +72,7 @@
 </section>
 
 {% if is_paginated %}
-<hr>
+<hr/>
 {% update_query request.GET.copy page=None as GET %}
 {% with GET.urlencode as GET %}
 <nav class="pagination is-centered" role="pagination" aria-label="{% trans "pagination" %}">
