@@ -44,11 +44,11 @@ msgstr ""
 
 #: models.py:62
 msgid "this port is active"
-msgstr ""
+msgstr "Ce port est actif"
 
 #: models.py:65
 msgid "port settings"
-msgstr ""
+msgstr "Paramètrage du port"
 
 #: models.py:66
 msgid ""
@@ -58,55 +58,55 @@ msgstr ""
 
 #: templates/aircox_streamer/source_item.html:18
 msgid "Edit related program"
-msgstr ""
+msgstr "Éditer le programme correspondant"
 
 #: templates/aircox_streamer/source_item.html:27
 msgid "Synchronize source with Liquidsoap"
-msgstr ""
+msgstr "Synchroniser la source avec Liquidsoap"
 
 #: templates/aircox_streamer/source_item.html:31
 msgid "Synchronise"
-msgstr ""
+msgstr "Synchroniser"
 
 #: templates/aircox_streamer/source_item.html:34
 msgid "Restart current track"
-msgstr ""
+msgstr "Rejouer le morceau en cours"
 
 #: templates/aircox_streamer/source_item.html:38
 msgid "Restart"
-msgstr ""
+msgstr "Rejouer"
 
 #: templates/aircox_streamer/source_item.html:41
 msgid "Skip current file"
-msgstr ""
+msgstr "Passer le fichier actuel"
 
 #: templates/aircox_streamer/source_item.html:42
 msgid "Skip"
-msgstr ""
+msgstr "Passer"
 
 #: templates/aircox_streamer/source_item.html:51
 msgid "Add sound"
-msgstr ""
+msgstr "Ajouter un son"
 
 #: templates/aircox_streamer/source_item.html:59
 msgid "Select a sound"
-msgstr ""
+msgstr "Sélectionner un son"
 
 #: templates/aircox_streamer/source_item.html:61
 msgid "Add a sound to the queue (queue may start playing)"
-msgstr ""
+msgstr "Ajouter un son à la file de lecture(la file de lecture peut démarer)"
 
 #: templates/aircox_streamer/source_item.html:70
 msgid "Add"
-msgstr ""
+msgstr "Ajouter"
 
 #: templates/aircox_streamer/source_item.html:76
 msgid "Sounds in queue"
-msgstr ""
+msgstr "Sons dans la file de lecture"
 
 #: templates/aircox_streamer/source_item.html:94
 msgid "Status"
-msgstr ""
+msgstr "Statut"
 
 #: templates/aircox_streamer/source_item.html:104
 msgid "Air time"
@@ -114,7 +114,7 @@ msgstr ""
 
 #: templates/aircox_streamer/source_item.html:114
 msgid "Time left"
-msgstr ""
+msgstr "Temps restant"
 
 #: templates/aircox_streamer/source_item.html:122
 msgid "Data source"
@@ -122,13 +122,13 @@ msgstr ""
 
 #: templates/aircox_streamer/streamer.html:19
 msgid "Reload"
-msgstr ""
+msgstr "Recharger"
 
 #: templates/aircox_streamer/streamer.html:26
 #: templates/aircox_streamer/streamer.html:27
 msgid "Select a station"
-msgstr ""
+msgstr "Sélectionner une station"
 
 #: urls.py:9 views.py:9
 msgid "Streamer Monitor"
-msgstr ""
+msgstr "Moniteur de stream"

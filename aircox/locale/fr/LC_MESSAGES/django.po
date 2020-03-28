@@ -72,7 +72,7 @@ msgstr "station"
 
 #: models/article.py:13
 msgid "Should this article be considered as a page instead of a blog article"
-msgstr ""
+msgstr "Cet article doit-il être considéré comme une page plutôt que comme un article de blog"
 
 #: models/article.py:21
 msgid "Article"
@@ -85,11 +85,11 @@ msgstr ""
 
 #: models/episode.py:33
 msgid "Episode"
-msgstr ""
+msgstr "Épisode"
 
 #: models/episode.py:34 templates/admin/base.html:56
 msgid "Episodes"
-msgstr ""
+msgstr "Épisodes"
 
 #: models/episode.py:141 models/log.py:181
 msgid "on air"
@@ -215,7 +215,7 @@ msgstr "catégorie"
 
 #: models/page.py:79
 msgid "Cover"
-msgstr ""
+msgstr "Image de couverture"
 
 #: models/page.py:82 models/page.py:153
 msgid "content"
@@ -253,7 +253,7 @@ msgstr ""
 
 #: models/page.py:161 models/sound.py:94 models/sound.py:287
 msgid "order"
-msgstr ""
+msgstr "ordre"
 
 #: models/page.py:163
 msgid "url"
@@ -809,7 +809,7 @@ msgstr "Plus d'articles"
 
 #: templates/aircox/widgets/dates_menu.html:15
 msgid "pick a date"
-msgstr ""
+msgstr "choisir une date"
 
 #: templates/aircox/widgets/dates_menu.html:27
 msgid "Jump to date"
@@ -912,7 +912,7 @@ msgstr ""
 
 #: views/page.py:104
 msgid "comments are not allowed"
-msgstr ""
+msgstr "Les commentaires ne sont pas autorisés"
 
 #~ msgid "Streamer monitor"
 #~ msgstr "Streamer"
