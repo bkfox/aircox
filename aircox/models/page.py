@@ -135,7 +135,7 @@ class Page(models.Model):
     def headline(self):
         if not self.content:
             return ''
-        content = bleach.clean(self.content, strip=True)
+        content = bleach.clean(self.content, tags=[], strip=True)
         headline = headline_re.search(content)
         return mark_safe(headline.groupdict()['headline']) if headline else ''
 
