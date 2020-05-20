@@ -12,11 +12,10 @@ from django.template.loader import render_to_string
 from django.utils import timezone as tz
 
 from aircox import settings
-from aircox.models import Station, Sound
+from aircox.models import Station, Sound, Port
 from aircox.utils import to_seconds
 
 from .connector import Connector
-from .models import Port
 
 
 __all__ = ['BaseMetadata', 'Request', 'Streamer', 'Source',
