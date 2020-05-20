@@ -6,6 +6,7 @@ from django.urls import reverse
 from django.utils import timezone as tz
 from django.utils.text import slugify
 from django.utils.html import format_html
+from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 from django.utils.functional import cached_property
 
@@ -99,6 +100,7 @@ class Page(models.Model):
         return '{}'.format(self.title or self.pk)
 
     def save(self, *args, **kwargs):
+        # TODO: bleach clean
         if not self.slug:
             self.slug = slugify(self.title)[:100]
             count = Page.objects.filter(slug__startswith=self.slug).count()
@@ -133,9 +135,9 @@ class Page(models.Model):
     def headline(self):
         if not self.content:
             return ''
-        content = bleach.clean(self.content)
+        content = bleach.clean(self.content, strip=True)
         headline = headline_re.search(content)
-        return headline.groupdict()['headline'] if headline else ''
+        return mark_safe(headline.groupdict()['headline']) if headline else ''
 
     @classmethod
     def get_init_kwargs_from(cls, page, **kwargs):
