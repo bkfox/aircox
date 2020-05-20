@@ -297,6 +297,8 @@ class Command (BaseCommand):
         streamers = [Streamer(station) for station in stations]
 
         for streamer in streamers:
+            if not streamer.outputs:
+                raise RuntimeError("Streamer {} has no outputs" % streamer.id)
             if config:
                 streamer.make_config()
             if run:
