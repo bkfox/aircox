@@ -19,7 +19,7 @@ import datetime
 import logging
 from argparse import RawTextHelpFormatter
 
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.utils import timezone as tz
 
@@ -76,7 +76,7 @@ class Actions:
                 items.append(diffusion.id)
 
         logger.info('[check] %d diffusions will be removed', len(items))
-        if len(items):
+        if items:
             Diffusion.objects.filter(id__in=items).delete()
 
 

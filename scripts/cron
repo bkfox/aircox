@@ -3,9 +3,9 @@
 # aircox daily tasks:
 # - diffusions monitoring for the current month
 cd /srv/apps/aircox/
-scripts/launch_in_venv ./manage.py diffusions --update --clean --check --mode auto
+scripts/launch_in_venv ./manage.py diffusions --update --clean --check
 # - diffusions monitoring for the next month
-scripts/launch_in_venv ./manage.py diffusions --update --next-month --mode auto
+scripts/launch_in_venv ./manage.py diffusions --update --next-month
 cd -
 
 # - archiver monitoring for the next month
