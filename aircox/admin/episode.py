@@ -1,7 +1,7 @@
 import copy
 
 from django.contrib import admin
-from django.utils.translation import ugettext as _, ugettext_lazy
+from django.utils.translation import gettext as _, gettext_lazy
 
 from ..models import Episode, Diffusion, Sound, Track
 

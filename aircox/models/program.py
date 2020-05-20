@@ -12,7 +12,7 @@ from django.db import models
 from django.db.models import F, Q
 from django.db.models.functions import Concat, Substr
 from django.utils import timezone as tz
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from django.utils.functional import cached_property
 
 from aircox import settings, utils

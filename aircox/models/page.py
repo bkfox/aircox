@@ -6,7 +6,7 @@ from django.urls import reverse
 from django.utils import timezone as tz
 from django.utils.text import slugify
 from django.utils.html import format_html
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from django.utils.functional import cached_property
 
 import bleach

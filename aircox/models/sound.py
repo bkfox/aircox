@@ -6,7 +6,7 @@ from django.conf import settings as main_settings
 from django.db import models
 from django.db.models import Q
 from django.utils import timezone as tz
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 from taggit.managers import TaggableManager
 

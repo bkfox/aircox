@@ -1,6 +1,6 @@
 
 from django.http import Http404, HttpResponse
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from django.views.generic import DetailView, ListView
 
 from honeypot.decorators import check_honeypot

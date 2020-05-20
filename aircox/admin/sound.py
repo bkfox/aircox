@@ -1,5 +1,5 @@
 from django.contrib import admin
-from django.utils.translation import ugettext as _, ugettext_lazy
+from django.utils.translation import gettext as _, gettext_lazy
 
 from adminsortable2.admin import SortableInlineAdminMixin
 

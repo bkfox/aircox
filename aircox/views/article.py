@@ -13,13 +13,8 @@ class ArticleDetailView(PageDetailView):
     def get_sidebar_queryset(self):
         qs = Article.objects.select_related('cover') \
                     .filter(is_static=False) \
-                    .order_by('-date')
+                    .order_by('-pub_date')
         return qs
-
-    def get_context_data(self, **kwargs):
-        if self.object.program is not None:
-            kwargs.setdefault('parent', self.object.program)
-        return super().get_context_data(**kwargs)
 
 
 class ArticleListView(ParentMixin, PageListView):
