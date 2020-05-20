@@ -1,9 +1,8 @@
-import copy
-
+from django import forms
 from django.contrib import admin
-from django.utils.translation import gettext as _, gettext_lazy
+from django.utils.translation import gettext as _
 
-from ..models import Episode, Diffusion, Sound, Track
+from ..models import Episode, Diffusion
 
 from .page import PageAdmin
 from .sound import SoundInline, TracksInline
@@ -46,8 +45,15 @@ class DiffusionInline(DiffusionBaseAdmin, admin.TabularInline):
         return request.user.has_perm('aircox_program.scheduling')
 
 
+class EpisodeAdminForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['parent'].required = True
+
+
 @admin.register(Episode)
 class EpisodeAdmin(PageAdmin):
+    form = EpisodeAdminForm
     list_display = PageAdmin.list_display
     list_filter = PageAdmin.list_filter
     search_fields = PageAdmin.search_fields + ['parent__title']
