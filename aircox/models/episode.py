@@ -39,8 +39,6 @@ class Episode(Page):
         return super().get_absolute_url()
 
     def save(self, *args, **kwargs):
-        if self.cover is None:
-            self.cover = self.program.cover
         if self.parent is None:
             raise ValueError('missing parent program')
         super().save(*args, **kwargs)

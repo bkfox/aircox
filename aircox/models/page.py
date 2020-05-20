@@ -108,6 +108,9 @@ class Page(models.Model):
             self.pub_date = tz.now()
         elif not self.is_published:
             self.pub_date = None
+
+        if not self.cover and self.parent:
+            self.cover = self.parent.cover
         super().save(*args, **kwargs)
 
     def get_absolute_url(self):
