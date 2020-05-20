@@ -298,7 +298,7 @@ class Command (BaseCommand):
 
         for streamer in streamers:
             if not streamer.outputs:
-                raise RuntimeError("Streamer {} has no outputs" % streamer.id)
+                raise RuntimeError("Streamer {} has no outputs".format(streamer.id))
             if config:
                 streamer.make_config()
             if run:
