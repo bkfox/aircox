@@ -6,7 +6,7 @@
 {% if not parent %}{{ view.model|verbose_name:True|title }}
 {% else %}
 {% with parent.title as title %}
-{% with model|default:"Publications"|verbose_name:true|capfirst as model %}
+{% with model|default:"Publications"|verbose_name:True|capfirst as model %}
 {% comment %}Translators: title when pages are filtered for a specific parent page, e.g.: Articles of My Incredible Show{% endcomment %}
 {% blocktrans %}{{ model }} of {{ title }}{% endblocktrans %}
 {% endwith %}

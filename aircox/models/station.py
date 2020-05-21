@@ -66,6 +66,11 @@ class Station(models.Model):
         help_text=_("Audio streams urls used by station's player. One url "
                     "a line.")
     )
+    default_cover = FilerImageField(
+        on_delete=models.SET_NULL,
+        verbose_name=_('Default pages cover'), null=True, blank=True,
+        related_name='+',
+    )
 
     objects = StationQuerySet.as_manager()
 

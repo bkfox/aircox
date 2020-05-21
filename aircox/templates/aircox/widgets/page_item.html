@@ -14,7 +14,7 @@ Context variables:
 <article class="card {% if is_primary %}is-primary{% endif %}">
     <header class="card-image">
         <figure class="image is-4by3">
-            <img src="{% thumbnail object.cover 480x480 %}">
+            <img src="{% thumbnail object.cover|default:station.default_cover 480x480 %}">
         </figure>
     </header>
     <div class="card-header">
@@ -29,7 +29,7 @@ Context variables:
 <article class="media item {% if is_primary %}is-primary{% endif %}">
     {% if has_cover|default_if_none:True %}
     <div class="media-left">
-        <img src="{% thumbnail object.cover 128x128 crop=scale %}"
+        <img src="{% thumbnail object.cover|default:station.default_cover 128x128 crop=scale %}"
             class="small-cover">
     </div>
     {% endif %}
