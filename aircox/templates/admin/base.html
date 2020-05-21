@@ -40,7 +40,15 @@
         <div class="navbar-menu">
             {% block usertools %}
             <div class="navbar-start">
-                <a class="navbar-item" href="{% url "admin:aircox_program_changelist" %}">{% trans "Programs" %}</a>
+                <div class="navbar-item has-dropdown is-hoverable">
+                    <a class="navbar-link" href="{% url "admin:aircox_program_changelist" %}">{% trans "Programs" %}</a>
+                    <div class="navbar-dropdown is-boxed">
+                        {% for program in programs %}
+                        <a class="navbar-item" href="{% url "admin:aircox_program_change" program.pk %}">
+                            {{ program.title }}</a>
+                        {% endfor %}
+                    </div>
+                </div>
 
                 <div class="navbar-item has-dropdown is-hoverable">
                     <a class="navbar-link" href="{% url "admin:aircox_article_changelist" %}">{% trans "Articles" %}</a>
