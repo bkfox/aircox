@@ -82,7 +82,7 @@ class DiffusionQuerySet(BaseRerunQuerySet):
     def at(self, date, order=True):
         """ Return diffusions at specified date or datetime """
         return self.now(date, order) if isinstance(date, tz.datetime) else \
-            self.today(date, order)
+               self.date(date, order)
 
     def after(self, date=None):
         """
