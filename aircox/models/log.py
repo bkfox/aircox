@@ -1,4 +1,5 @@
 from collections import deque
+import datetime
 import logging
 import os
 
@@ -25,7 +26,11 @@ class LogQuerySet(models.QuerySet):
                self.filter(station_id=id)
 
     def date(self, date):
-        return self.filter(date__date=date)
+        start = tz.datetime.combine(date, datetime.time())
+        end = tz.datetime.combine(date, datetime.time(23, 59, 59, 999))
+        return self.filter(start__range = (start, end))
+        # this filter does not work with sql
+        # return self.filter(date__date=date)
 
     def after(self, date):
         return self.filter(date__gte=date) \

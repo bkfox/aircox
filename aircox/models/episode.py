@@ -71,11 +71,11 @@ class DiffusionQuerySet(BaseRerunQuerySet):
         qs = self.filter(start__lte=now, end__gte=now).distinct()
         return qs.order_by('start') if order else qs
 
-    def date(self, today=None, order=True):
-        """ Diffusions occuring today. """
-        today = today or datetime.date.today()
-        start = tz.datetime.combine(today, datetime.time())
-        end = tz.datetime.combine(today, datetime.time(23, 59, 59, 999))
+    def date(self, date=None, order=True):
+        """ Diffusions occuring date. """
+        date = date or datetime.date.date()
+        start = tz.datetime.combine(date, datetime.time())
+        end = tz.datetime.combine(date, datetime.time(23, 59, 59, 999))
         qs = self.filter(start__range = (start, end))
         return qs.order_by('start') if order else qs
 

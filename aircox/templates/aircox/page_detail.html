@@ -8,17 +8,14 @@ Context:
 - page: page
 {% endcomment %}
 
-{% if page.category %}
 {% block header_meta %}{{ block.super }}
 <span class="column has-text-right">
-    {% if object.category %}
-    {{ object.category.title }} //
+    {% if page.category %}
+    {{ page.category.title }} //
     {% endif %}
-    {{ object.pub_date }}
+    {{ page.pub_date }}
 </span>
 {% endblock %}
-{% endif %}
-
 
 {% block main %}
 {% block content %}
