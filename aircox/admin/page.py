@@ -60,15 +60,13 @@ class PageAdmin(admin.ModelAdmin):
         extra_context = extra_context or {}
         parent = query.get('parent', None)
         if parent is not None:
-            extra_context['parent'] = Page.objects.get(id=parent)
+            extra_context['parent'] = Page.objects.get_subclass(id=parent)
         return extra_context
 
     def add_view(self, request, form_url='', extra_context=None):
         filters = QueryDict(request.GET.get('_changelist_filters', ''))
         extra_context = self.get_common_context(filters, extra_context)
         return super().add_view(request, form_url, extra_context)
-
-    # TODO: change_view => parent from object
 
     def changelist_view(self, request, extra_context=None):
         extra_context = self.get_common_context(request.GET, extra_context)
