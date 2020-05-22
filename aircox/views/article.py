@@ -12,7 +12,7 @@ class ArticleDetailView(PageDetailView):
 
     def get_sidebar_queryset(self):
         qs = Article.objects.select_related('cover') \
-                    .filter(is_static=False) \
+                    .published().filter(is_static=False) \
                     .order_by('-pub_date')
         return qs
 
