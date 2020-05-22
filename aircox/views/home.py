@@ -17,13 +17,13 @@ class HomeView(PageListView):
 
     def get_logs(self):
         today = datetime.date.today()
-        logs = Log.objects.on_air().today(today).filter(track__isnull=False)
-        diffs = Diffusion.objects.on_air().today(today)
+        logs = Log.objects.on_air().date(today).filter(track__isnull=False)
+        diffs = Diffusion.objects.on_air().date(today)
         return Log.merge_diffusions(logs, diffs, self.logs_count)
 
     def get_sidebar_queryset(self):
         today = datetime.date.today()
-        return Diffusion.objects.on_air().today(today)
+        return Diffusion.objects.on_air().date(today)
 
     def get_top_diffs(self):
         now = tz.now()

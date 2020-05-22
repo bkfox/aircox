@@ -4,16 +4,6 @@ Manage diffusions using schedules, to update, clean up or check diffusions.
 A generated diffusion can be unconfirmed, that means that the user must confirm
 it by changing its type to "normal". The behaviour is controlled using
 --approval.
-
-Different actions are available:
-- "update" is the process that is used to generated them using programs
-schedules for the (given) month.
-
-- "clean" will remove all diffusions that are still unconfirmed and have been
-planified before the (given) month.
-
-- "check" will remove all diffusions that are unconfirmed and have been planified
-from the (given) month and later.
 """
 import datetime
 import logging

@@ -24,7 +24,7 @@ class LogQuerySet(models.QuerySet):
         return self.filter(station=station) if id is None else \
                self.filter(station_id=id)
 
-    def today(self, date):
+    def date(self, date):
         return self.filter(date__date=date)
 
     def after(self, date):
@@ -133,7 +133,7 @@ class LogQuerySet(models.QuerySet):
         if os.path.exists(path) and not force:
             return -1
 
-        qs = self.station(station).today(date)
+        qs = self.station(station).date(date)
 
         if not qs.exists():
             return 0

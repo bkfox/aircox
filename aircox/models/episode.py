@@ -64,13 +64,14 @@ class DiffusionQuerySet(BaseRerunQuerySet):
         """ On air diffusions """
         return self.filter(type=Diffusion.TYPE_ON_AIR)
 
+    # TODO: rename to `datetime`
     def now(self, now=None, order=True):
         """ Diffusions occuring now """
         now = now or tz.now()
         qs = self.filter(start__lte=now, end__gte=now).distinct()
         return qs.order_by('start') if order else qs
 
-    def today(self, today=None, order=True):
+    def date(self, today=None, order=True):
         """ Diffusions occuring today. """
         today = today or datetime.date.today()
         start = tz.datetime.combine(today, datetime.time())
