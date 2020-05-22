@@ -46,7 +46,7 @@ class DiffusionListView(GetDateMixin, BaseView, ListView):
         return date if date is not None else datetime.date.today()
 
     def get_queryset(self):
-        return super().get_queryset().today(self.date).order_by('start')
+        return super().get_queryset().date(self.date).order_by('start')
 
     def get_context_data(self, **kwargs):
         start = self.date - datetime.timedelta(days=self.date.weekday())

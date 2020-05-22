@@ -66,8 +66,9 @@ class LogListView(BaseView, LogListMixin, ListView):
 
     def get_context_data(self, **kwargs):
         today = datetime.date.today()
+        # `super()...` must be called before updating kwargs, in order
+        # to get `self.object_list`
         kwargs = super().get_context_data(**kwargs)
-        print('objects:', self.date, self.get_queryset(), kwargs['object_list'])
         kwargs.update({
             'date': self.date,
             'dates': (today - datetime.timedelta(days=i) for i in range(0, 7)),

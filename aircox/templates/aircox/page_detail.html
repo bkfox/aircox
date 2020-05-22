@@ -10,7 +10,12 @@ Context:
 
 {% if page.category %}
 {% block header_meta %}{{ block.super }}
-<span class="column has-text-right">{{ object.category.title }}</span>
+<span class="column has-text-right">
+    {% if object.category %}
+    {{ object.category.title }} //
+    {% endif %}
+    {{ object.pub_date }}
+</span>
 {% endblock %}
 {% endif %}
 
