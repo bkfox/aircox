@@ -30,8 +30,8 @@ class LogInfo:
         episode = obj.episode
         self.start, self.end = obj.start, obj.end
         self.title, self.url = episode.title, episode.get_absolute_url()
-        self.cover = episode.cover.icons['64'] if episode.cover else None
-        self.info = episode.category.title
+        self.cover = episode.cover and episode.cover.icons['64']
+        self.info = episode.category and episode.category.title
         self.obj = obj
 
     def from_log(self, obj):
