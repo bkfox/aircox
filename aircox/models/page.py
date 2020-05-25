@@ -54,7 +54,7 @@ class PageQuerySet(InheritanceQuerySet):
                self.filter(parent__id=id)
 
 
-class Page(models.Model):
+class BasePage(models.Model):
     """ Base class for publishable content """
     STATUS_DRAFT = 0x00
     STATUS_PUBLISHED = 0x10
@@ -72,29 +72,21 @@ class Page(models.Model):
     status = models.PositiveSmallIntegerField(
         _('status'), default=STATUS_DRAFT, choices=STATUS_CHOICES,
     )
-    category = models.ForeignKey(
-        Category, models.SET_NULL,
-        verbose_name=_('category'), blank=True, null=True, db_index=True
-    )
     cover = FilerImageField(
         on_delete=models.SET_NULL,
-        verbose_name=_('Cover'), null=True, blank=True,
+        verbose_name=_('cover'), null=True, blank=True,
     )
     content = RichTextField(
         _('content'), blank=True, null=True,
-    )
-    pub_date = models.DateTimeField(blank=True, null=True)
-    featured = models.BooleanField(
-        _('featured'), default=False,
-    )
-    allow_comments = models.BooleanField(
-        _('allow comments'), default=True,
     )
 
     objects = PageQuerySet.as_manager()
 
     detail_url_name = None
     item_template_name = 'aircox/widgets/page_item.html'
+
+    class Meta:
+        abstract = True
 
     def __str__(self):
         return '{}'.format(self.title or self.pk)
@@ -106,10 +98,6 @@ class Page(models.Model):
             count = Page.objects.filter(slug__startswith=self.slug).count()
             if count:
                 self.slug += '-' + str(count)
-        if self.is_published and self.pub_date is None:
-            self.pub_date = tz.now()
-        elif not self.is_published:
-            self.pub_date = None
 
         if not self.cover and self.parent:
             self.cover = self.parent.cover
@@ -150,9 +138,71 @@ class Page(models.Model):
         return cls(**cls.get_init_kwargs_from(page, **kwargs))
 
 
+class Page(BasePage):
+    """ Base Page model used for articles and other dated content. """
+    category = models.ForeignKey(
+        Category, models.SET_NULL,
+        verbose_name=_('category'), blank=True, null=True, db_index=True
+    )
+    pub_date = models.DateTimeField(blank=True, null=True)
+    featured = models.BooleanField(
+        _('featured'), default=False,
+    )
+    allow_comments = models.BooleanField(
+        _('allow comments'), default=True,
+    )
+
+    def save(self, *args, **kwargs):
+        if self.is_published and self.pub_date is None:
+            self.pub_date = tz.now()
+        elif not self.is_published:
+            self.pub_date = None
+        super().save(*args, **kwargs)
+
+
+class StaticPage(Page):
+    """ Static page that eventually can be attached to a specific view. """
+    VIEW_HOME = 0x00
+    VIEW_SCHEDULE = 0x01
+    VIEW_LOG = 0x02
+    VIEW_PROGRAMS = 0x03
+    VIEW_EPISODES = 0x04
+    VIEW_ARTICLES = 0x05
+
+    VIEW_CHOICES = (
+        (VIEW_HOME, _('Home Page')),
+        (VIEW_SCHEDULE, _('Schedule Page')),
+        (VIEW_LOG, _('Log Page')),
+        (VIEW_PROGRAMS, _('Programs list')),
+        (VIEW_EPISODES, _('Episodes list')),
+        (VIEW_ARTICLES, _('Articles list')),
+    )
+
+    view = models.SmallIntegerField(
+        _('attach to'), choices=VIEW_CHOICES, blank=True, null=True,
+        help_text=_('display this page content to related element'),
+    )
+    menu_title = models.CharField(_('menu title'), max_length=64, blank=True, null=True)
+
+    is_active = False
+
+    def render_menu_item(self, request, css_class='', active_class=''):
+        if active_class and request.path.startswith(self.url):
+            css_class += ' ' + active_class
+
+        if not self.url:
+            return self.text
+        elif not css_class:
+            return format_html('<a href="{}">{}</a>', self.url, self.text)
+        else:
+            return format_html('<a href="{}" class="{}">{}</a>', self.url,
+                               css_class, self.text)
+
+
 class Comment(models.Model):
     page = models.ForeignKey(
         Page, models.CASCADE, verbose_name=_('related page'),
+        # TODO: allow_comment filter
     )
     nickname = models.CharField(_('nickname'), max_length=32)
     email = models.EmailField(_('email'), max_length=32)

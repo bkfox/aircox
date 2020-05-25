@@ -56,7 +56,7 @@ class EpisodeAdmin(PageAdmin):
     form = EpisodeAdminForm
     list_display = PageAdmin.list_display
     list_filter = PageAdmin.list_filter
-    search_fields = PageAdmin.search_fields + ['parent__title']
+    search_fields = PageAdmin.search_fields + ('parent__title',)
     # readonly_fields = ('parent',)
 
     inlines = [TracksInline, SoundInline, DiffusionInline]

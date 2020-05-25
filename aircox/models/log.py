@@ -29,7 +29,7 @@ class LogQuerySet(models.QuerySet):
         start = tz.datetime.combine(date, datetime.time())
         end = tz.datetime.combine(date, datetime.time(23, 59, 59, 999))
         return self.filter(date__range = (start, end))
-        # this filter does not work with sql
+        # this filter does not work with mysql
         # return self.filter(date__date=date)
 
     def after(self, date):

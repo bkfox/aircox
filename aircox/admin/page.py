@@ -1,4 +1,4 @@
-import urllib
+from copy import deepcopy
 
 from django.contrib import admin
 from django.http import QueryDict
@@ -7,7 +7,7 @@ from django.utils.translation import gettext_lazy as _
 
 from adminsortable2.admin import SortableInlineAdminMixin
 
-from ..models import Category, NavItem, Page
+from ..models import Category, NavItem, Page, StaticPage
 
 
 __all__ = ['CategoryAdmin', 'PageAdmin', 'NavItemInline']
@@ -22,25 +22,24 @@ class CategoryAdmin(admin.ModelAdmin):
     prepopulated_fields = {"slug": ("title",)}
 
 
-# limit category choice
-class PageAdmin(admin.ModelAdmin):
-    list_display = ('cover_thumb', 'title', 'status', 'category', 'parent')
+class BasePageAdmin(admin.ModelAdmin):
+    list_display = ('cover_thumb', 'title', 'status', 'parent')
     list_display_links = ('cover_thumb', 'title')
-    list_editable = ('status', 'category')
-    list_filter = ('status', 'category')
+    list_editable = ('status',)
+    list_filter = ('status',)
     prepopulated_fields = {"slug": ("title",)}
 
     # prepopulate fields using changelist's filters
     prepopulated_filters = ('parent',)
 
-    search_fields = ['title', 'category__title']
+    search_fields = ('title',)
     fieldsets = [
         ('', {
-            'fields': ['title', 'slug', 'category', 'cover', 'content'],
+            'fields': ['title', 'slug', 'cover', 'content'],
         }),
         (_('Publication Settings'), {
-            'fields': ['featured', 'allow_comments', 'status', 'parent'],
-            'classes': ('collapse',),
+            'fields': ['status', 'parent'],
+            # 'classes': ('collapse',),
         }),
     ]
 
@@ -59,9 +58,15 @@ class PageAdmin(admin.ModelAdmin):
     def get_common_context(self, query, extra_context=None):
         extra_context = extra_context or {}
         parent = query.get('parent', None)
-        if parent is not None:
-            extra_context['parent'] = Page.objects.get_subclass(id=parent)
+        extra_context['parent'] = None if parent is None else \
+                                  Page.objects.get_subclass(id=parent)
+
         return extra_context
+
+    def render_change_form(self, request, context, *args, **kwargs):
+        if context['original'] and not 'parent' in context:
+            context['parent'] = context['original'].parent
+        return super().render_change_form(request, context, *args, **kwargs)
 
     def add_view(self, request, form_url='', extra_context=None):
         filters = QueryDict(request.GET.get('_changelist_filters', ''))
@@ -71,6 +76,27 @@ class PageAdmin(admin.ModelAdmin):
     def changelist_view(self, request, extra_context=None):
         extra_context = self.get_common_context(request.GET, extra_context)
         return super().changelist_view(request, extra_context)
+
+
+class PageAdmin(BasePageAdmin):
+    list_display = BasePageAdmin.list_display + ('category',)
+    list_editable = BasePageAdmin.list_editable + ('category',)
+    list_filter = BasePageAdmin.list_editable + ('category',)
+    search_fields = ('category__title',)
+    fieldsets = deepcopy(BasePageAdmin.fieldsets)
+
+    fieldsets[0][1]['fields'].insert(fieldsets[0][1]['fields'].index('slug') + 1, 'category')
+    fieldsets[1][1]['fields'] += ('featured', 'allow_comments')
+
+
+@admin.register(StaticPage)
+class StaticPageAdmin(BasePageAdmin):
+    list_display = BasePageAdmin.list_display + ('view','menu_title')
+    list_editable = BasePageAdmin.list_editable + ('menu_title',)
+    fieldsets = deepcopy(BasePageAdmin.fieldsets)
+
+    fieldsets[0][1]['fields'].insert(fieldsets[0][1]['fields'].index('slug') + 1, 'menu_title')
+    fieldsets[1][1]['fields'] += ('view',)
 
 
 class NavItemInline(SortableInlineAdminMixin, admin.TabularInline):

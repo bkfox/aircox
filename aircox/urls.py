@@ -60,6 +60,12 @@ urls = [
     path(_('publications/'),
          views.PageListView.as_view(model=models.Page), name='page-list'),
 
+    path(_('pages/'),
+         views.PageListView.as_view(model=models.StaticPage), name='static-page-list'),
+
+    path(_('pages/<slug:slug>/'),
+         views.PageDetailView.as_view(), name='page-detail'),
+
     path(_('programs/'), views.ProgramListView.as_view(model=models.Program),
          name='program-list'),
     path(_('programs/<slug:slug>/'),

@@ -11,8 +11,7 @@ __all__ = ['ArticleAdmin']
 
 @admin.register(Article)
 class ArticleAdmin(PageAdmin):
-    list_filter = PageAdmin.list_filter
-    search_fields = PageAdmin.search_fields + ['parent__title']
+    search_fields = PageAdmin.search_fields + ('parent__title',)
     # TODO: readonly field
 
 
