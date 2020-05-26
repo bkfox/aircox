@@ -121,6 +121,10 @@ class Program(Page):
 
         return os.path.exists(path)
 
+    class Meta:
+        verbose_name = _('Program')
+        verbose_name_plural = _('Programs')
+
     def __str__(self):
         return self.title
 

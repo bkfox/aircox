@@ -242,6 +242,10 @@ class Log(models.Model):
     def start(self):
         return self.date
 
+    class Meta:
+        verbose_name = _('Log')
+        verbose_name_plural = _('Logs')
+
     def __str__(self):
         return '#{} ({}, {}, {})'.format(
             self.pk, self.get_type_display(),

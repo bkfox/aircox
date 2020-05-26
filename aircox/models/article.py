@@ -16,7 +16,6 @@ class Article(Page):
 
     objects = ProgramChildQuerySet.as_manager()
 
-
     class Meta:
         verbose_name = _('Article')
         verbose_name_plural = _('Articles')
