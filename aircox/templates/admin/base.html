@@ -43,6 +43,9 @@
                 <div class="navbar-item has-dropdown is-hoverable">
                     <a class="navbar-link" href="{% url "admin:aircox_program_changelist" %}">{% trans "Programs" %}</a>
                     <div class="navbar-dropdown is-boxed">
+                        <input type="text" onkeyup="aircox_admin.filter_menu(event)"
+                               placeholder="{% trans "Search" %}" class="navbar-item input" />
+                        <hr class="navbar-divider"/>
                         {% for program in programs %}
                         <a class="navbar-item" href="{% url "admin:aircox_program_change" program.pk %}">
                             {{ program.title }}</a>
@@ -53,6 +56,9 @@
                 <div class="navbar-item has-dropdown is-hoverable">
                     <a class="navbar-link" href="{% url "admin:aircox_article_changelist" %}">{% trans "Articles" %}</a>
                     <div class="navbar-dropdown is-boxed">
+                        <input type="text" onkeyup="aircox_admin.filter_menu(event)"
+                               placeholder="{% trans "Search" %}" class="navbar-item input" />
+                        <hr class="navbar-divider"/>
                         {% for program in programs %}
                         <a class="navbar-item" href="{% url "admin:aircox_article_changelist" %}?parent={{ program.pk }}">
                             {{ program.title }}</a>
@@ -63,6 +69,9 @@
                 <div class="navbar-item has-dropdown is-hoverable">
                     <a class="navbar-link" href="{% url "admin:aircox_episode_changelist" %}">{% trans "Episodes" %}</a>
                     <div class="navbar-dropdown is-boxed">
+                        <input type="text" onkeyup="aircox_admin.filter_menu(event)"
+                               placeholder="{% trans "Search" %}" class="navbar-item input" />
+                        <hr class="navbar-divider"/>
                         {% for program in programs %}
                         <a class="navbar-item" href="{% url "admin:aircox_episode_changelist" %}?parent={{ program.pk }}">
                             {{ program.title }}</a>
