@@ -45,7 +45,11 @@ Blocks:
         {% endblock %}
 
         <title>
-            {% block head_title %}{{ station.name }}{% endblock %}
+            {% block head_title %}
+            {% if page and page.title %}{{ page.title }} &mdash; {{ station.name }}
+            {% else %}{{ station.name }}
+            {% endif %}
+            {% endblock %}
         </title>
 
         {% block head_extra %}{% endblock %}
@@ -77,7 +81,13 @@ Blocks:
                     <main class="column page">
                         <header class="header">
                             {% block header %}
-                            <h1 class="title is-1">{% block title %}{% endblock %}</h1>
+                            <h1 class="title is-1">
+                                {% block title %}
+                                {% if page and page.title %}
+                                {{ page.title }}
+                                {% endif %}
+                                {% endblock %}
+                            </h1>
 
                             <h3 class="subtitle is-3">
                                 {% block subtitle %}{% endblock %}
@@ -96,6 +106,12 @@ Blocks:
                         </header>
 
                         {% block main %}
+                            {% block content %}
+                            {% if page and page.content %}
+                            {{ page.content|safe }}
+                            {% endif %}
+                            {% endblock %}
+
                             {% if has_filters %}
                             {% comment %}Translators: extra toolbar displayed on the top of page lists {% endcomment %}
                             <nav class="navbar toolbar"
@@ -103,6 +119,8 @@ Blocks:
                             {% block filters %}{% endblock %}
                             </nav>
                             {% endif %}
+
+
                         {% endblock main %}
                     </main>
 
@@ -111,8 +129,8 @@ Blocks:
                     <aside class="column is-one-third-desktop">
                         {# FIXME: block cover into sidebar one #}
                         {% block cover %}
-                        {% if cover is not None %}
-                        <img class="cover" src="{{ cover.url }}" class="cover"/>
+                        {% if page and page.cover %}
+                        <img class="cover" src="{{ page.cover.url }}" class="cover"/>
                         {% endif %}
                         {% endblock %}
 

@@ -1,17 +1,17 @@
 {% extends "aircox/page_list.html" %}
-{% comment %}
-Context:
-- 
-- main:
-    - focused
-    - nav to 'publications' view
-
-{% endcomment %}
 {% load i18n %}
 
-{% block head_title %}{% block title %}{{ station.name }}{% endblock %}{% endblock %}
+{% block head_title %}{{ station.name }}{% endblock %}
 
-{% block main %}
+{% block title %}
+{% if not page or not page.title %}{{ station.name }}
+{% else %}{{ block.super }}
+{% endif %}
+{% endblock %}
+
+
+{% block pages_list %}
+{% if page and page.content %}<hr/>{% endif %}
 <div class="columns">
     {% with render_card=True %}
     {% for object in top_diffs %}

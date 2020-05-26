@@ -8,10 +8,10 @@ from rest_framework.generics import ListAPIView
 from rest_framework import viewsets
 from rest_framework.decorators import action
 
-from ..models import Diffusion, Log
+from ..models import Diffusion, Log, StaticPage
 from ..serializers import LogInfo, LogInfoSerializer
 from .base import BaseView, BaseAPIView
-from .mixins import GetDateMixin
+from .mixins import GetDateMixin, AttachedToMixin
 
 
 __all__ = ['LogListMixin', 'LogListView']
@@ -52,13 +52,14 @@ class LogListMixin(GetDateMixin):
         return Log.merge_diffusions(logs, diffs)
 
 
-class LogListView(BaseView, LogListMixin, ListView):
+class LogListView(AttachedToMixin, BaseView, LogListMixin, ListView):
     """
     Return list of logs for the provided date (from `kwargs` or
     `request.GET`, defaults to today).
     """
     redirect_date_url = 'log-list'
     has_filters = True
+    attach_to_value = StaticPage.ATTACH_TO_LOGS
 
     def get_date(self):
         date = super().get_date()

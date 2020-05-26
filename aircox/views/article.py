@@ -1,5 +1,4 @@
-from ..models import Article, Program
-from .mixins import ParentMixin
+from ..models import Article, Program, StaticPage
 from .page import PageDetailView, PageListView
 
 
@@ -17,12 +16,12 @@ class ArticleDetailView(PageDetailView):
         return qs
 
 
-class ArticleListView(ParentMixin, PageListView):
+class ArticleListView(PageListView):
     model = Article
-    template_name = 'aircox/article_list.html'
     has_headline = True
     is_static = False
     parent_model = Program
+    attach_to_value = StaticPage.ATTACH_TO_ARTICLES
 
     def get_queryset(self):
         return super().get_queryset().filter(is_static=self.is_static)

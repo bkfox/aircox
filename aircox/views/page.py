@@ -6,15 +6,16 @@ from django.views.generic import DetailView, ListView
 from honeypot.decorators import check_honeypot
 
 from ..forms import CommentForm
-from ..models import Category, Comment, Page
+from ..models import Category, Comment
 from ..utils import Redirect
 from .base import BaseView
+from .mixins import AttachedToMixin, ParentMixin
 
 
 __all__ = ['PageDetailView', 'PageListView']
 
 
-class PageListView(BaseView, ListView):
+class PageListView(AttachedToMixin, ParentMixin, BaseView, ListView):
     template_name = 'aircox/page_list.html'
     item_template_name = 'aircox/widgets/page_item.html'
     has_sidebar = True
@@ -81,14 +82,12 @@ class PageDetailView(BaseView, DetailView):
             raise Http404('%s not found' % self.model._meta.verbose_name)
         return obj
 
-    def get_context_data(self, **kwargs):
-        page = kwargs.setdefault('page', self.object)
-        kwargs.setdefault('title', page.title)
-        kwargs.setdefault('cover', page.cover)
+    def get_page(self):
+        return self.object
 
+    def get_context_data(self, **kwargs):
         if self.object.allow_comments and not 'comment_form' in kwargs:
             kwargs['comment_form'] = CommentForm()
-
         kwargs['comments'] = Comment.objects.filter(page=self.object) \
                                             .order_by('-date')
         return super().get_context_data(**kwargs)
@@ -109,8 +108,6 @@ class PageDetailView(BaseView, DetailView):
         comment.save()
 
         return self.get(request, *args, **kwargs)
-
-
 
 
 

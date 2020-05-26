@@ -152,6 +152,10 @@ class Page(BasePage):
         _('allow comments'), default=True,
     )
 
+    class Meta:
+        verbose_name = _('Publication')
+        verbose_name_plural = _('Publications')
+
     def save(self, *args, **kwargs):
         if self.is_published and self.pub_date is None:
             self.pub_date = tz.now()
@@ -160,43 +164,30 @@ class Page(BasePage):
         super().save(*args, **kwargs)
 
 
-class StaticPage(Page):
+class StaticPage(BasePage):
     """ Static page that eventually can be attached to a specific view. """
-    VIEW_HOME = 0x00
-    VIEW_SCHEDULE = 0x01
-    VIEW_LOG = 0x02
-    VIEW_PROGRAMS = 0x03
-    VIEW_EPISODES = 0x04
-    VIEW_ARTICLES = 0x05
+    detail_url_name = 'static-page-detail'
 
-    VIEW_CHOICES = (
-        (VIEW_HOME, _('Home Page')),
-        (VIEW_SCHEDULE, _('Schedule Page')),
-        (VIEW_LOG, _('Log Page')),
-        (VIEW_PROGRAMS, _('Programs list')),
-        (VIEW_EPISODES, _('Episodes list')),
-        (VIEW_ARTICLES, _('Articles list')),
+    ATTACH_TO_HOME = 0x00
+    ATTACH_TO_DIFFUSIONS = 0x01
+    ATTACH_TO_LOGS = 0x02
+    ATTACH_TO_PROGRAMS = 0x03
+    ATTACH_TO_EPISODES = 0x04
+    ATTACH_TO_ARTICLES = 0x05
+
+    ATTACH_TO_CHOICES = (
+        (ATTACH_TO_HOME, _('Home page')),
+        (ATTACH_TO_DIFFUSIONS, _('Diffusions page')),
+        (ATTACH_TO_LOGS, _('Logs page')),
+        (ATTACH_TO_PROGRAMS, _('Programs list')),
+        (ATTACH_TO_EPISODES, _('Episodes list')),
+        (ATTACH_TO_ARTICLES, _('Articles list')),
     )
 
-    view = models.SmallIntegerField(
-        _('attach to'), choices=VIEW_CHOICES, blank=True, null=True,
+    attach_to = models.SmallIntegerField(
+        _('attach to'), choices=ATTACH_TO_CHOICES, blank=True, null=True,
         help_text=_('display this page content to related element'),
     )
-    menu_title = models.CharField(_('menu title'), max_length=64, blank=True, null=True)
-
-    is_active = False
-
-    def render_menu_item(self, request, css_class='', active_class=''):
-        if active_class and request.path.startswith(self.url):
-            css_class += ' ' + active_class
-
-        if not self.url:
-            return self.text
-        elif not css_class:
-            return format_html('<a href="{}">{}</a>', self.url, self.text)
-        else:
-            return format_html('<a href="{}" class="{}">{}</a>', self.url,
-                               css_class, self.text)
 
 
 class Comment(models.Model):
@@ -218,6 +209,9 @@ class NavItem(models.Model):
     order = models.PositiveSmallIntegerField(_('order'))
     text = models.CharField(_('title'), max_length=64)
     url = models.CharField(_('url'), max_length=256, blank=True, null=True)
+    page = models.ForeignKey(StaticPage, models.CASCADE,
+                             verbose_name=_('page'), blank=True, null=True,
+                             limit_choices_to={'attach_to__isnull': True})
     #target_type = models.ForeignKey(
     #    ContentType, models.CASCADE, blank=True, null=True)
     #target_id = models.PositiveSmallIntegerField(blank=True, null=True)
@@ -226,12 +220,6 @@ class NavItem(models.Model):
     class Meta:
         verbose_name = _('Menu item')
         ordering = ('order', 'pk')
-
-    is_active = False
-
-    def get_is_active(self, url):
-        """ Return True if navigation item is active for this url. """
-        return self.url and url.startswith(self.url)
 
     def render(self, request, css_class='', active_class=''):
         if active_class and request.path.startswith(self.url):

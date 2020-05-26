@@ -91,16 +91,12 @@ class PageAdmin(BasePageAdmin):
 
 @admin.register(StaticPage)
 class StaticPageAdmin(BasePageAdmin):
-    list_display = BasePageAdmin.list_display + ('view','menu_title')
-    list_editable = BasePageAdmin.list_editable + ('menu_title',)
+    list_display = BasePageAdmin.list_display + ('attach_to',)
     fieldsets = deepcopy(BasePageAdmin.fieldsets)
 
-    fieldsets[0][1]['fields'].insert(fieldsets[0][1]['fields'].index('slug') + 1, 'menu_title')
-    fieldsets[1][1]['fields'] += ('view',)
+    fieldsets[1][1]['fields'] += ('attach_to',)
 
 
 class NavItemInline(SortableInlineAdminMixin, admin.TabularInline):
     model = NavItem
-
-
 

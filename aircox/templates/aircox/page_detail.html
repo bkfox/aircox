@@ -18,9 +18,7 @@ Context:
 {% endblock %}
 
 {% block main %}
-{% block content %}
-{{ object.content|default_if_none:''|safe }}
-{% endblock %}
+{{ block.super }}
 
 {% block comments %}
 {% if comments or comment_form %}

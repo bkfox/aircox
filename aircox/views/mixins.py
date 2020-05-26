@@ -2,9 +2,10 @@ from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
 
 from ..utils import str_to_date
+from ..models import StaticPage
 
 
-__all__ = ['GetDateMixin', 'ParentMixin']
+__all__ = ['GetDateMixin', 'ParentMixin', 'AttachedToMixin']
 
 
 class GetDateMixin:
@@ -67,4 +68,15 @@ class ParentMixin:
             kwargs.setdefault('cover', self.parent.cover)
         return super().get_context_data(**kwargs)
 
+
+class AttachedToMixin:
+    """ Mixin for views that can have a static page attached to it. """
+    attach_to_value = None
+    """ Value of StaticPage.attach_to """
+
+    def get_page(self):
+        if self.attach_to_value is not None:
+            return StaticPage.objects.filter(attach_to=self.attach_to_value) \
+                             .published().first()
+        return super().get_page()
 

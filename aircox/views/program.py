@@ -3,8 +3,8 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 
-from ..models import Episode, Program, Page
-from .mixins import ParentMixin
+from ..models import Episode, Program, Page, StaticPage
+from .mixins import ParentMixin, AttachedToMixin
 from .page import PageDetailView, PageListView
 
 
@@ -34,8 +34,10 @@ class ProgramDetailView(BaseProgramMixin, PageDetailView):
 
 class ProgramListView(PageListView):
     model = Program
+    attach_to_value = StaticPage.ATTACH_TO_PROGRAMS
 
 
+# FIXME: not used
 class ProgramPageDetailView(BaseProgramMixin, ParentMixin, PageDetailView):
     """
     Base view class for a page that is displayed as a program's child page.
@@ -50,7 +52,7 @@ class ProgramPageDetailView(BaseProgramMixin, ParentMixin, PageDetailView):
         return super().get_sidebar_queryset().filter(parent=self.program)
 
 
-class ProgramPageListView(BaseProgramMixin, ParentMixin, PageListView):
+class ProgramPageListView(BaseProgramMixin, PageListView):
     model = Page
     parent_model = Program
     queryset = Page.objects.select_subclasses()

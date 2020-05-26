@@ -12,11 +12,6 @@ __all__ = ['BaseView']
 
 
 class BaseView(TemplateResponseMixin, ContextMixin):
-    title = None
-    """ Page title """
-    cover = None
-    """ Page cover """
-
     has_sidebar = True
     """ Show side navigation """
     has_filters = False
@@ -39,9 +34,12 @@ class BaseView(TemplateResponseMixin, ContextMixin):
     def get_sidebar_url(self):
         return reverse('page-list')
 
+    def get_page(self):
+        return None
+
     def get_context_data(self, **kwargs):
         kwargs.setdefault('station', self.station)
-        kwargs.setdefault('cover', self.cover)
+        kwargs.setdefault('page', self.get_page())
         kwargs.setdefault('has_filters', self.has_filters)
 
         has_sidebar = kwargs.setdefault('has_sidebar', self.has_sidebar)
@@ -60,7 +58,6 @@ class BaseView(TemplateResponseMixin, ContextMixin):
             model = getattr(self, 'model', None) or hasattr(self, 'object') and \
                         type(self.object)
             kwargs['model'] = model
-
 
         return super().get_context_data(**kwargs)
 

@@ -3,8 +3,9 @@ import datetime
 from django.utils.translation import gettext as _
 from django.utils import timezone as tz
 
-from ..models import Diffusion, Log, Page
+from ..models import Diffusion, Log, Page, StaticPage
 from .page import PageListView
+
 
 class HomeView(PageListView):
     template_name = 'aircox/home.html'
@@ -14,6 +15,7 @@ class HomeView(PageListView):
     list_count = 40
     logs_count = 5
     has_filters = False
+    attach_to_value = StaticPage.ATTACH_TO_HOME
 
     def get_logs(self):
         today = datetime.date.today()

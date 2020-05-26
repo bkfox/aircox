@@ -3,9 +3,13 @@
 {% load i18n humanize aircox %}
 
 {% block title %}
+{% if not page or not page.title %}
 {% with station.name as station %}
 {% blocktrans %}That happened on {{ station }}{% endblocktrans %}
 {% endwith %}
+{% else %}
+{{ block.super }}
+{% endif %}
 {% endblock %}
 
 
