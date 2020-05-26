@@ -79,6 +79,8 @@ class BasePageAdmin(admin.ModelAdmin):
 
 
 class PageAdmin(BasePageAdmin):
+    change_list_template = 'admin/aircox/page_change_list.html'
+
     list_display = BasePageAdmin.list_display + ('category',)
     list_editable = BasePageAdmin.list_editable + ('category',)
     list_filter = BasePageAdmin.list_editable + ('category',)
