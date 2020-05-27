@@ -1,0 +1,71 @@
+{% extends "admin/index.html" %}
+{% load i18n thumbnail %}
+
+
+{% block messages %}
+{{ block.super }}
+
+<div class="section">
+<div class="columns">
+    <div class="column">
+        <h1 class="title is-4">{% trans "Today" %}</h1>
+        <table class="table is-fullwidth is-striped">
+            <tbody>
+                {% for diffusion in diffusions %}
+                {% with episode=diffusion.episode %}
+                <tr>
+                    <td>{{ diffusion.start|time }} - {{ diffusion.end|time }}</td>
+                    <td><img src="{% thumbnail episode.cover 64x64 crop %}"/></td>
+                    <td><a href="{% url "admin:aircox_episode_change" episode.pk %}">{{ episode.title }}</a></td>
+                </tr>
+                {% endwith %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="column">
+        <h1 class="title is-4">{% trans "Latest comments" %}</h1>
+        <table class="table is-fullwidth is-striped">
+        {% for comment in comments %}
+        {% with page=comment.page %}
+        <tr>
+            <th>
+                {{ page.title }}
+                </a>
+                |
+                <span title="{{ comment.email }}">{{ comment.nickname }}</span>
+                &mdash;
+                <span>{{ comment.date }}</span>
+                <span class="float-right">
+                    <a href="{% url "admin:aircox_comment_change" comment.pk %}"
+                       title="{% trans "Edit comment" %}"
+                       aria-label="{% trans "Edit comment" %}">
+                        <span class="fa fa-edit"></span>
+                    </a>
+                    <a class="has-text-danger"
+                       title="{% trans "Delete comment" %}"
+                       aria-label="{% trans "Delete comment" %}"
+                       href="{% url "admin:aircox_comment_delete" comment.pk %}">
+                        <span class="fa fa-trash-alt"></span>
+                    </a>
+            </th>
+        </tr>
+        <tr>
+            <td colspan="2">
+                {{ comment.content|slice:"0:128" }}
+            </td>
+        </tr>
+        {% endwith %}
+        {% endfor %}
+            </tbody>
+        </table>
+        <div class="has-text-centered">
+            <a href="{% url "admin:aircox_comment_changelist" %}" class="float-center">{% trans "All comments" %}</a>
+        </div>
+    </div>
+    <div class="column">
+    </div>
+</div>
+</div>
+{% endblock %}
+
