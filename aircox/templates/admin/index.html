@@ -13,7 +13,7 @@
             <tbody>
                 {% for diffusion in diffusions %}
                 {% with episode=diffusion.episode %}
-                <tr>
+                <tr {% if diffusion.is_now %}class="is-selected"{% endif %}>
                     <td>{{ diffusion.start|time }} - {{ diffusion.end|time }}</td>
                     <td><img src="{% thumbnail episode.cover 64x64 crop %}"/></td>
                     <td><a href="{% url "admin:aircox_episode_change" episode.pk %}">{{ episode.title }}</a></td>
