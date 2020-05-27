@@ -46,7 +46,7 @@
                     <a class="navbar-link" href="{% url "admin:aircox_episode_changelist" %}?">{% trans "Today" %}</a>
                     <div class="navbar-dropdown is-boxed">
                         {% for diffusion in diffusions %}
-                        <a class="navbar-item {% if diffusion.is_now %}has-text-danger{% endif %}" href="{% url "admin:aircox_episode_change" diffusion.episode.pk %}">
+                        <a class="navbar-item {% if diffusion.is_now %}has-background-primary{% endif %}" href="{% url "admin:aircox_episode_change" diffusion.episode.pk %}">
                             {{ diffusion.start|time }} |
                             {{ diffusion.episode.title }}
                         </a>
