@@ -68,7 +68,7 @@ class Station(models.Model):
     )
     default_cover = FilerImageField(
         on_delete=models.SET_NULL,
-        verbose_name=_('Default pages cover'), null=True, blank=True,
+        verbose_name=_('Default pages\' cover'), null=True, blank=True,
         related_name='+',
     )
 

@@ -73,7 +73,7 @@ class DiffusionQuerySet(BaseRerunQuerySet):
 
     def date(self, date=None, order=True):
         """ Diffusions occuring date. """
-        date = date or datetime.date.date()
+        date = date or datetime.date.today()
         start = tz.datetime.combine(date, datetime.time())
         end = tz.datetime.combine(date, datetime.time(23, 59, 59, 999))
         qs = self.filter(start__range = (start, end))

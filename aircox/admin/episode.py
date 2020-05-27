@@ -55,7 +55,7 @@ class EpisodeAdminForm(forms.ModelForm):
 class EpisodeAdmin(PageAdmin):
     form = EpisodeAdminForm
     list_display = PageAdmin.list_display
-    list_filter = PageAdmin.list_filter
+    list_filter = PageAdmin.list_filter + ('diffusion__start',)
     search_fields = PageAdmin.search_fields + ('parent__title',)
     # readonly_fields = ('parent',)
 

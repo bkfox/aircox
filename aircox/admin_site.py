@@ -4,7 +4,7 @@ from django.utils.translation import gettext_lazy as _
 
 from rest_framework.routers import DefaultRouter
 
-from .models import Program
+from .models import Comment, Diffusion, Program
 from .views.admin import StatisticsView
 
 
@@ -26,8 +26,16 @@ class AdminSite(admin.AdminSite):
     def each_context(self, request):
         context = super().each_context(request)
         context.update({
-            'programs': Program.objects.all().active().values('pk', 'title') \
-                                             .order_by('title'),
+            # all programs
+            'programs': Program.objects.active().values('pk', 'title') \
+                                       .order_by('title'),
+            # today's diffusions
+            'diffusions': Diffusion.objects.on_air().date().order_by('start') \
+                                   .select_related('episode'),
+            # TODO: only for dashboard
+            # last comments
+            'comments': Comment.objects.order_by('-date')
+                               .select_related('page')[0:10],
         })
         return context
 

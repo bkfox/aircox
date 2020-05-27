@@ -7,7 +7,7 @@ from django.utils.translation import gettext_lazy as _
 
 from adminsortable2.admin import SortableInlineAdminMixin
 
-from ..models import Category, NavItem, Page, StaticPage
+from ..models import Category, Comment, NavItem, Page, StaticPage
 
 
 __all__ = ['CategoryAdmin', 'PageAdmin', 'NavItemInline']
@@ -97,6 +97,13 @@ class StaticPageAdmin(BasePageAdmin):
     fieldsets = deepcopy(BasePageAdmin.fieldsets)
 
     fieldsets[1][1]['fields'] += ('attach_to',)
+
+@admin.register(Comment)
+class CommentAdmin(admin.ModelAdmin):
+    list_display = ('page_title', 'date', 'nickname')
+
+    def page_title(self, obj):
+        return obj.page.title
 
 
 class NavItemInline(SortableInlineAdminMixin, admin.TabularInline):

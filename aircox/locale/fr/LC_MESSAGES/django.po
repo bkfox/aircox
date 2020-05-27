@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Aircox 0.1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-05-26 20:39+0200\n"
+"POT-Creation-Date: 2020-05-27 17:13+0200\n"
 "PO-Revision-Date: 2016-10-10 16:00+02\n"
 "Last-Translator: Aarys\n"
 "Language-Team: Aircox's translators team\n"
@@ -35,9 +35,8 @@ msgid "Schedule"
 msgstr "Horaire"
 
 #: admin/program.py:32
-#, fuzzy
 msgid "Program Settings"
-msgstr "paramètres du port"
+msgstr "Paramètres du program"
 
 #: admin/program.py:48 models/program.py:125
 msgid "Program"
@@ -53,23 +52,15 @@ msgstr "fichier"
 
 #: admin/sound.py:61 templates/aircox/episode_detail.html:38
 msgid "Playlist"
-msgstr ""
+msgstr "Playlist"
 
 #: admin/sound.py:62
 msgid "Info"
-msgstr ""
+msgstr "Info"
 
 #: admin_site.py:17 views/admin.py:32
-#, fuzzy
-#| msgid "artist"
 msgid "Statistics"
-msgstr "artiste"
-
-#: models/article.py:12
-#, fuzzy
-#| msgid "station"
-msgid "is static"
-msgstr "station"
+msgstr "Statistiques"
 
 #: models/article.py:13
 msgid "Should this article be considered as a page instead of a blog article"
@@ -81,7 +72,7 @@ msgstr ""
 msgid "Article"
 msgstr ""
 
-#: models/article.py:21 templates/admin/base.html:54
+#: models/article.py:21 templates/admin/base.html:73
 #: templates/aircox/program_detail.html:19
 msgid "Articles"
 msgstr ""
@@ -90,7 +81,7 @@ msgstr ""
 msgid "Episode"
 msgstr "Épisode"
 
-#: models/episode.py:34 templates/admin/base.html:64
+#: models/episode.py:34 templates/admin/base.html:87
 msgid "Episodes"
 msgstr "Épisodes"
 
@@ -130,14 +121,12 @@ msgstr "éditer la planification de la diffusion"
 
 #: models/episode.py:176 templates/aircox/episode_detail.html:22
 #: templates/aircox/program_header.html:21
-#, fuzzy
-#| msgid "Rerun"
 msgid "rerun"
 msgstr "rediffusion"
 
 #: models/log.py:185
 msgid "stop"
-msgstr ""
+msgstr "stop"
 
 #: models/log.py:187 models/sound.py:77
 msgid "other"
@@ -146,7 +135,7 @@ msgstr "autre"
 #: models/log.py:192 models/page.py:207 models/program.py:54
 #: models/station.py:139
 msgid "station"
-msgstr ""
+msgstr "station"
 
 #: models/log.py:192
 msgid "related station"
@@ -177,14 +166,12 @@ msgid "Track"
 msgstr "Morceau"
 
 #: models/log.py:246
-#, fuzzy
-#| msgid "Log out"
 msgid "Log"
-msgstr "Se déconnecter"
+msgstr "Log"
 
 #: models/log.py:247
 msgid "Logs"
-msgstr ""
+msgstr "Logs"
 
 #: models/page.py:30 models/page.py:210 models/sound.py:294
 msgid "title"
@@ -207,8 +194,6 @@ msgid "draft"
 msgstr "brouillon"
 
 #: models/page.py:64
-#, fuzzy
-#| msgid "public"
 msgid "published"
 msgstr "publié"
 
@@ -217,16 +202,12 @@ msgid "trash"
 msgstr "corbeille"
 
 #: models/page.py:73
-#, fuzzy
-#| msgid "station"
 msgid "status"
-msgstr "station"
+msgstr "status"
 
 #: models/page.py:77
-#, fuzzy
-#| msgid "Cover"
 msgid "cover"
-msgstr "Image de couverture"
+msgstr "couverture"
 
 #: models/page.py:80 models/page.py:201
 msgid "content"
@@ -238,83 +219,64 @@ msgstr "catégorie"
 
 #: models/page.py:149
 msgid "featured"
-msgstr ""
+msgstr "en avant"
 
 #: models/page.py:152
-#, fuzzy
-#| msgid "comment"
 msgid "allow comments"
-msgstr "commentaires"
+msgstr "autoriser les commentaires"
 
 #: models/page.py:156
-#, fuzzy
-#| msgid "public"
 msgid "Publication"
-msgstr "public"
+msgstr "Publication"
 
 #: models/page.py:157
-#, fuzzy
-#| msgid "public"
 msgid "Publications"
-msgstr "public"
+msgstr "Publications"
 
 #: models/page.py:179
-#, fuzzy
-#| msgid "Home"
 msgid "Home page"
-msgstr "Accueil"
+msgstr "Page d'accueil"
 
 #: models/page.py:180
-#, fuzzy
 #| msgid "diffusions"
 msgid "Diffusions page"
-msgstr "diffusions"
+msgstr "Page des diffusions"
 
 #: models/page.py:181
 msgid "Logs page"
-msgstr ""
+msgstr "Page des logs"
 
 #: models/page.py:182
-#, fuzzy
-#| msgid "Program"
 msgid "Programs list"
-msgstr "Programme"
+msgstr "Liste des programmes"
 
 #: models/page.py:183
-#, fuzzy
-#| msgid "Episodes"
 msgid "Episodes list"
-msgstr "Épisodes"
+msgstr "Liste des épisodes"
 
 #: models/page.py:184
-#, fuzzy
-#| msgid "artist"
 msgid "Articles list"
-msgstr "artistes"
+msgstr "Liste des articles"
 
 #: models/page.py:188
 msgid "attach to"
-msgstr ""
+msgstr "attacher à"
 
 #: models/page.py:189
 msgid "display this page content to related element"
-msgstr ""
+msgstr "Afficher le contenu de cette page pour l'élément sélectionné"
 
 #: models/page.py:195
-#, fuzzy
-#| msgid "related program"
 msgid "related page"
-msgstr "programme apparenté"
+msgstr "page liée"
 
 #: models/page.py:198
-#, fuzzy
-#| msgid "name"
 msgid "nickname"
-msgstr "nom"
+msgstr "pseudo"
 
 #: models/page.py:199
 msgid "email"
-msgstr ""
+msgstr "email"
 
 #: models/page.py:208
 msgid "menu"
@@ -353,27 +315,21 @@ msgid "update later diffusions according to schedule changes"
 msgstr ""
 "mettre à jour les diffusions suivantes selon les changements de l'horaire"
 
-#: models/program.py:126 templates/admin/base.html:44
-#, fuzzy
-#| msgid "Program"
+#: models/program.py:126 templates/admin/base.html:59
 msgid "Programs"
-msgstr "Programme"
+msgstr "Programmes"
 
 #: models/program.py:180 models/program.py:515
 msgid "related program"
 msgstr "programme apparenté"
 
 #: models/program.py:184
-msgid "initial schedule"
-msgstr "horaire initial"
-
-#: models/program.py:187
-msgid "mark as rerun of this %(model_name)"
-msgstr ""
+msgid "rerun of"
+msgstr "rediffusion de"
 
 #: models/program.py:229
 msgid "rerun must happen after initial"
-msgstr ""
+msgstr "la rediffusion doit se passer après l'original"
 
 #: models/program.py:257
 msgid "date of the first diffusion"
@@ -412,56 +368,40 @@ msgid "ponctual"
 msgstr "ponctuel"
 
 #: models/program.py:276
-#, fuzzy, python-brace-format
 msgid "1st {day} of the month"
-msgstr "première semaine du mois"
+msgstr "1er {day} du mois"
 
 #: models/program.py:277
-#, fuzzy, python-brace-format
-#| msgid "second week of the month"
 msgid "2nd {day} of the month"
-msgstr "deuxième semaine du mois"
+msgstr "2ème {day} du mois"
 
 #: models/program.py:278
-#, fuzzy, python-brace-format
-#| msgid "third week of the month"
 msgid "3rd {day} of the month"
-msgstr "troisième semaine du mois"
+msgstr "3ème {day} du mois"
 
 #: models/program.py:279
-#, fuzzy, python-brace-format
-#| msgid "third week of the month"
 msgid "4th {day} of the month"
-msgstr "troisième semaine du mois"
+msgstr "4ème {day} du mois"
 
 #: models/program.py:280
-#, fuzzy, python-brace-format
-#| msgid "last week of the month"
 msgid "last {day} of the month"
-msgstr "dernière semaine du mois"
+msgstr "dernier {day} du mois"
 
 #: models/program.py:281
-#, fuzzy, python-brace-format
-#| msgid "first and third weeks of the month"
-msgid "1st and 3rd {day}s of the month"
-msgstr "première et troisième semaines du mois"
+msgid "1st and 3rd {day} of the month"
+msgstr "1er et 3ème {day} du mois"
 
 #: models/program.py:282
-#, fuzzy, python-brace-format
-#| msgid "second and fourth weeks of the month"
-msgid "2nd and 4th {day}s of the month"
-msgstr "deuxième et quatrième semaines du mois"
+msgid "2nd and 4th {day} of the month"
+msgstr "2ème et 4ème {day} du mois"
 
 #: models/program.py:283
-#, python-brace-format
 msgid "every {day}"
-msgstr "Tout les {day}"
+msgstr "tous les {day}"
 
 #: models/program.py:284
-#, fuzzy, python-brace-format
-#| msgid "one week on two"
 msgid "one {day} on two"
-msgstr "une semaine sur deux"
+msgstr "un {day} sur deux"
 
 #: models/program.py:291
 msgid "Schedules"
@@ -473,7 +413,7 @@ msgstr "délai"
 
 #: models/program.py:519
 msgid "minimal delay between two sound plays"
-msgstr "délai minimum entre deux sons"
+msgstr "délai minimum entre deux sons joués"
 
 #: models/program.py:522
 msgid "begin"
@@ -486,7 +426,7 @@ msgstr ""
 
 #: models/sound.py:77
 msgid "archive"
-msgstr ""
+msgstr "archive"
 
 #: models/sound.py:78
 msgid "excerpt"
@@ -517,8 +457,6 @@ msgid "embed"
 msgstr "intégrer"
 
 #: models/sound.py:109
-#, fuzzy
-#| msgid "HTML code used to embed a sound from external plateform"
 msgid "HTML code to embed a sound from an external plateform"
 msgstr ""
 "code HTML utilisé pour intégrer un son depuis une plateforme extérieure"
@@ -529,7 +467,7 @@ msgstr "durée du son"
 
 #: models/sound.py:117
 msgid "modification time"
-msgstr "temps de la modification"
+msgstr "dernière modification"
 
 #: models/sound.py:119
 msgid "last modification date and time"
@@ -540,10 +478,8 @@ msgid "good quality"
 msgstr "bonne qualité"
 
 #: models/sound.py:122
-#, fuzzy
-#| msgid "sound's quality is okay"
 msgid "sound meets quality requirements"
-msgstr "la qualité du son est okay"
+msgstr "le son rencontre les exigences de qualité"
 
 #: models/sound.py:126
 msgid "public"
@@ -562,22 +498,16 @@ msgid "unknown"
 msgstr "inconnu"
 
 #: models/sound.py:284
-#, fuzzy
-#| msgid "Sound"
 msgid "sound"
-msgstr "Son"
+msgstr "son"
 
 #: models/sound.py:290
-#, fuzzy
-#| msgid "time"
 msgid "timestamp"
-msgstr "heure"
+msgstr "temps"
 
 #: models/sound.py:292
-#, fuzzy
-#| msgid "in seconds"
-msgid "position in seconds"
-msgstr "en secondes"
+msgid "position (in seconds)"
+msgstr "position (en secondes)"
 
 #: models/sound.py:295
 msgid "artist"
@@ -585,11 +515,11 @@ msgstr "artiste"
 
 #: models/sound.py:296 templates/admin/aircox/statistics.html:25
 msgid "tags"
-msgstr ""
+msgstr "tags"
 
 #: models/sound.py:298
 msgid "information"
-msgstr ""
+msgstr "information"
 
 #: models/sound.py:301
 msgid ""
@@ -597,7 +527,7 @@ msgid ""
 "remix, features, etc."
 msgstr ""
 "informations additionnelles à propos de ce morceau, telles que la version, "
-"s'ils'agit d'un remix, les fonctionnalités, etc"
+"s'il s'agit d'un remix, les fonctionnalités, etc"
 
 #: models/sound.py:307
 msgid "Tracks"
@@ -612,26 +542,22 @@ msgid "path to the working directory"
 msgstr "chemin vers le repertoire courant"
 
 #: models/station.py:47
-#, fuzzy
 #| msgid "station"
 msgid "default station"
 msgstr "station par défaut"
 
 #: models/station.py:49
-#, fuzzy
 #| msgid "if checked, this station is used as the main one"
 msgid "use this station as the main one."
-msgstr "si coché, cette station est utilisée comme station principale"
+msgstr "utiliser cette station comme principale."
 
 #: models/station.py:54
-#, fuzzy
-#| msgid "if checked, this station is used as the main one"
 msgid "whether this station is still active or not."
-msgstr "si coché, cette station est utilisée comme station principale"
+msgstr "si cette station est active ou non."
 
 #: models/station.py:58
 msgid "Logo"
-msgstr ""
+msgstr "Logo"
 
 #: models/station.py:61
 msgid "website's urls"
@@ -642,24 +568,22 @@ msgid "specify one url per line"
 msgstr "spécifiez une url par ligne"
 
 #: models/station.py:65
-#, fuzzy
-#| msgid "stream"
 msgid "audio streams"
-msgstr "stream"
+msgstr "stream audio"
 
 #: models/station.py:66
 msgid "Audio streams urls used by station's player. One url a line."
 msgstr ""
-"Les url des flux audio utilisés par le lecteur de la station. Une url par "
+"Les URL des flux audio utilisés par le lecteur de la station. Une url par "
 "ligne."
 
 #: models/station.py:71
-msgid "Default pages cover"
-msgstr ""
+msgid "Default pages' cover"
+msgstr "Couverture par défault des pages."
 
 #: models/station.py:121
 msgid "input"
-msgstr "entré"
+msgstr "entrée"
 
 #: models/station.py:122
 msgid "output"
@@ -667,7 +591,7 @@ msgstr "sortie"
 
 #: models/station.py:141
 msgid "direction"
-msgstr ""
+msgstr "direction"
 
 #: models/station.py:145
 msgid "this port is active"
@@ -686,7 +610,7 @@ msgstr ""
 "fichier de configuration en tant que code brut; relatif au plugin utilisé"
 
 #: templates/admin/aircox/page_change_form.html:9
-#: templates/admin/aircox/page_change_list.html:7 templates/admin/base.html:119
+#: templates/admin/aircox/page_change_list.html:7 templates/admin/base.html:144
 #: templates/admin/change_list.html:30 templates/aircox/base.html:62
 msgid "Home"
 msgstr "Accueil"
@@ -694,7 +618,7 @@ msgstr "Accueil"
 #: templates/admin/aircox/page_change_form.html:17
 #, python-format
 msgid "Add %(name)s"
-msgstr ""
+msgstr "Ajouter %(name)s"
 
 #: templates/admin/aircox/page_change_form.html:28
 msgid "Move to trash"
@@ -713,42 +637,44 @@ msgid "Save and continue"
 msgstr "Sauvegarder et continuer"
 
 #: templates/admin/aircox/page_change_form.html:39
-#, fuzzy
-#| msgid "public"
 msgid "Publish"
-msgstr "public"
+msgstr "Publier"
 
 #: templates/admin/aircox/statistics.html:24
-#, fuzzy
-#| msgid "Track"
 msgid "track"
-msgstr "Morceau"
+msgstr "piste"
 
 #: templates/admin/aircox/statistics.html:67
-#, fuzzy
-#| msgid "Total"
-msgid "Totals"
+msgid "Total"
 msgstr "Total"
 
-#: templates/admin/base.html:77
+#: templates/admin/base.html:46 templates/admin/index.html:11
+#: templates/aircox/home.html:68
+msgid "Today"
+msgstr "Aujourd'hui"
+
+#: templates/admin/base.html:62 templates/admin/base.html:76
+#: templates/admin/base.html:90
+msgid "Search"
+msgstr "Chercher"
+
+#: templates/admin/base.html:102
 msgid "Tools"
 msgstr "Outils"
 
-#: templates/admin/base.html:93
+#: templates/admin/base.html:118
 msgid "View site"
 msgstr "Voir le site"
 
-#: templates/admin/base.html:98
-#, fuzzy
-#| msgid "station"
+#: templates/admin/base.html:123
 msgid "Documentation"
-msgstr "station"
+msgstr "Documentation"
 
-#: templates/admin/base.html:102
+#: templates/admin/base.html:127
 msgid "Change password"
 msgstr "Changer le mot de passe"
 
-#: templates/admin/base.html:105
+#: templates/admin/base.html:130
 msgid "Log out"
 msgstr "Se déconnecter"
 
@@ -763,6 +689,22 @@ msgstr "Veuillez corriger les erreurs ci-dessous."
 #: templates/admin/change_list.html:79
 msgid "Filter"
 msgstr "Filtre"
+
+#: templates/admin/index.html:27
+msgid "Latest comments"
+msgstr "Derniers commentaires"
+
+#: templates/admin/index.html:41 templates/admin/index.html:42
+msgid "Edit comment"
+msgstr "Editer le commentaire"
+
+#: templates/admin/index.html:46 templates/admin/index.html:47
+msgid "Delete comment"
+msgstr "Supprimer le commentaire"
+
+#: templates/admin/index.html:63
+msgid "All comments"
+msgstr "Tous les commentaires"
 
 #. Translators: in page detail sidebar
 #: templates/aircox/article_detail.html:12
@@ -779,34 +721,29 @@ msgstr "Plus de nouvelles"
 
 #: templates/aircox/base.html:118
 msgid "list filters"
-msgstr ""
+msgstr "Filtres"
 
 #: templates/aircox/base.html:144
 msgid "Recently"
 msgstr "Récemment"
 
 #: templates/aircox/diffusion_list.html:9
-#, fuzzy, python-format
-#| msgid "Today on %(station)s"
 msgid "This week on %(station)s"
-msgstr "Aujourd'hui sur %(station)s"
+msgstr "Cette semaine sur %(station)s"
 
 #: templates/aircox/episode_detail.html:21
 #: templates/aircox/program_header.html:20
 #: templates/aircox/widgets/episode_item.html:34
-#, python-format
 msgid "Rerun of %(date)s"
-msgstr ""
+msgstr "Rediffusion du %(date)s"
 
 #: templates/aircox/episode_detail.html:53
 msgid "Podcasts"
-msgstr ""
+msgstr "Podcasts"
 
 #: templates/aircox/home.html:24
-#, fuzzy
-#| msgid "current"
 msgid "Currently"
-msgstr "courant"
+msgstr "En ce moment"
 
 #: templates/aircox/home.html:40
 msgid "Last publications"
@@ -824,42 +761,31 @@ msgstr "Plus de publications ..."
 msgid "Previously on air"
 msgstr "Précédemment à l'antenne"
 
-#: templates/aircox/home.html:68
-msgid "Today"
-msgstr "Aujourd'hui"
-
 #: templates/aircox/log_list.html:9
-#, python-format
 msgid "That happened on %(station)s"
-msgstr ""
+msgstr "C'est passé sur %(station)s"
 
 #: templates/aircox/page_detail.html:27
-#, fuzzy
-#| msgid "comment"
 msgid "Comments"
-msgstr "commentaire"
+msgstr "Commentaires"
 
 #: templates/aircox/page_detail.html:48
-#, fuzzy
-#| msgid "comment"
 msgid "Post a comment"
-msgstr "commentaire"
+msgstr "Poster un commentaire"
 
 #: templates/aircox/page_detail.html:73 templates/aircox/page_list.html:57
 msgid "Reset"
 msgstr "Réinitialiser"
 
 #: templates/aircox/page_detail.html:74
-#, fuzzy
-#| msgid "comment"
 msgid "Comment"
-msgstr "commentaire"
+msgstr "Commenter"
 
 #. Translators: title when pages are filtered for a specific parent page, e.g.: Articles of My Incredible Show
 #: templates/aircox/page_list.html:13
 #, python-format
 msgid "%(model)s of %(title)s"
-msgstr ""
+msgstr "%(model)s de %(title)s"
 
 #: templates/aircox/page_list.html:54
 msgid "Apply"
@@ -867,13 +793,11 @@ msgstr "Appliquer"
 
 #: templates/aircox/page_list.html:77
 msgid "There is nothing published here..."
-msgstr ""
+msgstr "Il n'y a rien de publié ici..."
 
 #: templates/aircox/page_list.html:87
-#, fuzzy
-#| msgid "information"
 msgid "pagination"
-msgstr "information"
+msgstr "pagination"
 
 #. Translators: Bottom of the list, "previous page"
 #: templates/aircox/page_list.html:95
@@ -888,7 +812,7 @@ msgstr "Prochain"
 #: templates/aircox/program_base.html:8
 #, python-format
 msgid "Recently on %(program)s"
-msgstr ""
+msgstr "Récemment dans %(program)s"
 
 #: templates/aircox/program_detail.html:31
 msgid "Show all program's articles"
@@ -912,8 +836,6 @@ msgid "Go"
 msgstr ""
 
 #: templates/aircox/widgets/episode_item.html:35
-#, fuzzy
-#| msgid "Rerun"
 msgid "(rerun)"
 msgstr "(rediffusion)"
 
@@ -922,8 +844,6 @@ msgid "Show all publications"
 msgstr "Afficher toutes les publications"
 
 #: templates/aircox/widgets/page_list.html:21
-#, fuzzy
-#| msgid "Show"
 msgid "Show more"
 msgstr "Afficher plus"
 
@@ -940,247 +860,71 @@ msgid "Play or pause audio"
 msgstr "Lire ou suspendre l'audio"
 
 #: urls.py:40
-#, fuzzy
-#| msgid "artist"
 msgid "articles/"
-msgstr "artistes"
+msgstr "articles/"
 
 #: urls.py:43
 msgid "articles/<slug:slug>/"
-msgstr ""
+msgstr "articles/<slug:slug>/"
 
 #: urls.py:47
 msgid "episodes/"
-msgstr ""
+msgstr "episodes/"
 
 #: urls.py:49
 msgid "episodes/<slug:slug>/"
-msgstr ""
+msgstr "episodes/<slug:slug>/"
 
 #: urls.py:51
 msgid "week/"
-msgstr ""
+msgstr "semaine/"
 
 #: urls.py:53
 msgid "week/<date:date>/"
-msgstr ""
+msgstr "semaine/<date:date>/"
 
 #: urls.py:56
 msgid "logs/"
-msgstr ""
+msgstr "logs/"
 
 #: urls.py:57
 msgid "logs/<date:date>/"
-msgstr ""
+msgstr "logs/<date:date>/"
 
 #: urls.py:60
-#, fuzzy
-#| msgid "public"
 msgid "publications/"
-msgstr "public"
+msgstr "publications/"
 
 #: urls.py:63
 msgid "pages/"
-msgstr ""
+msgstr "pages/"
 
 #: urls.py:69
 msgid "pages/<slug:slug>/"
-msgstr ""
+msgstr "pages/<slug:slug>/"
 
 #: urls.py:76
-#, fuzzy
-#| msgid "program"
 msgid "programs/"
-msgstr "programme"
+msgstr "programmes/"
 
 #: urls.py:78
 msgid "programs/<slug:slug>/"
-msgstr ""
+msgstr "programmes/<slug:slug>/"
 
 #: urls.py:80
 msgid "programs/<slug:parent_slug>/episodes/"
-msgstr ""
+msgstr "programmes/<slug:parent_slug>/episodes/"
 
 #: urls.py:82
 msgid "programs/<slug:parent_slug>/articles/"
-msgstr ""
+msgstr "programmes/<slug:parent_slug>/articles/"
 
 #: urls.py:84
 msgid "programs/<slug:parent_slug>/publications/"
-msgstr ""
+msgstr "programmes/<slug:parent_slug>/publications/"
 
 #: views/page.py:103
 msgid "comments are not allowed"
-msgstr "Les commentaires ne sont pas autorisés"
+msgstr "les commentaires ne sont pas autorisés"
 
-#~ msgid "Filters"
-#~ msgstr "Filtres"
 
-#~ msgid "Streamer monitor"
-#~ msgstr "Streamer"
-
-#~ msgid "refresh"
-#~ msgstr "rafraîchir"
-
-#, python-format
-#~ msgid ""
-#~ "\n"
-#~ "                    Current source: %(current_source)s\n"
-#~ "                    "
-#~ msgstr ""
-#~ "\n"
-#~ "                   Source courante: %(current_source)s\n"
-#~ "                   "
-
-#~ msgid "restart"
-#~ msgstr "redémarrer"
-
-#~ msgid "skip"
-#~ msgstr "passer"
-
-#~ msgid "Source"
-#~ msgstr "Source"
-
-#~ msgid "File"
-#~ msgstr "Fichier"
-
-#~ msgid "Actions*"
-#~ msgstr "Actions"
-
-#~ msgid "current"
-#~ msgstr "courant"
-
-#~ msgid "stream"
-#~ msgstr "stream"
-
-#~ msgid ""
-#~ "\n"
-#~ "    *: Due to some technical issues, it might take up to 30 seconds to "
-#~ "execute the given action.\n"
-#~ "    "
-#~ msgstr ""
-#~ "\n"
-#~ "    *: Pour des raisons technique, cela peut prendre 30 secondes ou plus "
-#~ "pour exécuter une action."
-
-#~ msgid "Statistics of the stations"
-#~ msgstr "Statistiques des stations"
-
-#~ msgid "Go to this date:"
-#~ msgstr "Aller à cette date:"
-
-#~ msgid "day"
-#~ msgstr "jour"
-
-#~ msgid "month"
-#~ msgstr "mois"
-
-#~ msgid "year"
-#~ msgstr "année"
-
-#~ msgid "Show"
-#~ msgstr "Montrer"
-
-#~ msgid "Date"
-#~ msgstr "Date"
-
-#~ msgid "Type"
-#~ msgstr "Type"
-
-#~ msgid "Diffusion or sound played"
-#~ msgstr "Diffusion ou son joué"
-
-#~ msgid "Tags"
-#~ msgstr "Tags"
-
-#~ msgid "Total"
-#~ msgstr "Total"
-
-#, fuzzy, python-format
-#~| msgid ""
-#~| "\n"
-#~| "                %(items_count)s items, with a total of %(tracks_count)s "
-#~| "tracks\n"
-#~| "                "
-#~ msgid ""
-#~ "\n"
-#~ "                %(items_count)s items, with a total of %(tracks_count)s "
-#~ "tracks\n"
-#~ "                "
-#~ msgstr ""
-#~ "\n"
-#~ "                %(items_counts)s items, avec un total de %(tracks_count)s "
-#~ "pistes\n"
-#~ "                "
-
-#, fuzzy
-#~| msgid "syncronise"
-#~ msgid "Synchronise"
-#~ msgstr "synchroniser"
-
-#, fuzzy
-#~| msgid "restart"
-#~ msgid "Restart"
-#~ msgstr "redémarrer"
-
-#, fuzzy
-#~| msgid "start time"
-#~ msgid "Air time"
-#~ msgstr "heure de début"
-
-#, fuzzy
-#~| msgid "source"
-#~ msgid "Data source"
-#~ msgstr "source"
-
-#, fuzzy
-#~| msgid "station"
-#~ msgid "Select a station"
-#~ msgstr "station par défaut"
-
-#, fuzzy
-#~| msgid "Streamer monitor"
-#~ msgid "Streamer Monitor"
-#~ msgstr "Streamer"
-
-#~ msgid "position in the playlist is expressed in seconds"
-#~ msgstr "position dans la playlist exprimée en secondes"
-
-#~ msgid "first week of the month"
-#~ msgstr "première semaine du mois"
-
-#~ msgid "fourth week of the month"
-#~ msgstr "quatrième semaine du mois"
-
-#~ msgid "every week"
-#~ msgstr "toutes les semaines"
-
-#~ msgid "initial diffusion"
-#~ msgstr "diffusion initiale"
-
-#~ msgid "the diffusion is a rerun of this one"
-#~ msgstr "la diffusion est une rediffusion de celle-ci"
-
-#~ msgid "conflicts"
-#~ msgstr "conflits"
-
-#~ msgid "start of the diffusion"
-#~ msgstr "début de la diffusion"
-
-#~ msgid "end of the diffusion"
-#~ msgstr "fin de la diffusion"
-
-#~ msgid "diffusion"
-#~ msgstr "diffusion"
-
-#~ msgid "initial diffusion related it"
-#~ msgstr "diffusion initiale apparentée"
-
-#~ msgid "embed HTML code"
-#~ msgstr "code HTML intégré"
-
-#~ msgid "the sound is accessible to the public"
-#~ msgstr "ce son est accessible au public"
-
-#~ msgid "Stream"
-#~ msgstr "Stream"

@@ -289,7 +289,7 @@ class Track(models.Model):
     timestamp = models.PositiveSmallIntegerField(
         _('timestamp'),
         blank=True, null=True,
-        help_text=_('position in seconds')
+        help_text=_('position (in seconds)')
     )
     title = models.CharField(_('title'), max_length=128)
     artist = models.CharField(_('artist'), max_length=128)

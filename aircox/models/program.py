@@ -181,10 +181,9 @@ class BaseRerun(models.Model):
     )
     initial = models.ForeignKey(
         'self', models.SET_NULL, related_name='rerun_set',
-        verbose_name=_('initial schedule'),
+        verbose_name=_('rerun of'),
         limit_choices_to={'initial__isnull': True},
         blank=True, null=True,
-        help_text=_('mark as rerun of this %(model_name)'),
     )
 
     objects = BaseRerunQuerySet.as_manager()
@@ -226,7 +225,7 @@ class BaseRerun(models.Model):
         super().clean()
         if self.initial is not None and self.initial.start >= self.start:
             raise ValidationError({
-                'initial': _('rerun must happen after initial')
+                'initial': _('rerun must happen after original')
             })
 
 
@@ -278,8 +277,8 @@ class Schedule(BaseRerun):
             'third': _('3rd {day} of the month'),
             'fourth': _('4th {day} of the month'),
             'last': _('last {day} of the month'),
-            'first_and_third': _('1st and 3rd {day}s of the month'),
-            'second_and_fourth': _('2nd and 4th {day}s of the month'),
+            'first_and_third': _('1st and 3rd {day} of the month'),
+            'second_and_fourth': _('2nd and 4th {day} of the month'),
             'every': _('every {day}'),
             'one_on_two': _('one {day} on two'),
         }[x]) for x, y in Frequency.__members__.items()],
