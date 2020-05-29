@@ -10,8 +10,6 @@ Context variables:
 
 {% load i18n easy_thumbnails_tags aircox %}
 
-{% if diffusion and diffusion.is_now %}{% block css %}has-background-primary{% endblock %}{% endif %}
-
 {% block title %}
 {% if not object.is_published and object.program.is_published %}
 <a href="{{ object.program.get_absolute_url }}">
