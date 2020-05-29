@@ -12,7 +12,10 @@ Context variables:
 
 {% block title %}
 {% if not object.is_published and object.program.is_published %}
-<a href="{{ object.program.get_absolute_url }}">{{ object.title }}</a>
+<a href="{{ object.program.get_absolute_url }}">
+    {{ object.title }}
+    {% if object.is_now %}<span class="has-text-danger fa fa-play-circle"></span>{% endif %}
+</a>
 {% else %}
 {{ block.super }}
 {% endif %}

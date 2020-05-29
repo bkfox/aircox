@@ -21,7 +21,7 @@
         </div>
         <div class="navbar-end">
             <div class="select navbar-item">
-                <select ref="selectStreamer" @change.native="selectStreamer" class="control"
+                <select ref="selectStreamer" onchange="selectStreamer" class="control"
                         title="{% trans "Select a station" %}"
                         aria-label="{% trans "Select a station" %}">
                     <option v-for="streamer of streamers" :value="streamer.id">[[ streamer.data.name ]]</option>

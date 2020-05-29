@@ -10,7 +10,7 @@
             </span>
             [[ source.id ]]
 
-            <small v-if="source.isPaused || source.isPlaying">(-[[ source.remainingString ]])</small>
+            <small v-if="source.isPaused || source.isPlaying">([[ source.remainingString ]])</small>
 
             <a v-if="source.data.program !== undefined"
                :href="'{% url 'admin:aircox_program_change' "$$" %}'.replace('$$', source.data.program)"

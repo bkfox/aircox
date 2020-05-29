@@ -33,6 +33,6 @@ class StatisticsView(BaseAdminView, LogListView, ListView):
     date = None
 
     def get_object_list(self, logs, *_):
-        return super().get_object_list(logs, True)
+        super().get_object_list(logs, True)
 
 

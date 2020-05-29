@@ -43,7 +43,7 @@ class LogListMixin(GetDateMixin):
 
     def get_object_list(self, logs, full=False):
         """
-        Return diffusions merged to the provided logs queryset. If
+        Return diffusions merged to the provided logs iterable. If
         `full`, sort items by date without merging.
         """
         diffs = self.get_diffusions_queryset()

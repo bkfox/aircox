@@ -155,6 +155,7 @@ class Log(models.Model):
     @classmethod
     def merge_diffusions(cls, logs, diffs, count=None):
         # TODO: limit count
+        # FIXME: log may be iterable (in stats view)
         logs = list(logs.order_by('-date'))
         diffs = deque(diffs.on_air().before().order_by('-start'))
         object_list = []
