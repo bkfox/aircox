@@ -13,8 +13,11 @@ Context variables:
 {% block title %}
 {% if not object.is_published and object.program.is_published %}
 <a href="{{ object.program.get_absolute_url }}">
+    {% if diffusion and diffusion.is_now %}
+    <span class="fa fa-play"
+        title="{% trans "on air" %}" aria-label="{% trans "on air" %}"></span>
+    {% endif %}
     {{ object.title }}
-    {% if diffusion and diffusion.is_now %}<span class="has-text-danger fa fa-play-circle"></span>{% endif %}
 </a>
 {% else %}
 {{ block.super }}
