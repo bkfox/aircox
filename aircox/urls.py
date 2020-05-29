@@ -38,7 +38,7 @@ urls = [
     # path('', views.PageDetailView.as_view(model=models.Article),
     #     name='home'),
     path(_('articles/'),
-         views.ArticleListView.as_view(model=models.Article, is_static=False),
+         views.ArticleListView.as_view(model=models.Article),
          name='article-list'),
     path(_('articles/<slug:slug>/'),
          views.ArticleDetailView.as_view(),

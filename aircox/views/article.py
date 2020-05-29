@@ -19,11 +19,7 @@ class ArticleDetailView(PageDetailView):
 class ArticleListView(PageListView):
     model = Article
     has_headline = True
-    is_static = False
     parent_model = Program
     attach_to_value = StaticPage.ATTACH_TO_ARTICLES
-
-    def get_queryset(self):
-        return super().get_queryset().filter(is_static=self.is_static)
 
 

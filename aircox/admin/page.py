@@ -33,13 +33,13 @@ class BasePageAdmin(admin.ModelAdmin):
     prepopulated_filters = ('parent',)
 
     search_fields = ('title',)
+
     fieldsets = [
         ('', {
             'fields': ['title', 'slug', 'cover', 'content'],
         }),
         (_('Publication Settings'), {
             'fields': ['status', 'parent'],
-            # 'classes': ('collapse',),
         }),
     ]
 
@@ -55,12 +55,11 @@ class BasePageAdmin(admin.ModelAdmin):
         data['parent'] = filters.get('parent', None)
         return data
 
-    def get_common_context(self, query, extra_context=None):
+    def _get_common_context(self, query, extra_context=None):
         extra_context = extra_context or {}
         parent = query.get('parent', None)
         extra_context['parent'] = None if parent is None else \
                                   Page.objects.get_subclass(id=parent)
-
         return extra_context
 
     def render_change_form(self, request, context, *args, **kwargs):
@@ -70,11 +69,11 @@ class BasePageAdmin(admin.ModelAdmin):
 
     def add_view(self, request, form_url='', extra_context=None):
         filters = QueryDict(request.GET.get('_changelist_filters', ''))
-        extra_context = self.get_common_context(filters, extra_context)
+        extra_context = self._get_common_context(filters, extra_context)
         return super().add_view(request, form_url, extra_context)
 
     def changelist_view(self, request, extra_context=None):
-        extra_context = self.get_common_context(request.GET, extra_context)
+        extra_context = self._get_common_context(request.GET, extra_context)
         return super().changelist_view(request, extra_context)
 
 

@@ -6,14 +6,17 @@ from adminsortable2.admin import SortableInlineAdminMixin
 from ..models import Sound, Track
 
 
-class TracksInline(SortableInlineAdminMixin, admin.TabularInline):
+class TrackInline(SortableInlineAdminMixin, admin.TabularInline):
     template = 'admin/aircox/playlist_inline.html'
     model = Track
     extra = 0
-    fields = ('position', 'artist', 'title', 'info', 'timestamp', 'tags')
+    fields = ('position', 'artist', 'title', 'info', 'tags')
 
     list_display = ['artist', 'title', 'tags', 'related']
     list_filter = ['artist', 'title', 'tags']
+
+class SoundTrackInline(TrackInline):
+    fields = TrackInline.fields + ('timestamp',)
 
 
 class SoundInline(admin.TabularInline):
@@ -44,7 +47,7 @@ class SoundAdmin(admin.ModelAdmin):
         (None, {'fields': ['is_good_quality']})
     ]
     readonly_fields = ('path', 'duration',)
-    inlines = [TracksInline]
+    inlines = [SoundTrackInline]
 
 
 @admin.register(Track)

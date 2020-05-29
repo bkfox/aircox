@@ -1,4 +1,4 @@
-from copy import deepcopy
+from copy import copy
 
 from django.contrib import admin
 from django.utils.translation import gettext_lazy as _
@@ -28,17 +28,20 @@ class ProgramAdmin(PageAdmin):
 
     list_display = PageAdmin.list_display + ('schedule', 'station', 'active')
     list_filter = PageAdmin.list_filter + ('station', 'active')
-    fieldsets = deepcopy(PageAdmin.fieldsets) + [
-        (_('Program Settings'), {
-            'fields': ['active', 'station', 'sync'],
-            'classes': ('collapse',),
-        })
-    ]
-
     prepopulated_fields = {'slug': ('title',)}
-    search_fields = ['title']
+    search_fields = ('title',)
 
     inlines = [ScheduleInline, StreamInline]
+
+    def get_fieldsets(self, request, obj=None):
+        fields = super().get_fieldsets(request, obj)
+        if request.user.has_perm('aircox.program.scheduling'):
+            fields = fields + [
+                (_('Program Settings'), {
+                    'fields': ['active', 'station', 'sync'],
+                })
+            ]
+        return fields
 
 
 @admin.register(Schedule)

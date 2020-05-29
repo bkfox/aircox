@@ -1,3 +1,5 @@
+from copy import copy
+
 from django import forms
 from django.contrib import admin
 from django.utils.translation import gettext as _
@@ -5,7 +7,7 @@ from django.utils.translation import gettext as _
 from ..models import Episode, Diffusion
 
 from .page import PageAdmin
-from .sound import SoundInline, TracksInline
+from .sound import SoundInline, TrackInline
 
 
 class DiffusionBaseAdmin:
@@ -14,7 +16,7 @@ class DiffusionBaseAdmin:
     def get_readonly_fields(self, request, obj=None):
         fields = super().get_readonly_fields(request, obj)
         if not request.user.has_perm('aircox_program.scheduling'):
-            fields += ('program', 'start', 'end')
+            fields = fields + ('program', 'start', 'end')
         return [field for field in fields if field in self.fields]
 
 
@@ -59,6 +61,6 @@ class EpisodeAdmin(PageAdmin):
     search_fields = PageAdmin.search_fields + ('parent__title',)
     # readonly_fields = ('parent',)
 
-    inlines = [TracksInline, SoundInline, DiffusionInline]
+    inlines = [TrackInline, SoundInline, DiffusionInline]
 
 

@@ -87,7 +87,7 @@ msgstr "Épisodes"
 
 #: models/episode.py:140 models/log.py:186
 msgid "on air"
-msgstr "a l'antenne"
+msgstr "à l'antenne"
 
 #: models/episode.py:141
 msgid "not confirmed"
@@ -312,8 +312,7 @@ msgstr "synchroniser"
 
 #: models/program.py:63
 msgid "update later diffusions according to schedule changes"
-msgstr ""
-"mettre à jour les diffusions suivantes selon les changements de l'horaire"
+msgstr "met à jour les diffusions à venir lorsque l'horaire change"
 
 #: models/program.py:126 templates/admin/base.html:59
 msgid "Programs"
