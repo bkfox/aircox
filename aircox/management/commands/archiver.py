@@ -2,15 +2,16 @@
 Handle archiving of logs in order to keep database light and fast. The
 logs are archived in gzip files, per day.
 """
-import logging
 from argparse import RawTextHelpFormatter
+import datetime
+import logging
 
-from django.conf import settings as main_settings
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand
 from django.utils import timezone as tz
 
 import aircox.settings as settings
 from aircox.models import Log, Station
+from aircox.models.log import LogArchiver
 
 logger = logging.getLogger('aircox.commands')
 
@@ -28,29 +29,13 @@ class Command (BaseCommand):
                  'settings.AIRCOX_LOGS_ARCHIVES_AGE'
         )
         group.add_argument(
-            '-f', '--force', action='store_true',
-            help='if an archive exists yet, force it to be updated'
-        )
-        group.add_argument(
             '-k', '--keep', action='store_true',
             help='keep logs in database instead of deleting them'
         )
 
-    def handle(self, *args, age, force, keep, **options):
-        date = tz.now() - tz.timedelta(days=age)
-
-        while True:
-            date = date.replace(
-                hour=0, minute=0, second=0, microsecond=0
-            )
-
-            logger.info('archive log at date %s', date)
-            for station in Station.objects.all():
-                Log.objects.make_archive(
-                    station, date, force=force, keep=keep
-                )
-
-            qs = Log.objects.filter(date__lt=date)
-            if not qs.exists():
-                break
-            date = qs.order_by('-date').first().date
+    def handle(self, *args, age, keep, **options):
+        date = datetime.date.today() - tz.timedelta(days=age)
+        # FIXME: mysql support?
+        logger.info('archive logs for %s and earlier', date)
+        count = LogArchiver().archive(Log.objects.filter(date__date__lte=date))
+        logger.info('total log archived %d', count)

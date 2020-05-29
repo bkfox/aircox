@@ -92,14 +92,13 @@ class BasePage(models.Model):
         return '{}'.format(self.title or self.pk)
 
     def save(self, *args, **kwargs):
-        # TODO: bleach clean
         if not self.slug:
             self.slug = slugify(self.title)[:100]
             count = Page.objects.filter(slug__startswith=self.slug).count()
             if count:
                 self.slug += '-' + str(count)
 
-        if not self.cover and self.parent:
+        if self.parent and not self.cover:
             self.cover = self.parent.cover
         super().save(*args, **kwargs)
 
@@ -161,6 +160,9 @@ class Page(BasePage):
             self.pub_date = tz.now()
         elif not self.is_published:
             self.pub_date = None
+
+        if self.parent and not self.category:
+            self.category = self.parent.category
         super().save(*args, **kwargs)
 
 

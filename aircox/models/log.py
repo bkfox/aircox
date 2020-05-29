@@ -1,12 +1,15 @@
 from collections import deque
 import datetime
+import gzip
 import logging
 import os
 
+import yaml
+
 from django.db import models
 from django.utils import timezone as tz
+from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
-
 
 from aircox import settings
 from .episode import Diffusion
@@ -17,7 +20,7 @@ from .station import Station
 logger = logging.getLogger('aircox')
 
 
-__all__ = ['Log', 'LogQuerySet']
+__all__ = ['Log', 'LogQuerySet', 'LogArchiver']
 
 
 class LogQuerySet(models.QuerySet):
@@ -51,109 +54,6 @@ class LogQuerySet(models.QuerySet):
 
     def with_track(self, with_it=True):
         return self.filter(track__isnull=not with_it)
-
-    @staticmethod
-    def _get_archive_path(station, date):
-        return os.path.join(
-            settings.AIRCOX_LOGS_ARCHIVES_DIR,
-            '{}_{}.log.gz'.format(date.strftime("%Y%m%d"), station.pk)
-        )
-
-    @staticmethod
-    def _get_rel_objects(logs, type, attr):
-        """
-        From a list of dict representing logs, retrieve related objects
-        of the given type.
-
-        Example: _get_rel_objects([{..},..], Diffusion, 'diffusion')
-        """
-        attr_id = attr + '_id'
-
-        return {
-            rel.pk: rel
-
-            for rel in type.objects.filter(
-                pk__in=(
-                    log[attr_id]
-
-                    for log in logs if attr_id in log
-                )
-            )
-        }
-
-    def load_archive(self, station, date):
-        """
-        Return archived logs for a specific date as a list
-        """
-        import yaml
-        import gzip
-
-        path = self._get_archive_path(station, date)
-
-        if not os.path.exists(path):
-            return []
-
-        with gzip.open(path, 'rb') as archive:
-            data = archive.read()
-            logs = yaml.load(data)
-
-            # we need to preload diffusions, sounds and tracks
-            rels = {
-                'diffusion': self._get_rel_objects(logs, Diffusion, 'diffusion'),
-                'sound': self._get_rel_objects(logs, Sound, 'sound'),
-                'track': self._get_rel_objects(logs, Track, 'track'),
-            }
-
-            def rel_obj(log, attr):
-                rel_id = log.get(attr + '_id')
-                return rels[attr][rel_id] if rel_id else None
-
-            return [
-                Log(diffusion=rel_obj(log, 'diffusion'),
-                    sound=rel_obj(log, 'sound'),
-                    track=rel_obj(log, 'track'),
-                    **log)
-
-                for log in logs
-            ]
-
-    def make_archive(self, station, date, force=False, keep=False):
-        """
-        Archive logs of the given date. If the archive exists, it does
-        not overwrite it except if "force" is given. In this case, the
-        new elements will be appended to the existing archives.
-
-        Return the number of archived logs, -1 if archive could not be
-        created.
-        """
-        import yaml
-        import gzip
-
-        os.makedirs(settings.AIRCOX_LOGS_ARCHIVES_DIR, exist_ok=True)
-        path = self._get_archive_path(station, date)
-
-        if os.path.exists(path) and not force:
-            return -1
-
-        qs = self.station(station).date(date)
-
-        if not qs.exists():
-            return 0
-
-        fields = Log._meta.get_fields()
-        logs = [{i.attname: getattr(log, i.attname)
-                 for i in fields} for log in qs]
-
-        # Note: since we use Yaml, we can just append new logs when file
-        # exists yet <3
-        with gzip.open(path, 'ab') as archive:
-            data = yaml.dump(logs).encode('utf8')
-            archive.write(data)
-
-        if not keep:
-            qs.delete()
-
-        return len(logs)
 
 
 class Log(models.Model):
@@ -304,4 +204,102 @@ class Log(models.Model):
             r.append('track: ' + str(self.track_id))
         logger.info('log %s: %s%s', str(self), self.comment or '',
                     ' (' + ', '.join(r) + ')' if r else '')
+
+
+
+class LogArchiver:
+    """ Commodity class used to manage archives of logs. """
+    @cached_property
+    def fields(self):
+        return Log._meta.get_fields()
+
+    @staticmethod
+    def get_path(station, date):
+        return os.path.join(
+            settings.AIRCOX_LOGS_ARCHIVES_DIR,
+            '{}_{}.log.gz'.format(date.strftime("%Y%m%d"), station.pk)
+        )
+
+    def archive(self, qs, keep=False):
+        """
+        Archive logs of the given queryset. Delete archived logs if not
+        `keep`. Return the count of archived logs
+        """
+        if not qs.exists():
+            return 0
+
+        os.makedirs(settings.AIRCOX_LOGS_ARCHIVES_DIR, exist_ok=True)
+        count = qs.count()
+        logs = self.sort_logs(qs)
+
+        # Note: since we use Yaml, we can just append new logs when file
+        # exists yet <3
+        for (station, date), logs in logs.items():
+            path = self.get_path(station, date)
+            with gzip.open(path, 'ab') as archive:
+                data = yaml.dump([self.serialize(l) for l in logs]).encode('utf8')
+                archive.write(data)
+
+        if not keep:
+            qs.delete()
+
+        return count
+
+    @staticmethod
+    def sort_logs(qs):
+        """
+        Sort logs by station and date and return a dict of
+        `{ (station,date): [logs] }`.
+        """
+        qs = qs.order_by('date')
+        logs = {}
+        for log in qs:
+            key = (log.station, log.date)
+            if key not in logs:
+                logs[key] = [log]
+            else:
+                logs[key].append(log)
+        return logs
+
+    def serialize(self, log):
+        """ Serialize log """
+        return {i.attname: getattr(log, i.attname)
+                for i in self.fields}
+
+    def load(self, station, date):
+        """ Load an archive returning logs in a list. """
+        path = self.get_path(station, date)
+
+        if not os.path.exists(path):
+            return []
+
+        with gzip.open(path, 'rb') as archive:
+            data = archive.read()
+            logs = yaml.load(data)
+
+            # we need to preload diffusions, sounds and tracks
+            rels = {
+                'diffusion': self.get_relations(logs, Diffusion, 'diffusion'),
+                'sound': self.get_relations(logs, Sound, 'sound'),
+                'track': self.get_relations(logs, Track, 'track'),
+            }
+
+            def rel_obj(log, attr):
+                rel_id = log.get(attr + '_id')
+                return rels[attr][rel_id] if rel_id else None
+
+            return [Log(diffusion=rel_obj(log, 'diffusion'),
+                        sound=rel_obj(log, 'sound'),
+                        track=rel_obj(log, 'track'),
+                        **log) for log in logs]
+
+    @staticmethod
+    def get_relations(logs, model, attr):
+        """
+        From a list of dict representing logs, retrieve related objects
+        of the given type.
+        """
+        attr_id = attr + '_id'
+        pks = (log[attr_id] for log in logs if attr_id in log)
+        return {rel.pk: rel for rel in model.objects.filter(pk__in=pks)}
 
