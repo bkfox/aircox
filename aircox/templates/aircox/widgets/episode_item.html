@@ -14,7 +14,7 @@ Context variables:
 {% if not object.is_published and object.program.is_published %}
 <a href="{{ object.program.get_absolute_url }}">
     {% if diffusion and diffusion.is_now %}
-    <span class="fa fa-play"
+    <span class="fas fa-play"
         title="{% trans "on air" %}" aria-label="{% trans "on air" %}"></span>
     {% endif %}
     {{ object.title }}
