@@ -26,7 +26,7 @@ Context variables:
 
 
 {% else %}
-<article class="media item {% if is_primary %}is-primary{% endif %}">
+<article class="media item {% block css %}{% endblock%}">
     {% if has_cover|default_if_none:True %}
     <div class="media-left">
         <img src="{% thumbnail object.cover|default:station.default_cover 128x128 crop=scale %}"
