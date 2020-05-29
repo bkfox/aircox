@@ -70,7 +70,7 @@
     {% with has_headline=False %}
     <table class="table is-fullwidth has-background-transparent">
     {% for object in sidebar_object_list %}
-    <tr {% if object.is_now %}class="is-primary"{% endif %}>
+    <tr {% if object.is_now %}class="is-selected"{% endif %}>
         <td>{{ object.start|date:"H:i" }}</td>
         <td>{% include "aircox/widgets/diffusion_item.html" %}</td>
     </tr>
