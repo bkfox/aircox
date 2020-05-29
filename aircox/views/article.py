@@ -10,8 +10,7 @@ class ArticleDetailView(PageDetailView):
     model = Article
 
     def get_sidebar_queryset(self):
-        qs = Article.objects.select_related('cover') \
-                    .published().filter(is_static=False) \
+        qs = Article.objects.published().select_related('cover') \
                     .order_by('-pub_date')
         return qs
 
