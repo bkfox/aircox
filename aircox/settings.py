@@ -17,10 +17,11 @@ def ensure(key, default):
 ensure('AIRCOX_DEFAULT_USER_GROUPS', {
     'radio hosts': (
         'change_program', 'change_episode', 'change_diffusion',
+        'add_comment', 'change_comment', 'delete_comment',
+        'add_article', 'change_article', 'delete_article',
         'change_sound',
         'add_track', 'change_track', 'delete_track',
         'add_tag', 'change_tag', 'delete_tag',
-        'add_comment', 'edit_comment', 'delete_comment',
     ),
 })
 

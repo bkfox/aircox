@@ -54,9 +54,6 @@ class LogQuerySet(models.QuerySet):
 
     @staticmethod
     def _get_archive_path(station, date):
-        # note: station name is not included in order to avoid problems
-        #       of retrieving archive when it changes
-
         return os.path.join(
             settings.AIRCOX_LOGS_ARCHIVES_DIR,
             '{}_{}.log.gz'.format(date.strftime("%Y%m%d"), station.pk)

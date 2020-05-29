@@ -15,6 +15,7 @@ Including another URLconf
 """
 # from django.conf.urls.i18n import i18n_patterns
 from django.conf import settings
+from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path, re_path
 
@@ -25,17 +26,12 @@ import aircox_streamer.urls
 try:
     urlpatterns = aircox.urls.urls + [
         path('admin/', admin.site.urls),
+        path('filer/', include('filer.urls')),
     ]
 
     if settings.DEBUG:
-        from django.views.static import serve
-        urlpatterns.append(
-            re_path(r'^media/(?P<path>.*)$', serve,
-                {'document_root': settings.MEDIA_ROOT, 'show_indexes':True}
-            )
-        )
-
-    urlpatterns.append(path('filer/', include('filer.urls')))
+        urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT) + \
+                       static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 except Exception as e:
     import traceback

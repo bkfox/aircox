@@ -1,85 +1,92 @@
 """
-Sample file for the settings.py
+Django and Aircox instance settings. This file should be saved as `settings.py`
+in the same directory as this one.
 
-First part of the file is where you should put your hand, second part is
-just basic django initialization.
+User MUST define the following values: `SECRET_KEY`, `ALLOWED_HOSTS`, `DATABASES`
 
-
-Some variable retrieve environnement variable if they are defined:
-    * AIRCOX_DEBUG: enable/disable debugging
-    * TZ: timezone (default: 'Europe/Brussels')
-    * LANG: language code
-
-Note that:
-    - SECRET_KEY
-    - ALLOWED_HOSTS
-    - DATABASES
-
-    are not defined in sample_settings and must be defined here.
-
-You can also configure specific Aircox & Aircox CMS settings. For more
-information, please report to these application's settings.py
+The following environment variables are used in settings:
+    * `AIRCOX_DEBUG` (`DEBUG`): enable/disable debugging
 
 For Django settings see:
-    https://docs.djangoproject.com/en/1.8/topics/settings/
-    https://docs.djangoproject.com/en/1.8/ref/settings/
+    https://docs.djangoproject.com/en/3.1/topics/settings/
+    https://docs.djangoproject.com/en/3.1/ref/settings/
+
 """
 import os
 import sys
 import pytz
-
 from django.utils import timezone
 
 sys.path.insert(1, os.path.dirname(os.path.realpath(__file__)))
 
+# Project root directory
 PROJECT_ROOT = os.path.dirname(os.path.dirname(__file__))
-STATIC_URL = '/static/'
-MEDIA_URL = '/media/'
-SITE_MEDIA_URL = '/media/'
-STATIC_ROOT = os.path.join(PROJECT_ROOT, 'static')
-MEDIA_ROOT = os.path.join(STATIC_ROOT, 'media')
-
-
-########################################################################
-#
-# You can configure starting from here
-#
-########################################################################
-
-# set current language code. e.g. 'fr_BE'
-LANGUAGE_CODE = 'en_US'
-# locale
-LC_LOCALE = 'en_US.UTF-8'
-# set current timezone. e.g. 'Europe/Brussels'
-TIME_ZONE = os.environ.get('TZ') or 'UTC'
-
-# debug mode
+# DEBUG mode
 DEBUG = (os.environ['AIRCOX_DEBUG'].lower() in ('true', 1)) \
             if 'AIRCOX_DEBUG' in os.environ else \
         False
 
+# Internationalization and timezones: thoses values may be set in order to
+# have correct translation and timezone.
+
+# Current language code. e.g. 'fr_BE'
+LANGUAGE_CODE = 'en-US'
+# Locale
+LC_LOCALE = 'en_US.UTF-8'
+# Current timezone. e.g. 'Europe/Brussels'
+TIME_ZONE = os.environ.get('TZ') or 'UTC'
+
+
+########################################################################
+#
+# You MUST configure those values
+#
+########################################################################
+
+# Secret key: you MUST put a consistent secret key. You can generate one
+# at https://djecrety.ir/
+SECRET_KEY = ''
+
+# Database configuration
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': os.path.join(PROJECT_ROOT, 'db.sqlite3'),
+        'TIMEZONE': TIME_ZONE,
+    }
+}
+
+# Allowed host for HTTP requests
+ALLOWED_HOSTS = ('127.0.0.1',)
+
+########################################################################
+#
+# You CAN configure starting from here
+#
+########################################################################
+
+# Assets and medias:
+# In production, user MUST configure webserver in order to serve static
+# and media files.
+
+# Website's path to statics assets
+STATIC_URL = '/static/'
+# Website's path to medias (uploaded images, etc.)
+MEDIA_URL = '/media/'
+# Website URL path to medias (uploaded images, etc.)
+SITE_MEDIA_URL = '/media/'
+# Path to assets' directory (by default in project's directory)
+STATIC_ROOT = os.path.join(PROJECT_ROOT, 'static')
+# Path to media directory (by default in static's directory)
+MEDIA_ROOT = os.path.join(STATIC_ROOT, 'media')
+
+# Include specific configuration depending of DEBUG
 if DEBUG:
     from .dev import *
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': os.path.join(PROJECT_ROOT, 'db.sqlite3'),
-            'TIMEZONE': TIME_ZONE,
-        }
-    }
 else:
     from .prod import *
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.mysql',
-            'NAME': 'aircox',
-            'USER': 'aircox',
-            'PASSWORD': '',
-            'HOST': 'localhost',
-            'TIMEZONE': TIME_ZONE,
-        },
-    }
-    # caching uses memcache
+
+    # Enable caching using memcache
     CACHES = {
         'default': {
             'BACKEND': 'django.core.cache.backends.memcached.MemcachedCache',
@@ -87,19 +94,13 @@ else:
         }
     }
 
-# allowed hosts
-ALLOWED_HOSTS = ('127.0.0.1',)
-
-# secret key: you MUST put a consistent secret key
-SECRET_KEY = ''
-
 
 ########################################################################
 #
 # You don't really need to configure what is happening below
 #
 ########################################################################
-# Internationalization and timezone
+# Enables internationalization and timezone
 USE_I18N = True
 USE_L10N = True
 USE_TZ = True
@@ -118,7 +119,7 @@ except:
     pass
 
 
-#-- django-ckEditor
+#-- django-CKEditor
 CKEDITOR_CONFIGS = {
     "default": {
         "toolbar": "Custom",
@@ -146,17 +147,15 @@ THUMBNAIL_PROCESSORS = (
 )
 
 
-# Application definition
+# Enabled applications
 INSTALLED_APPS = (
     'aircox',
     'aircox.apps.AircoxAdminConfig',
     'aircox_streamer',
 
-    # aircox applications
+    # Aircox dependencies
     'rest_framework',
     'django_filters',
-
-    # aircox_web applications
     "content_editor",
     "ckeditor",
     'easy_thumbnails',
@@ -165,7 +164,7 @@ INSTALLED_APPS = (
     'adminsortable2',
     'honeypot',
 
-    # django
+    # Django
     'django.contrib.contenttypes',
     'django.contrib.auth',
     'django.contrib.humanize',
@@ -216,30 +215,4 @@ TEMPLATES = [
 
 
 WSGI_APPLICATION = 'instance.wsgi.application'
-
-# FIXME: what about dev & prod modules?
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-        },
-    },
-    'loggers': {
-        'aircox': {
-            'handlers': ['console'],
-            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
-        },
-        'aircox.commands': {
-            'handlers': ['console'],
-            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
-        },
-        'aircox.test': {
-            'handlers': ['console'],
-            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
-        },
-    },
-}
-
 

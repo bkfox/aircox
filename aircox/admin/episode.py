@@ -14,7 +14,7 @@ class DiffusionBaseAdmin:
     def get_readonly_fields(self, request, obj=None):
         fields = super().get_readonly_fields(request, obj)
         if not request.user.has_perm('aircox_program.scheduling'):
-            fields += ['program', 'start', 'end']
+            fields += ('program', 'start', 'end')
         return [field for field in fields if field in self.fields]
 
 
