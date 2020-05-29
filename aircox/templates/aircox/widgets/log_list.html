@@ -9,7 +9,7 @@ Context:
 {% with True as hide_schedule %}
 <table class="table is-striped is-hoverable is-fullwidth" role="list">
     {% for object in object_list %}
-    <tr {% if object|is_diffusion and object.is_now %}class="is-primary"{% endif %}>
+    <tr {% if object.is_now %}class="is-primary"{% endif %}>
         <td>
             {% if object|is_diffusion %}
             <time datetime="{{ object.start }}" title="{{ object.start }}">
