@@ -28,11 +28,11 @@ class BaseAdminView(LoginRequiredMixin, UserPassesTestMixin):
 
 class StatisticsView(BaseAdminView, LogListView, ListView):
     template_name = 'admin/aircox/statistics.html'
-    redirect_date_url = 'tools-stats'
+    redirect_date_url = 'admin:tools-stats'
     title = _('Statistics')
     date = None
 
     def get_object_list(self, logs, *_):
-        super().get_object_list(logs, True)
+        return super().get_object_list(logs, True)
 
 
