@@ -202,6 +202,10 @@ class Comment(models.Model):
     date = models.DateTimeField(auto_now_add=True)
     content = models.TextField(_('content'), max_length=1024)
 
+    class Meta:
+        verbose_name = _('Comment')
+        verbose_name_plural = _('Comments')
+
 
 class NavItem(models.Model):
     """ Navigation menu items """
@@ -221,6 +225,7 @@ class NavItem(models.Model):
 
     class Meta:
         verbose_name = _('Menu item')
+        verbose_name_plural = _('Menu items')
         ordering = ('order', 'pk')
 
     def render(self, request, css_class='', active_class=''):
