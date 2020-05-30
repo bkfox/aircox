@@ -1,7 +1,7 @@
 from copy import copy
 
-from django import forms
 from django.contrib import admin
+from django.forms import ModelForm
 from django.utils.translation import gettext as _
 
 from ..models import Episode, Diffusion
@@ -11,7 +11,8 @@ from .sound import SoundInline, TrackInline
 
 
 class DiffusionBaseAdmin:
-    fields = ['type', 'start', 'end']
+    fields = ('type', 'start', 'end', 'schedule')
+    readonly_fields = ('schedule',)
 
     def get_readonly_fields(self, request, obj=None):
         fields = super().get_readonly_fields(request, obj)
@@ -35,7 +36,8 @@ class DiffusionAdmin(DiffusionBaseAdmin, admin.ModelAdmin):
     list_editable = ('type',)
     ordering = ('-start', 'id')
 
-    fields = ['type', 'start', 'end', 'initial', 'program']
+    fields = ('type', 'start', 'end', 'initial', 'program', 'schedule')
+    readonly_fields = ('schedule',)
 
 
 class DiffusionInline(DiffusionBaseAdmin, admin.TabularInline):
@@ -47,7 +49,7 @@ class DiffusionInline(DiffusionBaseAdmin, admin.TabularInline):
         return request.user.has_perm('aircox_program.scheduling')
 
 
-class EpisodeAdminForm(forms.ModelForm):
+class EpisodeAdminForm(ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['parent'].required = True

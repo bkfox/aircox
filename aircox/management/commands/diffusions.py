@@ -52,23 +52,6 @@ class Actions:
         logger.info('[clean] %d diffusions will be removed', qs.count())
         qs.delete()
 
-    def check(self):
-        # TODO: redo
-        qs = Diffusion.objects.filter(type=Diffusion.TYPE_UNCONFIRMED,
-                                      start__gt=self.date)
-        items = []
-        for diffusion in qs:
-            schedules = Schedule.objects.filter(program=diffusion.program)
-            for schedule in schedules:
-                if schedule.match(diffusion.start):
-                    break
-            else:
-                items.append(diffusion.id)
-
-        logger.info('[check] %d diffusions will be removed', len(items))
-        if items:
-            Diffusion.objects.filter(id__in=items).delete()
-
 
 class Command(BaseCommand):
     help = __doc__
@@ -87,12 +70,6 @@ class Command(BaseCommand):
         group.add_argument(
             '-l', '--clean', action='store_true',
             help='remove unconfirmed diffusions older than the given month'
-        )
-        group.add_argument(
-            '-c', '--check', action='store_true',
-            help='check unconfirmed later diffusions from the given '
-                 'date agains\'t schedule. If no schedule is found, remove '
-                 'it.'
         )
 
         group = parser.add_argument_group('date')

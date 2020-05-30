@@ -1,6 +1,7 @@
 import pytz
 
 from django.contrib.auth.models import User, Group, Permission
+from django.db import transaction
 from django.db.models import F, signals
 from django.dispatch import receiver
 from django.utils import timezone as tz
@@ -62,7 +63,6 @@ def schedule_pre_save(sender, instance, *args, **kwargs):
         instance._initial = Schedule.objects.get(pk=instance.pk)
 
 
-# TODO
 @receiver(signals.post_save, sender=Schedule)
 def schedule_post_save(sender, instance, created, *args, **kwargs):
     """
@@ -76,27 +76,21 @@ def schedule_post_save(sender, instance, created, *args, **kwargs):
 
     today = tz.datetime.today()
     delta = instance.normalize(today) - initial.normalize(today)
-
-    qs = Diffusion.objects.program(instance.program).after(tz.now())
-    pks = [d.pk for d in qs if initial.match(d.date)]
-    qs.filter(pk__in=pks).update(
-        start=F('start') + delta,
-        end=F('start') + delta + utils.to_timedelta(instance.duration)
-    )
+    duration = utils.to_timedelta(instance.duration)
+    with transaction.atomic():
+        qs = Diffusion.objects.filter(schedule=instance).after(tz.now())
+        for diffusion in qs:
+            diffusion.start = diffusion.start + delta
+            diffusion.end = diffusion.start + duration
+            diffusion.save()
 
 
 @receiver(signals.pre_delete, sender=Schedule)
 def schedule_pre_delete(sender, instance, *args, **kwargs):
-    """
-    Delete later corresponding diffusion to a changed schedule.
-    """
-    if not instance.program.sync:
-        return
-
-    qs = Diffusion.objects.program(instance.program).after(tz.now())
-    pks = [d.pk for d in qs if instance.match(d.date)]
-    qs.filter(pk__in=pks).delete()
-
+    """ Delete later corresponding diffusion to a changed schedule. """
+    Diffusion.objects.filter(schedule=instance).after(tz.now()).delete()
+    Episode.objects.filter(diffusion__isnull=True, content__isnull=True,
+                           sound__isnull=True).delete()
 
 @receiver(signals.post_delete, sender=Diffusion)
 def diffusion_post_delete(sender, instance, *args, **kwargs):

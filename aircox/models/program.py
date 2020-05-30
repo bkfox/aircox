@@ -229,7 +229,7 @@ class BaseRerun(models.Model):
             })
 
 
-# BIG FIXME: self.date is still used as datetime
+# ? BIG FIXME: self.date is still used as datetime
 class Schedule(BaseRerun):
     """
     A Schedule defines time slots of programs' diffusions. It can be an initial
@@ -283,7 +283,6 @@ class Schedule(BaseRerun):
             'one_on_two': _('one {day} on two'),
         }[x]) for x, y in Frequency.__members__.items()],
     )
-
 
     class Meta:
         verbose_name = _('Schedule')
@@ -340,59 +339,10 @@ class Schedule(BaseRerun):
 
         return False
 
-    def match(self, date=None, check_time=True):
-        """
-        Return True if the given date(time) matches the schedule.
-        """
-        date = utils.date_or_default(
-            date, tz.datetime if check_time else datetime.date)
-
-        if self.date.weekday() != date.weekday() or \
-                not self.match_week(date):
-            return False
-
-        # we check against a normalized version (norm_date will have
-        # schedule's date.
-        return date == self.normalize(date) if check_time else True
-
-    def match_week(self, date=None):
-        """
-        Return True if the given week number matches the schedule, False
-        otherwise.
-        If the schedule is ponctual, return None.
-        """
-
-        if self.frequency == Schedule.Frequency.ponctual:
-            return False
-
-        # since we care only about the week, go to the same day of the week
-        date = utils.date_or_default(date, datetime.date)
-        date += tz.timedelta(days=self.date.weekday() - date.weekday())
-
-        # FIXME this case
-
-        if self.frequency == Schedule.Frequency.one_on_two:
-            # cf notes in date_of_month
-            diff = date - utils.cast_date(self.date, datetime.date)
-
-            return not (diff.days % 14)
-
-        first_of_month = date.replace(day=1)
-        week = date.isocalendar()[1] - first_of_month.isocalendar()[1]
-
-        # weeks of month
-
-        if week == 4:
-            # fifth week: return if for every week
-
-            return self.frequency == self.Frequency.every
-
-        return (self.frequency & (0b0001 << week) > 0)
-
     def normalize(self, date):
         """
-        Return a new datetime with schedule time. Timezone is handled
-        using `schedule.timezone`.
+        Return a datetime set to schedule's time for the provided date,
+        handling timezone (based on schedule's timezone).
         """
         date = tz.datetime.combine(date, self.time)
         return self.tz.normalize(self.tz.localize(date))
@@ -412,11 +362,9 @@ class Schedule(BaseRerun):
             date_wday = date.weekday()
 
             # end of month before the wanted weekday: move one week back
-
             if date_wday < sched_wday:
                 date -= tz.timedelta(days=7)
             date += tz.timedelta(days=sched_wday - date_wday)
-
             return [self.normalize(date)]
 
         # move to the first day of the month that matches the schedule's weekday
@@ -466,7 +414,8 @@ class Schedule(BaseRerun):
 
         # remove dates corresponding to existing diffusions
         saved = set(Diffusion.objects.filter(start__in=dates.keys(),
-                                             program=self.program)
+                                             program=self.program,
+                                             schedule=self)
                              .values_list('start', flat=True))
 
         # make diffs
@@ -487,7 +436,7 @@ class Schedule(BaseRerun):
                 initial = diffusions[initial]
 
             diffusions[date] = Diffusion(
-                episode=episode, type=Diffusion.TYPE_ON_AIR,
+                episode=episode, schedule=self, type=Diffusion.TYPE_ON_AIR,
                 initial=initial, start=date, end=date+duration
             )
         return episodes.values(), diffusions.values()

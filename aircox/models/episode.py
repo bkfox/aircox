@@ -9,7 +9,7 @@ from django.utils.functional import cached_property
 
 from aircox import settings, utils
 from .program import Program, ProgramChildQuerySet, \
-        BaseRerun, BaseRerunQuerySet
+        BaseRerun, BaseRerunQuerySet, Schedule
 from .page import Page, PageQuerySet
 
 
@@ -144,6 +144,10 @@ class Diffusion(BaseRerun):
 
     episode = models.ForeignKey(
         Episode, models.CASCADE, verbose_name=_('episode'),
+    )
+    schedule = models.ForeignKey(
+        Schedule, models.CASCADE, verbose_name=_('schedule'),
+        blank=True, null=True,
     )
     type = models.SmallIntegerField(
         verbose_name=_('type'), default=TYPE_ON_AIR, choices=TYPE_CHOICES,

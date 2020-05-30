@@ -203,7 +203,7 @@ msgstr "corbeille"
 
 #: models/page.py:73
 msgid "status"
-msgstr "status"
+msgstr "statut"
 
 #: models/page.py:77
 msgid "cover"
