@@ -5,10 +5,18 @@ from django.conf import settings
 
 
 #class BaseSettings:
+#    deprecated = set()
+#
 #    def __init__(self, user_conf):
 #        if user_conf:
 #            for key, value in user_conf.items():
+#                if not hasattr(self, key):
+#                    if key in self.deprecated:
+#                        raise ValueError('"{}" config is deprecated'.format(key))
+#                    else:
+#                        raise ValueError('"{}" is not a config value'.format(key))
 #                setattr(self, key, value)
+#
 #
 #class Settings(BaseSettings):
 #    default_user_groups = {

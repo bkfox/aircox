@@ -100,6 +100,8 @@ class StaticPageAdmin(BasePageAdmin):
 @admin.register(Comment)
 class CommentAdmin(admin.ModelAdmin):
     list_display = ('page_title', 'date', 'nickname')
+    list_filter = ('date',)
+    search_fields = ('page__title', 'nickname')
 
     def page_title(self, obj):
         return obj.page.title

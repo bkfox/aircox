@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-01-30 20:13+0100\n"
+"POT-Creation-Date: 2020-05-30 13:39+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,44 +17,6 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
-
-#: models.py:37
-msgid "input"
-msgstr ""
-
-#: models.py:38
-msgid "output"
-msgstr ""
-
-#: models.py:56
-msgid "station"
-msgstr ""
-
-#: models.py:58
-msgid "direction"
-msgstr ""
-
-#: models.py:59
-msgid "type"
-msgstr ""
-
-#: models.py:61
-msgid "active"
-msgstr ""
-
-#: models.py:62
-msgid "this port is active"
-msgstr "Ce port est actif"
-
-#: models.py:65
-msgid "port settings"
-msgstr "Paramètrage du port"
-
-#: models.py:66
-msgid ""
-"list of comma separated params available; this is put in the output config "
-"file as raw code; plugin related"
-msgstr ""
 
 #: templates/aircox_streamer/source_item.html:18
 msgid "Edit related program"
@@ -94,7 +56,7 @@ msgstr "Sélectionner un son"
 
 #: templates/aircox_streamer/source_item.html:61
 msgid "Add a sound to the queue (queue may start playing)"
-msgstr "Ajouter un son à la file de lecture(la file de lecture peut démarer)"
+msgstr "Ajouter un son à la file de lecture (la file de lecture peut démarer)"
 
 #: templates/aircox_streamer/source_item.html:70
 msgid "Add"
@@ -110,7 +72,7 @@ msgstr "Statut"
 
 #: templates/aircox_streamer/source_item.html:104
 msgid "Air time"
-msgstr ""
+msgstr "En antenne depuis"
 
 #: templates/aircox_streamer/source_item.html:114
 msgid "Time left"
@@ -118,7 +80,7 @@ msgstr "Temps restant"
 
 #: templates/aircox_streamer/source_item.html:122
 msgid "Data source"
-msgstr ""
+msgstr "Source de donnée"
 
 #: templates/aircox_streamer/streamer.html:19
 msgid "Reload"
@@ -132,3 +94,4 @@ msgstr "Sélectionner une station"
 #: urls.py:9 views.py:9
 msgid "Streamer Monitor"
 msgstr "Moniteur de stream"
+
