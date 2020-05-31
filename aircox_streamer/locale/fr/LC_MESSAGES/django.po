@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-05-30 13:53+0000\n"
+"POT-Creation-Date: 2020-05-31 18:34+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,79 +18,91 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: aircox_streamer/templates/aircox_streamer/source_item.html:18
+#: controllers.py:75
+msgid "playing"
+msgstr "en cours de lecture"
+
+#: controllers.py:77
+msgid "paused"
+msgstr "pause"
+
+#: controllers.py:79
+msgid "stopped"
+msgstr "arrêt"
+
+#: templates/aircox_streamer/source_item.html:18
 msgid "Edit related program"
 msgstr "Éditer le programme correspondant"
 
-#: aircox_streamer/templates/aircox_streamer/source_item.html:27
+#: templates/aircox_streamer/source_item.html:27
 msgid "Synchronize source with Liquidsoap"
 msgstr "Synchroniser la source avec Liquidsoap"
 
-#: aircox_streamer/templates/aircox_streamer/source_item.html:31
+#: templates/aircox_streamer/source_item.html:31
 msgid "Synchronise"
 msgstr "Synchroniser"
 
-#: aircox_streamer/templates/aircox_streamer/source_item.html:34
+#: templates/aircox_streamer/source_item.html:34
 msgid "Restart current track"
 msgstr "Rejouer le morceau en cours"
 
-#: aircox_streamer/templates/aircox_streamer/source_item.html:38
+#: templates/aircox_streamer/source_item.html:38
 msgid "Restart"
 msgstr "Rejouer"
 
-#: aircox_streamer/templates/aircox_streamer/source_item.html:41
+#: templates/aircox_streamer/source_item.html:41
 msgid "Skip current file"
 msgstr "Passer le fichier actuel"
 
-#: aircox_streamer/templates/aircox_streamer/source_item.html:42
+#: templates/aircox_streamer/source_item.html:42
 msgid "Skip"
 msgstr "Passer"
 
-#: aircox_streamer/templates/aircox_streamer/source_item.html:51
+#: templates/aircox_streamer/source_item.html:51
 msgid "Add sound"
 msgstr "Ajouter un son"
 
-#: aircox_streamer/templates/aircox_streamer/source_item.html:59
+#: templates/aircox_streamer/source_item.html:59
 msgid "Select a sound"
 msgstr "Sélectionner un son"
 
-#: aircox_streamer/templates/aircox_streamer/source_item.html:61
+#: templates/aircox_streamer/source_item.html:61
 msgid "Add a sound to the queue (queue may start playing)"
 msgstr "Ajouter un son à la file de lecture (la file de lecture peut démarer)"
 
-#: aircox_streamer/templates/aircox_streamer/source_item.html:70
+#: templates/aircox_streamer/source_item.html:70
 msgid "Add"
 msgstr "Ajouter"
 
-#: aircox_streamer/templates/aircox_streamer/source_item.html:76
+#: templates/aircox_streamer/source_item.html:76
 msgid "Sounds in queue"
 msgstr "Sons dans la file de lecture"
 
-#: aircox_streamer/templates/aircox_streamer/source_item.html:94
+#: templates/aircox_streamer/source_item.html:94
 msgid "Status"
 msgstr "Statut"
 
-#: aircox_streamer/templates/aircox_streamer/source_item.html:104
+#: templates/aircox_streamer/source_item.html:104
 msgid "Air time"
 msgstr "En antenne depuis"
 
-#: aircox_streamer/templates/aircox_streamer/source_item.html:114
+#: templates/aircox_streamer/source_item.html:114
 msgid "Time left"
 msgstr "Temps restant"
 
-#: aircox_streamer/templates/aircox_streamer/source_item.html:122
+#: templates/aircox_streamer/source_item.html:122
 msgid "Data source"
 msgstr "Source de donnée"
 
-#: aircox_streamer/templates/aircox_streamer/streamer.html:19
+#: templates/aircox_streamer/streamer.html:19
 msgid "Reload"
 msgstr "Recharger"
 
-#: aircox_streamer/templates/aircox_streamer/streamer.html:26
-#: aircox_streamer/templates/aircox_streamer/streamer.html:27
+#: templates/aircox_streamer/streamer.html:26
+#: templates/aircox_streamer/streamer.html:27
 msgid "Select a station"
 msgstr "Sélectionner une station"
 
-#: aircox_streamer/urls.py:9 aircox_streamer/views.py:9
+#: urls.py:9 views.py:9
 msgid "Streamer Monitor"
 msgstr "Moniteur de stream"

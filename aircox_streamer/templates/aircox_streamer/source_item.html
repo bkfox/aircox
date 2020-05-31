@@ -95,7 +95,7 @@
                     <td :class="{'has-text-danger': source.isPlaying, 'has-text-warning': source.isPaused}">
                         <span v-if="source.isPlaying" class="fas fa-play"></span>
                         <span v-else-if="source.data.status" class="fas fa-pause"></span>
-                        [[ source.data.status || "&mdash;" ]]
+                        [[ source.data.status_verbose || "&mdash;" ]]
                     </td>
                 </tr>
                 <tr v-if="source.data.air_time">

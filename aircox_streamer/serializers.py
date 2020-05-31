@@ -38,11 +38,15 @@ class SourceSerializer(BaseMetadataSerializer):
     rid = serializers.IntegerField()
     air_time = serializers.DateTimeField()
     status = serializers.CharField()
+    status_verbose = serializers.CharField()
     remaining = serializers.FloatField()
 
     def get_url(self, obj, **kwargs):
         kwargs['station_pk'] = obj.station.pk
         return super().get_url(obj, **kwargs)
+
+    def get_status_verbose(self, obj, **kwargs):
+        return obj.status_verbose
 
 
 class PlaylistSerializer(SourceSerializer):

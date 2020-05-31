@@ -59,6 +59,10 @@ class BaseMetadata:
     def is_playing(self):
         return self.status == 'playing'
 
+    @property
+    def status_verbose(self):
+        return self.validate_status(self.status, True)
+
     def fetch(self):
         data = self.controller.send('request.metadata ', self.rid, parse=True)
         if data:
