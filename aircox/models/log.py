@@ -154,9 +154,14 @@ class Log(models.Model):
 
     @classmethod
     def merge_diffusions(cls, logs, diffs, count=None):
+        """
+        Merge logs and diffusions together. `logs` can either be a queryset
+        or a list ordered by `Log.date`.
+        """
         # TODO: limit count
         # FIXME: log may be iterable (in stats view)
-        logs = list(logs.order_by('-date'))
+        if isinstance(logs, models.QuerySet):
+            logs = list(logs.order_by('-date'))
         diffs = deque(diffs.on_air().before().order_by('-start'))
         object_list = []
 
@@ -171,7 +176,7 @@ class Log(models.Model):
 
             diff = diffs.popleft()
 
-            # - takes all logs after diff
+            # - takes all logs after diff start
             index = next((i for i, v in enumerate(logs)
                           if v.date <= diff.end), len(logs))
             if index is not None and index > 0:

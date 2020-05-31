@@ -4,6 +4,7 @@ from django.utils.translation import gettext_lazy as _
 from django.views.generic import ListView
 
 from .log import LogListView
+from ..models.log import LogArchiver
 
 
 __all__ = ['BaseAdminView', 'StatisticsView']
@@ -33,6 +34,8 @@ class StatisticsView(BaseAdminView, LogListView, ListView):
     date = None
 
     def get_object_list(self, logs, *_):
+        if not logs.exists():
+            logs = LogArchiver().load(self.station, self.date) if self.date else []
         return super().get_object_list(logs, True)
 
 

@@ -3,6 +3,7 @@ Render list of logs (as widget).
 
 Context:
 - object_list: list of logs to display
+- is_thin: if True, hide some information in order to fit in a thin container
 {% endcomment %}
 {% load aircox %}
 
@@ -13,7 +14,8 @@ Context:
         <td>
             {% if object|is_diffusion %}
             <time datetime="{{ object.start }}" title="{{ object.start }}">
-                {{ object.start|date:"H:i" }} - {{ object.end|date:"H:i" }}
+                {{ object.start|date:"H:i" }}
+                {% if not is_thin %} - {{ object.end|date:"H:i" }}{% endif %}
             </time>
             {% else %}
             <time datetime="{{ object.date }}" title="{{ object.date }}">
