@@ -10,6 +10,7 @@ import tzlocal
 
 from django.template.loader import render_to_string
 from django.utils import timezone as tz
+from django.utils.translation import gettext_lazy as _
 
 from aircox import settings
 from aircox.models import Station, Sound, Port
@@ -63,15 +64,15 @@ class BaseMetadata:
         if data:
             self.validate(data)
 
-    def validate_status(self, status):
+    def validate_status(self, status, i18n=False):
         on_air = self.controller.source
         if on_air and status == 'playing' and (on_air == self or
                 on_air.rid == self.rid):
-            return 'playing'
+            return _('playing') if i18n else 'playing'
         elif status == 'playing':
-            return 'paused'
+            return _('paused') if i18n else 'paused'
         else:
-            return 'stopped'
+            return _('stopped') if i18n else 'stopped'
 
     def validate_air_time(self, air_time):
         if air_time:

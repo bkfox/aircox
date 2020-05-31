@@ -7,18 +7,15 @@ from .log import LogListView
 from ..models.log import LogArchiver
 
 
-__all__ = ['BaseAdminView', 'StatisticsView']
+__all__ = ['AdminMixin', 'StatisticsView']
 
 
-class BaseAdminView(LoginRequiredMixin, UserPassesTestMixin):
+class AdminMixin(LoginRequiredMixin, UserPassesTestMixin):
     title = ''
 
     @property
     def station(self):
         return self.request.station
-
-    def test_func(self):
-        return self.request.user.is_staff
 
     def get_context_data(self, **kwargs):
         kwargs.update(admin.site.each_context(self.request))
@@ -27,15 +24,13 @@ class BaseAdminView(LoginRequiredMixin, UserPassesTestMixin):
         return super().get_context_data(**kwargs)
 
 
-class StatisticsView(BaseAdminView, LogListView, ListView):
+class StatisticsView(AdminMixin, LogListView, ListView):
     template_name = 'admin/aircox/statistics.html'
     redirect_date_url = 'admin:tools-stats'
     title = _('Statistics')
     date = None
 
-    def get_object_list(self, logs, *_):
+    def get_object_list(self, logs, full=False):
         if not logs.exists():
             logs = LogArchiver().load(self.station, self.date) if self.date else []
         return super().get_object_list(logs, True)
-
-
