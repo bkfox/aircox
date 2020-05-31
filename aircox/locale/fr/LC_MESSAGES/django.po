@@ -123,9 +123,12 @@ msgid "edit the diffusion's planification"
 msgstr "éditer la planification de la diffusion"
 
 #: aircox/models/episode.py:180 aircox/templates/aircox/episode_detail.html:22
-#: aircox/templates/aircox/program_header.html:21
 msgid "rerun"
 msgstr "rediffusion"
+
+#: aircox/templates/aircox/program_header.html:21
+msgid "Rerun"
+msgstr "Rediffusion"
 
 #: aircox/models/log.py:82
 msgid "stop"

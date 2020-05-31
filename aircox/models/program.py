@@ -320,7 +320,7 @@ class Schedule(BaseRerun):
         from django.template.defaultfilters import date
         return self.get_frequency_display().format(
             day=date(self.date, 'l')
-        )
+        ).capitalize()
 
     # initial cached data
     __initial = None
