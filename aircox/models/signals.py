@@ -56,8 +56,8 @@ def program_post_save(sender, instance, created, *args, **kwargs):
         Episode.object.parent(instance).filter(diffusion__isnull=True) \
                .delete()
 
-    cover_ = getattr(instance, '__initial_cover', None)
-    if cover_ != instance and instance.cover is not None:
+    cover = getattr(instance, '__initial_cover', None)
+    if cover is None and instance.cover is not None:
         Episode.objects.parent(instance) \
                        .filter(cover__isnull=True) \
                        .update(cover=instance.cover)
