@@ -86,6 +86,7 @@ class Program(Page):
         super().__init__(*kargs, **kwargs)
         if self.slug:
             self.__initial_path = self.path
+            self.__initial_cover = self.cover
 
     @classmethod
     def get_from_path(cl, path):
@@ -133,6 +134,7 @@ class Program(Page):
 
         super().save(*kargs, **kwargs)
 
+        # TODO: move in signals
         path_ = getattr(self, '__initial_path', None)
         if path_ is not None and path_ != self.path and \
                 os.path.exists(path_) and not os.path.exists(self.path):
