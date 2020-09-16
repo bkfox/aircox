@@ -38,8 +38,7 @@ export default {
     data() {
         return {
             state: State.paused,
-            liveInfo: this.liveInfoUrl ? new LiveInfo(this.liveInfoUrl, this.liveInfoTimeout)
-                                       : null,
+            liveInfo: new LiveInfo(this.liveInfoUrl, this.liveInfoTimeout),
         }
     },
 
@@ -56,7 +55,7 @@ export default {
         loading() { return this.state == State.loading; },
 
         onAir() {
-            return this.liveInfo && this.liveInfo.items && this.liveInfo.items[0];
+            return this.liveInfo.items && this.liveInfo.items[0];
         },
 
         buttonStyle() {
@@ -84,6 +83,7 @@ export default {
         },
 
         toggle() {
+            console.log('tooogle', this.paused, '-', this.$refs.audio.src)
             if(this.paused)
                 this.play()
             else
@@ -97,11 +97,11 @@ export default {
     },
 
     mounted() {
-        this.liveInfo && this.liveInfo.refresh()
+        this.liveInfo.refresh()
     },
 
     destroyed() {
-        this.liveInfo && this.liveInfo.drop()
+        this.liveInfo.drop()
     },
 }
 
