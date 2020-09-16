@@ -28,7 +28,7 @@ The audio player
         </template>
 
         <template v-slot:track="{ onAir }">
-            <h4 class="title is-4" :aria-description="{% trans "Track currently on air" %}">
+            <h4 class="title is-4" aria-description="{% trans "Track currently on air" %}">
                 <span class="has-text-info is-size-3">&#9836;</span>
                 <span>[[ onAir.title ]]</span>
                 <span class="has-text-grey-dark has-text-weight-light">
@@ -39,14 +39,14 @@ The audio player
         </template>
 
         <template v-slot:diffusion="{ onAir }">
-            <h4 class="title is-4" :aria-description="{% trans "Diffusion currently on air" %}">
+            <h4 class="title is-4" aria-description="{% trans "Diffusion currently on air" %}">
                 <a :href="onAir.url">[[ onAir.title ]]</a>
             </h4>
             <div class="">[[ onAir.info ]]</div>
         </template>
 
         <template v-slot:empty>
-            <h4 class="title is-4" :aria-description="{% trans "Currently playing" %}">{{ station.name }}</h4>
+            <h4 class="title is-4" aria-description="{% trans "Currently playing" %}">{{ station.name }}</h4>
         </template>
     </a-player>
 </div>
