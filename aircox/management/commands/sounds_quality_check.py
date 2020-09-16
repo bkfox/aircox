@@ -60,6 +60,12 @@ class Stats:
         self.parse(str(out, encoding='utf-8'))
 
 
+#class SoundFile:
+#    path = None
+#    sample_rate = None
+#    length = None
+
+
 class Sound:
     path = None             # file path
     sample_length = 120     # default sample length in seconds

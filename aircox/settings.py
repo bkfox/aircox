@@ -1,5 +1,4 @@
 import os
-import stat
 
 from django.conf import settings
 
@@ -38,8 +37,6 @@ from django.conf import settings
 #    sounds_default_dir = os.path.join(settings.MEDIA_ROOT, 'programs/defaults')
 #    sound_archive_dir = 'archives'
 #    sound_excerpt_dir = 'excerpts'
-#    sound_auto_chmod = True
-#    sound_chmod_flags = (stat.S_IRWXU, stat.S_IRWXU | stat.S_IRWXG | stat.S_IROTH)
 #    sound_quality = {
 #        'attribute': 'RMS lev dB',
 #        'range': (-18.0, -8.0),
@@ -115,15 +112,6 @@ ensure('AIRCOX_SOUND_DEFAULT_DIR',
 ensure('AIRCOX_SOUND_ARCHIVES_SUBDIR', 'archives')
 # Sub directory used for the excerpts of the episode
 ensure('AIRCOX_SOUND_EXCERPTS_SUBDIR', 'excerpts')
-
-# Change sound perms based on 'public' attribute if True
-ensure('AIRCOX_SOUND_AUTO_CHMOD', True)
-# Chmod bits flags as a tuple for (not public, public). Use os.chmod
-# and stat.*
-ensure(
-    'AIRCOX_SOUND_CHMOD_FLAGS',
-    (stat.S_IRWXU, stat.S_IRWXU | stat.S_IRWXG | stat.S_IROTH)
-)
 
 # Quality attributes passed to sound_quality_check from sounds_monitor
 ensure('AIRCOX_SOUND_QUALITY', {

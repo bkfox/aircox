@@ -37,9 +37,9 @@ class SoundQuerySet(models.QuerySet):
     def available(self):
         return self.exclude(type=Sound.TYPE_REMOVED)
 
-    def podcasts(self):
+    def public(self):
         """ Return sounds available as podcasts """
-        return self.filter(Q(embed__isnull=False) | Q(is_public=True))
+        return self.filter(is_public=True)
 
     def archive(self):
         """ Return sounds that are archives """
@@ -103,11 +103,11 @@ class Sound(models.Model):
         recursive=True, max_length=255,
         blank=True, null=True, unique=True,
     )
-    embed = models.TextField(
-        _('embed'),
-        blank=True, null=True,
-        help_text=_('HTML code to embed a sound from an external plateform'),
-    )
+    #embed = models.TextField(
+    #    _('embed'),
+    #    blank=True, null=True,
+    #    help_text=_('HTML code to embed a sound from an external plateform'),
+    #)
     duration = models.TimeField(
         _('duration'),
         blank=True, null=True,
@@ -156,19 +156,12 @@ class Sound(models.Model):
         return tz.make_aware(mtime, tz.get_current_timezone())
 
     def url(self):
-        """
-        Return an url to the stream
-        """
-        # path = self._meta.get_field('path').path
+        """ Return an url to the stream. """
         path = self.path.replace(main_settings.MEDIA_ROOT, '', 1)
-        #path = self.path.replace(path, '', 1)
-
         return main_settings.MEDIA_URL + '/' + path
 
     def file_exists(self):
-        """
-        Return true if the file still exists
-        """
+        """ Return true if the file still exists. """
 
         return os.path.exists(self.path)
 
@@ -240,23 +233,6 @@ class Sound(models.Model):
             return True
 
         return changed
-
-    def check_perms(self):
-        """
-        Check file permissions and update it if the sound is public
-        """
-
-        if not settings.AIRCOX_SOUND_AUTO_CHMOD or \
-                self.removed or not os.path.exists(self.path):
-
-            return
-
-        flags = settings.AIRCOX_SOUND_CHMOD_FLAGS[self.is_public]
-        try:
-            os.chmod(self.path, flags)
-        except PermissionError as err:
-            logger.error('cannot set permissions {} to file {}: {}'.format(
-                self.flags[self.is_public], self.path, err))
 
     def __check_name(self):
         if not self.name and self.path:

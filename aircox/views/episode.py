@@ -2,7 +2,6 @@ from collections import OrderedDict
 import datetime
 
 from django.views.generic import ListView
-from django.utils.translation import gettext as _
 
 from ..models import Diffusion, Episode, Program, StaticPage, Sound
 from .base import BaseView
@@ -17,14 +16,11 @@ __all__ = ['EpisodeDetailView', 'EpisodeListView', 'DiffusionListView']
 class EpisodeDetailView(ProgramPageDetailView):
     model = Episode
 
-    def get_podcasts(self, diffusion):
-        return Sound.objects.diffusion(diffusion).podcasts()
-
     def get_context_data(self, **kwargs):
         if not 'tracks' in kwargs:
             kwargs['tracks'] = self.object.track_set.order_by('position')
         if not 'podcasts' in kwargs:
-            kwargs['podcasts'] = self.object.sound_set.podcasts()
+            kwargs['podcasts'] = self.object.sound_set.public()
         return super().get_context_data(**kwargs)
 
 

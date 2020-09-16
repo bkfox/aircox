@@ -3,9 +3,11 @@ List item for a podcast.
 
 {% endcomment %}
 <div class="podcast">
+    {# comment #}
     {% if object.embed %}
     {{ object.embed|safe }}
     {% else %}
+    {# endcomment #}
     <audio src="{{ object.url }}" controls>
     {% endif %}
 </div>

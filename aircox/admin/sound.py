@@ -1,5 +1,6 @@
 from django.contrib import admin
-from django.utils.translation import gettext as _, gettext_lazy
+from django.utils.safestring import mark_safe
+from django.utils.translation import gettext as _
 
 from adminsortable2.admin import SortableInlineAdminMixin
 
@@ -21,9 +22,13 @@ class SoundTrackInline(TrackInline):
 
 class SoundInline(admin.TabularInline):
     model = Sound
-    fields = ['type', 'path', 'embed', 'duration', 'is_public']
-    readonly_fields = ['type', 'path', 'duration']
+    fields = ['type', 'name', 'audio', 'duration', 'is_good_quality', 'is_public']
+    readonly_fields = ['type', 'audio', 'duration', 'is_good_quality']
     extra = 0
+    max_num = 0
+
+    def audio(self, obj):
+        return mark_safe('<audio src="{}" controls></audio>'.format(obj.url()))
 
     def get_queryset(self, request):
         return super().get_queryset(request).available()
@@ -40,11 +45,10 @@ class SoundAdmin(admin.ModelAdmin):
                     'is_public', 'is_good_quality', 'episode', 'filename']
     list_filter = ('type', 'is_good_quality', 'is_public')
 
-    search_fields = ['name', 'program']
+    search_fields = ['name', 'program__title']
     fieldsets = [
         (None, {'fields': ['name', 'path', 'type', 'program', 'episode']}),
-        (None, {'fields': ['embed', 'duration', 'is_public', 'mtime']}),
-        (None, {'fields': ['is_good_quality']})
+        (None, {'fields': ['duration', 'is_public', 'is_good_quality', 'mtime']}),
     ]
     readonly_fields = ('path', 'duration',)
     inlines = [SoundTrackInline]
