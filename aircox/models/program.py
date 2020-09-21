@@ -99,17 +99,8 @@ class Program(Page):
         while path[0] == '/':
             path = path[1:]
 
-        while path[-1] == '/':
-            path = path[:-2]
-
-        if '/' in path:
-            path = path[:path.index('/')]
-
-        path = path.split('_')
-        path = path[-1]
-        qs = cl.objects.filter(id=int(path))
-
-        return qs[0] if qs else None
+        path = path[:path.index('/')]
+        return cl.objects.filter(slug=path.replace('_','-')).first()
 
     def ensure_dir(self, subdir=None):
         """

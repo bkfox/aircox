@@ -93,6 +93,10 @@ def seconds_to_time(seconds):
     """
     Seconds to datetime.time
     """
+    seconds, microseconds = divmod(seconds, 1)
     minutes, seconds = divmod(seconds, 60)
     hours, minutes = divmod(minutes, 60)
-    return datetime.time(hour=hours, minute=minutes, second=seconds)
+    return datetime.time(hour=int(hours), minute=int(minutes), second=int(seconds),
+                         microsecond=int(microseconds*100000))
+
+

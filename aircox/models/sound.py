@@ -165,45 +165,11 @@ class Sound(models.Model):
 
         return os.path.exists(self.path)
 
-    def file_metadata(self):
-        """
-        Get metadata from sound file and return a Track object if succeed,
-        else None.
-        """
-        if not self.file_exists():
-            return None
-
-        import mutagen
-        try:
-            meta = mutagen.File(self.path)
-        except:
-            meta = {}
-
-        if meta is None:
-            meta = {}
-
-        def get_meta(key, cast=str):
-            value = meta.get(key)
-            return cast(value[0]) if value else None
-
-        info = '{} ({})'.format(get_meta('album'), get_meta('year')) \
-            if meta and ('album' and 'year' in meta) else \
-               get_meta('album') \
-            if 'album' else \
-               ('year' in meta) and get_meta('year') or ''
-
-        return Track(sound=self,
-                     position=get_meta('tracknumber', int) or 0,
-                     title=get_meta('title') or self.name,
-                     artist=get_meta('artist') or _('unknown'),
-                     info=info)
-
     def check_on_file(self):
         """
         Check sound file info again'st self, and update informations if
         needed (do not save). Return True if there was changes.
         """
-
         if not self.file_exists():
             if self.type == self.TYPE_REMOVED:
                 return
@@ -229,7 +195,6 @@ class Sound(models.Model):
             self.is_good_quality = None
             logger.info('sound %s: m_time has changed. Reset quality info',
                         self.path)
-
             return True
 
         return changed

@@ -1,4 +1,9 @@
 #! /usr/bin/env python3
+
+# TODO:
+# - quality check
+# - Sound model => program field as not null
+
 """
 Monitor sound files; For each program, check for:
 - new files;
@@ -23,23 +28,24 @@ parameters given by the setting AIRCOX_SOUND_QUALITY. This script requires
 Sox (and soxi).
 """
 from argparse import RawTextHelpFormatter
+import concurrent.futures as futures
 import datetime
 import atexit
 import logging
 import os
 import re
-import subprocess
 import time
 
+import mutagen
 from watchdog.observers import Observer
 from watchdog.events import PatternMatchingEventHandler, FileModifiedEvent
 
-from django.conf import settings as main_settings
 from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone as tz
+from django.utils.translation import gettext as _
 
 from aircox import settings, utils
-from aircox.models import Diffusion, Program, Sound
+from aircox.models import Diffusion, Program, Sound, Track
 from .import_playlist import PlaylistImport
 
 logger = logging.getLogger('aircox.commands')
@@ -53,97 +59,71 @@ sound_path_re = re.compile(
 )
 
 
-class SoundInfo:
-    name = ''
+class SoundFile:
+    path = None
+    info = None
+    path_info = None
     sound = None
 
-    year = None
-    month = None
-    day = None
-    hour = None
-    minute = None
-    n = None
-    duration = None
-
-    @property
-    def path(self):
-        return self._path
-
-    @path.setter
-    def path(self, value):
-        """
-        Parse file name to get info on the assumption it has the correct
-        format (given in Command.help)
-        """
-        name = os.path.splitext(os.path.basename(value))[0]
-        match = sound_path_re.search(name)
-        match = match.groupdict() if match and match.groupdict() else \
-                {'name': name}
-
-        self._path = value
-        self.name = match['name'].replace('_', ' ').capitalize()
-
-        for key in ('year', 'month', 'day', 'hour', 'minute'):
-            value = match.get(key)
-            setattr(self, key, int(value) if value is not None else None)
-
-        self.n = match.get('n')
-
-    def __init__(self, path='', sound=None):
+    def __init__(self, path):
         self.path = path
-        self.sound = sound
 
-    def get_duration(self):
-        p = subprocess.Popen(['soxi', '-D', self.path],
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE)
-        out, err = p.communicate()
-        if not err:
-            duration = utils.seconds_to_time(int(float(out)))
-            self.duration = duration
-            return duration
-
-    def get_sound(self, save=True, **kwargs):
+    def sync(self, sound=None, program=None, deleted=False, **kwargs):
         """
-        Get or create a sound using self info.
-
-        If the sound is created/modified, get its duration and update it
-        (if save is True, sync to DB), and check for a playlist file.
+        Update related sound model and save it.
         """
-        sound, created = Sound.objects.get_or_create(
-            path=self.path, defaults=kwargs)
+        if deleted:
+            sound = Sound.objects.filter(path=self.path).first()
+            if sound:
+                sound.type = sound.TYPE_REMOVED
+                sound.check_on_file()
+                sound.save()
+                return sound
 
+        # FIXME: sound.program as not null
+        program = kwargs['program'] = Program.get_from_path(self.path)
+        sound, created = Sound.objects.get_or_create(path=self.path, defaults=kwargs) \
+                         if not sound else (sound, False)
+
+        sound.program = program
         if created or sound.check_on_file():
             logger.info('sound is new or have been modified -> %s', self.path)
-            sound.duration = self.get_duration()
-            sound.name = self.name
-            if save:
-                sound.save()
+            self.read_path()
+            self.read_file_info()
+            sound.duration = utils.seconds_to_time(self.info.info.length)
+            sound.name = self.path_info.get('name')
+
+        # check for episode
+        if sound.episode is None and self.read_path():
+            self.find_episode(program)
+
         self.sound = sound
+        sound.save()
+        self.find_playlist(sound)
         return sound
 
-    def find_playlist(self, sound, use_default=True):
+    def read_path(self):
         """
-        Find a playlist file corresponding to the sound path, such as:
-            my_sound.ogg => my_sound.csv
-
-        If use_default is True and there is no playlist find found,
-        use sound file's metadata.
+        Parse file name to get info on the assumption it has the correct
+        format (given in Command.help). Return True if path contains informations.
         """
-        if sound.track_set.count():
-            return
+        if self.path_info:
+            return 'year' in self.path_info
 
-        # import playlist
-        path = os.path.splitext(self.sound.path)[0] + '.csv'
-        if os.path.exists(path):
-            PlaylistImport(path, sound=sound).run()
-        # try metadata
-        elif use_default:
-            track = sound.file_metadata()
-            if track:
-                track.save()
+        name = os.path.splitext(os.path.basename(self.path))[0]
+        match = sound_path_re.search(name)
+        if match:
+            self.path_info = match.groupdict()
+            return True
+        else:
+            self.path_info = {'name': name}
+            return False
 
-    def find_episode(self, program, save=True):
+    def read_file_info(self):
+        """ Read file information and metadata. """
+        self.info = mutagen.File(self.path)
+
+    def find_episode(self, program):
         """
         For a given program, check if there is an initial diffusion
         to associate to, using the date info we have. Update self.sound
@@ -152,37 +132,74 @@ class SoundInfo:
         We only allow initial diffusion since there should be no
         rerun.
         """
-        if self.year is None or not self.sound or self.sound.episode:
-            return
+        pi = self.path_info
+        if 'year' not in pi or not self.sound or self.sound.episode:
+            return None
 
-        if self.hour is None:
-            date = datetime.date(self.year, self.month, self.day)
+        if 'hour' not in pi:
+            date = datetime.date(pi.get('year'), pi.get('month'), pi.get('day'))
         else:
-            date = tz.datetime(self.year, self.month, self.day,
-                               self.hour or 0, self.minute or 0)
+            date = tz.datetime(pi.get('year'), pi.get('month'), pi.get('day'),
+                               pi.get('hour') or 0, pi.get('minute') or 0)
             date = tz.get_current_timezone().localize(date)
 
         diffusion = program.diffusion_set.initial().at(date).first()
         if not diffusion:
-            return
+            return None
 
         logger.info('%s <--> %s', self.sound.path, str(diffusion.episode))
         self.sound.episode = diffusion.episode
-        if save:
-            self.sound.save()
         return diffusion
+
+    def find_playlist(self, sound=None, use_meta=True):
+        """
+        Find a playlist file corresponding to the sound path, such as:
+            my_sound.ogg => my_sound.csv
+
+        Use sound's file metadata if no corresponding playlist has been
+        found and `use_meta` is True.
+        """
+        if sound is None:
+            sound = self.sound
+
+        if sound.track_set.count():
+            return
+
+        # import playlist
+        path = os.path.splitext(self.sound.path)[0] + '.csv'
+        if os.path.exists(path):
+            PlaylistImport(path, sound=sound).run()
+        # use metadata
+        elif use_meta:
+            if self.info is None:
+                self.read_file_info()
+            if self.info.tags:
+                tags = self.info.tags
+                info = '{} ({})'.format(tags.get('album'), tags.get('year')) \
+                    if ('album' and 'year' in tags) else tags.get('album') \
+                    if 'album' in tags else tags.get('year', '')
+
+                track = Track(sound=sound,
+                              position=int(tags.get('tracknumber', 0)),
+                              title=tags.get('title', self.path_info['name']),
+                              artist=tags.get('artist', _('unknown')),
+                              info=info)
+                track.save()
 
 
 class MonitorHandler(PatternMatchingEventHandler):
     """
     Event handler for watchdog, in order to be used in monitoring.
     """
+    pool = None
 
-    def __init__(self, subdir):
+    def __init__(self, subdir, pool):
         """
         subdir: AIRCOX_SOUND_ARCHIVES_SUBDIR or AIRCOX_SOUND_EXCERPTS_SUBDIR
         """
         self.subdir = subdir
+        self.pool = pool
+
         if self.subdir == settings.AIRCOX_SOUND_ARCHIVES_SUBDIR:
             self.sound_kwargs = {'type': Sound.TYPE_ARCHIVE}
         else:
@@ -197,43 +214,23 @@ class MonitorHandler(PatternMatchingEventHandler):
 
     def on_modified(self, event):
         logger.info('sound modified: %s', event.src_path)
-        program = Program.get_from_path(event.src_path)
-        if not program:
-            return
-
-        si = SoundInfo(event.src_path)
-        self.sound_kwargs['program'] = program
-        si.get_sound(save=True, **self.sound_kwargs)
-        if si.year is not None:
-            si.find_episode(program)
-        si.sound.save(True)
-
-    def on_deleted(self, event):
-        logger.info('sound deleted: %s', event.src_path)
-        sound = Sound.objects.filter(path=event.src_path)
-        if sound:
-            sound = sound[0]
-            sound.type = sound.TYPE_REMOVED
-            sound.save()
+        def updated(event, sound_kwargs):
+            SoundFile(event.src_path).sync(**sound_kwargs)
+        self.pool.submit(updated, event, self.sound_kwargs)
 
     def on_moved(self, event):
         logger.info('sound moved: %s -> %s', event.src_path, event.dest_path)
-        sound = Sound.objects.filter(path=event.src_path)
-        if not sound:
-            self.on_modified(
-                FileModifiedEvent(event.dest_path)
-            )
-            return
+        def moved(event, sound_kwargs):
+            sound = Sound.objects.filter(path=event.src_path)
+            sound_file = SoundFile(event.dest_path) if not sound else sound
+            sound_file.sync(**sound_kwargs)
+        self.pool.submit(moved, event, self.sound_kwargs)
 
-        sound = sound[0]
-        sound.path = event.dest_path
-        if not sound.diffusion:
-            program = Program.get_from_path(event.src_path)
-            if program:
-                si = SoundInfo(sound.path, sound=sound)
-                if si.year is not None:
-                    si.find_episode(program)
-        sound.save()
+    def on_deleted(self, event):
+        logger.info('sound deleted: %s', event.src_path)
+        def deleted(event):
+            SoundFile(event.src_path).sync(deleted=True)
+        self.pool.submit(deleted, event.src_path)
 
 
 class Command(BaseCommand):
@@ -276,8 +273,6 @@ class Command(BaseCommand):
         if not program.ensure_dir(subdir):
             return
 
-        sound_kwargs['program'] = program
-
         subdir = os.path.join(program.path, subdir)
         sounds = []
 
@@ -287,12 +282,9 @@ class Command(BaseCommand):
             if not path.endswith(settings.AIRCOX_SOUND_FILE_EXT):
                 continue
 
-            si = SoundInfo(path)
-            sound_kwargs['program'] = program
-            si.get_sound(save=True, **sound_kwargs)
-            si.find_episode(program, save=True)
-            si.find_playlist(si.sound)
-            sounds.append(si.sound.pk)
+            sound_file = SoundFile(path)
+            sound_file.sync(program=program, **sound_kwargs)
+            sounds.append(sound_file.sound.pk)
 
         # sounds in db & unchecked
         sounds = Sound.objects.filter(path__startswith=subdir). \
@@ -307,76 +299,28 @@ class Command(BaseCommand):
         # check files
         for sound in qs:
             if sound.check_on_file():
-                sound.save(check=False)
-
-    def check_quality(self, check=False):
-        """
-        Check all files where quality has been set to bad
-        """
-        import aircox.management.commands.sounds_quality_check as quality_check
-
-        # get available sound files
-        sounds = Sound.objects.filter(is_good_quality=False) \
-                      .exclude(type=Sound.TYPE_REMOVED)
-        if check:
-            self.check_sounds(sounds)
-
-        files = [
-            sound.path for sound in sounds
-            if os.path.exists(sound.path) and sound.is_good_quality is None
-        ]
-
-        # check quality
-        logger.info('quality check...',)
-        cmd = quality_check.Command()
-        cmd.handle(files=files,
-                   **settings.AIRCOX_SOUND_QUALITY)
-
-        # update stats
-        logger.info('update stats in database')
-
-        def update_stats(sound_info, sound):
-            stats = sound_info.get_file_stats()
-            if stats:
-                duration = int(stats.get('length'))
-                sound.duration = utils.seconds_to_time(duration)
-
-        for sound_info in cmd.good:
-            sound = Sound.objects.get(path=sound_info.path)
-            sound.is_good_quality = True
-            update_stats(sound_info, sound)
-            sound.save(check=False)
-
-        for sound_info in cmd.bad:
-            sound = Sound.objects.get(path=sound_info.path)
-            update_stats(sound_info, sound)
-            sound.save(check=False)
+                sound.sync(sound=sound)
 
     def monitor(self):
-        """
-        Run in monitor mode
-        """
-        archives_handler = MonitorHandler(
-            subdir=settings.AIRCOX_SOUND_ARCHIVES_SUBDIR
-        )
-        excerpts_handler = MonitorHandler(
-            subdir=settings.AIRCOX_SOUND_EXCERPTS_SUBDIR
-        )
+        """ Run in monitor mode """
+        with futures.ThreadPoolExecutor() as pool:
+            archives_handler = MonitorHandler(settings.AIRCOX_SOUND_ARCHIVES_SUBDIR, pool)
+            excerpts_handler = MonitorHandler(settings.AIRCOX_SOUND_EXCERPTS_SUBDIR, pool)
 
-        observer = Observer()
-        observer.schedule(archives_handler, settings.AIRCOX_PROGRAMS_DIR,
-                          recursive=True)
-        observer.schedule(excerpts_handler, settings.AIRCOX_PROGRAMS_DIR,
-                          recursive=True)
-        observer.start()
+            observer = Observer()
+            observer.schedule(archives_handler, settings.AIRCOX_PROGRAMS_DIR,
+                              recursive=True)
+            observer.schedule(excerpts_handler, settings.AIRCOX_PROGRAMS_DIR,
+                              recursive=True)
+            observer.start()
 
-        def leave():
-            observer.stop()
-            observer.join()
-        atexit.register(leave)
+            def leave():
+                observer.stop()
+                observer.join()
+            atexit.register(leave)
 
-        while True:
-            time.sleep(1)
+            while True:
+                time.sleep(1)
 
     def add_arguments(self, parser):
         parser.formatter_class = RawTextHelpFormatter
