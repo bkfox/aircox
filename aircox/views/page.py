@@ -12,62 +12,47 @@ from .base import BaseView
 from .mixins import AttachedToMixin, ParentMixin
 
 
-__all__ = ['PageDetailView', 'PageListView']
+__all__ = ['BasePageListView', 'BasePageDetailView', 'PageDetailView', 'PageListView']
 
 
-class PageListView(AttachedToMixin, ParentMixin, BaseView, ListView):
-    template_name = 'aircox/page_list.html'
+class BasePageListView(AttachedToMixin, ParentMixin, BaseView, ListView):
+    """ Base view class for BasePage list. """
+    template_name = 'aircox/basepage_list.html'
     item_template_name = 'aircox/widgets/page_item.html'
     has_sidebar = True
-    has_filters = True
 
-    paginate_by = 20
+    paginate_by = 2
     has_headline = True
-    categories = None
 
     def get(self, *args, **kwargs):
-        self.categories = set(self.request.GET.getlist('categories'))
         return super().get(*args, **kwargs)
 
     def get_queryset(self):
-        qs = super().get_queryset().select_subclasses().published() \
-                    .select_related('cover', 'category')
-
-        # category can be filtered based on request.GET['categories']
-        # (by id)
-        if self.categories:
-            qs = qs.filter(category__slug__in=self.categories)
-        return qs.order_by('-pub_date')
-
-    def get_categories_queryset(self):
-        # TODO: use generic reverse field lookup
-        categories = self.model.objects.published() \
-                               .filter(category__isnull=False) \
-                               .values_list('category', flat=True)
-        return Category.objects.filter(id__in=categories)
+        return super().get_queryset().select_subclasses().published() \
+                      .select_related('cover')
 
     def get_context_data(self, **kwargs):
         kwargs.setdefault('item_template_name', self.item_template_name)
-        kwargs.setdefault('filter_categories', self.get_categories_queryset())
-        kwargs.setdefault('categories', self.categories)
         kwargs.setdefault('has_headline', self.has_headline)
         return super().get_context_data(**kwargs)
 
 
-class PageDetailView(BaseView, DetailView):
-    """ Base view class for pages. """
+class BasePageDetailView(BaseView, DetailView):
+    """ Base view class for BasePage. """
+    template_name = 'aircox/basepage_detail.html'
     context_object_name = 'page'
     has_filters = False
 
     def get_queryset(self):
-        return super().get_queryset().select_related('cover', 'category')
+        return super().get_queryset().select_related('cover')
 
     # This should not exists: it allows mapping not published pages
     # or it should be only used for trashed pages.
     def not_published_redirect(self, page):
         """
-        When a page is not published, redirect to the returned url instead
-        of an HTTP 404 code. """
+        When a page is not published, redirect to the returned url instead of an
+        HTTP 404 code.
+        """
         return None
 
     def get_object(self):
@@ -84,6 +69,55 @@ class PageDetailView(BaseView, DetailView):
 
     def get_page(self):
         return self.object
+
+
+class PageListView(BasePageListView):
+    """ Page list view. """
+    template_name = None
+    has_filters = True
+    categories = None
+
+    def get(self, *args, **kwargs):
+        self.categories = set(self.request.GET.getlist('categories'))
+        return super().get(*args, **kwargs)
+
+    def get_template_names(self):
+        return super().get_template_names() + ['aircox/page_list.html']
+
+    def get_queryset(self):
+        qs = super().get_queryset().select_related('category') \
+                                   .order_by('-pub_date')
+
+        # category can be filtered based on request.GET['categories']
+        # (by id)
+        if self.categories:
+            qs = qs.filter(category__slug__in=self.categories)
+        return qs
+
+    def get_categories_queryset(self):
+        # TODO: use generic reverse field lookup
+        categories = self.model.objects.published() \
+                               .filter(category__isnull=False) \
+                               .values_list('category', flat=True)
+        return Category.objects.filter(id__in=categories)
+
+    def get_context_data(self, **kwargs):
+        kwargs.setdefault('filter_categories', self.get_categories_queryset())
+        kwargs.setdefault('categories', self.categories)
+        return super().get_context_data(**kwargs)
+
+
+class PageDetailView(BaseView, DetailView):
+    """ Base view class for pages. """
+    template_name = None
+    context_object_name = 'page'
+    has_filters = False
+
+    def get_template_names(self):
+        return super().get_template_names() + ['aircox/page_detail.html']
+
+    def get_queryset(self):
+        return super().get_queryset().select_related('category')
 
     def get_context_data(self, **kwargs):
         if self.object.allow_comments and not 'comment_form' in kwargs:
@@ -108,6 +142,4 @@ class PageDetailView(BaseView, DetailView):
         comment.save()
 
         return self.get(request, *args, **kwargs)
-
-
 

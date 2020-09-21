@@ -1,4 +1,4 @@
-{% extends "aircox/page.html" %}
+{% extends "aircox/page_list.html" %}
 {% comment %}List of diffusions as a timetable{% endcomment %}
 {% load i18n aircox humanize %}
 
@@ -20,7 +20,7 @@
 {% endwith %}
 {% endblock %}
 
-{% block main %}{{ block.super }}
+{% block pages_list %}
 {% with hide_schedule=True %}
 <section role="list">
     <div id="timetable-{{ date|date:"Y-m-d" }}">
@@ -41,11 +41,5 @@
     </div>
 </section>
 {% endwith %}
-
-{% comment %}
-<nav class="column menu is-one-third-desktop" role="menu">
-</nav>
-{% endcomment %}
-
 {% endblock %}
 

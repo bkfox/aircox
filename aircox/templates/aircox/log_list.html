@@ -1,4 +1,4 @@
-{% extends "aircox/page.html" %}
+{% extends "aircox/page_list.html" %}
 {% comment %}List of logs for a specific date{% endcomment %}
 {% load i18n humanize aircox %}
 
@@ -21,7 +21,7 @@
 {% endwith %}
 {% endblock %}
 
-{% block main %}{{ block.super }}
+{% block pages_list %}
 <section>
     {# <h4 class="subtitle size-4">{{ date }}</h4> #}
     {% include "aircox/widgets/log_list.html" %}

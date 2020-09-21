@@ -218,25 +218,25 @@ class NavItem(models.Model):
     page = models.ForeignKey(StaticPage, models.CASCADE,
                              verbose_name=_('page'), blank=True, null=True,
                              limit_choices_to={'attach_to__isnull': True})
-    #target_type = models.ForeignKey(
-    #    ContentType, models.CASCADE, blank=True, null=True)
-    #target_id = models.PositiveSmallIntegerField(blank=True, null=True)
-    #target = GenericForeignKey('target_type', 'target_id')
-
     class Meta:
         verbose_name = _('Menu item')
         verbose_name_plural = _('Menu items')
         ordering = ('order', 'pk')
 
+    def get_url(self):
+        return self.url if self.url else \
+            self.page.get_absolute_url() if self.page else None
+
     def render(self, request, css_class='', active_class=''):
-        if active_class and request.path.startswith(self.url):
+        url = self.get_url()
+        if active_class and request.path.startswith(url):
             css_class += ' ' + active_class
 
-        if not self.url:
+        if not url:
             return self.text
         elif not css_class:
-            return format_html('<a href="{}">{}</a>', self.url, self.text)
+            return format_html('<a href="{}">{}</a>', url, self.text)
         else:
-            return format_html('<a href="{}" class="{}">{}</a>', self.url,
+            return format_html('<a href="{}" class="{}">{}</a>', url,
                                css_class, self.text)
 

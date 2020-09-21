@@ -42,6 +42,7 @@ class SoundAdmin(admin.ModelAdmin):
                     'type', 'duration', 'is_public', 'is_good_quality',
                     'audio']
     list_filter = ('type', 'is_good_quality', 'is_public')
+    list_editable = ['name', 'type', 'is_public']
 
     search_fields = ['name', 'program__title']
     fieldsets = [

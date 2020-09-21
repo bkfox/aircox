@@ -1,21 +1,6 @@
-{% extends "aircox/page.html" %}
-{% comment %}Display a list of pages{% endcomment %}
+{% extends "aircox/basepage_list.html" %}
+{% comment %}Display a list of Pages{% endcomment %}
 {% load i18n aircox %}
-
-{% block title %}
-{% if not page or not page.title %}
-    {% if not parent %}{{ view.model|verbose_name:True|title }}
-    {% else %}
-    {% with parent.title as title %}
-    {% with model|default:"Publications"|verbose_name:True|capfirst as model %}
-    {% comment %}Translators: title when pages are filtered for a specific parent page, e.g.: Articles of My Incredible Show{% endcomment %}
-    {% blocktrans %}{{ model }} of {{ title }}{% endblocktrans %}
-    {% endwith %}
-    {% endwith %}
-    {% endif %}
-{% else %}{{ block.super }}
-{% endif %}
-{% endblock %}
 
 {% block filters %}
 {# FIXME #}
@@ -62,57 +47,4 @@
 {% endif %}
 {% endblock %}
 
-
-{% block main %}{{ block.super }}
-
-<section role="list">
-{% block pages_list %}
-{% with has_headline=True %}
-{% for object in object_list %}
-{% block list_object %}
-{% include object.item_template_name|default:item_template_name %}
-{% endblock %}
-{% empty %}
-{% blocktrans %}There is nothing published here...{% endblocktrans %}
-{% endfor %}
-{% endwith %}
-{% endblock %}
-</section>
-
-{% if is_paginated %}
-<hr/>
-{% update_query request.GET.copy page=None as GET %}
-{% with GET.urlencode as GET %}
-<nav class="pagination is-centered" role="pagination" aria-label="{% trans "pagination" %}">
-    {% block pagination %}
-    {% if page_obj.has_previous %}
-    <a href="?{{ GET }}&page={{ page_obj.previous_page_number }}" class="pagination-previous">
-    {% else %}
-    <a class="pagination-previous" disabled>
-    {% endif %}
-        {% comment %}Translators: Bottom of the list, "previous page"{% endcomment %}
-        {% trans "Previous" %}</a>
-
-    {% if page_obj.has_next %}
-    <a href="?{{ GET }}&page={{ page_obj.next_page_number }}" class="pagination-next">
-    {% else %}
-    <a class="pagination-next" disabled>
-    {% endif %}
-        {% comment %}Translators: Bottom of the list, "Nextpage"{% endcomment %}
-        {% trans "Next" %}</a>
-
-    <ul class="pagination-list">
-    {% for i in paginator.page_range %}
-        <li>
-            <a class="pagination-link {% if page_obj.number == i %}is-current{% endif %}"
-               href="?{{ GET }}&page={{ i }}">{{ i }}</a>
-        </li>
-    {% endfor %}
-    </ul>
-    {% endblock %}
-</nav>
-{% endwith %}
-{% endif %}
-
-{% endblock %}
 

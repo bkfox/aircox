@@ -10,21 +10,6 @@ Usefull context:
 - sidebar_object_list: item to display in sidebar
 - sidebar_url_name: url name sidebar item complete list
 - sidebar_url_parent: parent page for sidebar items complete list
-
-Blocks:
-- assets
-- head_title
-- head_extra
-- top_nav
-- header:
-    - title
-    - subtitle
-    - header_meta
-- main:
-    - filters
-- cover
-- sidebar:
-    - sidebar_title
 {% endcomment %}
 {% load static i18n thumbnail aircox %}
 
@@ -112,6 +97,7 @@ Blocks:
                             {% endif %}
                             {% endblock %}
 
+                            {# TODO: change block name #}
                             {% if has_filters %}
                             {% comment %}Translators: extra toolbar displayed on the top of page lists {% endcomment %}
                             <nav class="navbar toolbar"
