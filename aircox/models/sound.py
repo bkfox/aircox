@@ -80,8 +80,7 @@ class Sound(models.Model):
 
     name = models.CharField(_('name'), max_length=64)
     program = models.ForeignKey(
-        # FIXME: not nullable?
-        Program, models.SET_NULL, blank=True, null=True,
+        Program, models.CASCADE,
         verbose_name=_('program'),
         help_text=_('program related to it'),
     )

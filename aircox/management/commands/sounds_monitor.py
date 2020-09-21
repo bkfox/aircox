@@ -1,9 +1,5 @@
 #! /usr/bin/env python3
 
-# TODO:
-# - quality check
-# - Sound model => program field as not null
-
 """
 Monitor sound files; For each program, check for:
 - new files;

@@ -60,7 +60,7 @@ class Stats:
         self.parse(str(out, encoding='utf-8'))
 
 
-class Sound:
+class SoundStats:
     path = None             # file path
     sample_length = 120     # default sample length in seconds
     stats = None            # list of samples statistics
@@ -155,7 +155,7 @@ class Command (BaseCommand):
             raise CommandError('no attribute specified')
 
         # sound analyse and checks
-        self.sounds = [Sound(path, options.get('sample_length'))
+        self.sounds = [SoundStats(path, options.get('sample_length'))
                        for path in options.get('files')]
         self.bad = []
         self.good = []

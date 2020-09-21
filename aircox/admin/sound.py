@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.utils.safestring import mark_safe
-from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy as _
 
 from adminsortable2.admin import SortableInlineAdminMixin
 
@@ -29,6 +29,7 @@ class SoundInline(admin.TabularInline):
 
     def audio(self, obj):
         return mark_safe('<audio src="{}" controls></audio>'.format(obj.url()))
+    audio.short_descripton = _('Audio')
 
     def get_queryset(self, request):
         return super().get_queryset(request).available()
@@ -36,13 +37,10 @@ class SoundInline(admin.TabularInline):
 
 @admin.register(Sound)
 class SoundAdmin(admin.ModelAdmin):
-    def filename(self, obj):
-        return '/'.join(obj.path.split('/')[-2:])
-    filename.short_description=_('file')
-
     fields = None
-    list_display = ['id', 'name', 'program', 'type', 'duration',
-                    'is_public', 'is_good_quality', 'episode', 'filename']
+    list_display = ['id', 'name', 'related',
+                    'type', 'duration', 'is_public', 'is_good_quality',
+                    'audio']
     list_filter = ('type', 'is_good_quality', 'is_public')
 
     search_fields = ['name', 'program__title']
@@ -52,6 +50,16 @@ class SoundAdmin(admin.ModelAdmin):
     ]
     readonly_fields = ('path', 'duration',)
     inlines = [SoundTrackInline]
+
+    def related(self, obj):
+        # TODO: link to episode or program edit
+        return obj.episode.title if obj.episode else\
+               obj.program.title if obj.program else ''
+    related.short_description = _('Program / Episode')
+
+    def audio(self, obj):
+        return mark_safe('<audio src="{}" controls></audio>'.format(obj.url()))
+    audio.short_descripton = _('Audio')
 
 
 @admin.register(Track)
