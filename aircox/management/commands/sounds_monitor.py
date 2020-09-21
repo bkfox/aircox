@@ -343,7 +343,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         if options.get('scan'):
             self.scan()
-        if options.get('quality_check'):
-            self.check_quality(check=(not options.get('scan')))
+        #if options.get('quality_check'):
+        #    self.check_quality(check=(not options.get('scan')))
         if options.get('monitor'):
             self.monitor()
