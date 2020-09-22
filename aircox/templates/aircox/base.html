@@ -93,7 +93,7 @@ Usefull context:
                         {% block main %}
                             {% block content %}
                             {% if page and page.content %}
-                            {{ page.content|safe }}
+                            <section class="content">{{ page.content|safe }}</section>
                             {% endif %}
                             {% endblock %}
 

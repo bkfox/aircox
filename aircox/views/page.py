@@ -107,7 +107,7 @@ class PageListView(BasePageListView):
         return super().get_context_data(**kwargs)
 
 
-class PageDetailView(BaseView, DetailView):
+class PageDetailView(BasePageDetailView):
     """ Base view class for pages. """
     template_name = None
     context_object_name = 'page'
