@@ -122,19 +122,40 @@ except:
 #-- django-CKEditor
 CKEDITOR_CONFIGS = {
     "default": {
-        "toolbar": "Custom",
         "format_tags": "h1;h2;h3;p;pre",
-        "toolbar_Custom": [[
-            "Format", "RemoveFormat", "-",
-            "Bold", "Italic", "Subscript", "Superscript", "-",
-            "NumberedList", "BulletedList", "-",
-            "Anchor", "Link", "Unlink", "-",
-            "HorizontalRule", "SpecialChar", "-",
-            "Source",
-        ]],
+        # 'skin': 'office2013',
+        "toolbar_Custom": [
+            {'name': 'editing', 'items': ['Undo', 'Redo', '-', 'Find', 'Replace', '-', 'Source']},
+            {'name': 'basicstyles',
+             'items': ['Bold', 'Italic', 'Underline', 'Strike', 'Subscript', 'Superscript', '-', 'RemoveFormat']},
+            {'name': 'paragraph',
+             'items': ['NumberedList', 'BulletedList', '-', 'Outdent', 'Indent', '-', 'Blockquote', 'CreateDiv', '-',
+                       'JustifyLeft', 'JustifyCenter', 'JustifyRight', 'JustifyBlock', '-']},
+             '/',
+            {'name': 'links', 'items': ['Link', 'Unlink', 'Anchor']},
+            {'name': 'insert',
+             'items': ['Image', 'Table', 'HorizontalRule', 'SpecialChar', 'PageBreak', 'Iframe']},
+            {'name': 'styles', 'items': ['Styles', 'Format', 'Font', 'FontSize']},
+            {'name': 'colors', 'items': ['TextColor', 'BGColor']},
+            '/',  # put this to force next toolbar on new line
+        ],
+        'toolbar': 'Custom',
+        'extraPlugins': ','.join([
+            'uploadimage',
+            'div',
+            'autolink',
+            'autoembed', 'embedsemantic', 'embed',
+            'iframe', 'iframedialog',
+            'autogrow',
+            'widget',
+            'lineutils',
+            'dialog',
+            'dialogui',
+            'elementspath'
+        ]),
     },
 }
-CKEDITOR_CONFIGS["richtext-plugin"] = CKEDITOR_CONFIGS["default"]
+CKEDITOR_UPLOAD_PATH = 'uploads/'
 
 
 #-- easy_thumbnails
@@ -158,6 +179,7 @@ INSTALLED_APPS = (
     'django_filters',
     "content_editor",
     "ckeditor",
+    "ckeditor_uploader",
     'easy_thumbnails',
     'filer',
     'taggit',

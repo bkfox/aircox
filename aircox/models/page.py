@@ -11,7 +11,7 @@ from django.utils.translation import gettext_lazy as _
 from django.utils.functional import cached_property
 
 import bleach
-from ckeditor.fields import RichTextField
+from ckeditor_uploader.fields import RichTextUploadingField
 from filer.fields.image import FilerImageField
 from model_utils.managers import InheritanceQuerySet
 
@@ -76,7 +76,7 @@ class BasePage(models.Model):
         on_delete=models.SET_NULL,
         verbose_name=_('cover'), null=True, blank=True,
     )
-    content = RichTextField(
+    content = RichTextUploadingField(
         _('content'), blank=True, null=True,
     )
 
