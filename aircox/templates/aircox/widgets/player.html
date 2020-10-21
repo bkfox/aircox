@@ -1,9 +1,8 @@
-{% load i18n %}
+{% load i18n aircox %}
 {% comment %}
 The audio player
 {% endcomment %}
 
-{% if audio_streams %}
 <br>
 
 <div class="box is-fullwidth is-fixed-bottom is-paddingless player"
@@ -18,37 +17,34 @@ The audio player
         {# TODO: live infos #}
     </noscript>
 
-    <a-player ref="player" src="{{ audio_streams.0 }}"
-            live-info-url="{% url "api:live" %}" :live-info-timeout="20"
+    <a-player ref="player"
+            :live-args="{url: '{% url "api:live" %}', timeout:10, src: {{ audio_streams|json }} || []}"
             button-title="{% trans "Play or pause audio" %}">
-        <template v-slot:sources>
-            {% for stream in audio_streams %}
-            <source src="{{ stream }}" />
-            {% endfor %}
-        </template>
-
-        <template v-slot:track="{ onAir }">
-            <h4 class="title is-4" aria-description="{% trans "Track currently on air" %}">
+        <template v-slot:content="{ current }">
+            <h4 v-if="current && current.type == 'track'"
+                class="title is-4" aria-description="{% trans "Track currently on air" %}">
                 <span class="has-text-info is-size-3">&#9836;</span>
-                <span>[[ onAir.title ]]</span>
+                <span>[[ current.title ]]</span>
                 <span class="has-text-grey-dark has-text-weight-light">
-                &mdash; [[ onAir.artist ]]
-                <i v-if="onAir.info">([[ onAir.info ]])</i>
+                &mdash; [[ current.artist ]]
+                <i v-if="current.info">([[ current.info ]])</i>
                 </span>
             </h4>
-        </template>
-
-        <template v-slot:diffusion="{ onAir }">
-            <h4 class="title is-4" aria-description="{% trans "Diffusion currently on air" %}">
-                <a :href="onAir.url">[[ onAir.title ]]</a>
+            <div v-else-if="current && current.type == 'diffusion'">
+                <h4 class="title is-4" aria-description="{% trans "Diffusion currently on air" %}">
+                    <a :href="current.url">[[ current.title ]]</a>
+                </h4>
+                <div class="">[[ current.info ]]</div>
+            </div>
+            <h4 v-else-if="current" class="title is-4">
+                [[ current.name ]]
             </h4>
-            <div class="">[[ onAir.info ]]</div>
+            <h4 v-else class="title is-4" aria-description="{% trans "Currently playing" %}">
+                {{ station.name }}
+            </h4>
         </template>
 
-        <template v-slot:empty>
-            <h4 class="title is-4" aria-description="{% trans "Currently playing" %}">{{ station.name }}</h4>
         </template>
     </a-player>
 </div>
-{% endif %}
 

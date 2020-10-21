@@ -2,7 +2,12 @@ import os
 
 from django.conf import settings
 
-
+# TODO:
+# - items() iteration
+# - sub-settings as values
+# - validate() settings
+# - Meta inner-class?
+# - custom settings class instead of default
 #class BaseSettings:
 #    deprecated = set()
 #
@@ -81,6 +86,7 @@ ensure('AIRCOX_DEFAULT_USER_GROUPS', {
 })
 
 # Directory for the programs data
+# TODO: rename to PROGRAMS_ROOT
 ensure('AIRCOX_PROGRAMS_DIR',
        os.path.join(settings.MEDIA_ROOT, 'programs'))
 
@@ -105,9 +111,6 @@ ensure('AIRCOX_LOGS_ARCHIVES_AGE', 60)
 ########################################################################
 # Sounds
 ########################################################################
-# Default directory for the sounds that not linked to a program
-ensure('AIRCOX_SOUND_DEFAULT_DIR',
-       os.path.join(AIRCOX_PROGRAMS_DIR, 'defaults')),
 # Sub directory used for the complete episode sounds
 ensure('AIRCOX_SOUND_ARCHIVES_SUBDIR', 'archives')
 # Sub directory used for the excerpts of the episode
@@ -147,3 +150,10 @@ ensure(
 ensure('AIRCOX_IMPORT_PLAYLIST_CSV_DELIMITER', ';')
 # Text delimiter of csv text files
 ensure('AIRCOX_IMPORT_PLAYLIST_CSV_TEXT_QUOTE', '"')
+
+
+if settings.MEDIA_ROOT not in AIRCOX_PROGRAMS_DIR:
+    # PROGRAMS_DIR must be in MEDIA_ROOT for easy files url resolution
+    # later should this restriction disappear.
+    raise ValueError("settings: AIRCOX_PROGRAMS_DIR must be in MEDIA_ROOT")
+

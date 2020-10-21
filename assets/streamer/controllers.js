@@ -1,12 +1,12 @@
 import Vue from 'vue';
 
-import Model from 'public/model';
+import Model, {Set} from 'public/model';
 import {setEcoInterval} from 'public/utils';
 
 
 export class Streamer extends Model {
-    get queues() { return this.data ? this.data.queues : []; }
     get playlists() { return this.data ? this.data.playlists : []; }
+    get queues() { return this.data ? this.data.queues : []; }
     get sources() { return [...this.queues, ...this.playlists]; }
     get source() { return this.sources.find(o => o.id == this.data.source) }
 
@@ -14,8 +14,8 @@ export class Streamer extends Model {
         if(!this.data)
             this.data = { id: data.id, playlists: [], queues: [] }
 
-        data.playlists = Playlist.updateList(data.playlists, this.playlists, {streamer: this})
-        data.queues = Queue.updateList(data.queues, this.queues, {streamer: this})
+        data.playlists = Playlist.Set(data.playlists, {args: {streamer: this}});
+        data.queues = Queue.Set(data.queues, {args: {streamer: this}});
         super.commit(data)
     }
 }
@@ -85,7 +85,7 @@ export class Queue extends Source {
     get queue() { return this.data && this.data.queue; }
 
     commit(data) {
-        data.queue = Request.updateList(data.queue, this.queue)
+        data.queue = Request.Set(data.queue);
         super.commit(data)
     }
 

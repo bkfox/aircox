@@ -1,7 +1,4 @@
 import Vue from 'vue';
-import Button from 'buefy/dist/components/button';
-
-Vue.use(Button)
 
 import {setAppConfig} from 'public/app';
 import Model from 'public/model';
@@ -37,7 +34,7 @@ window.aircox.appConfig = {
 
     methods: {
         fetchStreamers() {
-            Streamer.fetchAll(this.apiUrl, null)
+            Streamer.Set.fetch(this.apiUrl)
                 .then(streamers => {
                     Vue.set(this, 'streamers', streamers);
                     Vue.set(this, 'streamer', streamers ? streamers[0] : null);

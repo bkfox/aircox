@@ -10,15 +10,17 @@ import '@fortawesome/fontawesome-free/css/fontawesome.min.css';
 
 
 //-- aircox
-import {appConfig, loadApp} from './app';
+import {App} from './app';
 
 import './styles.scss';
 
-import Player from './player.vue';
 import Autocomplete from './autocomplete.vue';
+import Player from './player.vue';
+import SoundItem from './soundItem';
 
-Vue.component('a-player', Player)
 Vue.component('a-autocomplete', Autocomplete)
+Vue.component('a-player', Player)
+Vue.component('a-sound-item', SoundItem)
 
 
 window.aircox = {
@@ -38,9 +40,9 @@ window.aircox = {
 };
 
 
-loadApp({el: '#player'}).then(app => { window.aircox.playerApp = app },
-                              () => undefined)
-loadApp(() => window.aircox.appConfig ).then(app => { window.aircox.app = app },
-                                             () => undefined)
+App({el: '#player'}).then(app => window.aircox.playerApp = app,
+                          () => undefined);
+App(() => window.aircox.appConfig).then(app => { window.aircox.app = app },
+                                        () => undefined)
 
 

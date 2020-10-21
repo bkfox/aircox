@@ -2,6 +2,7 @@ from django.contrib import admin
 from django.utils.translation import ugettext_lazy as _
 
 from . import viewsets
+from aircox.viewsets import SoundViewSet
 from .views import StreamerAdminMixin
 
 
@@ -17,6 +18,7 @@ router.register(streamer_prefix + 'playlist', viewsets.PlaylistSourceViewSet,
 router.register(streamer_prefix + 'queue', viewsets.QueueSourceViewSet,
     basename='streamer-queue')
 router.register('streamer', viewsets.StreamerViewSet, basename='streamer')
+router.register('sound', SoundViewSet, basename='sound')
 
 urls = []
 

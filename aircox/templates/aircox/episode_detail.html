@@ -1,61 +1,66 @@
-{% extends "aircox/program_base.html" %}
+{% extends "aircox/page_detail.html" %}
 {% comment %}List of a show's episodes for a specific{% endcomment %}
 {% load i18n %}
 
-{% block header %}{{ block.super }}
+{% include "aircox/program_sidebar.html" %}
 
-<section class="is-size-5 has-text-weight-bold">
-    {% for diffusion in object.diffusion_set.all %}
-        {% with diffusion.start as start %}
-        {% with diffusion.end as end %}
-        <time datetime="{{ start }}">{{ start|date:"D. d F Y, H:i" }}</time>
-        &mdash;
-        <time datetime="{{ end }}">{{ end|date:"H:i" }}</time>
-        {% endwith %}
-        {% endwith %}
+{% block content %}
+{{ block.super }}
 
-        <small>
-            {% if diffusion.initial %}
-            {% with diffusion.initial.date as date %}
-            <span title="{% blocktrans %}Rerun of {{ date }}{% endblocktrans %}">
-                ({% trans "rerun" %})
-            </span>
-            {% endwith %}
-            {% endif %}
-        </small>
-        <br>
-    {% endfor %}
-</section>
-{% endblock %}
-
-{% block content %}{{ block.super }}
-
-{% if podcasts or tracks %}
 <div class="columns is-desktop">
-    {% if tracks %}
     <section class="column">
-        <h4 class="title is-4">{% trans "Playlist" %}</h4>
-        <ol>
-            {% for track in tracks %}
-            <li><span>{{ track.title }}</span>
-                <span class="has-text-grey-dark has-text-weight-light">
-                &mdash; {{ track.artist }}
-                {% if track.info %}(<i>{{ track.info }}</i>){% endif %}
+        <h5 class="title is-5">{% trans "Diffusions" %}</h5>
+        <ul>
+        {% for diffusion in object.diffusion_set.all %}
+        <li>
+            {% with diffusion.start as start %}
+            {% with diffusion.end as end %}
+            <time datetime="{{ start }}">{{ start|date:"D. d F Y, H:i" }}</time>
+            &mdash;
+            <time datetime="{{ end }}">{{ end|date:"H:i" }}</time>
+            {% endwith %}
+            {% endwith %}
+
+            <small>
+                {% if diffusion.initial %}
+                {% with diffusion.initial.date as date %}
+                <span title="{% blocktrans %}Rerun of {{ date }}{% endblocktrans %}">
+                    ({% trans "rerun" %})
                 </span>
-            </li>
-            {% endfor %}
-        </ol>
+                {% endwith %}
+                {% endif %}
+            </small>
+            <br>
+        </li>
+        {% endfor %}
+        </ul>
     </section>
-    {% endif %}
+
     {% if podcasts %}
     <section class="column">
-        <h4 class="title is-4">{% trans "Podcasts" %}</h4>
+        <h5 class="title is-5">{% trans "Podcasts" %}</h5>
         {% for object in podcasts %}
         {% include "aircox/widgets/podcast_item.html" %}
         {% endfor %}
     </section>
     {% endif %}
 </div>
+
+{% if tracks %}
+<section class="column">
+    <h4 class="title is-4">{% trans "Playlist" %}</h4>
+    <ol>
+        {% for track in tracks %}
+        <li><span>{{ track.title }}</span>
+            <span class="has-text-grey-dark has-text-weight-light">
+            &mdash; {{ track.artist }}
+            {% if track.info %}(<i>{{ track.info }}</i>){% endif %}
+            </span>
+        </li>
+        {% endfor %}
+    </ol>
+</section>
 {% endif %}
+
 {% endblock %}
 

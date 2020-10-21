@@ -79,14 +79,17 @@ Usefull context:
                             </h3>
 
                             <div class="columns is-size-4">
-                            {% block header_meta %}
-                            {% if parent %}
-                            <a href="{{ parent.get_absolute_url }}" class="column">
-                                &#10092; {{ parent.title }}</a></li>
-                            {% endif %}
+                            {% block header_nav %}
+                            <span class="column">
+                                {% block header_crumbs %}
+                                {% if parent %}
+                                <a href="{{ parent.get_absolute_url }}">
+                                     {{ parent.title }}</a></li>
+                                {% endif %}
+                                {% endblock %}
+                            </span>
                             {% endblock %}
                             </div>
-
                             {% endblock %}
                         </header>
 

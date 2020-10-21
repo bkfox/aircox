@@ -1,14 +1,24 @@
 import {setEcoTimeout} from 'public/utils';
 
-
-export default class {
-    constructor(url, timeout) {
+export default class Live {
+    constructor({url,timeout=10,src=""}={}) {
         this.url = url;
         this.timeout = timeout;
+        this.src = src;
+
         this.promise = null;
         this.items = [];
     }
 
+    get current() {
+        let items = this.logs && this.logs.items;
+        let item = items && items[items.length-1];
+        if(item)
+            item.src = this.src;
+        return item;
+    }
+
+    //-- data refreshing
     drop() {
         this.promise = null;
     }
@@ -37,3 +47,4 @@ export default class {
         return promise
     }
 }
+

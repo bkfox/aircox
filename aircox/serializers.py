@@ -20,7 +20,7 @@ class LogInfo:
         elif isinstance(obj, Log):
             self.from_log(obj)
         else:
-            raise ValueError('`obj` must be a Diffusion or a track Log.')
+            raise ValueError('`obj` must be a Diffusion or a Track Log.')
 
     @property
     def type(self):
@@ -58,13 +58,21 @@ class SoundSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Sound
-        fields = ['pk', 'name', 'path', 'program', 'episode', 'embed', 'type',
-                  'duration', 'mtime', 'is_good_quality', 'is_public']
+        fields = ['pk', 'name', 'program', 'episode', 'type',
+                  'duration', 'mtime', 'is_good_quality', 'is_public', 'url']
 
     def get_field_names(self, *args):
         names = super().get_field_names(*args)
-        if not self.context['request'].user.is_staff and self.instance \
-                and not self.instance.is_public:
-            names.remove('path')
+        if 'request' in self.context and self.context['request'].user.is_staff and \
+                self.instance.is_public:
+            names.push('path')
         return names
+
+class PodcastSerializer(serializers.ModelSerializer):
+    # serializers.HyperlinkedIdentityField(view_name='sound', format='html')
+
+    class Meta:
+        model = Sound
+        fields = ['pk', 'name', 'program', 'episode', 'type',
+                  'duration', 'mtime', 'url']
 

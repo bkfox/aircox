@@ -7,12 +7,11 @@ Context:
 - page: page
 {% endcomment %}
 
-{% block header_meta %}{{ block.super }}
-<span class="column has-text-right">
-    {% if page.category %}
-    {{ page.category.title }}
-    {% endif %}
-</span>
+{% block header_crumbs %}
+{{ block.super }}
+{% if page.category %}
+/ {{ page.category.title }}
+{% endif %}
 {% endblock %}
 
 {% block main %}
@@ -21,7 +20,7 @@ Context:
 {% block comments %}
 {% if comments or comment_form %}
 <hr>
-<section>
+<section class="mt-6">
     <h4 class="title is-4">{% trans "Comments" %}</h4>
 
     {% for comment in comments %}

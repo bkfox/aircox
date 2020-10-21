@@ -80,7 +80,7 @@ class Sound(models.Model):
 
     name = models.CharField(_('name'), max_length=64)
     program = models.ForeignKey(
-        Program, models.CASCADE,
+        Program, models.CASCADE, blank=True, # NOT NULL
         verbose_name=_('program'),
         help_text=_('program related to it'),
     )
@@ -143,21 +143,20 @@ class Sound(models.Model):
         self.__check_name()
         super().save(*args, **kwargs)
 
+    def url(self):
+        """ Return an url to the file. """
+        path = self.path.replace(main_settings.MEDIA_ROOT, '', 1)
+        return (main_settings.MEDIA_URL + path).replace('//','/')
+
+    # TODO: rename get_file_mtime(self)
     def get_mtime(self):
         """
         Get the last modification date from file
         """
         mtime = os.stat(self.path).st_mtime
         mtime = tz.datetime.fromtimestamp(mtime)
-        # db does not store microseconds
         mtime = mtime.replace(microsecond=0)
-
         return tz.make_aware(mtime, tz.get_current_timezone())
-
-    def url(self):
-        """ Return an url to the stream. """
-        path = self.path.replace(main_settings.MEDIA_ROOT, '', 1)
-        return main_settings.MEDIA_URL + '/' + path
 
     def file_exists(self):
         """ Return true if the file still exists. """

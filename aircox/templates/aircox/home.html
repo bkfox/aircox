@@ -13,6 +13,7 @@
 
 {% block pages_list %}
 {% if page and page.content %}<hr/>{% endif %}
+{% if top_diffs %}
 <div class="columns">
     {% with render_card=True %}
     {% for object in top_diffs %}
@@ -20,11 +21,13 @@
     <div class="column is-relative">
         <h4 class="card-super-title" title="{{ object.start }}">
             {% if is_primary %}
-            <span class="fas fa-play"></span>
-            <time datetime="{{ object.start }}">
-                {% trans "Currently" %}
-                {% else %}{{ object.start|date:"H:i" }}{% endif %}
-            </time>
+                <span class="fas fa-play"></span>
+                <time datetime="{{ object.start }}">
+                    {% trans "Currently" %}
+                </time>
+            {% else %}
+                {{ object.start|date:"H:i" }}
+            {% endif %}
 
             {% if object.episode.category %}
             // {{ object.episode.category.title }}
@@ -36,8 +39,9 @@
     {% endfor %}
     {% endwith %}
 </div>
-
 <hr>
+{% endif %}
+
 <h4 class="title is-4">{% trans "Last publications" %}</h4>
 {% with has_headline=True %}
 {{ block.super }}

@@ -2,13 +2,17 @@
 List item for a podcast.
 
 {% endcomment %}
+{% load aircox %}
 <div class="podcast">
-    {# comment #}
+    {% comment %}
     {% if object.embed %}
     {{ object.embed|safe }}
     {% else %}
-    {# endcomment #}
     <audio src="{{ object.url }}" controls>
     {% endif %}
+    {% endcomment %}
+    <a-sound-item :data="{{ object|json }}" :player="player"
+        :actions="['play','queue']" @click="player.play(item)">
+    </a-sound-item>
 </div>
 

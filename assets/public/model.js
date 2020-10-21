@@ -18,17 +18,23 @@ export function getCsrf() {
 }
 
 
-// TODO: move in another module for reuse
 // TODO: prevent duplicate simple fetch
 export default class Model {
     constructor(data, {url=null}={}) {
+        this.url = url;
         this.commit(data);
     }
 
+    /**
+     * Get instance id from its data
+     */
     static getId(data) {
         return data.id;
     }
 
+    /**
+     * Return fetch options
+     */
     static getOptions(options) {
         return {
             headers: {
@@ -40,23 +46,14 @@ export default class Model {
         }
     }
 
-    static fetch(url, options=null, initArgs=null) {
+    /**
+     * Fetch item from server
+     */
+    static fetch(url, options=null, args=null) {
         options = this.getOptions(options)
         return fetch(url, options)
             .then(response => response.json())
-            .then(data => new this(d, {url: url, ...initArgs}));
-    }
-
-    static fetchAll(url, options=null, initArgs=null) {
-        options = this.getOptions(options)
-        return fetch(url, options)
-            .then(response => response.json())
-            .then(data => {
-                if(!(data instanceof Array))
-                    data = data.results;
-                data = data.map(d => new this(d, {baseUrl: url, ...initArgs}));
-                return data
-            })
+            .then(data => new this(data, {url: url, ...args}));
     }
 
     /**
@@ -85,35 +82,98 @@ export default class Model {
      */
     commit(data) {
         this.id = this.constructor.getId(data);
-        this.url = data.url_;
         Vue.set(this, 'data', data);
     }
 
     /**
-     * Return data as model with url prepent by `this.url`.
+     * Save instance into localStorage.
      */
-    asChild(model, data, prefix='') {
-        return new model(data, {baseUrl: `${this.url}${prefix}/`})
+    store(key) {
+        window.localStorage.setItem(key, JSON.stringify(this.data));
     }
 
-    getChildOf(attr, id) {
-        const index = this.data[attr].findIndex(o => o.id = id)
-        return index == -1 ? null : this.data[attr][index];
-    }
-
-    static updateList(list=[], old=[], ...initArgs) {
-         return list.reduce((items, data) => {
-            const id = this.getId(data);
-            let [index, obj] = [old.findIndex(o => o.id == id), null];
-            if(index != -1) {
-                old[index].commit(data)
-                items.push(old[index]);
-            }
-            else
-                items.push(new this(data, ...initArgs))
-            return items;
-        }, [])
+    /**
+     * Load model instance from localStorage.
+     */
+    static storeLoad(key) {
+        let item = window.localStorage.getItem(key);
+        return item === null ? item : new this(JSON.parse(item));
     }
 }
 
+
+/**
+ * List of models
+ */
+export class Set {
+    constructor(model, {items=[],url=null,args={},unique=null,max=null,storeKey=null}={}) {
+        this.items = items.map(x => x instanceof model ? x : new model(x, args));
+        this.model = model;
+        this.url = url;
+        this.unique = unique;
+        this.max = max;
+        this.storeKey = storeKey;
+    }
+
+    get length() { return this.items.length }
+    indexOf(...args) { return this.items.indexOf(...args); }
+
+    /**
+     * Fetch multiple items from server
+     */
+    static fetch(url, options=null, args=null) {
+        options = this.getOptions(options)
+        return fetch(url, options)
+            .then(response => response.json())
+            .then(data => (data instanceof Array ? data : data.results)
+                              .map(d => new this.model(d, {url: url, ...args})))
+    }
+
+    /**
+     * Load list from localStorage
+     */
+    static storeLoad(model, key, args={}) {
+        let items = window.localStorage.getItem(key);
+        return new this(model, {...args, storeKey: key, items: items ? JSON.parse(items) : []});
+    }
+
+    /**
+     * Store list into localStorage
+     */
+    store() {
+        if(this.storeKey)
+            window.localStorage.setItem(this.storeKey, JSON.stringify(
+                this.items.map(i => i.data)));
+    }
+
+    push(item, {args={}}={}) {
+        item = item instanceof this.model ? item : new this.model(item, args);
+        if(this.unique && this.items.find(x => x.id == item.id))
+            return;
+        if(this.max && this.items.length >= this.max)
+            this.items.splice(0,this.items.length-this.max)
+
+        this.items.push(item);
+        this._updated()
+    }
+
+    remove(item, {args={}}={}) {
+        item = item instanceof this.model ? item : new this.model(item, args);
+        let index = this.items.findIndex(x => x.id == item.id);
+        if(index == -1)
+            return;
+
+        this.items.splice(index,1);
+        this._updated()
+    }
+
+    _updated() {
+        Vue.set(this, 'items', this.items);
+        this.store();
+    }
+}
+
+Set[Symbol.iterator] = function () {
+    return this.items[Symbol.iterator]();
+}
 

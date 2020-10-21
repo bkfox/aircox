@@ -1,22 +1,46 @@
-{% extends "aircox/program_base.html" %}
+{% extends "aircox/page_detail.html" %}
 {% comment %}Detail page of a show{% endcomment %}
 {% load i18n %}
 
-{% block header %}
-{{ block.super }}
-{% include "aircox/program_header.html" %}
+{% include "aircox/program_sidebar.html" %}
+
+
+{% block header_nav %}
 {% endblock %}
 
 
 {% block content %}
 {{ block.super }}
-
 <br>
 {% with has_headline=False %}
 <div class="columns is-desktop">
+    <section class="column">
+        <h5 class="title is-5">{% trans "Diffusions" %}</h5>
+        {% for schedule in program.schedule_set.all %}
+        {{ schedule.get_frequency_verbose }}
+        {% with schedule.start|date:"H:i" as start %}
+        {% with schedule.end|date:"H:i" as end %}
+        <time datetime="{{ start }}">{{ start }}</time>
+        &mdash;
+        <time datetime="{{ end }}">{{ end }}</time>
+        {% endwith %}
+        {% endwith %}
+        <small>
+            {% if schedule.initial %}
+            {% with schedule.initial.date as date %}
+            <span title="{% blocktrans %}Rerun of {{ date }}{% endblocktrans %}">
+                ({% trans "Rerun" %})
+            </span>
+            {% endwith %}
+            {% endif %}
+        </small>
+        <br>
+        {% endfor %}
+    </section>
+
     {% if articles %}
     <section class="column">
-        <h4 class="title is-4">{% trans "Articles" %}</h4>
+        <h4 class="title is-5">{% trans "Articles" %}</h4>
 
         {% for object in articles %}
         {% include "aircox/widgets/page_item.html" %}

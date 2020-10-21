@@ -1,53 +1,55 @@
 import Vue from 'vue';
 
 
-export const appBaseConfig = {
+export const defaultConfig = {
     el: '#app',
     delimiters: ['[[', ']]'],
+
+    computed: {
+        player() {
+            return window.aircox.player;
+        }
+    }
+}
+
+export function App(config) {
+    return (new AppConfig(config)).load()
 }
 
 /**
- * Application config for the main application instance
+ * Application config for an application instance
  */
-var appConfig = {};
+export class AppConfig {
+    constructor(config) {
+        this._config = config;
+    }
 
-export function setAppConfig(config) {
-    for(var member in appConfig) delete appConfig[member];
-    return Object.assign(appConfig, config)
-}
+    get config() {
+        let config = this._config instanceof Function ? this._config() : this._config;
+        return {...defaultConfig, ...config};
+    }
 
-export function getAppConfig(config) {
-    if(config instanceof Function)
-        config = config()
-    config = config == null ? appConfig : config;
-    return {...appBaseConfig, ...config}
-}
+    set config(value) {
+        this._config = value;
+    }
 
-
-/**
- * Create Vue application at window 'load' event and return a Promise
- * resolving to the created app.
- *
- * config: defaults to appConfig (checked when window is loaded)
- */
-export function loadApp(config=null) {
-    return new Promise(function(resolve, reject) {
-        window.addEventListener('load', function() {
-            try {
-                config = getAppConfig(config)
-                const el = document.querySelector(config.el)
-                if(!el) {
-                    reject(`Error: missing element ${config.el}`);
-                    return;
+    load() {
+        var self = this;
+        return new Promise(function(resolve, reject) {
+            window.addEventListener('load', () => {
+                try {
+                    let config = self.config;
+                    const el = document.querySelector(config.el)
+                    if(!el) {
+                        reject(`Error: missing element ${config.el}`);
+                        return;
+                    }
+                    resolve(new Vue(config))
                 }
-
-                resolve(new Vue(config))
-            }
-            catch(error) { reject(error) }
-        })
-    })
+                catch(error) { reject(error) }
+            })
+        });
+    }
 }
-
-
 
 
