@@ -1,39 +1,38 @@
 <template>
     <div class="player">
-        <List ref="queue" class="player-panel menu" v-show="panel == 'queue' && queue.length"
-            :set="queue" @select="onSelect" 
+        <Playlist ref="history" class="panel-menu menu" v-show="panel == 'history'"
+            name="History"
+            :editable="true" :player="self" :set="sets.history" @select="play('pin', $event.index)"
             listClass="menu-list" itemClass="menu-item">
-            <template v-slot:header>
-                <p class="menu-label">
-                    <span class="icon"><span class="fa fa-list"></span></span>
-                    Playlist
-                </p>
-            </template>
-            <template v-slot:item="{item,index,set}">
-                <SoundItem activeClass="is-active" :data="item" :player="self" :set="set"
-                    :actions="['remove']">
-                    <template v-slot:actions="{active,set}">
-                        <!-- TODO: stop player if active -->
-
-                    </template>
-                </SoundItem>
-            </template>
-        </List>
-        <List ref="history" class="player-panel menu" v-show="panel == 'history' && history.length"
-            :set="history" @select="onSelect"
-            listClass="menu-list" itemClass="menu-item">
-            <template v-slot:header>
+            <template v-slot:header="">
                 <p class="menu-label">
                     <span class="icon"><span class="fa fa-clock"></span></span>
                     History
                 </p>
             </template>
-            <template v-slot:item="{item,index,set}">
-                <SoundItem activeClass="is-active" :data="item" :player="self" :set="set"
-                    :actions="['queue','remove']">
-                </SoundItem>
+        </Playlist>
+        <Playlist ref="pin" class="player-panel menu" v-show="panel == 'pin'"
+            name="Pinned"
+            :editable="true" :player="self" :set="sets.pin" @select="play('pin', $event.index)" 
+            listClass="menu-list" itemClass="menu-item">
+            <template v-slot:header="">
+                <p class="menu-label">
+                    <span class="icon"><span class="fa fa-thumbtack"></span></span>
+                    Pinned
+                </p>
             </template>
-        </List>
+        </Playlist>
+        <Playlist ref="queue" class="player-panel menu" v-show="panel == 'queue'"
+            :editable="true" :player="self" :set="sets.queue" @select="play('queue', $event.index)" 
+            listClass="menu-list" itemClass="menu-item">
+            <template v-slot:header="">
+                <p class="menu-label">
+                    <span class="icon"><span class="fa fa-list"></span></span>
+                    Playlist
+                </p>
+            </template>
+        </Playlist>
+
         <div class="player-bar media">
             <div class="media-left">
                 <div class="button" @click="togglePlay()"
@@ -53,26 +52,31 @@
                 <slot name="content" :current="current"></slot>
             </div>
             <div class="media-right">
-                <button class="button" v-if="active" @click="load() && play()">
+                <button class="button has-text-weight-bold" v-if="loaded" @click="playLive()">
                     <span class="icon has-text-danger">
                         <span class="fa fa-broadcast-tower"></span>
                     </span>
                     <span>Live</span>
                 </button>
-
-                <button class="button" v-if="history.length"
-                    @click="togglePanel('history')"
-                    :class="[panel == 'history' ? 'is-info' : '']" >
-                    <span class="icon">
-                        <span class="fa fa-clock"></span>
-                    </span>
+                <button :class="playlistButtonClass('history')"
+                        @click="togglePanel('history')">
+                    <span class="mr-2 is-size-6" v-if="sets.history.length">
+                        {{ sets.history.length }}</span>
+                    <span class="icon"><span class="fa fa-clock"></span></span>
                 </button>
-                <button class="button" v-if="queue.length"
-                    @click="togglePanel('queue')"
-                    :class="[panel == 'queue' ? 'is-info' : '']" >
-                    <span class="mr-2 is-size-6">{{ queue.length }}</span>
+                <button :class="playlistButtonClass('pin')"
+                        @click="togglePanel('pin')">
+                    <span class="mr-2 is-size-6" v-if="sets.pin.length">
+                        {{ sets.pin.length }}</span>
+                    <span class="icon"><span class="fa fa-thumbtack"></span></span>
+                </button>
+                <button :class="playlistButtonClass('queue')"
+                        @click="togglePanel('queue')">
+                    <span class="mr-2 is-size-6" v-if="sets.queue.length">
+                        {{ sets.queue.length }}</span>
                     <span class="icon"><span class="fa fa-list"></span></span>
                 </button>
+
             </div>
         </div>
         <div v-if="progress">
@@ -84,8 +88,7 @@
 <script>
 import Vue, { ref } from 'vue';
 import Live from './live';
-import List from './list';
-import SoundItem from './soundItem';
+import Playlist from './playlist';
 import Sound from './sound';
 import {Set} from './model';
 
@@ -100,11 +103,20 @@ export default {
     data() {
         return {
             state: State.paused,
-            active: null,
+            /// Loaded item
+            loaded: null,
+            /// Live instance
             live: this.liveArgs ? new Live(this.liveArgs) : null,
+            //! Active panel name
             panel: null,
-            queue: Set.storeLoad(Sound, "player.queue", { max: 30, unique: true }),
-            history: Set.storeLoad(Sound, "player.history", { max: 30, unique: true }),
+            //! current playing playlist component
+            playlist: null,
+            //! players' playlists' sets
+            sets: {
+                queue: Set.storeLoad(Sound, "playlist.queue", { max: 30, unique: true }),
+                pin: Set.storeLoad(Sound, "player.pin", { max: 30, unique: true }),
+                history: Set.storeLoad(Sound, "player.history", { max: 30, unique: true }),
+            }
         }
     },
 
@@ -120,7 +132,7 @@ export default {
         self() { return this; },
 
         current() {
-            return this.active || this.live && this.live.current;
+            return this.loaded || this.live && this.live.current;
         },
 
         progress() {
@@ -137,15 +149,35 @@ export default {
     },
 
     methods: {
+        playlistButtonClass(name) {
+            let set = this.sets[name];
+            return (set ? (set.length ? "" : "has-text-grey-light ")
+                       + (this.panel == name ? "is-info "
+                          : this.playlist && this.playlist == this.$refs[name] ? 'is-primary '
+                          : '') : '')
+                + "button has-text-weight-bold";
+        },
+
+        /// Show/hide panel
         togglePanel(panel) {
             this.panel = this.panel == panel ? null : panel;
         },
 
-        isActive(item) {
-            return item && this.active && this.active.src == item.src;
+        /// Return True if item is loaded
+        isLoaded(item) {
+            return this.loaded && this.loaded.src == item.src;
         },
 
-        _load(src) {
+        /// Return True if item is loaded
+        isPlaying(item) {
+            return this.isLoaded(item) && !this.player.paused;
+        },
+
+        load(playlist, {src=null, item=null}={}) {
+            src = src || item.src;
+            this.loaded = item;
+            this.playlist = playlist ? this.$refs[playlist] : null;
+
             const audio = this.$refs.audio;
             if(src instanceof Array) {
                 audio.innerHTML = '';
@@ -161,22 +193,43 @@ export default {
             audio.load();
         },
 
-        load(item) {
+        /// Play a playlist's sound (by playlist name, and sound index)
+        play(playlist=null, index=0) {
+            if(!playlist)
+                playlist = 'queue';
+
+            let item = this.$refs[playlist].get(index);
             if(item) {
-                this._load(item.src)
-                this.history.push(item);
+                this.load(playlist, {item: item});
+                this.sets.history.push(item);
+                this.$refs.audio.play().catch(e => console.error(e))
             }
             else
-                this._load(this.live.src);
-            this.$set(this, 'active', item);
+                throw `No sound at index ${index} for playlist ${playlist}`;
         },
 
-        play(item) {
-            if(item)
-                this.load(item);
+        /// Push items to playlist (by name)
+        push(playlist, ...items) {
+            this.$refs[playlist].push(...items);
+        },
+
+        /// Push and play items
+        playItems(playlist, ...items) {
+            this.push(playlist, ...items);
+
+            let index = this.$refs[playlist].findIndex(items[0]);
+            this.$refs[playlist].selectedIndex = index;
+            this.play(playlist, index);
+        },
+
+        /// Play live stream
+        playLive() {
+            this.load(null, {src: this.live.src});
             this.$refs.audio.play().catch(e => console.error(e))
+            this.panel = '';
         },
 
+        /// Pause
         pause() {
             this.$refs.audio.pause()
         },
@@ -184,33 +237,30 @@ export default {
         //! Play/pause
         togglePlay() {
             if(this.paused)
-                this.play()
+                this.$refs.audio.play().catch(e => console.error(e))
             else
                 this.pause()
         },
 
-        //! Push item to queue
-        push(item) {
-            this.queue.push(item);
-            this.panel = 'queue';
+        //! Pin/Unpin an item
+        togglePin(item) {
+            let index = this.sets.pin.findIndex(item);
+            if(index > -1)
+                this.sets.pin.remove(index);
+            else {
+                this.sets.pin.push(item);
+                if(!this.panel)
+                    this.panel = 'pin';
+            }
         },
 
+        /// Audio player state change event
         onState(event) {
             const audio = this.$refs.audio;
             this.state = audio.paused ? State.paused : State.playing;
 
-            if(event.type == 'ended' && this.active) {
-                this.queue.remove(this.active);
-                if(this.queue.length)
-                    this.$refs.queue.select(0);
-                else
-                    this.load();
-            }
-        },
-
-        onSelect({item,index}) {
-            if(!this.isActive(item))
-                this.play(item);
+            if(event.type == 'ended' && (!this.playlist || this.playlist.selectNext() == -1))
+                this.playLive();
         },
     },
 
@@ -218,9 +268,7 @@ export default {
         this.sources = this.$slots.sources;
     },
 
-    components: {
-        List, SoundItem,
-    },
+    components: { Playlist },
 }
 </script>
 

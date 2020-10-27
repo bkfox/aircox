@@ -107,16 +107,19 @@ export default class Model {
  */
 export class Set {
     constructor(model, {items=[],url=null,args={},unique=null,max=null,storeKey=null}={}) {
-        this.items = items.map(x => x instanceof model ? x : new model(x, args));
+        this.items = [];
         this.model = model;
         this.url = url;
         this.unique = unique;
         this.max = max;
         this.storeKey = storeKey;
+
+        for(var item of items)
+            this.push(item, {args: args, save: false});
     }
 
     get length() { return this.items.length }
-    indexOf(...args) { return this.items.indexOf(...args); }
+    get(index) { return this.items[index] }
 
     /**
      * Fetch multiple items from server
@@ -141,35 +144,54 @@ export class Set {
      * Store list into localStorage
      */
     store() {
-        if(this.storeKey)
-            window.localStorage.setItem(this.storeKey, JSON.stringify(
-                this.items.map(i => i.data)));
+        this.storeKey && window.localStorage.setItem(this.storeKey, JSON.stringify(
+            this.items.map(i => i.data)));
     }
 
-    push(item, {args={}}={}) {
+    /**
+     * Save item
+     */
+    save() {
+        this.storeKey && this.store();
+    }
+
+    /**
+     * Find item by id
+     */
+    find(item) {
+        return this.items.find(x => x.id == item.id);
+    }
+
+    /**
+     * Find item index by id
+     */
+    findIndex(item) {
+        return this.items.findIndex(x => x.id == item.id);
+    }
+
+    /**
+     * Add item to set
+     */
+    push(item, {args={},save=true}={}) {
         item = item instanceof this.model ? item : new this.model(item, args);
-        if(this.unique && this.items.find(x => x.id == item.id))
-            return;
+        if(this.unique) {
+            let index = this.findIndex(item);
+            if(index > -1)
+                this.items.splice(index,1);
+        }
         if(this.max && this.items.length >= this.max)
             this.items.splice(0,this.items.length-this.max)
 
         this.items.push(item);
-        this._updated()
+        save && this.save();
     }
 
-    remove(item, {args={}}={}) {
-        item = item instanceof this.model ? item : new this.model(item, args);
-        let index = this.items.findIndex(x => x.id == item.id);
-        if(index == -1)
-            return;
-
+    /**
+     * Remove item from set by index
+     */
+    remove(index, {save=true}={}) {
         this.items.splice(index,1);
-        this._updated()
-    }
-
-    _updated() {
-        Vue.set(this, 'items', this.items);
-        this.store();
+        save && this.save();
     }
 }
 

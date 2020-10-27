@@ -2,13 +2,11 @@
     <div>
         <slot name="header"></slot>
         <ul :class="listClass">
-            <slot name="start"></slot>
             <template v-for="(item,index) in items">
                 <li :class="itemClass" @click="select(index)">
-                    <slot name="item" :set="set" :index="index" :item="item"></slot>
+                    <slot name="item" :selected="index == selectedIndex" :set="set" :index="index" :item="item"></slot>
                 </li>
             </template>
-            <slot name="end"></slot>
         </ul>
         <slot name="footer"></slot>
     </div>
@@ -17,14 +15,14 @@
 export default {
     data() {
         return {
-            selectedIndex: this.default,
+            selectedIndex: this.defaultIndex,
         }
     },
 
     props: {
         listClass: String,
         itemClass: String,
-        default: { type: Number, default: -1},
+        defaultIndex: { type: Number, default: -1},
         set: Object,
     },
 
@@ -34,31 +32,37 @@ export default {
         length() { return this.set.length },
 
         selected() {
-            return this.items && this.items.length > this.selectedIndex > -1
+            return this.selectedIndex > -1 && this.items.length > this.selectedIndex > -1
                 ? this.items[this.selectedIndex] : null;
         },
     },
 
     methods: {
-        select(index=null) {
-            if(index === null)
-                index = this.selectedIndex;
-            else if(this.selectedIndex == index)
-                return;
+        get(index) { return this.set.get(index) },
+        find(item) { return this.set.find(item) },
+        findIndex(item) { return this.set.findIndex(item) },
 
-            this.selectedIndex = Math.min(index, this.items.length-1);
-            this.$emit('select', { item: this.selected, index: this.selectedIndex });
+        push(...items) {
+            let index = this.set.length;
+            for(var item of items)
+                this.set.push(item);
+        },
+
+        remove(index, select=False) {
+            this.set.remove(index);
+            if(index < this.selectedIndex)
+                this.selectedIndex--;
+            if(select && this.selectedIndex == index)
+                this.select(index)
+        },
+
+        select(index) {
+            this.selectedIndex = index > -1  && this.items.length ? index % this.items.length : -1;
+            this.$emit('select', { target: this, item: this.selected, index: this.selectedIndex });
             return this.selectedIndex;
         },
 
-        selectNext() {
-            let index = this.selectedIndex + 1;
-            return this.select(index >= this.items.length ? -1 : index);
-        },
 
-        // add()
-        // insert() + drag & drop
-        // remove()
     },
 }
 </script>

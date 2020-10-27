@@ -5,14 +5,18 @@ export const defaultConfig = {
     el: '#app',
     delimiters: ['[[', ']]'],
 
-    computed: {
-        player() {
-            return window.aircox.player;
+    data() {
+        return {
+            page: null,
         }
-    }
+    },
+
+    computed: {
+        player() { return window.aircox.player; }
+    },
 }
 
-export function App(config) {
+export default function App(config) {
     return (new AppConfig(config)).load()
 }
 
