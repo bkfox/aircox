@@ -1,6 +1,6 @@
 <template>
     <div class="player">
-        <Playlist ref="history" class="panel-menu menu" v-show="panel == 'history'"
+        <Playlist ref="history" class="player-panel menu" v-show="panel == 'history'"
             name="History"
             :editable="true" :player="self" :set="sets.history" @select="play('pin', $event.index)"
             listClass="menu-list" itemClass="menu-item">
@@ -40,9 +40,6 @@
                     <span class="fas fa-pause" v-if="playing"></span>
                     <span class="fas fa-play" v-else></span>
                 </div>
-                <audio ref="audio" preload="metadata"
-                    @playing="onState" @ended="onState" @pause="onState">
-                </audio>
                 <slot name="sources"></slot>
             </div>
             <div class="media-left media-cover" v-if="current && current.cover">
@@ -50,6 +47,9 @@
             </div>
             <div class="media-content">
                 <slot name="content" :current="current"></slot>
+                <Progress v-if="this.duration" :value="this.currentTime" :max="this.duration"
+                    :format="displayTime"
+                    @select="audio.currentTime = $event"></Progress>
             </div>
             <div class="media-right">
                 <button class="button has-text-weight-bold" v-if="loaded" @click="playLive()">
@@ -79,9 +79,6 @@
 
             </div>
         </div>
-        <div v-if="progress">
-            <span :style="{ width: progress }"></span>
-        </div>
     </div>
 </template>
 
@@ -89,6 +86,7 @@
 import Vue, { ref } from 'vue';
 import Live from './live';
 import Playlist from './playlist';
+import Progress from './playerProgress';
 import Sound from './sound';
 import {Set} from './model';
 
@@ -101,12 +99,24 @@ export const State = {
 
 export default {
     data() {
+        let audio = new Audio();
+        audio.addEventListener('ended', e => this.onState(e));
+        audio.addEventListener('pause', e => this.onState(e));
+        audio.addEventListener('playing', e => this.onState(e));
+        audio.addEventListener('timeupdate', e => {
+            this.currentTime = this.audio.currentTime;
+        });
+        audio.addEventListener('durationchange', e => {
+            this.duration = Number.isFinite(this.audio.duration) ? this.audio.duration : null;
+        });
+
         return {
-            state: State.paused,
-            /// Loaded item
-            loaded: null,
+            audio, duration: 0, currentTime: 0,
+
             /// Live instance
             live: this.liveArgs ? new Live(this.liveArgs) : null,
+            /// Loaded item
+            loaded: null,
             //! Active panel name
             panel: null,
             //! current playing playlist component
@@ -126,19 +136,13 @@ export default {
     },
 
     computed: {
+        self() { return this; },
         paused() { return this.state == State.paused; },
         playing() { return this.state == State.playing; },
         loading() { return this.state == State.loading; },
-        self() { return this; },
 
         current() {
             return this.loaded || this.live && this.live.current;
-        },
-
-        progress() {
-            let audio = this.$refs.audio;
-            return audio && Number.isFinite(audio.duration) && audio.duration ?
-                audio.pos / audio.duration * 100 : null;
         },
 
         buttonStyle() {
@@ -149,6 +153,15 @@ export default {
     },
 
     methods: {
+        displayTime(seconds) {
+            seconds = parseInt(seconds);
+            let s = seconds % 60;
+            seconds = (seconds - s) / 60;
+            let m = seconds % 60;
+            let h = (seconds - m) / 60;
+            return h ? `${h}:${m}:${s}` : `${m}:${s}`;
+        },
+
         playlistButtonClass(name) {
             let set = this.sets[name];
             return (set ? (set.length ? "" : "has-text-grey-light ")
@@ -178,7 +191,7 @@ export default {
             this.loaded = item;
             this.playlist = playlist ? this.$refs[playlist] : null;
 
-            const audio = this.$refs.audio;
+            const audio = this.audio;
             if(src instanceof Array) {
                 audio.innerHTML = '';
                 for(var s of src) {
@@ -195,14 +208,18 @@ export default {
 
         /// Play a playlist's sound (by playlist name, and sound index)
         play(playlist=null, index=0) {
+            if(index < 0)
+                return;
+
             if(!playlist)
                 playlist = 'queue';
 
+            console.log('play', playlist, index, this.audio);
             let item = this.$refs[playlist].get(index);
             if(item) {
                 this.load(playlist, {item: item});
                 this.sets.history.push(item);
-                this.$refs.audio.play().catch(e => console.error(e))
+                this.audio.play().catch(e => console.error(e))
             }
             else
                 throw `No sound at index ${index} for playlist ${playlist}`;
@@ -225,19 +242,19 @@ export default {
         /// Play live stream
         playLive() {
             this.load(null, {src: this.live.src});
-            this.$refs.audio.play().catch(e => console.error(e))
+            this.audio.play().catch(e => console.error(e))
             this.panel = '';
         },
 
         /// Pause
         pause() {
-            this.$refs.audio.pause()
+            this.audio.pause()
         },
 
         //! Play/pause
         togglePlay() {
             if(this.paused)
-                this.$refs.audio.play().catch(e => console.error(e))
+                this.audio.play().catch(e => console.error(e))
             else
                 this.pause()
         },
@@ -256,7 +273,7 @@ export default {
 
         /// Audio player state change event
         onState(event) {
-            const audio = this.$refs.audio;
+            const audio = this.audio;
             this.state = audio.paused ? State.paused : State.playing;
 
             if(event.type == 'ended' && (!this.playlist || this.playlist.selectNext() == -1))
@@ -268,7 +285,7 @@ export default {
         this.sources = this.$slots.sources;
     },
 
-    components: { Playlist },
+    components: { Playlist, Progress },
 }
 </script>
 

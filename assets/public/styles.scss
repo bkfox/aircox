@@ -181,11 +181,11 @@ a.navbar-item.is-active {
     .player-bar {
         border-top: 1px $grey-light solid;
 
-        .media-left:not(:last-child) {
+        > .media-left:not(:last-child) {
             margin-right: 0em;
         }
 
-        .media-cover {
+        > .media-cover {
             border-left: 1px black solid;
         }
 
@@ -194,7 +194,7 @@ a.navbar-item.is-active {
             height: 2.5em !important;
         }
 
-        .media-content {
+        > .media-content {
             padding-top: 0.4em;
             padding-left: 0.4em;
         }

@@ -58,7 +58,7 @@ export default {
 
         select(index) {
             this.selectedIndex = index > -1  && this.items.length ? index % this.items.length : -1;
-            this.$emit('select', { target: this, item: this.selected, index: this.selectedIndex });
+            this.$emit('select', { item: this.selected, index: this.selectedIndex });
             return this.selectedIndex;
         },
 

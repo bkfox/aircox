@@ -7417,14 +7417,14 @@ a.navbar-item.is-active {
     overflow-y: auto; }
   .player .player-bar {
     border-top: 1px #b5b5b5 solid; }
-    .player .player-bar .media-left:not(:last-child) {
+    .player .player-bar > .media-left:not(:last-child) {
       margin-right: 0em; }
-    .player .player-bar .media-cover {
+    .player .player-bar > .media-cover {
       border-left: 1px black solid; }
     .player .player-bar .cover {
       font-size: 1.5rem !important;
       height: 2.5em !important; }
-    .player .player-bar .media-content {
+    .player .player-bar > .media-content {
       padding-top: 0.4em;
       padding-left: 0.4em; }
     .player .player-bar .button {
