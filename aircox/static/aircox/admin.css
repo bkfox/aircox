@@ -7411,10 +7411,20 @@ a.navbar-item.is-active {
 
 .player {
   box-shadow: 0em 1.5em 2.5em rgba(0, 0, 0, 0.6); }
+  .player .player-panels {
+    height: 0%;
+    transition: height 3s; }
+  .player .player-panels.is-open {
+    height: auto; }
   .player .player-panel {
     margin: 0.4em;
     max-height: 80%;
     overflow-y: auto; }
+  .player .progress {
+    margin: 0em;
+    padding: 0em;
+    border-color: #209cee;
+    border-style: 'solid'; }
   .player .player-bar {
     border-top: 1px #b5b5b5 solid; }
     .player .player-bar > .media-left:not(:last-child) {
@@ -7431,7 +7441,10 @@ a.navbar-item.is-active {
       font-size: 1.5rem !important;
       height: 2.5em;
       min-width: 2.5em;
-      border-radius: 0px; }
+      border-radius: 0px;
+      transition: background-color 1s; }
+    .player .player-bar .button:focus {
+      background-color: #209cee; }
     .player .player-bar .title {
       margin: 0em; }
 

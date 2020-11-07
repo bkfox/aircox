@@ -119,7 +119,6 @@ export class Set {
     }
 
     get length() { return this.items.length }
-    get(index) { return this.items[index] }
 
     /**
      * Fetch multiple items from server
@@ -156,17 +155,24 @@ export class Set {
     }
 
     /**
-     * Find item by id
+     * Get item at index
      */
-    find(item) {
-        return this.items.find(x => x.id == item.id);
+    get(index) { return this.items[index] }
+
+    /**
+     * Find an item by id or using a predicate function
+     */
+    find(pred) {
+        return pred instanceof Function ? this.items.find(pred)
+                                        : this.items.find(x => x.id == pred.id);
     }
 
     /**
-     * Find item index by id
+     * Find item index by id or using a predicate function
      */
-    findIndex(item) {
-        return this.items.findIndex(x => x.id == item.id);
+    findIndex(pred) {
+        return pred instanceof Function ? this.items.findIndex(pred)
+                                        : this.items.findIndex(x => x.id == pred.id);
     }
 
     /**
@@ -177,7 +183,7 @@ export class Set {
         if(this.unique) {
             let index = this.findIndex(item);
             if(index > -1)
-                this.items.splice(index,1);
+                return;
         }
         if(this.max && this.items.length >= this.max)
             this.items.splice(0,this.items.length-this.max)

@@ -3,7 +3,7 @@
         <div class="media-left" v-if="hasAction('play')">
             <button class="button" @click="$emit('togglePlay')">
                 <div class="icon">
-                    <span class="fa fa-pause" v-if="playing || loading"></span>
+                    <span class="fa fa-pause" v-if="playing"></span>
                     <span class="fa fa-play" v-else></span>
                 </div>
             </button>
@@ -16,7 +16,7 @@
             </slot>
         </div>
         <div class="media-right">
-            <button class="button" v-if="player.$refs.pin != $parent" @click.stop="player.togglePin(item)">
+            <button class="button" v-if="player.sets.pin != $parent.set" @click.stop="player.togglePin(item)">
                 <span class="icon is-small">
                     <span :class="(pinned ? '' : 'has-text-grey-light ') + 'fa fa-thumbtack'"></span>
                 </span>
@@ -43,9 +43,8 @@ export default {
     computed: {
         item() { return this.data instanceof Model ? this.data : new Sound(this.data || {}); },
         loaded() { return this.player && this.player.isLoaded(this.item) },
-        playing() { return this.player && this.player.playing && this.loaded },
+        playing() { return this.player && this.player.isPlaying(this.item) },
         paused()  { return this.player && this.player.paused && this.loaded },
-        loading() { return this.player && this.player.loading && this.loaded },
         pinned() { return this.player && this.player.sets.pin.find(this.item) },
     },
 

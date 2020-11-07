@@ -39,11 +39,10 @@ export default {
 
     methods: {
         get(index) { return this.set.get(index) },
-        find(item) { return this.set.find(item) },
-        findIndex(item) { return this.set.findIndex(item) },
+        find(pred) { return this.set.find(pred) },
+        findIndex(pred) { return this.set.findIndex(pred) },
 
         push(...items) {
-            let index = this.set.length;
             for(var item of items)
                 this.set.push(item);
         },
@@ -62,7 +61,10 @@ export default {
             return this.selectedIndex;
         },
 
-
+        unselect() {
+            this.$emit('unselect', { item: this.selected, index: this.selectedIndex});
+            this.selectedIndex = -1;
+        },
     },
 }
 </script>

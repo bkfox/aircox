@@ -172,10 +172,25 @@ a.navbar-item.is-active {
 .player {
     box-shadow: 0em 1.5em 2.5em rgba(0, 0, 0, 0.6);
 
+    .player-panels {
+        height: 0%;
+        transition: height 3s;
+    }
+    .player-panels.is-open {
+        height: auto;
+    }
+
     .player-panel {
         margin: 0.4em;
         max-height: 80%;
         overflow-y: auto;
+    }
+
+    .progress {
+        margin: 0em;
+        padding: 0em;
+        border-color: $info;
+        border-style: 'solid';
     }
 
     .player-bar {
@@ -204,6 +219,11 @@ a.navbar-item.is-active {
             height: 2.5em;
             min-width: 2.5em;
             border-radius: 0px;
+            transition: background-color 1s;
+        }
+
+        .button:focus {
+            background-color: $info;
         }
 
         .title {
