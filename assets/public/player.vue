@@ -3,6 +3,7 @@
         <div :class="['player-panels', panel ? 'is-open' : '']">
             <Playlist ref="pin" class="player-panel menu" v-show="panel == 'pin'"
                 name="Pinned"
+                :actions="['page']"
                 :editable="true" :player="self" :set="sets.pin" @select="play('pin', $event.index)" 
                 listClass="menu-list" itemClass="menu-item">
                 <template v-slot:header="">
@@ -13,6 +14,7 @@
                 </template>
             </Playlist>
             <Playlist ref="queue" class="player-panel menu" v-show="panel == 'queue'"
+                :actions="['page']"
                 :editable="true" :player="self" :set="sets.queue" @select="play('queue', $event.index)" 
                 listClass="menu-list" itemClass="menu-item">
                 <template v-slot:header="">
@@ -26,12 +28,11 @@
 
         <div class="player-bar media">
             <div class="media-left">
-                <div class="button" @click="togglePlay()"
+                <button class="button" @click="togglePlay()"
                         :title="buttonTitle" :aria-label="buttonTitle">
                     <span class="fas fa-pause" v-if="playing"></span>
                     <span class="fas fa-play" v-else></span>
-                </div>
-                <slot name="sources"></slot>
+                </button>
             </div>
             <div class="media-left media-cover" v-if="current && current.cover">
                 <img :src="current.cover" class="cover" />
@@ -218,11 +219,14 @@ export default {
 
         /// Push and play items
         playItems(playlist, ...items) {
-            this.push(playlist, ...items);
-
-            let index = this.$refs[playlist].findIndex(items[0]);
+            let index = this.push(playlist, ...items);
             this.$refs[playlist].selectedIndex = index;
             this.play(playlist, index);
+        },
+
+        playButtonClick(event) {
+            var items = JSON.parse(event.currentTarget.dataset.sounds);
+            this.playItems('queue', ...items);
         },
 
         /// Play live stream
@@ -264,10 +268,6 @@ export default {
             if(event.type == 'ended' && (!this.playlist || this.playlist.selectNext() == -1))
                 this.playLive();
         },
-    },
-
-    mounted() {
-        this.sources = this.$slots.sources;
     },
 
     components: { Playlist, Progress },

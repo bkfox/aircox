@@ -42,9 +42,14 @@ export default {
         find(pred) { return this.set.find(pred) },
         findIndex(pred) { return this.set.findIndex(pred) },
 
-        push(...items) {
+        /**
+         * Add items to list, return index of the first provided item.
+         */
+        push(item, ...items) {
+            let index = this.set.push(item);
             for(var item of items)
                 this.set.push(item);
+            return index;
         },
 
         remove(index, select=False) {

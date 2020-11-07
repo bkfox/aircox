@@ -6,6 +6,7 @@ from django.utils import timezone as tz
 from django.utils.translation import gettext_lazy as _
 from django.utils.functional import cached_property
 
+from easy_thumbnails.files import get_thumbnailer
 
 from aircox import settings, utils
 from .program import Program, ProgramChildQuerySet, \
@@ -24,6 +25,24 @@ class Episode(Page):
     @property
     def program(self):
         return getattr(self.parent, 'program', None)
+
+    @cached_property
+    def podcasts(self):
+        """ Return serialized data about podcasts. """
+        from ..serializers import PodcastSerializer
+        podcasts = [PodcastSerializer(s).data
+                    for s in self.sound_set.public().order_by('type') ]
+        if self.cover:
+            options = {'size': (128,128), 'crop':'scale'}
+            cover = get_thumbnailer(self.cover).get_thumbnail(options).url
+        else:
+            cover = None
+
+        for index, podcast in enumerate(podcasts):
+            podcasts[index]['cover'] = cover
+            podcasts[index]['page_url'] = self.get_absolute_url()
+            podcasts[index]['page_title'] = self.title
+        return podcasts
 
     @program.setter
     def program(self, value):

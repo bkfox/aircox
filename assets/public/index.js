@@ -16,12 +16,14 @@ import {Set} from './model';
 
 import './styles.scss';
 
-import Autocomplete from './autocomplete.vue';
-import Player from './player.vue';
-import Playlist from './playlist.vue';
+import Autocomplete from './autocomplete';
+import Episode from './episode';
+import Player from './player';
+import Playlist from './playlist';
 import SoundItem from './soundItem';
 
 Vue.component('a-autocomplete', Autocomplete)
+Vue.component('a-episode', Episode)
 Vue.component('a-player', Player)
 Vue.component('a-playlist', Playlist)
 Vue.component('a-sound-item', SoundItem)
@@ -42,14 +44,40 @@ window.aircox = {
         return this.playerApp && this.playerApp.$refs.player
     },
 
+    loadPage(url) {
+        fetch(url).then(response => response.text())
+            .then(response => {
+                let doc = new DOMParser().parseFromString(response, 'text/html');
+
+                aircox.app && aircox.app.$destroy();
+                document.getElementById('app').innerHTML = doc.getElementById('app').innerHTML;
+                App(() => window.aircox.appConfig, true).then(app => {
+                    aircox.app = app;
+                    document.title = doc.title;
+                })
+            });
+    },
+
     Set: Set, Sound: Sound,
 };
 window.Vue = Vue;
 
 
-App({el: '#player'}).then(app => window.aircox.playerApp = app,
-                          () => undefined);
-App(() => window.aircox.appConfig).then(app => { window.aircox.app = app },
-                                        () => undefined)
+App({el: '#player'}).then(app => window.aircox.playerApp = app);
+App(() => window.aircox.appConfig).then(app => {
+    window.aircox.app = app;
+    window.addEventListener('click', event => {
+        let target = event.target.tagName == 'A' ? event.target : event.target.closest('a');
+        if(!target || !target.hasAttribute('href'))
+            return;
+
+        let href = target.getAttribute('href');
+        if(href && href !='#') {
+            window.aircox.loadPage(href);
+            event.preventDefault();
+            event.stopPropagation();
+        }
+    }, true);
+})
 
 

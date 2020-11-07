@@ -167,7 +167,6 @@ a.navbar-item.is-active {
 }
 
 
-
 //-- player
 .player {
     box-shadow: 0em 1.5em 2.5em rgba(0, 0, 0, 0.6);
@@ -257,15 +256,11 @@ section > .toolbar {
 
 
 main {
-    .cover {
-        margin: 1em 0em;
-        border: 0.2em black solid;
-    }
-
-    .small-cover {
-        width: 10em;
-    }
+    .cover.is-small { width: 10em; }
+    .cover.is-tiny { height: 2em; }
 }
+
+.sound-item .cover { height: 5em; }
 
 aside {
     & > section {
@@ -276,9 +271,8 @@ aside {
         margin-bottom: 2em;
     }
 
-    .small-cover {
-        width: 4em;
-    }
+    .cover.is-small { width: 10em; }
+    .cover.is-tiny { height: 2em; }
 
     .media .subtitle {
         font-size: 1em;
@@ -286,4 +280,8 @@ aside {
 }
 
 
+.is-round, .sound-item .button {
+    border: 1px $grey solid;
+    border-radius: 1em;
+}
 

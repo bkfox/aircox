@@ -7463,12 +7463,14 @@ section > .toolbar {
   padding: 1em;
   margin-bottom: 1.5em; }
 
-main .cover {
-  margin: 1em 0em;
-  border: 0.2em black solid; }
-
-main .small-cover {
+main .cover.is-small {
   width: 10em; }
+
+main .cover.is-tiny {
+  height: 2em; }
+
+.sound-item .cover {
+  height: 5em; }
 
 aside > section {
   margin-bottom: 2em; }
@@ -7476,9 +7478,16 @@ aside > section {
 aside .cover {
   margin-bottom: 2em; }
 
-aside .small-cover {
-  width: 4em; }
+aside .cover.is-small {
+  width: 10em; }
+
+aside .cover.is-tiny {
+  height: 2em; }
 
 aside .media .subtitle {
   font-size: 1em; }
+
+.is-round, .sound-item .button {
+  border: 1px #7a7a7a solid;
+  border-radius: 1em; }
 

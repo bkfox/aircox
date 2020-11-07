@@ -4,7 +4,6 @@ import datetime
 from django.views.generic import ListView
 
 from ..models import Diffusion, Episode, Program, StaticPage, Sound
-from ..serializers import PodcastSerializer
 from .base import BaseView
 from .program import ProgramPageDetailView
 from .page import PageListView
@@ -20,8 +19,6 @@ class EpisodeDetailView(ProgramPageDetailView):
     def get_context_data(self, **kwargs):
         if not 'tracks' in kwargs:
             kwargs['tracks'] = self.object.track_set.order_by('position')
-        if not 'podcasts' in kwargs:
-            kwargs['podcasts'] = [PodcastSerializer(s).data for s in self.object.sound_set.public() ]
         return super().get_context_data(**kwargs)
 
 

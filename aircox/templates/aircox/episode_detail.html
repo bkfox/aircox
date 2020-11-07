@@ -2,19 +2,11 @@
 {% comment %}List of a show's episodes for a specific{% endcomment %}
 {% load i18n aircox %}
 
-{% block head_extra %}
-<script id="page">
-    window.addEventListener('load', ev => {
-        Vue.set(aircox.app, 'page', {
-                podcasts: new aircox.Set(aircox.Sound, {items: {{ podcasts|json|safe }}})
-        });
-    });
-</script>
-{% endblock head_extra %}
-
 {% include "aircox/program_sidebar.html" %}
 
 {% block content %}
+<a-episode :page="{title: &quot;{{ page.title }}&quot;, podcasts: {{ object.podcasts|json }}}">
+<template v-slot="{podcasts,page}">
 {{ block.super }}
 
 <div class="columns is-desktop">
@@ -46,9 +38,9 @@
         </ul>
     </section>
 
-    {% if podcasts %}
+    {% if object.podcasts %}
     <section class="column">
-        <a-playlist v-if="page" :set="page.podcasts"
+        <a-playlist v-if="page" :set="podcasts"
             name="{{ page.title }}"
             :player="player" :actions="['play']"
             @select="player.playItems('queue', $event.item)">
@@ -81,5 +73,6 @@
 </section>
 {% endif %}
 
+</template></a-episode>
 {% endblock %}
 

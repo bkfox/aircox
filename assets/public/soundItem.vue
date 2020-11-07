@@ -1,7 +1,10 @@
 <template>
-    <div class="media">
-        <div class="media-left" v-if="hasAction('play')">
-            <button class="button" @click="$emit('togglePlay')">
+    <div class="media sound-item">
+        <div class="media-left">
+            <img class="cover is-tiny" :src="item.data.cover" v-if="item.data.cover">
+        </div>
+        <div class="media-left">
+            <button class="button" @click.stop="$emit('togglePlay')">
                 <div class="icon">
                     <span class="fa fa-pause" v-if="playing"></span>
                     <span class="fa fa-play" v-else></span>
@@ -10,9 +13,14 @@
         </div>
         <div class="media-content">
             <slot name="content" :player="player" :item="item" :loaded="loaded">
-                <h4 class="title is-4 is-inline-block">
-                    {{ name || item.name }}
-                </h4>
+                <h4 class="title is-4">{{ name || item.name }}</h4>
+                <a class="subtitle is-6" v-if="hasAction('page') && item.data.page_url"
+                    :href="item.data.page_url">
+                    <i class="icon">
+                        <i class="fas fa-link"></i>
+                    </i>
+                    {{ item.data.page_title }}
+                </a>
             </slot>
         </div>
         <div class="media-right">
@@ -33,7 +41,6 @@ export default {
     props: {
         data: {type: Object, default: x => {}},
         name: String,
-        cover: String,
         player: Object,
         page_url: String,
         actions: {type:Array, default: x => []},

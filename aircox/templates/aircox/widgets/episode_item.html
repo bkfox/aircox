@@ -41,3 +41,15 @@ Context variables:
 {% endif %}
 {% endblock %}
 
+
+{% block actions %}
+{% if object.sound_set.public.count %}
+<button class="button is-round" @click="player.playButtonClick($event)"
+        data-sounds="{{ object.podcasts|json }}">
+    <span class="icon is-small">
+        <span class="fas fa-play"></span>
+    </span>
+</button>
+{% endif %}
+{% endblock %}
+

@@ -176,20 +176,21 @@ export class Set {
     }
 
     /**
-     * Add item to set
+     * Add item to set, return index.
      */
     push(item, {args={},save=true}={}) {
         item = item instanceof this.model ? item : new this.model(item, args);
         if(this.unique) {
             let index = this.findIndex(item);
             if(index > -1)
-                return;
+                return index;
         }
         if(this.max && this.items.length >= this.max)
             this.items.splice(0,this.items.length-this.max)
 
         this.items.push(item);
         save && this.save();
+        return this.items.length-1;
     }
 
     /**
