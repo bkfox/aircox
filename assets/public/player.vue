@@ -178,8 +178,8 @@ export default {
                     this.$refs[p].unselect();
         },
 
-        /// Play a playlist's sound (by playlist name, and sound index)
-        play(playlist=null, index=0) {
+        /// Load a sound from playlist or live
+        load(playlist=null, index=0) {
             let src = null;
 
             // from playlist
@@ -213,7 +213,10 @@ export default {
                 audio.src = src;
             }
             audio.load();
-            audio.play();
+        },
+
+        play(playlist=null, index=0) {
+            this.load(playlist, index);
             audio.play().catch(e => console.error(e))
         },
 
@@ -274,6 +277,10 @@ export default {
             if(event.type == 'ended' && (!this.playlist || this.playlist.selectNext() == -1))
                 this.play();
         },
+    },
+
+    mounted() {
+        this.load();
     },
 
     components: { Playlist, Progress },
