@@ -219,7 +219,7 @@ export default {
 
         play(playlist=null, index=0) {
             this.load(playlist, index);
-            audio.play().catch(e => console.error(e))
+            this.audio.play().catch(e => console.error(e))
         },
 
         /// Push items to playlist (by name)
