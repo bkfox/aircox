@@ -203,7 +203,7 @@ export default {
             if(src instanceof Array) {
                 audio.innerHTML = '';
                 for(var s of src) {
-                    let source = document.createElement(source);
+                    let source = document.createElement('source');
                     source.setAttribute('src', s);
                     audio.appendChild(source)
                 }

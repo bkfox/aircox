@@ -21,7 +21,7 @@ class BasePageListView(AttachedToMixin, ParentMixin, BaseView, ListView):
     item_template_name = 'aircox/widgets/page_item.html'
     has_sidebar = True
 
-    paginate_by = 2
+    paginate_by = 30
     has_headline = True
 
     def get(self, *args, **kwargs):
