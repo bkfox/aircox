@@ -10,7 +10,7 @@ import '@fortawesome/fontawesome-free/css/fontawesome.min.css';
 
 
 //-- aircox
-import App from './app';
+import AppBuilder from './app';
 import Sound from './sound';
 import {Set} from './model';
 
@@ -31,31 +31,40 @@ Vue.component('a-sound-item', SoundItem)
 
 window.aircox = {
     // main application
-    app: null,
-
-    // main application config
+    appBuilder: null,
     appConfig: {},
+    get app() { return this.appBuilder.app  },
 
     // player application
-    playerApp: null,
+    playerBuilder: null,
+    get playerApp() { return this.playerBuilder && this.playerBuilder.app },
+    get player() { return this.playerApp && this.playerApp.$refs.player },
 
-    // player component
-    get player() {
-        return this.playerApp && this.playerApp.$refs.player
-    },
+    onPageFetch(event) {
+        let submit = event.type == 'submit';
+        let target = submit || event.target.tagName == 'A'
+                        ? event.target : event.target.closest('a');
+        if(!target || target.hasAttribute('target'))
+            return;
 
-    loadPage(url) {
-        fetch(url).then(response => response.text())
-            .then(response => {
-                let doc = new DOMParser().parseFromString(response, 'text/html');
+        let url = submit ? target.getAttribute('action') || ''
+                         : target.getAttribute('href');
+        if(url===null || !(url === '' || url.startsWith('/') || url.startsWith('?')))
+            return;
 
-                aircox.app && aircox.app.$destroy();
-                document.getElementById('app').innerHTML = doc.getElementById('app').innerHTML;
-                App(() => window.aircox.appConfig, true).then(app => {
-                    aircox.app = app;
-                    document.title = doc.title;
-                })
-            });
+        let options = {};
+        if(submit) {
+            let formData = new FormData(event.target);
+            if(target.method == 'get')
+                url += '?' + (new URLSearchParams(formData)).toString();
+            else {
+                options['method'] = target.method;
+                options['body'] = formData;
+            }
+        }
+        this.appBuilder.fetch(url, options);
+        event.preventDefault();
+        event.stopPropagation();
     },
 
     Set: Set, Sound: Sound,
@@ -63,21 +72,17 @@ window.aircox = {
 window.Vue = Vue;
 
 
-App({el: '#player'}).then(app => window.aircox.playerApp = app);
-App(() => window.aircox.appConfig).then(app => {
-    window.aircox.app = app;
-    window.addEventListener('click', event => {
-        let target = event.target.tagName == 'A' ? event.target : event.target.closest('a');
-        if(!target || !target.hasAttribute('href'))
-            return;
-
-        let href = target.getAttribute('href');
-        if(href && href !='#') {
-            window.aircox.loadPage(href);
-            event.preventDefault();
-            event.stopPropagation();
-        }
-    }, true);
+aircox.playerBuilder = new AppBuilder({el: '#player'});
+aircox.playerBuilder.load({async:true});
+aircox.appBuilder = new AppBuilder(x => window.aircox.appConfig);
+aircox.appBuilder.load({async:true}).then(app => {
+    //-- load page hooks
+    window.addEventListener('click', event => aircox.onPageFetch(event), true);
+    window.addEventListener('submit', event => aircox.onPageFetch(event), true);
+    window.addEventListener('popstate', event => {
+        if(event.state && event.state.content)
+            aircox.appBuilder.loadFromState(event.state);
+    });
 })
 
 

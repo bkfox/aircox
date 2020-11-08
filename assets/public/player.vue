@@ -4,7 +4,7 @@
             <Playlist ref="pin" class="player-panel menu" v-show="panel == 'pin'"
                 name="Pinned"
                 :actions="['page']"
-                :editable="true" :player="self" :set="sets.pin" @select="play('pin', $event.index)" 
+                :editable="true" :player="self" :set="sets.pin" @select="togglePlay('pin', $event.index)" 
                 listClass="menu-list" itemClass="menu-item">
                 <template v-slot:header="">
                     <p class="menu-label">
@@ -15,7 +15,7 @@
             </Playlist>
             <Playlist ref="queue" class="player-panel menu" v-show="panel == 'queue'"
                 :actions="['page']"
-                :editable="true" :player="self" :set="sets.queue" @select="play('queue', $event.index)" 
+                :editable="true" :player="self" :set="sets.queue" @select="togglePlay('queue', $event.index)" 
                 listClass="menu-list" itemClass="menu-item">
                 <template v-slot:header="">
                     <p class="menu-label">
@@ -44,7 +44,7 @@
                     @select="audio.currentTime = $event"></Progress>
             </div>
             <div class="media-right">
-                <button class="button has-text-weight-bold" v-if="loaded" @click="playLive()">
+                <button class="button has-text-weight-bold" v-if="loaded" @click="play()">
                     <span class="icon is-size-6 has-text-danger">
                         <span class="fa fa-circle"></span>
                     </span>
@@ -105,8 +105,8 @@ export default {
             loaded: null,
             //! Active panel name
             panel: null,
-            //! current playing playlist component
-            playlist: null,
+            //! current playing playlist name
+            playlistName: null,
             //! players' playlists' sets
             sets: {
                 queue: Set.storeLoad(Sound, "playlist.queue", { max: 30, unique: true }),
@@ -125,6 +125,10 @@ export default {
         paused() { return this.state == State.paused; },
         playing() { return this.state == State.playing; },
         loading() { return this.state == State.loading; },
+
+        playlist() {
+            return this.playlistName ? this.$refs[this.playlistName] : null;
+        },
 
         current() {
             return this.loaded || this.live && this.live.current;
@@ -155,7 +159,7 @@ export default {
             let set = this.sets[name];
             return (set ? (set.length ? "" : "has-text-grey-light ")
                        + (this.panel == name ? "is-info "
-                          : this.playlist && this.playlist == this.$refs[name] ? 'is-primary '
+                          : this.playlistName == name ? 'is-primary '
                           : '') : '')
                 + "button has-text-weight-bold";
         },
@@ -168,17 +172,33 @@ export default {
         isPlaying(item) { return this.isLoaded(item) && !this.paused },
 
         _setPlaylist(playlist) {
-            this.playlist = playlist ? this.$refs[playlist] : null;
+            this.playlistName = playlist;
             for(var p in this.sets)
                 if(p != playlist)
                     this.$refs[p].unselect();
         },
 
-        load(playlist, {src=null, item=null}={}) {
-            src = src || item.src;
-            this.loaded = item;
+        /// Play a playlist's sound (by playlist name, and sound index)
+        play(playlist=null, index=0) {
+            let src = null;
+
+            // from playlist
+            if(playlist !== null) {
+                let item = this.$refs[playlist].get(index);
+                if(!item)
+                    throw `No sound at index ${index} for playlist ${playlist}`;
+                this.loaded = item;
+                src = item.src;
+            }
+            // from live
+            else {
+                this.loaded = null;
+                src = this.live.src;
+            }
+
             this._setPlaylist(playlist);
 
+            // load sources
             const audio = this.audio;
             if(src instanceof Array) {
                 audio.innerHTML = '';
@@ -192,29 +212,13 @@ export default {
                 audio.src = src;
             }
             audio.load();
-        },
-
-        /// Play a playlist's sound (by playlist name, and sound index)
-        play(playlist=null, index=0) {
-            if(index < 0)
-                return;
-
-            if(!playlist)
-                playlist = 'queue';
-
-            console.log('play', playlist, index, this.audio);
-            let item = this.$refs[playlist].get(index);
-            if(item) {
-                this.load(playlist, {item});
-                this.audio.play().catch(e => console.error(e))
-            }
-            else
-                throw `No sound at index ${index} for playlist ${playlist}`;
+            audio.play();
+            audio.play().catch(e => console.error(e))
         },
 
         /// Push items to playlist (by name)
         push(playlist, ...items) {
-            this.$refs[playlist].push(...items);
+            return this.$refs[playlist].push(...items);
         },
 
         /// Push and play items
@@ -224,16 +228,10 @@ export default {
             this.play(playlist, index);
         },
 
+        /// Handle click event that plays multiple items (from `data-sounds` attribute)
         playButtonClick(event) {
             var items = JSON.parse(event.currentTarget.dataset.sounds);
             this.playItems('queue', ...items);
-        },
-
-        /// Play live stream
-        playLive() {
-            this.load(null, {src: this.live.src});
-            this.audio.play().catch(e => console.error(e))
-            this.panel = '';
         },
 
         /// Pause
@@ -242,11 +240,18 @@ export default {
         },
 
         //! Play/pause
-        togglePlay() {
+        togglePlay(playlist=null, index=0) {
+            if(playlist !== null) {
+                let item = this.sets[playlist].get(index);
+                if(!this.playlist || this.playlistName !== playlist || this.loaded != item) {
+                    this.play(playlist, index);
+                    return;
+                }
+            }
             if(this.paused)
                 this.audio.play().catch(e => console.error(e))
             else
-                this.pause()
+                this.audio.pause();
         },
 
         //! Pin/Unpin an item
@@ -266,7 +271,7 @@ export default {
             this.state = audio.paused ? State.paused : State.playing;
 
             if(event.type == 'ended' && (!this.playlist || this.playlist.selectNext() == -1))
-                this.playLive();
+                this.play();
         },
     },
 

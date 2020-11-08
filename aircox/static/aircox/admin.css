@@ -7443,8 +7443,6 @@ a.navbar-item.is-active {
       min-width: 2.5em;
       border-radius: 0px;
       transition: background-color 1s; }
-    .player .player-bar .button:focus {
-      background-color: #209cee; }
     .player .player-bar .title {
       margin: 0em; }
 
@@ -7469,9 +7467,6 @@ main .cover.is-small {
 main .cover.is-tiny {
   height: 2em; }
 
-.sound-item .cover {
-  height: 5em; }
-
 aside > section {
   margin-bottom: 2em; }
 
@@ -7486,6 +7481,12 @@ aside .cover.is-tiny {
 
 aside .media .subtitle {
   font-size: 1em; }
+
+.sound-item .cover {
+  height: 5em; }
+
+.sound-item .media-content a {
+  padding: 0em; }
 
 .is-round, .sound-item .button {
   border: 1px #7a7a7a solid;

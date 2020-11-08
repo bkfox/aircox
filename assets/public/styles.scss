@@ -221,10 +221,6 @@ a.navbar-item.is-active {
             transition: background-color 1s;
         }
 
-        .button:focus {
-            background-color: $info;
-        }
-
         .title {
             margin: 0em;
         }
@@ -260,7 +256,6 @@ main {
     .cover.is-tiny { height: 2em; }
 }
 
-.sound-item .cover { height: 5em; }
 
 aside {
     & > section {
@@ -279,6 +274,11 @@ aside {
     }
 }
 
+
+.sound-item {
+    .cover { height: 5em; }
+    .media-content a { padding: 0em; }
+}
 
 .is-round, .sound-item .button {
     border: 1px $grey solid;

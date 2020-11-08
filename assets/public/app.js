@@ -4,27 +4,16 @@ export const defaultConfig = {
     el: '#app',
     delimiters: ['[[', ']]'],
 
-    data() {
-        return {
-            page: null,
-        }
-    },
-
     computed: {
         player() { return window.aircox.player; },
     },
 }
 
-export default function App(config, sync=false) {
-    return (new AppConfig(config)).load(sync)
-}
 
-/**
- * Application config for an application instance
- */
-export class AppConfig {
-    constructor(config) {
+export default class AppBuilder {
+    constructor(config={}) {
         this._config = config;
+        this.app = null;
     }
 
     get config() {
@@ -42,22 +31,50 @@ export class AppConfig {
         this._config = value;
     }
 
-    load(sync=false) {
+    destroy() {
+        self.app && self.app.$destroy();
+        self.app = null;
+    }
+
+    fetch(url, options) {
+        return fetch(url, options).then(response => response.text())
+            .then(content => {
+                let doc = new DOMParser().parseFromString(content, 'text/html');
+                let app = doc.getElementById('app');
+                content = app ? app.innerHTML : content;
+                return this.load({sync: true, content, title: doc.title, url })
+            })
+    }
+
+    load({async=false,content=null, title=null, url=null}={}) {
         var self = this;
-        return new Promise(function(resolve, reject) {
-            let func = () => { try { resolve(self.build()) } catch(error) { reject(error) }};
-            sync ? func() : window.addEventListener('load', func);
+        return new Promise((resolve, reject) => {
+            let func = () => {
+                try {
+                    let config = self.config;
+                    const el = document.querySelector(config.el);
+                    if(!el)
+                        return reject(`Error: can't get element ${config.el}`)
+
+                    if(content)
+                        el.innerHTML = content
+                    if(title)
+                        document.title = title;
+                    if(url && content)
+                        history.pushState({ content: content, title: title }, '', url)
+
+                    this.app = new Vue(config);
+                    resolve(self.app)
+                } catch(error) {
+                    self.destroy();
+                    reject(error)
+                }};
+            async ? window.addEventListener('load', func) : func();
         });
     }
 
-    build() {
-        let config = this.config;
-        const el = document.querySelector(config.el)
-        if(!el) {
-            reject(`Error: missing element ${config.el}`);
-            return;
-        }
-        return new Vue(config);
+    loadFromState(state) {
+        return this.load({ content: state.content, title: state.title });
     }
 }
 

@@ -12,7 +12,7 @@ List item for a podcast.
     {% endif %}
     {% endcomment %}
     <a-sound-item :data="{{ object|json }}" :player="player"
-        :actions="['play']" @click="player.play(item)">
+        :actions="['play']">
     </a-sound-item>
 </div>
 
