@@ -202,6 +202,7 @@ export default {
             const audio = this.audio;
             if(src instanceof Array) {
                 audio.innerHTML = '';
+                audio.src = null;
                 for(var s of src) {
                     let source = document.createElement('source');
                     source.setAttribute('src', s);
