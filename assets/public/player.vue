@@ -202,10 +202,11 @@ export default {
             const audio = this.audio;
             if(src instanceof Array) {
                 audio.innerHTML = '';
-                audio.src = null;
+                audio.removeAttribute('src');
                 for(var s of src) {
                     let source = document.createElement('source');
                     source.setAttribute('src', s);
+                    console.log('src', source.getAttribute('src'));
                     audio.appendChild(source)
                 }
             }
@@ -213,6 +214,7 @@ export default {
                 audio.src = src;
             }
             audio.load();
+            console.log(audio);
         },
 
         play(playlist=null, index=0) {
