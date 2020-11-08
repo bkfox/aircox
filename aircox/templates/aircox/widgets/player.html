@@ -20,8 +20,11 @@ The audio player
     <a-player ref="player"
             :live-args="{url: '{% url "api:live" %}', timeout:10, src: {{ audio_streams|json }} || []}"
             button-title="{% trans "Play or pause audio" %}">
-        <template v-slot:content="{ current }">
-            <h4 v-if="current && current.type == 'track'"
+        <template v-slot:content="{ loaded, live }">
+            <h4 v-if="loaded" class="title is-4">
+                [[ loaded.name ]]
+            </h4>
+            <h4 v-else-if="live && live.current && live.current.type == 'track'"
                 class="title is-4" aria-description="{% trans "Track currently on air" %}">
                 <span class="has-text-info is-size-3">&#9836;</span>
                 <span>[[ current.title ]]</span>
@@ -30,15 +33,12 @@ The audio player
                 <i v-if="current.info">([[ current.info ]])</i>
                 </span>
             </h4>
-            <div v-else-if="current && current.type == 'diffusion'">
+            <div v-else-if="live && live.current && live.current.type == 'diffusion'">
                 <h4 class="title is-4" aria-description="{% trans "Diffusion currently on air" %}">
                     <a :href="current.url">[[ current.title ]]</a>
                 </h4>
                 <div class="">[[ current.info ]]</div>
             </div>
-            <h4 v-else-if="current" class="title is-4">
-                [[ current.name ]]
-            </h4>
             <h4 v-else class="title is-4" aria-description="{% trans "Currently playing" %}">
                 {{ station.name }}
             </h4>

@@ -38,7 +38,7 @@
                 <img :src="current.cover" class="cover" />
             </div>
             <div class="media-content">
-                <slot name="content" :current="current"></slot>
+                <slot name="content" :loaded='loaded' :live='live'></slot>
                 <Progress v-if="loaded && duration" :value="currentTime" :max="this.duration"
                     :format="displayTime"
                     @select="audio.currentTime = $event"></Progress>
@@ -132,12 +132,6 @@ export default {
 
         current() {
             return this.loaded || this.live && this.live.current;
-        },
-
-        buttonStyle() {
-            if(!this.current)
-                return;
-            return { backgroundImage: `url(${this.current.cover})` }
         },
     },
 
