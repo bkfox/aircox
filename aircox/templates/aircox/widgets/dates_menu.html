@@ -11,33 +11,37 @@ An empty date results to a title or a separator
 {% endcomment %}
 {% load i18n %}
 
-<div class="navbar-menu" role="menu"
+<div class="media" role="menu"
         aria-label="{% trans "pick a date" %}">
-    <div class="navbar-start">
-        {% for day in dates %}
-        <a href="{% url url_name date=day %}" class="navbar-item {% if day == date %}is-active{% endif %}">
-            {{ day|date:"D. d" }}
-            </a>
-        {% endfor %}
+    <div class="media-content">
+        <div class="tabs is-toggle">
+            <ul>
+                {% for day in dates %}
+                <li class="{% if day == date %}is-active{% endif %}">
+                    <a href="{% url url_name date=day %}">
+                        {{ day|date:"D. d" }}
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
     </div>
 
-    <div class="navbar-end">
-        <div class="navbar-item">
-            <form action="{% url url_name %}" method="GET" class="navbar-body"
-                    aria-label="{% trans "Jump to date" %}">
-                <div class="field has-addons">
-                    <div class="control has-icons-left">
-                        <span class="icon is-small is-left"><span class="far fa-calendar"></span></span>
-                        <input type="{{ date_input|default:"date" }}" class="input date"
-                               name="date" value="{{ date|date:"Y-m-d" }}">
-                    </div>
-                    <div class="control">
-                        {% comment %}Translators: form button to select a date{% endcomment %}
-                        <button class="button is-primary">{% trans "Go" %}</button>
-                    </div>
+    <div class="media-right">
+        <form action="{% url url_name %}" method="GET" class="navbar-body"
+                aria-label="{% trans "Jump to date" %}">
+            <div class="field has-addons">
+                <div class="control has-icons-left">
+                    <span class="icon is-small is-left"><span class="far fa-calendar"></span></span>
+                    <input type="{{ date_input|default:"date" }}" class="input date"
+                           name="date" value="{{ date|date:"Y-m-d" }}">
                 </div>
-            </form>
-        </div>
+                <div class="control">
+                    {% comment %}Translators: form button to select a date{% endcomment %}
+                    <button class="button is-primary">{% trans "Go" %}</button>
+                </div>
+            </div>
+        </form>
     </div>
 </div>
 
