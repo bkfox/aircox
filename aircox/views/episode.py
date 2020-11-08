@@ -1,6 +1,7 @@
 from collections import OrderedDict
 import datetime
 
+from django.utils.translation import gettext_lazy as _
 from django.views.generic import ListView
 
 from ..models import Diffusion, Episode, Program, StaticPage, Sound
@@ -28,6 +29,17 @@ class EpisodeListView(PageListView):
     has_headline = True
     parent_model = Program
     attach_to_value = StaticPage.ATTACH_TO_EPISODES
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        if self.filters and 'podcasts' in self.filters:
+            qs = qs.filter(sound__is_public=True)
+        return qs
+
+    def get_filters(self):
+        return super().get_filters() + (
+            (_('Podcasts'), 'podcasts', tuple()),
+        )
 
 
 class DiffusionListView(GetDateMixin, AttachedToMixin, BaseView, ListView):

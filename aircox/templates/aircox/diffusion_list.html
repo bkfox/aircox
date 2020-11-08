@@ -14,7 +14,7 @@
 
 {% block subtitle %}{{ date|date:"l d F Y" }}{% endblock %}
 
-{% block filters %}
+{% block before_list %}
 {% with "diffusion-list" as url_name %}
 {% include "aircox/widgets/dates_menu.html" %}
 {% endwith %}

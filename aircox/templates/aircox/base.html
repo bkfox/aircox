@@ -5,7 +5,6 @@ variables.
 Usefull context:
 - cover: image cover
 - site: current website
-- has_filters: display filter bar (using block "filters")
 - model: view model or displayed `object`'s
 - sidebar_object_list: item to display in sidebar
 - sidebar_url_name: url name sidebar item complete list
@@ -99,17 +98,6 @@ Usefull context:
                             <section class="content">{{ page.content|safe }}</section>
                             {% endif %}
                             {% endblock %}
-
-                            {# TODO: change block name #}
-                            {% if has_filters %}
-                            {% comment %}Translators: extra toolbar displayed on the top of page lists {% endcomment %}
-                            <nav class="navbar toolbar"
-                                aria-label="{% trans "list filters" %}">
-                            {% block filters %}{% endblock %}
-                            </nav>
-                            {% endif %}
-
-
                         {% endblock main %}
                     </main>
 

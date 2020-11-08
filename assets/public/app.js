@@ -13,6 +13,7 @@ export const defaultConfig = {
 export default class AppBuilder {
     constructor(config={}) {
         this._config = config;
+        this.title = null;
         this.app = null;
     }
 
@@ -46,7 +47,7 @@ export default class AppBuilder {
             })
     }
 
-    load({async=false,content=null, title=null, url=null}={}) {
+    load({async=false,content=null,title=null}={}) {
         var self = this;
         return new Promise((resolve, reject) => {
             let func = () => {
@@ -60,9 +61,6 @@ export default class AppBuilder {
                         el.innerHTML = content
                     if(title)
                         document.title = title;
-                    if(url && content)
-                        history.pushState({ content: content, title: title }, '', url)
-
                     this.app = new Vue(config);
                     resolve(self.app)
                 } catch(error) {
@@ -73,7 +71,22 @@ export default class AppBuilder {
         });
     }
 
-    loadFromState(state) {
+    /// Save application state into browser history
+    historySave(url,replace=false) {
+        const el = document.querySelector(this.config.el);
+        const state = {
+            content: el.innerHTML,
+            title: document.title,
+        };
+
+        if(replace)
+            history.replaceState(state, '', url)
+        else
+            history.pushState(state, '', url)
+    }
+
+    /// Load application from browser history's state
+    historyLoad(state) {
         return this.load({ content: state.content, title: state.title });
     }
 }

@@ -76,9 +76,11 @@ class PageListView(BasePageListView):
     template_name = None
     has_filters = True
     categories = None
+    filters = None
 
     def get(self, *args, **kwargs):
         self.categories = set(self.request.GET.getlist('categories'))
+        self.filters = set(self.request.GET.getlist('filters'))
         return super().get(*args, **kwargs)
 
     def get_template_names(self):
@@ -94,16 +96,25 @@ class PageListView(BasePageListView):
             qs = qs.filter(category__slug__in=self.categories)
         return qs
 
-    def get_categories_queryset(self):
-        # TODO: use generic reverse field lookup
+    def get_filters(self):
         categories = self.model.objects.published() \
                                .filter(category__isnull=False) \
                                .values_list('category', flat=True)
-        return Category.objects.filter(id__in=categories)
+        categories = [ (c.title, c.slug, c.slug in self.categories)
+                        for c in Category.objects.filter(id__in=categories) ]
+        return (
+            (_('Categories'), 'categories', categories),
+        )
 
     def get_context_data(self, **kwargs):
-        kwargs.setdefault('filter_categories', self.get_categories_queryset())
-        kwargs.setdefault('categories', self.categories)
+        if not 'filters' in kwargs:
+            filters = self.get_filters()
+            for label, fieldName, choices in filters:
+                if choices:
+                    kwargs['filters'] = filters
+                    break;
+            else:
+                kwargs['filters'] = tuple()
         return super().get_context_data(**kwargs)
 
 

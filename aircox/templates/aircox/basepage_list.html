@@ -24,6 +24,49 @@
 
 {% block main %}{{ block.super }}
 
+{% block before_list %}
+{% if filters %}
+<form method="GET" action="" class="media">
+    <div class="media-content">
+        {% block filters %}
+        {% for label, name, choices in filters %}
+        <div class="field is-horizontal">
+            <div class="field-label">
+                <label class="label">{{ label }}</label>
+            </div>
+            <div class="field-body">
+                <div class="field is-narrow">
+                    <div class="control">
+                        {% for label, value, checked in choices %}
+                        <label class="checkbox">
+                            <input type="checkbox" class="checkbox" name="{{ name }}"
+                                   value="{{ value }}"
+                                   {% if checked %}checked{% endif %} />
+                            {{ label }}
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        {% endblock %}
+    </div>
+    <div class="media-right">
+        <div class="field is-grouped is-grouped-right">
+            <div class="control">
+                <button class="button is-primary"/>{% trans "Apply" %}</button>
+            </div>
+            <div class="control">
+                <a href="?" class="button is-secondary">{% trans "Reset" %}</a>
+            </div>
+        </div>
+    </div>
+</form>
+{% endif %}
+
+{% endblock %}
+
 <section role="list">
 {% block pages_list %}
 {% with has_headline=True %}

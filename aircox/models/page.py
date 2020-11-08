@@ -185,11 +185,24 @@ class StaticPage(BasePage):
         (ATTACH_TO_EPISODES, _('Episodes list')),
         (ATTACH_TO_ARTICLES, _('Articles list')),
     )
+    VIEWS = {
+        ATTACH_TO_HOME: 'home',
+        ATTACH_TO_DIFFUSIONS: 'diffusion-list',
+        ATTACH_TO_LOGS: 'log-list',
+        ATTACH_TO_PROGRAMS: 'program-list',
+        ATTACH_TO_EPISODES: 'episode-list',
+        ATTACH_TO_ARTICLES: 'article-list',
+    }
 
     attach_to = models.SmallIntegerField(
         _('attach to'), choices=ATTACH_TO_CHOICES, blank=True, null=True,
         help_text=_('display this page content to related element'),
     )
+
+    def get_absolute_url(self):
+        if self.attach_to:
+            return reverse(self.VIEWS[self.attach_to])
+        return super().get_absolute_url()
 
 
 class Comment(models.Model):
@@ -216,8 +229,7 @@ class NavItem(models.Model):
     text = models.CharField(_('title'), max_length=64)
     url = models.CharField(_('url'), max_length=256, blank=True, null=True)
     page = models.ForeignKey(StaticPage, models.CASCADE,
-                             verbose_name=_('page'), blank=True, null=True,
-                             limit_choices_to={'attach_to__isnull': True})
+                             verbose_name=_('page'), blank=True, null=True)
     class Meta:
         verbose_name = _('Menu item')
         verbose_name_plural = _('Menu items')
