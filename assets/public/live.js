@@ -12,8 +12,7 @@ export default class Live {
     }
 
     get current() {
-        let items = this.logs && this.logs.items;
-        let item = items && items[items.length-1];
+        let item = this.items && this.items[this.items.length-1];
         if(item)
             item.src = this.src;
         return item ? new Model(item) : null;
