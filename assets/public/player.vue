@@ -96,11 +96,13 @@ export default {
             this.duration = Number.isFinite(this.audio.duration) ? this.audio.duration : null;
         });
 
+        let live = this.liveArgs ? new Live(this.liveArgs) : null;
+        live && live.refresh();
+
         return {
             audio, duration: 0, currentTime: 0, state: State.paused,
+            live,
 
-            /// Live instance
-            live: this.liveArgs ? new Live(this.liveArgs) : null,
             /// Loaded item
             loaded: null,
             //! Active panel name
