@@ -34,8 +34,8 @@
                     <span class="fas fa-play" v-else></span>
                 </button>
             </div>
-            <div class="media-left media-cover" v-if="current && current.cover">
-                <img :src="current.cover" class="cover" />
+            <div class="media-left media-cover" v-if="current && current.data.cover">
+                <img :src="current.data.cover" class="cover" />
             </div>
             <div class="media-content">
                 <slot name="content" :loaded='loaded' :live='live'></slot>
@@ -131,7 +131,7 @@ export default {
         },
 
         current() {
-            return this.loaded || this.live && this.live.current;
+            return this.loaded ? this.loaded : this.live && this.live.current;
         },
     },
 
@@ -200,7 +200,6 @@ export default {
                 for(var s of src) {
                     let source = document.createElement('source');
                     source.setAttribute('src', s);
-                    console.log('src', source.getAttribute('src'));
                     audio.appendChild(source)
                 }
             }
@@ -208,7 +207,6 @@ export default {
                 audio.src = src;
             }
             audio.load();
-            console.log(audio);
         },
 
         play(playlist=null, index=0) {

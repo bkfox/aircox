@@ -24,20 +24,20 @@ The audio player
             <h4 v-if="loaded" class="title is-4">
                 [[ loaded.name ]]
             </h4>
-            <h4 v-else-if="live && live.current && live.current.type == 'track'"
+            <h4 v-else-if="live && live.current && live.current.data.type == 'track'"
                 class="title is-4" aria-description="{% trans "Track currently on air" %}">
                 <span class="has-text-info is-size-3">&#9836;</span>
-                <span>[[ current.title ]]</span>
+                <span>[[ live.current.data.title ]]</span>
                 <span class="has-text-grey-dark has-text-weight-light">
-                &mdash; [[ current.artist ]]
-                <i v-if="current.info">([[ current.info ]])</i>
+                &mdash; [[ live.current.data.artist ]]
+                <i v-if="live.current.data.info">([[ live.current.data.info ]])</i>
                 </span>
             </h4>
-            <div v-else-if="live && live.current && live.current.type == 'diffusion'">
+            <div v-else-if="live && live.current && live.current.data.type == 'diffusion'">
                 <h4 class="title is-4" aria-description="{% trans "Diffusion currently on air" %}">
-                    <a :href="current.url">[[ current.title ]]</a>
+                    <a :href="live.current.data.url">[[ live.current.data.title ]]</a>
                 </h4>
-                <div class="">[[ current.info ]]</div>
+                <div class="">[[ live.current.data.info ]]</div>
             </div>
             <h4 v-else class="title is-4" aria-description="{% trans "Currently playing" %}">
                 {{ station.name }}

@@ -1,4 +1,5 @@
 import {setEcoTimeout} from 'public/utils';
+import Model from './model';
 
 export default class Live {
     constructor({url,timeout=10,src=""}={}) {
@@ -15,7 +16,7 @@ export default class Live {
         let item = items && items[items.length-1];
         if(item)
             item.src = this.src;
-        return item;
+        return item ? new Model(item) : null;
     }
 
     //-- data refreshing
