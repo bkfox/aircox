@@ -118,6 +118,12 @@ class BasePage(models.Model):
     def is_trash(self):
         return self.status == self.STATUS_TRASH
 
+    @property
+    def display_title(self):
+        if self.is_published():
+            return self.title
+        return self.parent.display_title()
+
     @cached_property
     def headline(self):
         if not self.content:

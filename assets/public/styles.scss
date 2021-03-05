@@ -104,7 +104,8 @@ a.navbar-item.is-active {
     font-weight: $weight-bold;
     padding: 0.2em;
     top: 1em;
-    background-color: $white;
+    background-color: #ffffffc7;
+    max-width: 90%;
 
     .fas {
         padding: 0.1em;
@@ -132,7 +133,7 @@ a.navbar-item.is-active {
     p { padding: 0.4em 0em; }
     hr { background-color: $grey-light; }
 
-    section {
+    .page-content {
         h1 { font-size: $size-1; font-weight: bolder; margin-top:0.4em; margin-bottom:0.2em; }
         h2 { font-size: $size-3; font-weight: bolder; margin-top:0.4em; margin-bottom:0.2em; }
         h3 { font-size: $size-4; font-weight: bolder; margin-top:0.4em; margin-bottom:0.2em; }

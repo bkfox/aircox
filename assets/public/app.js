@@ -37,7 +37,7 @@ export default class AppBuilder {
         self.app = null;
     }
 
-    fetch(url, options) {
+    fetch(url, {el='app', ...options}={}) {
         return fetch(url, options).then(response => response.text())
             .then(content => {
                 let doc = new DOMParser().parseFromString(content, 'text/html');
@@ -47,7 +47,7 @@ export default class AppBuilder {
             })
     }
 
-    load({async=false,content=null,title=null}={}) {
+    load({async=false,content=null,title=null,el='app'}={}) {
         var self = this;
         return new Promise((resolve, reject) => {
             let func = () => {
@@ -62,6 +62,7 @@ export default class AppBuilder {
                     if(title)
                         document.title = title;
                     this.app = new Vue(config);
+                    window.scroll(0, 0);
                     resolve(self.app)
                 } catch(error) {
                     self.destroy();
