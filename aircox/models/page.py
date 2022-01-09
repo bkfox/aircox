@@ -66,9 +66,10 @@ class BasePage(models.Model):
     )
 
     parent = models.ForeignKey('self', models.CASCADE, blank=True, null=True,
-                               related_name='child_set')
+                               db_index=True, related_name='child_set')
     title = models.CharField(max_length=100)
-    slug = models.SlugField(_('slug'), max_length=120, blank=True, unique=True)
+    slug = models.SlugField(_('slug'), max_length=120, blank=True, unique=True,
+                               db_index=True)
     status = models.PositiveSmallIntegerField(
         _('status'), default=STATUS_DRAFT, choices=STATUS_CHOICES,
     )
@@ -214,6 +215,7 @@ class StaticPage(BasePage):
 class Comment(models.Model):
     page = models.ForeignKey(
         Page, models.CASCADE, verbose_name=_('related page'),
+        db_index=True,
         # TODO: allow_comment filter
     )
     nickname = models.CharField(_('nickname'), max_length=32)
@@ -234,7 +236,7 @@ class NavItem(models.Model):
     order = models.PositiveSmallIntegerField(_('order'))
     text = models.CharField(_('title'), max_length=64)
     url = models.CharField(_('url'), max_length=256, blank=True, null=True)
-    page = models.ForeignKey(StaticPage, models.CASCADE,
+    page = models.ForeignKey(StaticPage, models.CASCADE, db_index=True,
                              verbose_name=_('page'), blank=True, null=True)
     class Meta:
         verbose_name = _('Menu item')

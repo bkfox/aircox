@@ -169,14 +169,14 @@ class BaseRerun(models.Model):
     datetime field or attribute implemented by subclass.
     """
     program = models.ForeignKey(
-        Program, models.CASCADE,
+        Program, models.CASCADE, db_index=True,
         verbose_name=_('related program'),
     )
     initial = models.ForeignKey(
         'self', models.SET_NULL, related_name='rerun_set',
         verbose_name=_('rerun of'),
         limit_choices_to={'initial__isnull': True},
-        blank=True, null=True,
+        blank=True, null=True, db_index=True,
     )
 
     objects = BaseRerunQuerySet.as_manager()

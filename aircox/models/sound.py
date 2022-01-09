@@ -83,10 +83,12 @@ class Sound(models.Model):
         Program, models.CASCADE, blank=True, # NOT NULL
         verbose_name=_('program'),
         help_text=_('program related to it'),
+        db_index=True,
     )
     episode = models.ForeignKey(
         Episode, models.SET_NULL, blank=True, null=True,
         verbose_name=_('episode'),
+        db_index=True,
     )
     type = models.SmallIntegerField(_('type'), choices=TYPE_CHOICES)
     position = models.PositiveSmallIntegerField(
@@ -173,7 +175,6 @@ class Sound(models.Model):
                 return
             logger.info('sound %s: has been removed', self.path)
             self.type = self.TYPE_REMOVED
-
             return True
 
         # not anymore removed

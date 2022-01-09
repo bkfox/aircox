@@ -171,8 +171,8 @@ class Diffusion(BaseRerun):
     type = models.SmallIntegerField(
         verbose_name=_('type'), default=TYPE_ON_AIR, choices=TYPE_CHOICES,
     )
-    start = models.DateTimeField(_('start'))
-    end = models.DateTimeField(_('end'))
+    start = models.DateTimeField(_('start'), db_index=True)
+    end = models.DateTimeField(_('end'), db_index=True)
     # port = models.ForeignKey(
     #    'self',
     #    verbose_name = _('port'),

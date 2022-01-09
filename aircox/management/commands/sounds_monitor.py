@@ -85,9 +85,11 @@ class SoundFile:
         if created or sound.check_on_file():
             logger.info('sound is new or have been modified -> %s', self.path)
             self.read_path()
-            self.read_file_info()
-            sound.duration = utils.seconds_to_time(self.info.info.length)
             sound.name = self.path_info.get('name')
+
+            self.read_file_info()
+            if self.info is not None:
+                sound.duration = utils.seconds_to_time(self.info.info.length)
 
         # check for episode
         if sound.episode is None and self.read_path():
@@ -95,7 +97,8 @@ class SoundFile:
 
         self.sound = sound
         sound.save()
-        self.find_playlist(sound)
+        if self.info is not None:
+            self.find_playlist(sound)
         return sound
 
     def read_path(self):
@@ -117,7 +120,10 @@ class SoundFile:
 
     def read_file_info(self):
         """ Read file information and metadata. """
-        self.info = mutagen.File(self.path)
+        if os.path.exists(self.path):
+            self.info = mutagen.File(self.path)
+        else:
+            self.info = None
 
     def find_episode(self, program):
         """
@@ -285,17 +291,14 @@ class Command(BaseCommand):
         # sounds in db & unchecked
         sounds = Sound.objects.filter(path__startswith=subdir). \
             exclude(pk__in=sounds)
-        self.check_sounds(sounds)
+        self.check_sounds(sounds, program=program)
 
-    @staticmethod
-    def check_sounds(qs):
-        """
-        Only check for the sound existence or update
-        """
+    def check_sounds(self, qs, **sync_kwargs):
+        """ Only check for the sound existence or update """
         # check files
         for sound in qs:
             if sound.check_on_file():
-                sound.sync(sound=sound)
+                SoundFile(sound.path).sync(sound=sound, **sync_kwargs)
 
     def monitor(self):
         """ Run in monitor mode """

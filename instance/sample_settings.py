@@ -170,9 +170,9 @@ THUMBNAIL_PROCESSORS = (
 
 # Enabled applications
 INSTALLED_APPS = (
-    'aircox',
+    'aircox.apps.AircoxConfig',
     'aircox.apps.AircoxAdminConfig',
-    'aircox_streamer',
+    'aircox_streamer.apps.AircoxStreamerConfig',
 
     # Aircox dependencies
     'rest_framework',
