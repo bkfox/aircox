@@ -139,7 +139,6 @@ class SoundFile:
         rerun.
         """
         pi = self.path_info
-        print('find episode', pi, self.sound, self.sound and self.sound.episode)
         if 'year' not in pi or not self.sound or self.sound.episode:
             return None
 
@@ -151,7 +150,6 @@ class SoundFile:
             date = datetime.date(pi.get('year'), pi.get('month'), pi.get('day'))
 
         diffusion = program.diffusion_set.at(date).first()
-        print('related diffusion', date, diffusion)
         if not diffusion:
             return None
 
