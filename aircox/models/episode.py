@@ -95,6 +95,8 @@ class DiffusionQuerySet(BaseRerunQuerySet):
         date = date or datetime.date.today()
         start = tz.datetime.combine(date, datetime.time())
         end = tz.datetime.combine(date, datetime.time(23, 59, 59, 999))
+        # start = tz.get_current_timezone().localize(start)
+        # end = tz.get_current_timezone().localize(end)
         qs = self.filter(start__range = (start, end))
         return qs.order_by('start') if order else qs
 

@@ -80,6 +80,7 @@ class SoundFile:
         program = kwargs['program'] = Program.get_from_path(self.path)
         sound, created = Sound.objects.get_or_create(path=self.path, defaults=kwargs) \
                          if not sound else (sound, False)
+        self.sound = sound
 
         sound.program = program
         if created or sound.check_on_file():
@@ -95,7 +96,6 @@ class SoundFile:
         if sound.episode is None and self.read_path():
             self.find_episode(program)
 
-        self.sound = sound
         sound.save()
         if self.info is not None:
             self.find_playlist(sound)
@@ -112,7 +112,11 @@ class SoundFile:
         name = os.path.splitext(os.path.basename(self.path))[0]
         match = sound_path_re.search(name)
         if match:
-            self.path_info = match.groupdict()
+            path_info = match.groupdict()
+            for k in ('year', 'month', 'day', 'hour', 'minute'):
+                if path_info.get(k) is not None:
+                    path_info[k] = int(path_info[k])
+            self.path_info = path_info
             return True
         else:
             self.path_info = {'name': name}
@@ -135,17 +139,19 @@ class SoundFile:
         rerun.
         """
         pi = self.path_info
+        print('find episode', pi, self.sound, self.sound and self.sound.episode)
         if 'year' not in pi or not self.sound or self.sound.episode:
             return None
 
-        if 'hour' not in pi:
-            date = datetime.date(pi.get('year'), pi.get('month'), pi.get('day'))
-        else:
+        if pi.get('hour') is not None:
             date = tz.datetime(pi.get('year'), pi.get('month'), pi.get('day'),
                                pi.get('hour') or 0, pi.get('minute') or 0)
             date = tz.get_current_timezone().localize(date)
+        else:
+            date = datetime.date(pi.get('year'), pi.get('month'), pi.get('day'))
 
-        diffusion = program.diffusion_set.initial().at(date).first()
+        diffusion = program.diffusion_set.at(date).first()
+        print('related diffusion', date, diffusion)
         if not diffusion:
             return None
 
