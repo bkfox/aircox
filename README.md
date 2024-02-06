@@ -1,5 +1,7 @@
 ![](/logo.png)
 
+**This project has been moved to: https://git.radiocampus.be/rc/aircox/**
+
 Platform to manage a radio, schedules, website, and so on. We use the power of great tools like Django or Liquidsoap.
 
 This project is distributed under GPL version 3. More information in the LICENSE file, except for some files whose license is indicated.
